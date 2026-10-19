@@ -8,7 +8,7 @@
  *
  * `EXPO_PUBLIC_ATUR_FEEDBACK_URL` / `EXPO_PUBLIC_ATUR_FEEDBACK_TOKEN` override both for a local Atur.
  */
-const PUBLISHED_ATUR_FEEDBACK_TOKEN = '';
+const PUBLISHED_ATUR_FEEDBACK_TOKEN = 'pk_fb_2983d56c815b44b39f5197c87a356dfd';
 
 export const ATUR_FEEDBACK_URL = (process.env.EXPO_PUBLIC_ATUR_FEEDBACK_URL || 'https://app.diatur.com').trim().replace(/\/+$/, '');
 export const ATUR_FEEDBACK_TOKEN = (process.env.EXPO_PUBLIC_ATUR_FEEDBACK_TOKEN || PUBLISHED_ATUR_FEEDBACK_TOKEN).trim();

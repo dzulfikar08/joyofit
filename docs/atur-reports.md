@@ -36,7 +36,7 @@ The token is the board's **public token** (`pk_fb_...`). It can only create repo
 
 ## Setup (once, by the owner)
 
-1. In Atur, workspace `watchfit`, project Development: **Project settings, Feedback**, enable the board. Suggested: title "JoyoFit watch reports", voting and comments off, default state Triage (or Backlog), submit label `watch-report`.
+1. In Atur, workspace `joyodigitama`, project Joyorogo (JRG): **Project settings, Feedback**. Enabled 2026-10-20 as "JoyoFit watch reports" (voting and comments off, default state Todo).
 2. Copy the board's **public token** into `PUBLISHED_ATUR_FEEDBACK_TOKEN` in `src/features/device/aturConfig.ts`. It is deliberately not in `app.json` `extra`: that would change the runtime version (`docs/ota.md`). A JS-only edit ships over the air. While the constant is empty the button is hidden.
 3. Ship it as an OTA update. No native change is involved.
 4. Update the privacy page (`site/src/Privasi.tsx`, already worded for this) by deploying the site.
