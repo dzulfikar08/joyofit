@@ -4,8 +4,11 @@ import type { FetchLike } from './http';
 import {
   createRoutingClient,
   parseRouteResponse,
+  parseViaResponse,
   routeCacheKey,
   routeUrl,
+  routeViaCacheKey,
+  routeViaUrl,
 } from './routingClient';
 import { rejectionOf } from './testSupport';
 import { createThrottle } from './throttle';
@@ -28,6 +31,38 @@ describe('routeUrl', () => {
       'https://routing.openstreetmap.de/routed-foot/route/v1/driving/112.63,-7.98;112.64,-7.97?overview=full&geometries=geojson',
     );
     expect(routeUrl('bike', A, B)).toContain('/routed-bike/route/v1/driving/');
+  });
+});
+
+describe('routeViaUrl', () => {
+  test('lists every waypoint in order, longitude first, in one request', () => {
+    const C = { lat: -7.96, lon: 112.65 };
+    expect(routeViaUrl('foot', [A, B, C, A])).toBe(
+      'https://routing.openstreetmap.de/routed-foot/route/v1/driving/112.63,-7.98;112.64,-7.97;112.65,-7.96;112.63,-7.98?overview=full&geometries=geojson',
+    );
+    expect(routeViaUrl('foot', [A, B])).toBe(routeUrl('foot', A, B));
+  });
+
+  test('the cache key keeps the order of the waypoints and agrees with the two-point key', () => {
+    expect(routeViaCacheKey('foot', [A, B])).toBe(routeCacheKey('foot', A, B));
+    expect(routeViaCacheKey('foot', [A, B, A])).not.toBe(routeViaCacheKey('foot', [A, A, B]));
+  });
+});
+
+describe('parseViaResponse', () => {
+  test('reads the line and how far each waypoint had to move to reach a road', () => {
+    const answer = parseViaResponse({ ...ok, waypoints: [{ distance: 3.2 }, { distance: 12 }, { distance: 0 }] });
+    expect(answer.line).toHaveLength(3);
+    expect(answer.snapM).toEqual([3.2, 12, 0]);
+  });
+
+  test('an answer without usable waypoints has no snap distances, not wrong ones', () => {
+    expect(parseViaResponse(ok).snapM).toEqual([]);
+    expect(parseViaResponse({ ...ok, waypoints: [{ distance: 1 }, {}] }).snapM).toEqual([]);
+  });
+
+  test('a failure is still a failure', () => {
+    expect(() => parseViaResponse({ code: 'NoRoute', routes: [] })).toThrow(expect.objectContaining({ kind: 'code' }));
   });
 });
 
@@ -118,6 +153,21 @@ describe('createRoutingClient', () => {
     expect(second).toBe(first);
     expect(calls).toHaveLength(1);
     await client.route('bike', A, B);
+    expect(calls).toHaveLength(2);
+  });
+
+  test('routeVia goes through one request, carries the snap distances and shares the cache with route', async () => {
+    const C = { lat: -7.96, lon: 112.65 };
+    const { client, calls } = setup(async () => jsonResponse({ ...ok, waypoints: [{ distance: 2 }, { distance: 9 }, { distance: 1 }] }));
+    const via = await client.routeVia('foot', [A, B, C]);
+    expect(via.snapM).toEqual([2, 9, 1]);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toContain('112.63,-7.98;112.64,-7.97;112.65,-7.96');
+    expect(await client.routeVia('foot', [A, B, C])).toBe(via);
+    expect(calls).toHaveLength(1);
+    await client.route('foot', A, B);
+    expect(calls).toHaveLength(2);
+    await client.route('foot', A, B);
     expect(calls).toHaveLength(2);
   });
 

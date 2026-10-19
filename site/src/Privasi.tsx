@@ -318,6 +318,21 @@ function Indonesian() {
         />
       </Block>
 
+      <Block id="loop" title="Loop dari rumah">
+        <p>
+          Bila kamu menekan Cari rute, JoyoFit mengirim titik awal dan beberapa titik di sekitarnya (koordinat penuh, dalam
+          jarak beberapa kilometer dari titik awal) ke layanan rute OSRM milik FOSSGIS e.V. (<Code>routing.openstreetmap.de</Code>).
+          Tidak ada akun, ID perangkat, atau kunci API yang ikut dikirim; layanan itu melihat alamat IP-mu dan nama aplikasi
+          (JoyoFit) di header permintaan. Jejak GPS latihanmu tidak dikirim ke mana pun untuk fitur ini: kebaruan jalan
+          dihitung di HP dari latihan yang sudah tersimpan di HP.
+        </p>
+        <p>
+          Titik Rumah disimpan di HP ini saja (tidak ikut sinkron cloud) dan ikut terhapus bila kamu menghapus semua data
+          lokal. Izin lokasi presisi diminta hanya saat kamu memilih Lokasiku dan hanya dibaca saat layar loop dibuka. Mencari
+          tempat untuk menaruh Rumah mengirim teks yang kamu tulis ke Nominatim (OpenStreetMap).
+        </p>
+      </Block>
+
       <Block title="Notifikasi ke jam">
         <p>
           Meneruskan notifikasi mati secara bawaan dan butuh akses notifikasi yang kamu berikan di pengaturan
@@ -437,6 +452,7 @@ function Indonesian() {
           items={[
             "Open-Meteo: prakiraan cuaca dan pencarian kota (bagian Cuaca).",
             "Broadcom (glpals.com): data bantuan satelit (bagian Lokasi).",
+            "FOSSGIS e.V. (OSRM) dan Nominatim (OpenStreetMap): jalur rute dan pencarian tempat untuk Loop dari rumah (bagian Loop dari rumah).",
             "Cloudflare: tempat cloud JoyoFit dan situs ini berjalan.",
             "JoyoRogo, Google dan Apple: login dan layanan JoyoRogo (bagian Cloud dan Masuk dengan Apple).",
             "Expo, Google (Firebase Cloud Messaging) dan Apple (APNs): mengantar notifikasi push Keluarga (bagian Notifikasi push).",
@@ -762,6 +778,20 @@ function English() {
         </p>
       </Block>
 
+      <Block id="loop-en" title="Loop from home">
+        <p>
+          When you tap Find a route, JoyoFit sends the start point and a few points around it (full-precision coordinates, within a few
+          kilometers of the start) to the OSRM routing service run by FOSSGIS e.V. (<Code>routing.openstreetmap.de</Code>). No account, device
+          ID or API key is sent; the service sees your IP address and the app name (JoyoFit) in the request header. Your workout GPS
+          tracks are not sent anywhere for this feature: new streets are counted on the phone from workouts already stored on the phone.
+        </p>
+        <p>
+          The Home point is stored on this phone only (it does not sync to the cloud) and is removed when you delete all local data. Precise
+          location is requested only when you choose My location, and is read only while the loop screen is open. Searching a place to set
+          Home sends the text you type to Nominatim (OpenStreetMap).
+        </p>
+      </Block>
+
       <Block title="Notifications, calls, photos">
         <p>
           <span className="font-semibold">Notifications:</span> off by default and need notification access that
@@ -848,7 +878,7 @@ function English() {
 
       <Block title="Third parties">
         <p>
-          Open-Meteo (weather), Broadcom (satellite-assist data), Cloudflare (hosting of the cloud and this
+          Open-Meteo (weather), Broadcom (satellite-assist data), FOSSGIS e.V. (OSRM) and Nominatim (OpenStreetMap) (route paths and place search for Loop from home), Cloudflare (hosting of the cloud and this
           site), JoyoRogo, Google and Apple (sign-in), Apple (Apple Health write and one-time import read, and place-name geocoding on iPhone), Strava (upload destination when you connect it), the AI provider you choose, for example Anthropic for Claude or OpenAI for ChatGPT (receives the data read while you ask questions, only if you connect the AI connection), Expo, Google (Firebase Cloud Messaging) and Apple (APNs) (delivery of Keluarga push notifications), RevKlik (visitor
           statistics for this site). No ads and no sale of data. Data is not used for advertising or
           ad profiling. Everything the app and this site send over the internet uses HTTPS (TLS).

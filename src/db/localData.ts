@@ -19,8 +19,8 @@ export const keepApart = (db: SQLiteDatabase, userId: string, email: string): Pr
 /** Folders of `Paths.document` that hold the person's files: saved routes (`routeStore.ts`) and gear photos (`gear-edit.tsx`). */
 const DATA_FOLDERS = ['routes', 'gear'] as const;
 
-/** Key-value entries that are the person's data: the Coach chat and "how do you feel" answer, the course draft. Sticker Studio templates are every key under {@link TEMPLATE_PREFIX}. */
-const DATA_KEYS = ['joyofit.coach.chat', 'joyofit.coach.feel', 'joyofit.courseDraft.v1'] as const;
+/** Key-value entries that are the person's data: the Coach chat and "how do you feel" answer, the course draft, the loop planner's Home point and choices. Sticker Studio templates are every key under {@link TEMPLATE_PREFIX}. */
+const DATA_KEYS = ['joyofit.coach.chat', 'joyofit.coach.feel', 'joyofit.courseDraft.v1', 'joyofit.loops.home', 'joyofit.loops.prefs'] as const;
 const TEMPLATE_PREFIX = 'joyofit.stickers.user.';
 
 /**

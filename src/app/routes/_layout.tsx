@@ -15,6 +15,7 @@ export default function RoutesLayout() {
       <Stack.Screen name="[id]" options={{ title: t('titles.detail') }} />
       <Stack.Screen name="import" options={{ title: t('titles.import') }} />
       <Stack.Screen name="draw" options={{ title: t('titles.draw') }} />
+      <Stack.Screen name="loop" options={{ title: t('titles.loop') }} />
     </Stack>
   );
 }

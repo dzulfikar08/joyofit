@@ -1,0 +1,104 @@
+{
+  "mapLabel": "Map of a new loop from your start point",
+  "preparing": "Preparing the map",
+  "unavailable": "The map needs the latest JoyoFit version",
+  "mapFailed": "The map could not load, check your internet.",
+  "activity": {
+    "walk": "Walk",
+    "run": "Run"
+  },
+  "mode": {
+    "steps": "Steps",
+    "distance": "Distance",
+    "time": "Time",
+    "kcal": "Kcal"
+  },
+  "unit": {
+    "steps": "steps",
+    "distance": "km",
+    "time": "min",
+    "kcal": "kcal"
+  },
+  "approx": "≈ {{parts}}",
+  "ruler": {
+    "label": "Target slider",
+    "hint": "Swipe left or right to change the target"
+  },
+  "body": {
+    "line": "Stride {{stride}} m, pace {{pace}} per km, weight {{weight}} kg.",
+    "measured": "Worked out from your workouts and profile.",
+    "estimated": "Still an estimate: enter your height and weight in Profile, and record a few walks or runs to make it fit better."
+  },
+  "start": {
+    "label": "Start from",
+    "here": "My location",
+    "home": "Home",
+    "markerHere": "Start · My location",
+    "markerHome": "Start · Home",
+    "locating": "Finding your location",
+    "needStart": "Pick a start point: allow location or set Home.",
+    "locateFailed": "Your location could not be read. Try again outdoors, or use Home.",
+    "retry": "Try reading the location again",
+    "center": "Center on the start point"
+  },
+  "permission": {
+    "title": "Allow location",
+    "body": "JoyoFit needs your location to make a loop from where you stand. The location is read on your phone; only the start point of a new route is sent to the routing service when you look for a route.",
+    "allow": "Continue",
+    "denied": "Location permission was denied. Open settings to allow it, or use your Home point.",
+    "openSettings": "Open settings"
+  },
+  "home": {
+    "set": "Set home",
+    "title": "Home point",
+    "saved": "Home is saved on this phone.",
+    "none": "No Home point yet. Save one so loops always start at your door, without needing location.",
+    "storedLocally": "The Home point is stored on this phone only and does not sync to the cloud.",
+    "useHere": "Use my location now",
+    "pickOnMap": "Pick on the map",
+    "pickHint": "Tap the map to place Home.",
+    "search": "Search a place",
+    "remove": "Remove Home",
+    "done": "Done",
+    "locateFailed": "Your location could not be read. Try again outdoors, or pick on the map."
+  },
+  "find": "Find a route",
+  "another": "Another route",
+  "finding": "Finding route {{index}} of {{count}}",
+  "findingHint": "Paths come from a map service, so this takes a few seconds.",
+  "stale": "The target or start point changed. Find a route again for {{target}}.",
+  "chip": {
+    "new": "{{pct}}% new streets",
+    "label": "{{pct}} percent of this route is on streets you have not been on"
+  },
+  "result": {
+    "summary": "{{distance}} loop, {{pct}}% on streets you have not painted",
+    "plain": "{{distance}} loop",
+    "noHistory": "No walk or run tracks of yours around here yet, so new streets cannot be counted.",
+    "lengthOff": "The length is {{percent}}% off the target; the routing service found nothing closer.",
+    "history_one": "{{count}} of your tracks shows on the map as a thin line.",
+    "history_other": "{{count}} of your tracks show on the map as thin lines."
+  },
+  "actions": {
+    "save": "Save",
+    "saving": "Saving",
+    "openSaved": "Open route",
+    "send": "Send to watch",
+    "begin": "Start",
+    "beginHint": "Record the {{sport}} on your phone. To follow the line on your watch, send the route to the watch first."
+  },
+  "push": {
+    "needConnect": "Connect your watch first to send a route.",
+    "openWatch": "Open Watch",
+    "openRoute": "Open the route to rename it"
+  },
+  "routeName": "Loop {{distance}} {{date}}",
+  "errors": {
+    "noRoad": "There is no street or path to walk on near this start point. Move Home to the nearest street, or try another place.",
+    "noLoop": "No good loop of this length was found from your start. Try another target or search again.",
+    "network": "The routing service could not be reached. Check your internet and try again.",
+    "save": "The route was not saved: {{message}}"
+  },
+  "privacy": "When you look for a route, the start point and points around it are sent to the OSRM routing service (FOSSGIS). Your workout tracks stay on your phone; new streets are counted here.",
+  "credit": "Road routing: OSRM / FOSSGIS"
+}

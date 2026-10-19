@@ -3,7 +3,8 @@
     "library": "Routes",
     "detail": "Route",
     "import": "Import route",
-    "draw": "Draw route"
+    "draw": "Draw route",
+    "loop": "Loop from home"
   },
   "hub": {
     "title": "Routes",
@@ -20,18 +21,20 @@
     "addTitle": "Add a route",
     "importFile": "Import GPX/TCX",
     "drawOnMap": "Draw on map",
+    "loopFromHome": "New loop from home",
     "fromWorkout": "From a workout",
     "listTitle": "Saved routes",
     "loading": "Opening your routes",
     "loadFailed": "Couldn't read your routes: {{message}}",
     "pickFailed": "Couldn't pick the file: {{message}}",
     "emptyTitle": "No routes yet",
-    "emptyDescription": "Keep routes here and send them to your watch to see the route line and your position on outdoor runs, rides and walks. There are four ways to add one:",
+    "emptyDescription": "Keep routes here and send them to your watch to see the route line and your position on outdoor runs, rides and walks. There are five ways to add one:",
     "ways": {
       "w1": "Pick a GPX or TCX file from your phone with Import GPX/TCX.",
       "w2": "Open a GPX or TCX file from Strava, Garmin, Komoot or another app, then choose Share or Open with JoyoFit.",
       "w3": "Draw your own route on the map with Draw on map.",
-      "w4": "Reuse the route of a workout your watch recorded with From a workout."
+      "w4": "Reuse the route of a workout your watch recorded with From a workout.",
+      "w5": "Make a new loop from your door with New loop from home: pick steps, distance, time or kcal, and JoyoFit finds streets you have not walked."
     },
     "neverSent": "Never sent to the watch",
     "lastSent": "Last sent to the watch {{date}}",

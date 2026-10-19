@@ -21,7 +21,7 @@ import { RouteThumbnail } from './RouteThumbnail';
 import { deleteRoute, listRouteCards, type RouteCard } from './routeStore';
 import { WorkoutPickerSheet } from './WorkoutPickerSheet';
 
-const WAY_KEYS = ['w1', 'w2', 'w3', 'w4'] as const;
+const WAY_KEYS = ['w1', 'w2', 'w3', 'w4', 'w5'] as const;
 
 function SourceTag({ source }: { source: SavedRoute['source'] }) {
   const { colors } = useTheme();
@@ -126,6 +126,7 @@ export function RouteLibraryScreen() {
       }}>
       <Section title={t('library.addTitle')} icon="add-circle" tint="workouts">
         <Button label={t('library.importFile')} icon="document-attach" variant="primary" onPress={() => void pickFile()} />
+        <Button label={t('library.loopFromHome')} icon="repeat" onPress={() => router.push('/routes/loop')} />
         <Button label={t('library.drawOnMap')} icon="create" onPress={() => router.push('/routes/draw')} />
         <Button label={t('library.fromWorkout')} icon="fitness" onPress={() => setPickerOpen(true)} />
       </Section>

@@ -1,0 +1,103 @@
+{
+  "mapLabel": "Peta loop baru dari titik awalmu",
+  "preparing": "Menyiapkan peta",
+  "unavailable": "Peta butuh versi JoyoFit yang terbaru",
+  "mapFailed": "Peta belum bisa dimuat, cek internetmu.",
+  "activity": {
+    "walk": "Jalan",
+    "run": "Lari"
+  },
+  "mode": {
+    "steps": "Langkah",
+    "distance": "Jarak",
+    "time": "Waktu",
+    "kcal": "Kalori"
+  },
+  "unit": {
+    "steps": "langkah",
+    "distance": "km",
+    "time": "menit",
+    "kcal": "kcal"
+  },
+  "approx": "≈ {{parts}}",
+  "ruler": {
+    "label": "Penggeser target",
+    "hint": "Geser ke kiri atau kanan untuk mengubah target"
+  },
+  "body": {
+    "line": "Langkah {{stride}} m, tempo {{pace}} per km, berat {{weight}} kg.",
+    "measured": "Dihitung dari latihan dan profilmu.",
+    "estimated": "Masih perkiraan: isi tinggi dan berat di Profil, dan rekam beberapa jalan atau lari supaya lebih pas."
+  },
+  "start": {
+    "label": "Mulai dari",
+    "here": "Lokasiku",
+    "home": "Rumah",
+    "markerHere": "Start · Lokasiku",
+    "markerHome": "Start · Rumah",
+    "locating": "Mencari lokasimu",
+    "needStart": "Pilih titik awal: izinkan lokasi atau atur Rumah.",
+    "locateFailed": "Lokasimu belum terbaca. Coba lagi di tempat terbuka, atau pakai Rumah.",
+    "retry": "Coba baca lokasi lagi",
+    "center": "Pusatkan ke titik awal"
+  },
+  "permission": {
+    "title": "Izinkan lokasi",
+    "body": "JoyoFit butuh lokasimu untuk membuat loop dari tempatmu berdiri. Lokasi dibaca di ponsel; titik awal rute baru dikirim ke layanan rute saat kamu mencari rute.",
+    "allow": "Lanjut",
+    "denied": "Izin lokasi ditolak. Buka pengaturan untuk mengizinkannya, atau pakai titik Rumah.",
+    "openSettings": "Buka pengaturan"
+  },
+  "home": {
+    "set": "Atur rumah",
+    "title": "Titik Rumah",
+    "saved": "Rumah sudah tersimpan di ponsel ini.",
+    "none": "Belum ada titik Rumah. Simpan satu supaya loop selalu mulai dari pintumu, tanpa perlu lokasi.",
+    "storedLocally": "Titik Rumah disimpan di ponsel ini saja dan tidak ikut sinkronisasi cloud.",
+    "useHere": "Pakai lokasiku sekarang",
+    "pickOnMap": "Pilih di peta",
+    "pickHint": "Ketuk peta untuk menaruh Rumah.",
+    "search": "Cari tempat",
+    "remove": "Hapus Rumah",
+    "done": "Selesai",
+    "locateFailed": "Lokasimu belum terbaca. Coba lagi di tempat terbuka, atau pilih di peta."
+  },
+  "find": "Cari rute",
+  "another": "Ganti rute",
+  "finding": "Mencari rute {{index}} dari {{count}}",
+  "findingHint": "Jalur dicari lewat layanan peta, jadi butuh beberapa detik.",
+  "stale": "Target atau titik awal berubah. Cari rute lagi untuk {{target}}.",
+  "chip": {
+    "new": "{{pct}}% jalan baru",
+    "label": "{{pct}} persen dari rute ini lewat jalan yang belum kamu lalui"
+  },
+  "result": {
+    "summary": "Loop {{distance}}, {{pct}}% lewat jalan yang belum kamu lalui",
+    "plain": "Loop {{distance}}",
+    "noHistory": "Belum ada jejak jalan atau lari kamu di sekitar sini, jadi kebaruan jalan belum bisa dihitung.",
+    "lengthOff": "Panjangnya {{percent}}% dari target; layanan rute tidak menemukan yang lebih pas.",
+    "history_other": "{{count}} jejak latihanmu tampil di peta sebagai garis tipis."
+  },
+  "actions": {
+    "save": "Simpan",
+    "saving": "Menyimpan",
+    "openSaved": "Buka rute",
+    "send": "Kirim ke jam",
+    "begin": "Mulai",
+    "beginHint": "Rekam {{sport}} di ponsel. Untuk mengikuti garisnya di jam, kirim rutenya ke jam dulu."
+  },
+  "push": {
+    "needConnect": "Hubungkan jam dulu untuk mengirim rute.",
+    "openWatch": "Buka Jam",
+    "openRoute": "Buka rute untuk ganti nama"
+  },
+  "routeName": "Loop {{distance}} {{date}}",
+  "errors": {
+    "noRoad": "Tidak ada jalan atau jalur yang bisa dilewati dekat titik awal ini. Geser Rumah ke jalan terdekat, atau coba dari tempat lain.",
+    "noLoop": "Belum ketemu loop yang pas untuk jarak ini dari titik awalmu. Coba target lain atau cari lagi.",
+    "network": "Layanan rute tidak bisa dijangkau sekarang. Cek internetmu lalu coba lagi.",
+    "save": "Rute belum tersimpan: {{message}}"
+  },
+  "privacy": "Saat mencari rute, titik awal dan titik-titik di sekitarnya dikirim ke layanan rute OSRM (FOSSGIS). Jejak latihanmu tetap di ponsel; kebaruan jalan dihitung di sini.",
+  "credit": "Rute jalan: OSRM / FOSSGIS"
+}

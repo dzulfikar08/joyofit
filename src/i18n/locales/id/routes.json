@@ -3,7 +3,8 @@
     "library": "Rute",
     "detail": "Rute",
     "import": "Impor rute",
-    "draw": "Gambar rute"
+    "draw": "Gambar rute",
+    "loop": "Loop dari rumah"
   },
   "hub": {
     "title": "Rute",
@@ -20,18 +21,20 @@
     "addTitle": "Tambah rute",
     "importFile": "Impor GPX/TCX",
     "drawOnMap": "Gambar di peta",
+    "loopFromHome": "Loop baru dari rumah",
     "fromWorkout": "Dari latihan",
     "listTitle": "Rute tersimpan",
     "loading": "Membuka daftar rute",
     "loadFailed": "Daftar rute tidak bisa dibaca: {{message}}",
     "pickFailed": "Berkas tidak bisa dipilih: {{message}}",
     "emptyTitle": "Belum ada rute",
-    "emptyDescription": "Simpan rute di sini, lalu kirim ke jam supaya garis rute dan posisimu tampil saat lari, bersepeda, atau jalan di luar ruangan. Ada empat cara menambah rute:",
+    "emptyDescription": "Simpan rute di sini, lalu kirim ke jam supaya garis rute dan posisimu tampil saat lari, bersepeda, atau jalan di luar ruangan. Ada lima cara menambah rute:",
     "ways": {
       "w1": "Pilih berkas GPX atau TCX dari ponselmu dengan Impor GPX/TCX.",
       "w2": "Buka berkas GPX atau TCX dari Strava, Garmin, Komoot, atau aplikasi lain, lalu pilih Bagikan atau Buka dengan JoyoFit.",
       "w3": "Gambar rute sendiri di peta dengan Gambar di peta.",
-      "w4": "Pakai rute dari latihan yang pernah direkam jam kamu dengan Dari latihan."
+      "w4": "Pakai rute dari latihan yang pernah direkam jam kamu dengan Dari latihan.",
+      "w5": "Buat loop baru dari pintumu dengan Loop baru dari rumah: pilih langkah, jarak, waktu, atau kalori, dan JoyoFit mencari jalan yang belum kamu lalui."
     },
     "neverSent": "Belum pernah dikirim ke jam",
     "lastSent": "Terakhir dikirim ke jam {{date}}",

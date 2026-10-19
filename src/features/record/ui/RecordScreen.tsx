@@ -1,4 +1,4 @@
-import { Stack, useNavigation, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { CommonActions } from 'expo-router/react-navigation';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -37,7 +37,9 @@ export function RecordScreen() {
   const { settings } = useStrava();
   const stravaAvailable = settings.connectedAt !== null;
 
-  const [sport, setSport] = useState<ManualSport>('run');
+  const { sport: sportParam } = useLocalSearchParams<{ sport?: string }>();
+  // The loop planner opens the recorder with the activity of the loop; anything else starts on a run.
+  const [sport, setSport] = useState<ManualSport>(sportParam === 'walk' ? 'walk' : 'run');
   const [dialog, setDialog] = useState<Dialog>(null);
   const [strava, setStrava] = useState(true);
   const [saveError, setSaveError] = useState<string | null>(null);

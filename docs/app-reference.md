@@ -430,6 +430,8 @@ instructions are sent. The P2P push is native (`modules/huawei-wear`, `HuaweiWea
   `.gpx`/`.tcx` name; iOS declares `com.joyodigitama.joyofit.gpx` and `.tcx`; `src/features/sharedfile/` classifies by name,
   MIME type or the first 1 KB), Gambar di peta (`src/features/routes/map/`, OpenFreeMap tiles, FOSSGIS OSRM, Open-Meteo
   elevation), Dari latihan (GPS rows of a stored workout; also a button on the workout screen).
+  Loop baru dari rumah (`src/features/loops/`, [loops.md](loops.md)): a dotted round trip of a chosen number of steps, kilometres,
+  minutes or kcal from the phone's position or a saved Home point, on streets the person has not walked.
 - **Parsers.** `gpx.ts` (track, else `rte`), `tcx.ts` (course, else activity), on a small tolerant scanner (`xml.ts`, no
   dependency, no DTD, namespaces and CDATA handled). Points without a position or at 0,0 and consecutive repeats are dropped; fewer
   than 2 points is an error. Fixtures: `routeFixtures.ts` (Strava, Garmin Connect with extensions, planned route, TCX course and activity).

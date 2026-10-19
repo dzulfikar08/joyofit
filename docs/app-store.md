@@ -103,7 +103,7 @@ Contact: Dzulfikar Ats Tsauri, +6285156160345, dzulfikar@joyorogo.com. No demo a
 ## App Privacy (published)
 
 Collected, all for App Functionality only, no tracking: Name, Email Address, User ID, Device ID (the watch's Bluetooth address), Health, Fitness, Precise Location (workout GPS tracks): linked to the user, and only after the user signs in to the optional JoyoRogo cloud.
-Coarse Location (weather position rounded to about 1 km, sent to Open-Meteo): not linked. The optional AI connection (JoyoRogo Pro; Claude, ChatGPT or another MCP app the user connects, read-only, only when the user asks a question there, never GPS routes or Strava data) lets the AI provider the user chose read their diary, weight, workouts, sleep and recovery data: decide in App Store Connect whether the label needs a third-party row for it [INFERENCE: not checked]. Apple Health data is written only and never read, so it is not a collected row.
+Precise Location (the start point and nearby waypoints of a loop route, sent to the FOSSGIS OSRM routing service only when the user taps Cari rute in Routes, Loop baru dari rumah; not stored by us): not linked, App Functionality, no tracking. Coarse Location (weather position rounded to about 1 km, sent to Open-Meteo): not linked. The optional AI connection (JoyoRogo Pro; Claude, ChatGPT or another MCP app the user connects, read-only, only when the user asks a question there, never GPS routes or Strava data) lets the AI provider the user chose read their diary, weight, workouts, sleep and recovery data: decide in App Store Connect whether the label needs a third-party row for it [INFERENCE: not checked]. Apple Health data is written only and never read, so it is not a collected row.
 
 ## Family monitoring (disclosure checklist)
 

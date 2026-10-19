@@ -21,15 +21,22 @@ function coordinateText(value: number): string {
 }
 
 /** The "driving" in the path is right for the foot and bike instances: it is the name of the profile they all share. */
-export function routeUrl(profile: RoutingProfile, from: LatLon, to: LatLon): string {
-  const path = `${coordinateText(from.lon)},${coordinateText(from.lat)};${coordinateText(to.lon)},${coordinateText(to.lat)}`;
+export function routeViaUrl(profile: RoutingProfile, waypoints: readonly LatLon[]): string {
+  const path = waypoints.map((p) => `${coordinateText(p.lon)},${coordinateText(p.lat)}`).join(';');
   return `${ROUTING_BASE_URL}/routed-${profile}/route/v1/driving/${path}?overview=full&geometries=geojson`;
 }
 
+export function routeUrl(profile: RoutingProfile, from: LatLon, to: LatLon): string {
+  return routeViaUrl(profile, [from, to]);
+}
+
 /** Waypoints within about a metre of each other are the same request (5 decimals is 1.1 m). */
+export function routeViaCacheKey(profile: RoutingProfile, waypoints: readonly LatLon[]): string {
+  return `${profile}:${waypoints.map((p) => `${p.lat.toFixed(5)},${p.lon.toFixed(5)}`).join('>')}`;
+}
+
 export function routeCacheKey(profile: RoutingProfile, from: LatLon, to: LatLon): string {
-  const round = (p: LatLon) => `${p.lat.toFixed(5)},${p.lon.toFixed(5)}`;
-  return `${profile}:${round(from)}>${round(to)}`;
+  return routeViaCacheKey(profile, [from, to]);
 }
 
 function isCoordinatePair(value: unknown): value is [number, number] {
@@ -43,6 +50,30 @@ function isCoordinatePair(value: unknown): value is [number, number] {
     Math.abs(value[0]) <= 180 &&
     Math.abs(value[1]) <= 90
   );
+}
+
+/** A line through several waypoints and how far OSRM had to move each waypoint to reach a road. */
+export interface ViaRoute {
+  line: readonly LatLon[];
+  /** Metres from each requested waypoint to the road point OSRM used; as many entries as waypoints sent (empty when the answer has none). */
+  snapM: readonly number[];
+}
+
+function parseSnapDistances(body: unknown): number[] {
+  const waypoints = (body as { waypoints?: unknown }).waypoints;
+  if (!Array.isArray(waypoints)) return [];
+  const out: number[] = [];
+  for (const w of waypoints) {
+    const distance = (w as { distance?: unknown } | null)?.distance;
+    if (typeof distance !== 'number' || !Number.isFinite(distance)) return [];
+    out.push(distance);
+  }
+  return out;
+}
+
+/** The line of `routes[0]` and the snap distance of each waypoint. Errors as `parseRouteResponse`. */
+export function parseViaResponse(body: unknown): ViaRoute {
+  return { line: parseRouteResponse(body), snapM: parseSnapDistances(body) };
 }
 
 /** The line of `routes[0]` as lat/lon points. Throws a `code` error when OSRM found no route and a `parse` error for any other shape. */
@@ -72,27 +103,34 @@ export interface RoutingClientOptions {
 export interface RoutingClient {
   /** The snapped line from `from` to `to`, both ends at the road. Rejects with a `RequestError`; an abort has kind `aborted`. */
   route(profile: RoutingProfile, from: LatLon, to: LatLon, signal?: AbortSignal): Promise<readonly LatLon[]>;
+  /** One line through all `waypoints` in order (at least two), in a single request. Same queue, cache and errors as `route`. */
+  routeVia(profile: RoutingProfile, waypoints: readonly LatLon[], signal?: AbortSignal): Promise<ViaRoute>;
 }
 
 export function createRoutingClient(options: RoutingClientOptions): RoutingClient {
   const throttle = options.throttle ?? createThrottle({ minIntervalMs: ROUTING_MIN_INTERVAL_MS });
   const timeoutMs = options.timeoutMs ?? ROUTING_TIMEOUT_MS;
   const headers = { 'User-Agent': options.userAgent, Referer: options.referer, Accept: 'application/json' };
-  const cache = new Map<string, readonly LatLon[]>();
+  const cache = new Map<string, ViaRoute>();
+
+  async function routeVia(profile: RoutingProfile, waypoints: readonly LatLon[], signal?: AbortSignal): Promise<ViaRoute> {
+    const key = routeViaCacheKey(profile, waypoints);
+    const hit = cache.get(key);
+    if (hit) return hit;
+
+    const answer = await throttle(
+      async () => parseViaResponse(await getJson(options.fetch, routeViaUrl(profile, waypoints), { headers, timeoutMs, signal })),
+      signal,
+    );
+    if (cache.size >= MAX_CACHED_LEGS) cache.delete(cache.keys().next().value as string);
+    cache.set(key, answer);
+    return answer;
+  }
 
   return {
     async route(profile, from, to, signal) {
-      const key = routeCacheKey(profile, from, to);
-      const hit = cache.get(key);
-      if (hit) return hit;
-
-      const line = await throttle(
-        async () => parseRouteResponse(await getJson(options.fetch, routeUrl(profile, from, to), { headers, timeoutMs, signal })),
-        signal,
-      );
-      if (cache.size >= MAX_CACHED_LEGS) cache.delete(cache.keys().next().value as string);
-      cache.set(key, line);
-      return line;
+      return (await routeVia(profile, [from, to], signal)).line;
     },
+    routeVia,
   };
 }
