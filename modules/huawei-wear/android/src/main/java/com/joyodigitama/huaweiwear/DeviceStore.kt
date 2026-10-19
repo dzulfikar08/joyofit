@@ -128,10 +128,23 @@ internal class DeviceIdentity(
     prefs.edit().putBoolean(KEY_BONDED, true).apply()
   }
 
+  /**
+   * The link that last opened and authenticated for this watch, or null until a connect worked. It outranks the model table when the
+   * next connect picks its link ([TransportChoice]). Kept with the identity, so forgetting the watch forgets it too.
+   */
+  var linkTransport: ModelTransport?
+    get() = prefs.getString(KEY_LINK, null)?.let { stored -> ModelTransport.values().firstOrNull { it.name == stored } }
+    set(value) {
+      val editor = prefs.edit()
+      if (value == null) editor.remove(KEY_LINK) else editor.putString(KEY_LINK, value.name)
+      editor.apply()
+    }
+
   private companion object {
     const val KEY_AUTH = "authkey"
     const val KEY_MAC = "fake_mac_address"
     const val KEY_ANDROID_ID = "fake_android_id"
     const val KEY_BONDED = "bonded"
+    const val KEY_LINK = "link_transport"
   }
 }

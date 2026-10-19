@@ -15,16 +15,20 @@ internal class SystemPaired(val address: String, val name: String?)
  * never has to be found by a scan, which a watch that holds a phone does not answer.
  */
 internal object WatchListing {
+  /** [linkOf] is the link that last worked for an address ([DeviceIdentity.linkTransport]); it outranks the model table in `classic`. */
   fun build(
     systemPaired: List<SystemPaired>,
     current: DiscoveredDevice?,
     remembered: SystemPaired?,
     scanNames: Map<String, String>,
+    linkOf: (String) -> ModelTransport? = { null },
   ): List<DiscoveredDevice> {
     val rows = LinkedHashMap<String, DiscoveredDevice>()
 
     fun row(address: String, name: String?, paired: Boolean): DiscoveredDevice {
       val match = WatchModels.match(name)
+      // Android lists every paired device (earphones, a car): only a watch has a remembered link to look up.
+      val link = if (match.connectable) linkOf(address) else null
       return DiscoveredDevice(
         address = address,
         name = name ?: address,
@@ -32,7 +36,7 @@ internal object WatchListing {
         support = match.support.wire,
         reason = match.reason,
         paired = paired,
-        classic = match.model?.let { it.transport == ModelTransport.BR },
+        classic = TransportChoice.known(match, link)?.let { it == ModelTransport.BR },
       )
     }
 
@@ -69,19 +73,20 @@ internal object PairingState {
       "Pair it in Android's Bluetooth settings, then connect again; JoyoFit's own keys for the watch are kept"
 
   /**
-   * True for a Classic model that Android has no pairing with. A connect to it makes Android start a pairing (a system dialog, which the
-   * watch has to accept), so only a person who opened the connect may make one; automatic reconnects leave it alone. A band is never
-   * paired in Android, an unreadable state is no evidence, and a name in no list is not known to be Classic.
+   * True when the watch is known to use a Classic link ([transport], from [TransportChoice.known]) and Android has no pairing with it. A
+   * connect to it makes Android start a pairing (a system dialog, which the watch has to accept), so only a person who opened the connect
+   * may make one; automatic reconnects leave it alone. A band is never paired in Android, an unreadable state is no evidence, and a name in
+   * no list that has never connected is not known to be Classic (null).
    */
-  fun missing(model: ModelMatch, bondState: Int?): Boolean =
-    model.model?.transport == ModelTransport.BR && bondState == BluetoothDevice.BOND_NONE
+  fun missing(transport: ModelTransport?, bondState: Int?): Boolean =
+    transport == ModelTransport.BR && bondState == BluetoothDevice.BOND_NONE
 
   /**
    * [failure] of a connect to a Classic watch, as ERR_NOT_PAIRED when Android had no pairing left after it. Only a connect that never
    * opened the link is rewritten (ERR_CONNECT_FAILED, ERR_TIMEOUT); a watch that connected and then failed keeps its own error.
    */
-  fun explain(failure: WearException, model: ModelMatch, bondState: Int?): WearException {
-    if (!missing(model, bondState)) return failure
+  fun explain(failure: WearException, transport: ModelTransport?, bondState: Int?): WearException {
+    if (!missing(transport, bondState)) return failure
     if (failure.errorCode != ErrorCodes.CONNECT_FAILED && failure.errorCode != ErrorCodes.TIMEOUT) return failure
     return WearException(ErrorCodes.NOT_PAIRED, "$NOT_PAIRED_NOTE. ${failure.message}", failure)
   }

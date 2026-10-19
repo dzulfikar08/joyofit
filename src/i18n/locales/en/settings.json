@@ -271,7 +271,17 @@
     "active": "Active",
     "pausedNotice": "Auto-reconnect paused. Connect again to resume.",
     "interval": "Sync interval",
-    "details": "Keeps the link to the watch up while the app is closed."
+    "details": "Keeps the link to the watch up while the app is closed.",
+    "limits": {
+      "title": "Battery and background",
+      "battery": "Battery optimization",
+      "exempt": "JoyoFit is exempt",
+      "limited": "Android may limit JoyoFit",
+      "restriction": "Background restriction",
+      "restricted": "Restricted",
+      "notRestricted": "Not restricted",
+      "ok": "Android will not stop JoyoFit when the screen is off."
+    }
   },
   "appleImport": {
     "title": "Import history from Apple Health",

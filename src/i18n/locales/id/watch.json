@@ -81,6 +81,15 @@
       "reportHelp": "Kalau masih gagal, kirim laporan. Isinya log Bluetooth terakhir, tanpa alamat Bluetooth atau nomor seri.",
       "report": "Kirim laporan"
     },
+    "limits": {
+      "optimized": "Android bisa menghentikan JoyoFit saat layar mati atau aplikasi ditutup untuk menghemat baterai. Itu penyebab umum jam putus sendiri. Izinkan JoyoFit berjalan tanpa pembatasan baterai.",
+      "restricted": "Pemakaian baterai JoyoFit di latar belakang dibatasi (Restricted), jadi Android mematikannya saat layar mati dan jam putus. Buka pengaturan aplikasi, pilih Baterai, lalu Tanpa batasan.",
+      "vendor": "HP {{maker}} juga punya daftar aplikasi yang boleh jalan sendiri (auto-start). Aktifkan JoyoFit di sana, kalau tidak jam bisa putus walau pengaturan baterai sudah benar.",
+      "openBattery": "Buka pengaturan baterai",
+      "openAutoStart": "Buka auto-start",
+      "dismiss": "Tutup",
+      "error": "Layar pengaturan itu tidak bisa dibuka di HP ini. Buka Pengaturan, Aplikasi, JoyoFit, lalu Baterai."
+    },
     "status": {
       "linkA11y": "Status koneksi: {{label}}",
       "battery": "Baterai",

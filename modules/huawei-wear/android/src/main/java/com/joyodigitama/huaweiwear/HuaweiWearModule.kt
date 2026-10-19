@@ -173,6 +173,11 @@ class HuaweiWearModule : Module() {
       runtime().confirmBind(address)
     }
 
+    // The person asked for the next connect(address) (not the automatic reconnect): it may open Android's pairing when it has to try the other link. Single use.
+    Function("confirmPairing") { address: String ->
+      runtime().confirmPairing(address)
+    }
+
     AsyncFunction("startScan") {
       runtime().link.startScan()
     }
@@ -240,6 +245,19 @@ class HuaweiWearModule : Module() {
 
     Function("getBackgroundStatus") {
       runtime().backgroundStatus()
+    }
+
+    // Whether Android may stop the background service while the screen is off, and the screens that lift it (Watch tab and Settings).
+    Function("getBackgroundRestrictions") {
+      runtime().backgroundRestrictions()
+    }
+
+    AsyncFunction("openBatteryExemption") {
+      runtime().openBatteryExemption()
+    }
+
+    AsyncFunction("openAutoStartSettings") {
+      runtime().openAutoStartSettings()
     }
 
     AsyncFunction("setSyncIntervalMinutes") { minutes: Int ->

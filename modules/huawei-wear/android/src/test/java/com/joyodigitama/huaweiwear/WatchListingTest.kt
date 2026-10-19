@@ -67,6 +67,23 @@ class WatchListingTest {
   }
 
   @Test
+  fun theLinkARememberedWatchWorkedOverOutranksTheModelTableInTheClassicFlag() {
+    // A Band 11 Pro is an LE model in the table; this phone's one connected over RFCOMM, so its row is a Classic watch.
+    val proName = "HUAWEI Band 11 Pro-107"
+    val link = { address: String -> if (address == band) ModelTransport.BR else null }
+    val row = WatchListing.build(emptyList(), null, SystemPaired(band, proName), emptyMap(), link).single()
+    assertEquals("Huawei Band 11 Pro", row.model)
+    assertEquals(true, row.classic)
+    assertEquals(false, WatchListing.build(emptyList(), null, SystemPaired(band, proName), emptyMap()).single().classic)
+  }
+
+  @Test
+  fun aRememberedLinkTellsAnUnnamedWatchWhichLinkItUses() {
+    val link = { _: String -> ModelTransport.BR }
+    assertEquals(true, WatchListing.build(emptyList(), null, SystemPaired(gt6, null), emptyMap(), link).single().classic)
+  }
+
+  @Test
   fun aRememberedWatchWithoutANameKeepsItsAddressAndStaysConnectable() {
     val row = rows(remembered = SystemPaired(gt6, null)).single()
     assertEquals(gt6, row.name)
@@ -126,9 +143,10 @@ class WatchListingTest {
 }
 
 class PairingStateTest {
-  private val classic = WatchModels.match("HUAWEI WATCH GT 6-1A2")
-  private val band = WatchModels.match("HUAWEI Band 9-ABC")
-  private val unknown = WatchModels.match(null)
+  // The link each case is known to use ([TransportChoice.known]): a listed model's own, nothing for a name in no list.
+  private val classic = TransportChoice.known(WatchModels.match("HUAWEI WATCH GT 6-1A2"), null)
+  private val band = TransportChoice.known(WatchModels.match("HUAWEI Band 9-ABC"), null)
+  private val unknown = TransportChoice.known(WatchModels.match(null), null)
 
   private fun failure(code: String) = WearException(code, "native detail")
 
@@ -172,7 +190,7 @@ class PairingStateTest {
     val original = failure(ErrorCodes.CONNECT_FAILED)
     assertSame(original, PairingState.explain(original, band, BluetoothDevice.BOND_NONE))
     assertSame(original, PairingState.explain(original, unknown, BluetoothDevice.BOND_NONE))
-    assertNotNull(classic.model)
+    assertNotNull(classic)
   }
 
   @Test
@@ -184,6 +202,18 @@ class PairingStateTest {
     assertFalse(PairingState.missing(classic, null))
     assertFalse("a band is never paired in Android", PairingState.missing(band, BluetoothDevice.BOND_NONE))
     assertFalse("an unlisted name is not known to be Classic", PairingState.missing(unknown, BluetoothDevice.BOND_NONE))
+  }
+
+  @Test
+  fun theLinkARememberedConnectUsedDecidesNotTheModelTable() {
+    // A band the table lists as LE that connected over RFCOMM is a Classic watch to Android's pairing, and the reverse.
+    val rememberedClassicBand = TransportChoice.known(WatchModels.match("HUAWEI Band 11 Pro-107"), ModelTransport.BR)
+    assertTrue(PairingState.missing(rememberedClassicBand, BluetoothDevice.BOND_NONE))
+    assertFalse(PairingState.missing(rememberedClassicBand, BluetoothDevice.BOND_BONDED))
+    val rememberedLeUnnamed = TransportChoice.known(WatchModels.match(null), ModelTransport.LE)
+    assertFalse(PairingState.missing(rememberedLeUnnamed, BluetoothDevice.BOND_NONE))
+    val rememberedClassicUnnamed = TransportChoice.known(WatchModels.match(null), ModelTransport.BR)
+    assertTrue("an unlisted name that connected over RFCOMM is known to be Classic", PairingState.missing(rememberedClassicUnnamed, BluetoothDevice.BOND_NONE))
   }
 }
 

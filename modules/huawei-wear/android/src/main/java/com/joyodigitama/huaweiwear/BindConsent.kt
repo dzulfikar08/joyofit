@@ -100,12 +100,19 @@ internal fun connectFailure(t: Throwable, closeCause: WearException?): WearExcep
  */
 internal fun stateError(failure: WearException): String? = if (failure.errorCode == ErrorCodes.BIND_CONFIRMATION) null else failure.message
 
-/** True when a Classic RFCOMM failure is worth moving the same connect to Bluetooth LE: not a permission problem, which LE shares. */
-internal fun shouldFallBackToLe(t: Throwable): Boolean =
+/** True when the failure of one link is worth moving the same connect to the other one: not a permission problem, which both links share, and not a cancel. */
+internal fun shouldTryOtherLink(t: Throwable): Boolean =
   t !is CancellationException && t !is SecurityException && !(t is WearException && t.errorCode == ErrorCodes.BLUETOOTH_PERMISSION)
 
 /** The LE failure after RFCOMM failed first: the LE code stays, the message also says what Classic did. */
 internal fun afterRfcommFailure(le: WearException, rfcomm: Throwable): WearException {
   val rfcommText = rfcomm.message ?: rfcomm.javaClass.simpleName
   return WearException(le.errorCode, "${le.message} (Bluetooth Classic RFCOMM had failed first: $rfcommText)", le, le.statusCode)
+}
+
+/** The RFCOMM failure after LE failed first: the LE code and text stay (LE was the link the watch's model asked for), the message also says what Classic did. */
+internal fun afterLeFailure(le: Throwable, rfcomm: Throwable): WearException {
+  val first = le as? WearException ?: WearException(ErrorCodes.CONNECT_FAILED, "Connect failed: ${le.message ?: le.javaClass.simpleName}", le)
+  val rfcommText = rfcomm.message ?: rfcomm.javaClass.simpleName
+  return WearException(first.errorCode, "${first.message} (Bluetooth Classic RFCOMM was tried next and failed too: $rfcommText)", first, first.statusCode)
 }

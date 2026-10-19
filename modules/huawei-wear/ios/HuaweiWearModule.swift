@@ -184,6 +184,9 @@ public final class HuaweiWearModule: Module {
             runtime.confirmBind(address)
         }
 
+        // Android only: a connect that may open Android's Bluetooth pairing when it moves from LE to Classic. iOS has no Classic link and no such pairing.
+        Function("confirmPairing") { (address: String) -> Void in }
+
         // The Android Bluetooth LE scan button. iOS lists nearby watches by itself (getBondedDevices / refreshBondedDevices), so these three
         // exist only to keep the JS API the same: the events never fire, the list is empty and starting a scan is unsupported.
         rejects("startScan")
@@ -251,6 +254,9 @@ public final class HuaweiWearModule: Module {
         Function("getBackgroundStatus") { () -> [String: Any] in
             runtime.backgroundStatus()
         }
+
+        // Android's battery optimization and a maker's auto-start list have no iOS counterpart: nothing limits the app that way, nothing to open.
+        Function("getBackgroundRestrictions") { () -> [String: Any]? in nil }
 
         AsyncFunction("setSyncIntervalMinutes") { (minutes: Int) async throws -> Void in
             try await wearCall { try runtime.setSyncInterval(minutes) }
@@ -596,6 +602,8 @@ public final class HuaweiWearModule: Module {
         // MARK: commands that would reach the watch or Android-only screens: ERR_UNSUPPORTED
 
         rejects("openNotificationAccess")
+        rejects("openBatteryExemption")
+        rejects("openAutoStartSettings")
         rejects("setNotificationAppEnabled", String.self, Bool.self)
         rejects("parseWatchfacePackage", String.self, Bool?.self)
         rejects("deleteLocalWatchfaceFile", String.self)

@@ -266,7 +266,17 @@
     "active": "Aktif",
     "pausedNotice": "Sambung ulang otomatis dijeda. Hubungkan lagi untuk melanjutkan.",
     "interval": "Interval sinkron",
-    "details": "Menjaga koneksi ke jam tetap hidup saat aplikasi ditutup."
+    "details": "Menjaga koneksi ke jam tetap hidup saat aplikasi ditutup.",
+    "limits": {
+      "title": "Baterai dan latar belakang",
+      "battery": "Optimasi baterai",
+      "exempt": "JoyoFit dikecualikan",
+      "limited": "Android bisa membatasi JoyoFit",
+      "restriction": "Pembatasan latar belakang",
+      "restricted": "Dibatasi (Restricted)",
+      "notRestricted": "Tidak dibatasi",
+      "ok": "Android tidak akan menghentikan JoyoFit saat layar mati."
+    }
   },
   "appleImport": {
     "title": "Impor riwayat dari Apple Health",

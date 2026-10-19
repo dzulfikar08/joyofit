@@ -24,6 +24,7 @@ import { pushLog } from '@/state/logStore';
 import { setDisconnectedByUser, useAutoReconnect, useAutoReconnectControl } from '@/state/useAutoReconnect';
 import {
   HuaweiWear,
+  hasNative,
   type DeviceInfo,
   type FitnessTotals,
   type LinkState,
@@ -187,6 +188,8 @@ export function WatchProvider({ children }: { children: ReactNode }) {
       setActiveAddress(address);
       connectInFlight.current = true;
       try {
+        // A tap may open Android's pairing when the watch has to be tried over the other link (a Band whose table entry is wrong); the automatic reconnect never does.
+        if (!silent && hasNative('confirmPairing')) HuaweiWear.confirmPairing(address);
         const info = await HuaweiWear.connect(address);
         setDevice(info);
         setBattery(info.batteryLevel);

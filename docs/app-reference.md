@@ -11,6 +11,7 @@ Detail for the JoyoFit features that live on the phone: permissions, Health Conn
 | `POST_NOTIFICATIONS` | show the service notification (runtime prompt on Android 13+) |
 | `RECEIVE_BOOT_COMPLETED` | restart background mode after a reboot or app update |
 | `WAKE_LOCK` | keep the CPU awake while a reconnect or sync runs in the background |
+| `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | sideload APK only: the system's "allow JoyoFit to ignore battery optimization" dialog, opened from the battery notice on the Watch tab or Settings → Sync, so Android does not stop the watch link with the screen off. The Google Play build does not have it and opens Android's battery optimization list instead |
 | Notification access (special, granted in Android settings) | read posted notifications to forward them |
 | `VIBRATE` | find my phone vibration |
 | `READ_PHONE_STATE`, `READ_CALL_LOG`, `READ_CONTACTS` | show incoming calls on the watch: call state, the caller's number, the contact name (runtime prompt from Settings; only the first is required). The Google Play build has only `READ_PHONE_STATE`: the watch shows "Incoming call" without a caller |

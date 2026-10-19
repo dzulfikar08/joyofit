@@ -167,6 +167,29 @@ export interface BackgroundStatus {
   syncIntervalMinutes: number;
 }
 
+/** The phone makers whose Android keeps its own list of apps allowed to start by themselves (`BackgroundRestrictions.autoStartVendor`). */
+export type AutoStartVendor = 'transsion' | 'xiaomi' | 'oppo' | 'vivo';
+
+/**
+ * Whether Android may stop the background service while the screen is off, which drops the watch link (`getBackgroundRestrictions`,
+ * Android only). Exempt and unrestricted means the phone leaves the connection alone.
+ */
+export interface BackgroundRestrictions {
+  /** JoyoFit is on Android's battery optimization exemption list (Doze and App Standby leave its connection alone). */
+  ignoringBatteryOptimizations: boolean;
+  /** The app is under "Restricted" background use (Android 9+): it may not run in the background at all. */
+  backgroundRestricted: boolean;
+  /** `Build.MANUFACTURER`, for display and the support report. */
+  manufacturer: string;
+  /** The group of makers (Infinix/Tecno/itel, Xiaomi, OPPO/realme, vivo) whose auto-start list `openAutoStartSettings` tries to open; null for any other maker. */
+  autoStartVendor: AutoStartVendor | null;
+  /**
+   * The build may show Android's own "allow" dialog for the exemption (sideload APK). The Google Play build cannot (Play does not allow the
+   * prompt for an app like this one): `openBatteryExemption` opens Android's battery optimization list instead.
+   */
+  canRequestDirectly: boolean;
+}
+
 export interface NotificationAccessStatus {
   /** The user granted notification access to this app in Android settings. */
   granted: boolean;

@@ -11,6 +11,7 @@ import { Divider, Screen, Section } from '@/components/Screen';
 import { isIos } from '@/components/IosUnavailable';
 import { AvailableWatchesSection } from '@/features/device/AvailableWatchesSection';
 import { AgpsSection } from '@/features/device/AgpsSection';
+import { BatteryHelp } from '@/features/device/BatteryHelp';
 import { BindConfirmDialog } from '@/features/device/BindConfirmDialog';
 import { FindWatchSection } from '@/features/device/FindWatchSection';
 import { GuideLink } from '@/features/device/GuideLink';
@@ -148,6 +149,7 @@ function WatchHub() {
       refresh={{ refreshing: bonded.loading, onRefresh: () => void bonded.refresh(), enabled: granted }}>
       <WatchStatusCard />
       <SilentWatchHelp />
+      <BatteryHelp />
       <WatchesSection onAdd={addWatch} />
       <SensorsSection />
       {/* Connected, the list is only needed to disconnect or switch, so the watch's own pages come first. */}

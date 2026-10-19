@@ -13,6 +13,8 @@ import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import java.util.concurrent.ConcurrentHashMap
 import android.os.Build
+import android.os.PowerManager
+import android.os.SystemClock
 import java.io.IOException
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
@@ -48,6 +50,9 @@ internal class WearLink(
   private val appContext = context.applicationContext
   private val store = DeviceStore(appContext)
 
+  /** Links that ended on their own or never opened, kept across restarts for the support report (the rolling log only holds the last 1000 lines). */
+  val disconnects = DisconnectLog(appContext.getSharedPreferences("joyofit_disconnects", Context.MODE_PRIVATE))
+
   /**
    * Extra steps of an activity sync that other features add (the P2P health dictionary sync): run under the operation lock after the
    * workouts, each one logged and isolated, so a failing one never fails the sync whose rows are already committed.
@@ -77,7 +82,16 @@ internal class WearLink(
   @Volatile
   private var state = LinkState.DISCONNECTED
 
-  private inner class Connection(val address: String, val device: BluetoothDevice, adapter: BluetoothAdapter, val model: ModelMatch) {
+  private inner class Connection(
+    val address: String,
+    val device: BluetoothDevice,
+    private val adapter: BluetoothAdapter,
+    val model: ModelMatch,
+    /** The link that last worked for this watch ([DeviceIdentity.linkTransport]); null until one did. */
+    val remembered: ModelTransport?,
+    /** The person asked for this very connect and agreed to a Bluetooth pairing if Android needs one ([WearRuntime.confirmPairing]); never the background loop or a visit. */
+    val allowPairing: Boolean,
+  ) {
     val closed = AtomicBoolean(false)
     val operationLock = Mutex()
 
@@ -95,10 +109,23 @@ internal class WearLink(
     val ready = CompletableDeferred<Map<String, Any?>>()
     lateinit var session: HuaweiSession
 
-    /** A listed model uses its Gadgetbridge coordinator's link; for other names Android's view of the device decides. */
+    /**
+     * The link this connect opens first ([TransportChoice.first]): what worked for this watch before, else the link of its model's
+     * Gadgetbridge coordinator, else (a name in no list) what Android knows of the device.
+     */
+    val firstTransport: ModelTransport = TransportChoice.first(model, isLeOnly(device), remembered, settings.forceBle)
+
     @Volatile
-    var transportKind: ModelTransport = if (settings.forceBle) ModelTransport.LE else model.transportFor(isLeOnly(device))
+    var transportKind: ModelTransport = firstTransport
       private set
+
+    /** The link this connect left because it did not open ([switchTo]); null while it is still on [firstTransport]. */
+    var movedFrom: ModelTransport? = null
+      private set
+
+    /** [SystemClock.elapsedRealtime] when the connect completed; 0 until then. */
+    @Volatile
+    var connectedAtMs: Long = 0
 
     /** Every event of an LE link is also written to logcat under the JoyoFitBle tag; RFCOMM links log as before. */
     var linkEvents: WearEvents = if (transportKind == ModelTransport.LE) LogcatMirrorEvents(events) else events
@@ -108,7 +135,7 @@ internal class WearLink(
     var deviceType: HuaweiDeviceType = model.deviceType(transportKind)
       private set
 
-    var transport: WatchTransport = openTransport(adapter)
+    var transport: WatchTransport = openTransport()
       private set
 
     init {
@@ -116,15 +143,17 @@ internal class WearLink(
     }
 
     /**
-     * Moves a Classic watch whose RFCOMM link did not open onto LE GATT (service 0xFE86), before any protocol traffic. Seen on
-     * the Fit 4 Pro after a phone's Classic pairing went stale: SDP fails (`SDP_CFG_FAILED`) while LE still answers.
+     * Moves the connect onto [next] because the first link did not open, before any protocol traffic. Classic to LE: seen on the Fit 4 Pro
+     * after a phone's Classic pairing went stale, SDP fails (`SDP_CFG_FAILED`) while LE still answers. LE to Classic: seen on a Band 11
+     * Pro that the model table lists as LE and that only answers over RFCOMM ([TransportChoice.fallback]).
      */
-    fun fallBackToLe() {
+    fun switchTo(next: ModelTransport) {
       transport.close()
-      transportKind = ModelTransport.LE
-      linkEvents = LogcatMirrorEvents(events)
-      deviceType = model.deviceType(ModelTransport.LE)
-      transport = openTransport(null)
+      movedFrom = transportKind
+      transportKind = next
+      linkEvents = if (next == ModelTransport.LE) LogcatMirrorEvents(events) else events
+      deviceType = model.deviceType(next)
+      transport = openTransport()
       bindSession()
     }
 
@@ -135,9 +164,9 @@ internal class WearLink(
       session.params.setAW(deviceType == HuaweiDeviceType.AW)
     }
 
-    private fun openTransport(adapter: BluetoothAdapter?): WatchTransport = when (transportKind) {
+    private fun openTransport(): WatchTransport = when (transportKind) {
       ModelTransport.BR -> RfcommTransport(
-        adapter = checkNotNull(adapter),
+        adapter = adapter,
         device = device,
         sdp = model.sdp,
         onData = { chunk -> session.onData(chunk) },
@@ -191,8 +220,9 @@ internal class WearLink(
   // Bluetooth access
 
   /**
-   * True when [rawAddress] is a Classic watch that Android has no pairing with ([PairingState.missing]). Connecting to it would make
-   * Android start a pairing, which only a connect the person opened may do; the background reconnect checks this first.
+   * True when [rawAddress] is a watch known to use a Classic link ([PairingState.missing]: its model's, or the one that worked for it) that
+   * Android has no pairing with. Connecting to it would make Android start a pairing, which only a connect the person opened may do;
+   * the background reconnect checks this first.
    */
   @SuppressLint("MissingPermission")
   fun needsPairing(rawAddress: String): Boolean {
@@ -204,7 +234,8 @@ internal class WearLink(
       return false
     }
     val device = adapter.getRemoteDevice(address)
-    return PairingState.missing(WatchModels.match(bondedName(device)), bondState(device))
+    val known = TransportChoice.known(WatchModels.match(bondedName(device)), store.forDevice(address).linkTransport)
+    return PairingState.missing(known, bondState(device))
   }
 
   /**
@@ -224,12 +255,12 @@ internal class WearLink(
             model = conn.model.model?.name,
             support = conn.model.support.wire,
             reason = conn.model.reason,
-            classic = conn.model.model?.let { it.transport == ModelTransport.BR },
+            classic = TransportChoice.known(conn.model, conn.remembered)?.let { it == ModelTransport.BR },
           )
         }
       }
       val remembered = settings.watchAddress?.let { SystemPaired(it, settings.watchName) }
-      return WatchListing.build(paired, linked, remembered, discoveredNames).map { it.toJs() }
+      return WatchListing.build(paired, linked, remembered, discoveredNames) { store.forDevice(it).linkTransport }.map { it.toJs() }
     } catch (e: SecurityException) {
       throw WearException(ErrorCodes.BLUETOOTH_PERMISSION, "BLUETOOTH_CONNECT permission denied: ${e.message}", e)
     }
@@ -378,9 +409,11 @@ internal class WearLink(
    * first bind with the watch (which replaces its current phone pairing); without it the connect stops with
    * ERR_BIND_CONFIRMATION before anything on the watch changes. Only the interactive connect the user confirmed passes true.
    * [remember] false is a visit to a watch that is not the one background mode follows ([BackgroundController]): it neither
-   * becomes the remembered watch nor touches its `device` row.
+   * becomes the remembered watch nor touches its `device` row. [allowPairing] is a connect the person asked for: the one kind that may
+   * try a Classic link the watch's model table does not list, which makes Android start a pairing when it holds none
+   * ([TransportChoice.fallback]). Neither the background loop nor an automatic reconnect passes it.
    */
-  suspend fun connect(rawAddress: String, allowFirstBind: Boolean = false, remember: Boolean = true): Map<String, Any?> {
+  suspend fun connect(rawAddress: String, allowFirstBind: Boolean = false, remember: Boolean = true, allowPairing: Boolean = false): Map<String, Any?> {
     stopScan()
     val address = rawAddress.trim().uppercase(Locale.ROOT)
     val adapter = requireAdapter()
@@ -407,7 +440,7 @@ internal class WearLink(
         }
       }
       if (joining == null) {
-        connection = prepare(address, adapter)
+        connection = prepare(address, adapter, allowPairing)
         lastAttemptName = bondedName(connection.device)
         lastAttemptTransport = connection.transportKind
         current = connection
@@ -433,7 +466,7 @@ internal class WearLink(
         null,
         null,
         "Connecting to $address \"${lastAttemptName ?: "no name"}\": ${model.model?.name ?: "unknown model"} (${model.support.wire}), " +
-          "$link${if (settings.forceBle) " (forced by the developer switch)" else ""}, encrypted ${model.crypted}, " +
+          "$link${linkReason(connection)}, encrypted ${model.crypted}, " +
           "Android pairing: ${PairingState.label(bondState(connection.device))}, " +
           "remembered ${settings.watchAddress.equals(address, ignoreCase = true)}" +
           if (allowFirstBind) ", first bind confirmed by the user" else "",
@@ -442,14 +475,25 @@ internal class WearLink(
       try {
         connection.transport.connect(Timeouts.CONNECT_MS)
       } catch (e: Exception) {
-        if (connection.transportKind != ModelTransport.BR || connection.closed.get() || !shouldFallBackToLe(e)) throw e
-        events.log(LogDirection.ERROR, null, null, null, "RFCOMM did not open (${e.message}); trying Bluetooth LE GATT")
-        connection.fallBackToLe()
-        synchronized(lock) { lastAttemptTransport = ModelTransport.LE }
+        val first = connection.transportKind
+        val next = TransportChoice.fallback(
+          first = first,
+          remembered = connection.remembered,
+          forceBle = settings.forceBle,
+          bonded = bondState(connection.device) == BluetoothDevice.BOND_BONDED,
+          allowPairing = connection.allowPairing,
+          failure = e,
+        )
+        if (next == null || connection.closed.get()) throw e
+        val firstName = if (first == ModelTransport.BR) "RFCOMM" else "Bluetooth LE GATT"
+        val nextName = if (next == ModelTransport.BR) "Bluetooth Classic RFCOMM" else "Bluetooth LE GATT"
+        events.log(LogDirection.ERROR, null, null, null, "$firstName did not open (${e.message}); trying $nextName")
+        connection.switchTo(next)
+        synchronized(lock) { lastAttemptTransport = next }
         try {
-          connection.transport.connect(Timeouts.LE_AFTER_RFCOMM_MS)
-        } catch (le: WearException) {
-          throw afterRfcommFailure(le, e)
+          connection.transport.connect(if (next == ModelTransport.LE) Timeouts.LE_AFTER_RFCOMM_MS else Timeouts.CONNECT_MS)
+        } catch (second: WearException) {
+          throw if (next == ModelTransport.LE) afterRfcommFailure(second, e) else afterLeFailure(e, second)
         }
       }
       connection.linkEvents.log(LogDirection.INFO, null, null, null, "${connection.transportKind.label} connected")
@@ -490,10 +534,12 @@ internal class WearLink(
           throw WearException(ErrorCodes.DISCONNECTED, "Disconnected while connecting")
         }
         connection.info = info
+        connection.connectedAtMs = SystemClock.elapsedRealtime()
         lastDeviceInfo = info
         connection.handle = LinkHandle(address, connection.session, init.notificationState, connection.operationLock)
         state = LinkState.CONNECTED
       }
+      rememberLink(identity, connection)
       if (remember) rememberWatch(address, name, info)
       events.state(LinkState.CONNECTED, null)
       init.batteryLevel?.let { events.battery(it) }
@@ -506,7 +552,11 @@ internal class WearLink(
       }
       // Closed under us (user disconnect, watch dropped the link): report what closed it rather than
       // the I/O error that followed. A protocol-level failure of the operation itself wins.
-      val failure = PairingState.explain(connectFailure(t, connection.closeCause), connection.model, bondState(connection.device))
+      val failure = PairingState.explain(
+        connectFailure(t, connection.closeCause),
+        TransportChoice.known(connection.model, connection.remembered),
+        bondState(connection.device),
+      )
       val needsConfirmation = failure.errorCode == ErrorCodes.BIND_CONFIRMATION
       connection.linkEvents.log(
         if (needsConfirmation) LogDirection.INFO else LogDirection.ERROR,
@@ -521,13 +571,13 @@ internal class WearLink(
   }
 
   /** The [Connection] for [address], or a coded failure: ERR_UNSUPPORTED for a watch this app does not drive, ERR_CONNECT_FAILED for anything Android refuses. */
-  private fun prepare(address: String, adapter: BluetoothAdapter): Connection =
+  private fun prepare(address: String, adapter: BluetoothAdapter, allowPairing: Boolean): Connection =
     try {
       val device = adapter.getRemoteDevice(address)
       val name = bondedName(device)
       val model = WatchModels.match(name)
       if (!model.connectable) throw WearException(ErrorCodes.UNSUPPORTED, "${name ?: address}: ${model.reason}")
-      Connection(address, device, adapter, model)
+      Connection(address, device, adapter, model, store.forDevice(address).linkTransport, allowPairing)
     } catch (e: WearException) {
       throw e
     } catch (e: Exception) {
@@ -571,6 +621,54 @@ internal class WearLink(
     } catch (e: SecurityException) {
       null
     }
+
+  /** Why the connect log says this link was the one opened, for a support report that has to tell a table guess from what worked before. */
+  private fun linkReason(connection: Connection): String = when {
+    settings.forceBle -> " (forced by the developer switch)"
+    connection.remembered != null && connection.remembered == connection.firstTransport -> " (the link that worked for this watch before)"
+    connection.remembered == null && connection.model.model != null -> " (the model table's link, nothing remembered for this watch yet)"
+    else -> ""
+  }
+
+  /**
+   * After a connect worked: the link it used becomes the one the next connect to this watch opens first ([TransportChoice.shouldRemember]).
+   * The first connect of a watch whose Bluetooth name was not known yet is tried over RFCOMM like any unlisted device; once the name is
+   * stored, the model table would send every later reconnect to LE, where this watch (a Band 11 Pro) never answers.
+   */
+  private fun rememberLink(identity: DeviceIdentity, connection: Connection) {
+    if (!TransportChoice.shouldRemember(connection.transportKind, connection.movedFrom, settings.forceBle)) return
+    if (identity.linkTransport != connection.transportKind) {
+      events.log(LogDirection.INFO, null, null, null, "Remembered for this watch: ${connection.transportKind.label}")
+    }
+    identity.linkTransport = connection.transportKind
+  }
+
+  /** An established link that ended on its own, or an attempt that never connected, goes in the persisted [disconnects] list. */
+  private fun recordLoss(connection: Connection, cause: WearException) {
+    try {
+      val established = connection.info != null
+      disconnects.record(
+        kind = if (established) DisconnectLog.Kind.DROPPED else DisconnectLog.Kind.FAILED,
+        transport = connection.transportKind,
+        heldMs = if (established) SystemClock.elapsedRealtime() - connection.connectedAtMs else null,
+        phone = phoneState(),
+        reason = if (established) cause.message.orEmpty() else "[${cause.errorCode}] ${cause.message}",
+      )
+    } catch (e: RuntimeException) {
+      // A report aid: it must never get in the way of closing the link.
+    }
+  }
+
+  private fun phoneState(): String {
+    val power = appContext.getSystemService(PowerManager::class.java)
+    val bluetooth = appContext.getSystemService(BluetoothManager::class.java)?.adapter
+    return DisconnectLog.phoneState(
+      interactive = power?.isInteractive ?: true,
+      deviceIdle = power?.isDeviceIdleMode ?: false,
+      powerSave = power?.isPowerSaveMode ?: false,
+      bluetoothOn = bluetooth?.isEnabled ?: true,
+    )
+  }
 
   // Disconnect / teardown
 
@@ -616,6 +714,7 @@ internal class WearLink(
   private fun teardown(connection: Connection, cause: WearException, error: String?) {
     if (!connection.closed.compareAndSet(false, true)) return
     connection.closeCause = cause
+    if (error != null) recordLoss(connection, cause)
     connection.ready.completeExceptionally(cause)
     try {
       connection.session.close(cause)

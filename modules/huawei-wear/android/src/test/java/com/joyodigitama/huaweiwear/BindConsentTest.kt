@@ -98,13 +98,13 @@ class BindConsentTest {
   }
 
   @Test
-  fun rfcommFallsBackToLeExceptForPermissionAndCancellation() {
-    assertTrue(shouldFallBackToLe(WearException(ErrorCodes.CONNECT_FAILED, "SDP failed")))
-    assertTrue(shouldFallBackToLe(WearException(ErrorCodes.TIMEOUT, "Timed out")))
-    assertTrue(shouldFallBackToLe(IOException("socket")))
-    assertFalse(shouldFallBackToLe(WearException(ErrorCodes.BLUETOOTH_PERMISSION, "denied")))
-    assertFalse(shouldFallBackToLe(SecurityException("denied")))
-    assertFalse(shouldFallBackToLe(CancellationException("cancelled")))
+  fun aFailedLinkMovesToTheOtherOneExceptForPermissionAndCancellation() {
+    assertTrue(shouldTryOtherLink(WearException(ErrorCodes.CONNECT_FAILED, "SDP failed")))
+    assertTrue(shouldTryOtherLink(WearException(ErrorCodes.TIMEOUT, "Timed out")))
+    assertTrue(shouldTryOtherLink(IOException("socket")))
+    assertFalse(shouldTryOtherLink(WearException(ErrorCodes.BLUETOOTH_PERMISSION, "denied")))
+    assertFalse(shouldTryOtherLink(SecurityException("denied")))
+    assertFalse(shouldTryOtherLink(CancellationException("cancelled")))
   }
 
   @Test
@@ -115,6 +115,25 @@ class BindConsentTest {
     assertEquals(ErrorCodes.TIMEOUT, failure.errorCode)
     assertTrue(failure.message!!.startsWith("Timed out after 26000 ms"))
     assertTrue(failure.message!!.contains("RFCOMM had failed first: read failed, socket might closed"))
+  }
+
+  @Test
+  fun rfcommFailureAfterLeKeepsTheLeCodeAndNamesBoth() {
+    val le = WearException(ErrorCodes.TIMEOUT, "Timed out after 45000 ms connecting to the watch over Bluetooth LE while opening the GATT link")
+    val failure = afterLeFailure(le, WearException(ErrorCodes.CONNECT_FAILED, "RFCOMM connect failed: read failed, socket might closed"))
+
+    assertEquals(ErrorCodes.TIMEOUT, failure.errorCode)
+    assertTrue(failure.message!!.startsWith("Timed out after 45000 ms"))
+    assertTrue(failure.message!!.contains("RFCOMM was tried next and failed too: RFCOMM connect failed: read failed, socket might closed"))
+  }
+
+  @Test
+  fun anLeFailureThatIsNotCodedBecomesConnectFailedBeforeItIsCombined() {
+    val failure = afterLeFailure(IllegalStateException("gatt gone"), IOException("closed"))
+
+    assertEquals(ErrorCodes.CONNECT_FAILED, failure.errorCode)
+    assertTrue(failure.message!!.startsWith("Connect failed: gatt gone"))
+    assertTrue(failure.message!!.contains("failed too: closed"))
   }
 
   @Test

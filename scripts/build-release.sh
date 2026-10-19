@@ -2,7 +2,7 @@
 # Release build signed with keystore/keystore.properties (see ~/.config/joyofit/KEYSTORE_BACKUP.md).
 #
 #   scripts/build-release.sh            sideload APK  -> dist/joyofit-<versionCode>.apk        (all permissions)
-#   scripts/build-release.sh --play     Play AAB      -> dist/joyofit-play-<versionCode>.aab   (no SEND_SMS, READ_CALL_LOG, READ_CONTACTS)
+#   scripts/build-release.sh --play     Play AAB      -> dist/joyofit-play-<versionCode>.aab   (no SEND_SMS, READ_CALL_LOG, READ_CONTACTS, REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
 #   --clean                             regenerate android/ with a fresh prebuild
 #
 # --play sets JOYOFIT_DISTRIBUTION=play; see docs/play-store.md. ARCHS overrides the ABIs
@@ -80,7 +80,7 @@ if [ "$PLAY" = 1 ]; then
   MANIFEST="$(java -jar "$BUNDLETOOL" dump manifest --bundle "$OUT")"
   # Proof for the reviewer: none of the restricted permissions may be in the merged manifest.
   # CAMERA is allowed: the workout share image's "Take photo" asks for it at that tap; the photo stays on the phone.
-  if grep -E 'android.permission.(SEND_SMS|READ_CALL_LOG|READ_CONTACTS|READ_SMS|RECEIVE_SMS|REQUEST_INSTALL_PACKAGES|SYSTEM_ALERT_WINDOW|RECORD_AUDIO)"' <<<"$MANIFEST"; then
+  if grep -E 'android.permission.(SEND_SMS|READ_CALL_LOG|READ_CONTACTS|READ_SMS|RECEIVE_SMS|REQUEST_INSTALL_PACKAGES|REQUEST_IGNORE_BATTERY_OPTIMIZATIONS|SYSTEM_ALERT_WINDOW|RECORD_AUDIO)"' <<<"$MANIFEST"; then
     echo "Play AAB still declares a forbidden permission" >&2
     exit 1
   fi

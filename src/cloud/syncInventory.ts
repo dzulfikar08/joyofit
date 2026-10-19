@@ -33,6 +33,7 @@ import { HuaweiWear, type CycleSwitches, type UserSex } from '@/wear';
  * Never synced, each because it belongs to this phone or its watch:
  *  - watch address, name, pairing and BLE keys, background service, force BLE, sync interval, per-watch settings
  *  - Wi-Fi only and automatic sync (each phone's data plan), update dismissals, push tokens, notification permission state
+ *  - the battery help dismissal on the Watch tab (`joyofit.batteryHelp.dismissed`): it is about this phone's maker and Android version
  *  - Health Connect / Apple Health connection and export state
  *  - Android-only phone features: morning summary notification, notification forwarding and its app list, calls, find my phone,
  *    SOS relay (iOS cannot switch them on, and they act through this phone's permissions and SIM)

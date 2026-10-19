@@ -3,10 +3,13 @@
   to be useful are removed from the merged manifest. See docs/play-store.md.
   SEND_SMS / READ_CALL_LOG: Play allows them only for default SMS/phone handlers or approved exceptions.
   READ_CONTACTS: only used to turn the caller number into a name; without READ_CALL_LOG Android gives the app no number.
+  REQUEST_IGNORE_BATTERY_OPTIMIZATIONS: Play allows the direct prompt only where Doze breaks the app's core function (not a peripheral
+  companion that syncs periodically); the Play build opens Android's battery optimization list instead, which needs no permission.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
   <uses-permission android:name="android.permission.SEND_SMS" tools:node="remove" />
   <uses-permission android:name="android.permission.READ_CALL_LOG" tools:node="remove" />
   <uses-permission android:name="android.permission.READ_CONTACTS" tools:node="remove" />
+  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" tools:node="remove" />
   <uses-feature android:name="android.hardware.telephony.messaging" tools:node="remove" />
 </manifest>

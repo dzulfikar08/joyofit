@@ -946,3 +946,24 @@ show up; I have to disconnect it from the watch, it ends up like a reset". Read 
 - A Classic connect that fails while Android has no pairing now says so (`ERR_NOT_PAIRED`, and `Android pairing: ...` in the connect log) instead of the generic "busy elsewhere" hint, which sent
   people to disconnect the watch elsewhere. **Not known:** whether the GT 6 drops the phone's pairing when it is switched off, or Android drops it after a failed reconnect. A report taken right
   after a failed reconnect (Watch tab, Send report) shows it in the `Android pairing:` and `RFCOMM did not open (...)` lines.
+
+### 2026-10-20: Huawei Band 11 Pro-107 (Candy-B49WG, software 6.0.0.130), Infinix X6882, Android 14 (user report): "often disconnects by itself"; the reconnect times out over LE
+
+Support report (build 1472209) plus a screenshot of the Watch tab after the drop. What the two show, and what was read from the code (nothing was run on this watch):
+
+- **The connect that worked is Bluetooth Classic.** The report's log (6 minutes, no disconnect in it) opens with `Connecting to ... "no name": unknown model (unknown), RFCOMM, SDP 82ff3820-...,
+  Android pairing: not paired, remembered false, first bind confirmed by the user`, RFCOMM opened in 3.4 s, HiChain3 bound (authType 5), `ProductInfo: model=Candy-B49WG name=CDY-B49`. The
+  Bluetooth name was not known at that moment, so `WatchModels.match(null)` was an unlisted device and `transportFor` took RFCOMM (Android did not say LE-only).
+- **The reconnect asks the model table.** After that connect the name `HUAWEI Band 11 Pro-107` was stored (`WearLink.rememberWatch`; Android most likely also keeps the name of a paired device [INFERENCE]), and `WatchModels` lists
+  `huawei band 11 pro-` as an LE model (`le("Huawei Band 11 Pro", ...)`, from Gadgetbridge), so every later connect was `ModelTransport.LE`. The screenshot error is that path: "Timed out after
+  45000 ms ... over Bluetooth LE while opening the GATT link (attempt 3 of 3) (Android reported no GATT event)". 45 000 ms is `LeConnectPlan.totalMs(Timeouts.CONNECT_MS)` (6 s scan + 2 x (8 s + 1.5 s)
+  + 20 s autoConnect), the budget of an LE connect that is the first link, not the 8 s a Classic watch's fallback gets (`Timeouts.LE_AFTER_RFCOMM_MS`): the app never tried RFCOMM.
+  The background loop, the app's reconnect and "Switch to this watch" all end in `WearLink.connect`, so all three did the same.
+- **Fix:** the link that opened and authenticated is remembered per watch (`DeviceIdentity.linkTransport`) and outranks the table (`TransportChoice.first`). A watch with nothing remembered
+  whose LE link does not open moves to RFCOMM when Android already holds a pairing or the person tapped Connect (`confirmPairing`, which the automatic reconnect never calls; `TransportChoice.fallback`): that is how a phone updated with the
+  name already stored is moved over. The connect log says whether the link came from memory or the table, and `Remembered for this watch: ...` when a connect teaches it.
+- **"Switch to this watch" on the only watch:** `WatchItem` shows it when `activeAddress` is not this row or the link is `disconnected` (`active = activeAddress === address && linkState !== 'disconnected'`),
+  so a single watch whose link dropped reads as "not active" and offers a button worded for a second watch. Nothing is switched: it calls the same `connect`. Not changed here.
+- **Why it dropped in the first place is not in the report** (the 1000-line cap kept only the connect and the first 6 minutes). Candidates, none verified: Infinix's HiOS stops background apps
+  with the screen off (the phone was at 17 %, so battery saver may have been on), or the watch closed the link. The report now carries `Background mode`, `Background limits` (manufacturer, battery
+  optimization exemption, background restriction) and the last 30 `Disconnects` (time, link, how long it had held, screen / Doze / battery saver / Bluetooth state, reason), kept across restarts.

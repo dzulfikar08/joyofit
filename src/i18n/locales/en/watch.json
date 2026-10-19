@@ -81,6 +81,15 @@
       "reportHelp": "If it still fails, send a report. It holds the latest Bluetooth log, without Bluetooth addresses or the serial number.",
       "report": "Send report"
     },
+    "limits": {
+      "optimized": "Android can stop JoyoFit when the screen is off or the app is closed to save battery. That is a common reason a watch disconnects by itself. Let JoyoFit run without battery limits.",
+      "restricted": "JoyoFit's background battery use is Restricted, so Android shuts it down when the screen is off and the watch disconnects. Open the app settings, choose Battery, then Unrestricted.",
+      "vendor": "{{maker}} phones also keep a list of apps that may start by themselves (auto-start). Turn JoyoFit on there too, or the watch can still disconnect with the battery setting right.",
+      "openBattery": "Open battery settings",
+      "openAutoStart": "Open auto-start",
+      "dismiss": "Dismiss",
+      "error": "That settings screen did not open on this phone. Open Settings, Apps, JoyoFit, then Battery."
+    },
     "status": {
       "linkA11y": "Link state: {{label}}",
       "battery": "Battery",

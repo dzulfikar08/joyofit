@@ -9,6 +9,8 @@
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
   <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <!-- Sideload builds only (removed from the Play build, src/play): the system's "allow JoyoFit to ignore battery optimization" dialog, so the watch link survives Doze with the screen off. -->
+  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
   <!-- Health Connect: write-only; JoyoFit never reads Health Connect. -->
   <uses-permission android:name="android.permission.health.WRITE_STEPS" />
   <uses-permission android:name="android.permission.health.WRITE_HEART_RATE" />

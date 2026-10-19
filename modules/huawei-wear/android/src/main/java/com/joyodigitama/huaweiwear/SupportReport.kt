@@ -64,6 +64,13 @@ internal object SupportReport {
     /** The link the last connect attempt opened; the same model name can need either, so it is recorded rather than derived. */
     transport: ModelTransport? = null,
     nowMs: Long = System.currentTimeMillis(),
+    /**
+     * Lines about why the link may drop (background mode, battery limits, the latest disconnects), put right after `Link:` so the cut of the
+     * GitHub issue link (it keeps only the start of the summary) never loses them.
+     */
+    connection: List<String> = emptyList(),
+    /** Every kept disconnect row, at the top of the log part: the summary holds only the latest few. */
+    disconnectLog: List<String> = emptyList(),
     /** Feature lines kept apart from the capability dump (weather pushes, night HRV), each already one line. */
     extraSummary: List<String> = emptyList(),
   ): Map<String, Any?> {
@@ -87,6 +94,7 @@ internal object SupportReport {
     }
     summary.appendLine("Transport: ${transport?.label ?: "none yet"}")
     summary.appendLine("Link: $linkState")
+    for (line in connection) summary.appendLine(line)
     val commands = DeviceCaps.supportedCommands
     if (commands.isNotEmpty()) {
       summary.appendLine("Supported commands (last connect, service: commands):")
@@ -98,6 +106,8 @@ internal object SupportReport {
     for (line in extraSummary) summary.appendLine(line)
     summary.append("Bluetooth addresses and the serial number are left out.")
     val text = StringBuilder()
+    for (line in disconnectLog) text.appendLine(line)
+    if (disconnectLog.isNotEmpty()) text.appendLine()
     text.appendLine("Log, oldest first (${log.size} lines):")
     var previous: Long? = null
     for (line in log) {

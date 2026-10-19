@@ -21,12 +21,21 @@ Source of truth for the policies cited here:
 | `SEND_SMS` | yes (SOS texts the watch asks for) | **removed** |
 | `READ_CALL_LOG` | yes (caller number) | **removed** |
 | `READ_CONTACTS` | yes (caller name) | **removed** (only used with the number, which Android no longer passes without `READ_CALL_LOG`) |
+| `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | yes (the system's "allow JoyoFit to ignore battery optimization" dialog, offered on the Watch tab and in Settings, Sync) | **removed**: the same button opens Android's battery optimization list instead (`ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS`, no permission) |
 | APK self-updater | none in JoyoFit | none (`REQUEST_INSTALL_PACKAGES` is in neither build). Play installs show an in-app update banner instead: `docs/in-app-updates.md` |
 
 How it works: `modules/huawei-wear/android/build.gradle` reads `JOYOFIT_DISTRIBUTION` (or `-PjoyofitDistribution=`). For `play` it merges
-`modules/huawei-wear/android/src/play/AndroidManifest.xml` (`tools:node="remove"` for the three permissions and the SMS `uses-feature`) and
+`modules/huawei-wear/android/src/play/AndroidManifest.xml` (`tools:node="remove"` for the four permissions and the SMS `uses-feature`) and
 bakes `BuildConfig.DISTRIBUTION = "play"` into the module, which JS reads as `HuaweiWear.distribution`. The script then dumps the AAB's
 merged manifest with bundletool and **fails the build** if a restricted permission is still there.
+
+Why the Play build does not ask for the battery exemption directly: Play's Device and Network Abuse policy lists apps that "are not eligible for allowlisting and
+attempt to bypass system power management" as a violation, and Android's table of acceptable cases
+(<https://developer.android.com/training/monitoring-device-state/doze-standby#exemption-cases>) accepts a peripheral companion app only when its core function is "maintaining a
+persistent connection with the peripheral device for the purpose of providing the peripheral device internet access"; "only needs to connect to a peripheral device
+periodically to sync" is listed as **not acceptable**. JoyoFit syncs on a timer and forwards notifications, so it does not meet that case [INFERENCE: a reviewer could read the live
+connection for notifications and calls differently; the safe choice is taken]. `ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS` is open to every app, and `scripts/build-release.sh --play`
+fails the build if `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` is in the merged manifest.
 
 What the Play build does differently for the user:
 

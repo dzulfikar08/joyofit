@@ -1,5 +1,6 @@
 import { NativeModule, requireNativeModule } from 'expo';
 import type {
+  BackgroundRestrictions,
   BackgroundStatus,
   BondedDevice,
   DeviceInfo,
@@ -86,6 +87,12 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   connect(address: string): Promise<DeviceInfo>;
   /** The user agreed to bind this phone to the watch: the next `connect(address)` may start a first bind. Single use. */
   confirmBind(address: string): void;
+  /**
+   * Android only (a no-op on iOS): the person asked for the next `connect(address)`, as against the automatic reconnect. A watch whose
+   * Bluetooth LE link does not open and that never worked over LE may then be tried over Bluetooth Classic, which makes Android ask for a
+   * pairing when it holds none. Without it only a watch Android already has a pairing with is tried that way. Single use. Gate on `hasNative`.
+   */
+  confirmPairing(address: string): void;
   /** Closes the link. With background mode on, this also pauses auto-reconnect. */
   disconnect(): Promise<void>;
   getState(): LinkState;
@@ -141,6 +148,21 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    */
   setBackgroundEnabled(address: string | null): Promise<void>;
   getBackgroundStatus(): BackgroundStatus;
+  /**
+   * Android only (null on iOS): whether Android may stop the background service with the screen off (battery optimization, "Restricted"
+   * background use) and what the phone's maker adds. Read it again when the app returns from settings.
+   */
+  getBackgroundRestrictions(): BackgroundRestrictions | null;
+  /**
+   * Android only: opens the screen where JoyoFit is allowed to run without battery limits: Android's "allow" dialog (sideload APK), the battery
+   * optimization list (Google Play build) or JoyoFit's settings screen (when the app is restricted). Rejects with ERR_UNSUPPORTED when none opens.
+   */
+  openBatteryExemption(): Promise<void>;
+  /**
+   * Android only: opens the maker's auto-start list (Infinix/Tecno/itel, Xiaomi, OPPO/realme, vivo) when it opens on this phone, else
+   * JoyoFit's settings screen. Rejects with ERR_UNSUPPORTED when no screen opens.
+   */
+  openAutoStartSettings(): Promise<void>;
   /**
    * Closes the native connection to `joyofit.db` and keeps it closed (native reads and writes fail with ERR_STORAGE) until
    * `resumeDatabase`; waits for a transaction that is running. The repair of a damaged file calls it before it replaces the file.

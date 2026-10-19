@@ -9,7 +9,9 @@ import android.content.pm.PackageManager
 import android.database.sqlite.SQLiteException
 import android.os.Build
 import android.provider.Settings
+import java.text.SimpleDateFormat
 import java.time.Year
+import java.util.Date
 import java.util.Locale
 import java.util.concurrent.CopyOnWriteArraySet
 import kotlinx.coroutines.CancellationException
@@ -151,6 +153,8 @@ internal class WearRuntime private constructor(context: Context) {
   /** The support report: the last watch, its capabilities and the kept log, without addresses or serial. */
   fun supportReport(): Map<String, Any?> {
     val device = link.deviceInfo() ?: link.lastDeviceInfo
+    val stamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT)
+    val disconnects = link.disconnects.entries()
     return SupportReport.build(
       context = appContext,
       watchName = link.lastAttemptName ?: settings.watchName,
@@ -158,9 +162,24 @@ internal class WearRuntime private constructor(context: Context) {
       linkState = link.currentState(),
       log = supportLog.lines(),
       transport = link.lastAttemptTransport,
+      connection = connectionLines() + DisconnectLog.lines(disconnects.takeLast(RECENT_DISCONNECTS)) { stamp.format(Date(it)) },
+      // The summary has the latest rows; when more were kept, the log part carries all of them.
+      disconnectLog = if (disconnects.size > RECENT_DISCONNECTS) DisconnectLog.lines(disconnects) { stamp.format(Date(it)) } else emptyList(),
       extraSummary = WeatherDiagnostics.summary(weatherSettings.enabled) +
         NightHrvDiagnostics.summary(settings.autoStressListed, settings.stressEnabled, stress.status()["lastCalibratedAt"] as Long?),
     )
+  }
+
+  /**
+   * What decides whether the watch link survives with the app closed or the screen off: the background mode switch, and whether Android
+   * may stop the app ([BackgroundRestrictions]). One line each.
+   */
+  private fun connectionLines(): List<String> {
+    val status = backgroundStatus()
+    val background = "Background mode: ${if (settings.backgroundEnabled) "on" else "off (the link closes with the app)"}, " +
+      "service ${if (status["running"] == true) "running" else "not running"}, " +
+      "auto-reconnect ${if (paused) "paused after Disconnect in the app" else "active"}, sync every ${settings.syncIntervalMinutes} min"
+    return listOf(background, BackgroundRestrictions.read(appContext).summaryLine())
   }
 
   val forwarder = NotificationForwarder(appContext, settings, link, events, scope)
@@ -246,12 +265,23 @@ internal class WearRuntime private constructor(context: Context) {
     bindConsent.grant(rawAddress)
   }
 
+  /**
+   * Watches the person asked to connect (a tap, not the automatic reconnect), agreeing to a Bluetooth pairing if Android needs one: the
+   * only connect that may try a Classic link the model table does not list ([TransportChoice.fallback]). Same single-use rules as bind consent.
+   */
+  private val pairingConsent = BindConsent()
+
+  /** The next [connectFromApp] to [rawAddress] may start an Android pairing when it moves from LE to Classic. Single use. */
+  fun confirmPairing(rawAddress: String) {
+    pairingConsent.grant(rawAddress)
+  }
+
   /** Single use: the consent ends with this connect, whatever its outcome. */
   suspend fun connectFromApp(address: String): Map<String, Any?> {
     paused = false
     // A background visit to another watch gives the link back to the user.
     controller?.abortVisit()
-    return link.connect(address, allowFirstBind = bindConsent.take(address))
+    return link.connect(address, allowFirstBind = bindConsent.take(address), allowPairing = pairingConsent.take(address))
   }
 
   fun disconnectFromApp() {
@@ -260,12 +290,14 @@ internal class WearRuntime private constructor(context: Context) {
       setNote("Disconnected in the app. Connect there to resume.")
     }
     bindConsent.clearAll()
+    pairingConsent.clearAll()
     link.disconnect()
   }
 
   fun forget(rawAddress: String) {
     val address = rawAddress.trim().uppercase(Locale.ROOT)
     bindConsent.clear(address)
+    pairingConsent.clear(address)
     link.forget(address)
     if (settings.watchAddress == address) {
       setBackground(null)
@@ -335,6 +367,28 @@ internal class WearRuntime private constructor(context: Context) {
     "paused" to paused,
     "syncIntervalMinutes" to settings.syncIntervalMinutes,
   )
+
+  /** Whether Android may stop the background service ([BackgroundRestrictions]); `BackgroundRestrictions` in JS. */
+  fun backgroundRestrictions(): Map<String, Any?> = BackgroundRestrictions.read(appContext).toJs()
+
+  /**
+   * Opens the screen where the person lets JoyoFit run in the background ([BatteryExemption.plan]): the system's own "allow" dialog in
+   * the sideload build, Android's battery optimization list in the Google Play build, the app details when the app is restricted.
+   */
+  fun openBatteryExemption() {
+    val restrictions = BackgroundRestrictions.read(appContext)
+    val steps = BatteryExemption.plan(restrictions.canRequestDirectly, restrictions.ignoringBatteryOptimizations, restrictions.backgroundRestricted)
+    val opened = BatteryExemption.launch(appContext, steps.map { BatteryExemption.intent(it, appContext.packageName) })
+    if (!opened) throw WearException(ErrorCodes.UNSUPPORTED, "No battery settings screen opened on this phone")
+  }
+
+  /** Opens the maker's auto-start list when this phone's maker is known and the screen opens, else JoyoFit's own settings screen. */
+  fun openAutoStartSettings() {
+    val vendor = BackgroundRestrictions.read(appContext).vendor
+    if (!BatteryExemption.launch(appContext, BatteryExemption.autoStartIntents(vendor, appContext.packageName))) {
+      throw WearException(ErrorCodes.UNSUPPORTED, "No settings screen opened on this phone")
+    }
+  }
 
   fun setSyncInterval(minutes: Int) {
     if (minutes < WearSettings.MIN_SYNC_INTERVAL_MIN || minutes > WearSettings.MAX_SYNC_INTERVAL_MIN) {
@@ -478,6 +532,9 @@ internal class WearRuntime private constructor(context: Context) {
     /** The thresholds GB offers for the watch's heart-rate alerts (arrays prefs_huawei_heart_rate_{high,low}_alert_values). */
     val HIGH_ALERT_RANGE = 100..150
     val LOW_ALERT_RANGE = 40..50
+
+    /** How many of the latest disconnects the report's summary lists (the whole kept list goes in the log part). */
+    const val RECENT_DISCONNECTS = 5
 
     @Volatile
     private var instance: WearRuntime? = null
