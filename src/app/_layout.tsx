@@ -32,6 +32,7 @@ import { DbHealthNotice } from '@/features/dbhealth/DbHealthNotice';
 import { FamilyProvider } from '@/features/family/FamilyProvider';
 import { BikeRideProvider } from '@/features/bikecomputer/BikeRideProvider';
 import { lockPortrait } from '@/features/bikecomputer/ui/orientation';
+import { flushSupportReports } from '@/features/device/aturReports';
 import { LivePill } from '@/features/record/ui/LivePill';
 import { UpdateBanner } from '@/features/updates/UpdateBanner';
 import { UpdateGateProvider, useUpdateGate } from '@/features/updates/UpdateGateProvider';
@@ -125,6 +126,15 @@ function RootNavigator() {
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') refreshAutoLocale();
+    });
+    return () => sub.remove();
+  }, []);
+
+  // Reports sent while the phone was offline go out at launch and whenever the app comes back.
+  useEffect(() => {
+    void flushSupportReports();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void flushSupportReports();
     });
     return () => sub.remove();
   }, []);

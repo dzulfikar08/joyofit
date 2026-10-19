@@ -163,7 +163,20 @@
       "intro": "JoyoFit is tested on the Huawei Watch Fit 4 Pro. Other Huawei and Honor watches are experimental. If something does not work, connect once, then send a report. It lists what your watch answered on its last connect, without Bluetooth addresses or the serial number.",
       "copied": "The full report is on your clipboard. On GitHub, say what works and what does not, then paste the report into the Log field.",
       "github": "GitHub report",
-      "share": "Share text"
+      "share": "Share text",
+      "atur": {
+        "send": "Send report",
+        "messageLabel": "What happened? (optional)",
+        "messageHint": "The Bluetooth log, phone and watch details and the disconnect history go to the JoyoFit team, without Bluetooth addresses or the serial number.",
+        "messagePlaceholder": "For example: the watch will not connect after a restart, or steps do not sync.",
+        "emailLabel": "Email for a reply (optional)",
+        "emailHint": "Only used to reply to this report.",
+        "emailInvalid": "That email does not look right.",
+        "submit": "Send",
+        "sent": "Report sent as #{{number}}. Thanks for helping.",
+        "queued": "No internet right now. The report is saved on this phone and goes out by itself once you are online.",
+        "failed": "The report was not sent: {{reason}}"
+      }
     }
   },
   "alarms": {

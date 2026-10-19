@@ -154,6 +154,7 @@ Site (`site/`): `bun install`, `bun run dev`, `bun run build` (typecheck, Vite b
 | [docs/strava.md](docs/strava.md) | Strava integration and review checklist |
 | [docs/family-monitoring.md](docs/family-monitoring.md) | Keluarga |
 | [docs/i18n.md](docs/i18n.md) | Translation workflow |
+| [docs/atur-reports.md](docs/atur-reports.md) | Watch reports into Atur: what is sent, the board and token, offline queue, follow-up |
 | [docs/ota.md](docs/ota.md), [docs/in-app-updates.md](docs/in-app-updates.md) | OTA and the Play update prompt |
 | [docs/ci-release.md](docs/ci-release.md) | CI and release workflows |
 | [docs/play-store.md](docs/play-store.md), [docs/app-store.md](docs/app-store.md), [docs/ios.md](docs/ios.md), [docs/ios-mac.md](docs/ios-mac.md), [docs/ios-linux.md](docs/ios-linux.md) | Store listings and iOS builds |
@@ -165,7 +166,7 @@ Site (`site/`): `bun install`, `bun run dev`, `bun run build` (typecheck, Vite b
 
 Pull requests are welcome, especially watch reports and translations.
 
-1. **Watch reports.** Own a watch that is not tested? Connect once, then in the app open Watch, Help support your watch, Report on GitHub. The report has no Bluetooth addresses or serial numbers. Or use the [watch report template](https://github.com/dzulfikar08/joyofit/issues/new?template=watch-report.yml).
+1. **Watch reports.** Own a watch that is not tested? Connect once, then in the app open Watch, Help support your watch, Send report (goes to the maintainers' Atur board, [docs/atur-reports.md](docs/atur-reports.md)) or Report on GitHub. The report has no Bluetooth addresses or serial numbers. Or use the [watch report template](https://github.com/dzulfikar08/joyofit/issues/new?template=watch-report.yml).
 2. **Before you open a PR**, run what CI runs: `bunx tsc --noEmit`, `bun test ./src/`, `bun scripts/i18n-check.ts`, and the Kotlin or Swift tests if you touched `modules/huawei-wear`.
 3. **UI copy** goes through i18next with keys in both `id` and `en`; no emojis in UI text; icons are Ionicons, except workout types, which use the Material Design Icons pictograms of `SportIcon` (`sportIcon()` maps a sport name to one); use the app's own components, not native alerts.
 4. **Watch code is safety-critical.** Bounded transfer sizes, malformed-input handling, timeouts, no leaked Bluetooth connections, nothing that can hang the watch or break its pairing.

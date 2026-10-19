@@ -3,8 +3,8 @@ import { ArrowLeft, Check } from "lucide-react";
 import { GITHUB_URL } from "./lib";
 
 const CONTACT = "dzulfikar@joyorogo.com";
-const UPDATED = "18 Oktober 2026";
-const UPDATED_EN = "18 October 2026";
+const UPDATED = "20 Oktober 2026";
+const UPDATED_EN = "20 October 2026";
 
 function Code({ children }: { children: React.ReactNode }) {
   return <code className="rounded bg-muted px-1.5 py-0.5 text-[0.85em] font-semibold">{children}</code>;
@@ -396,6 +396,14 @@ function Indonesian() {
           merek dan model HP, versi Android, model dan versi jam, kemampuan yang dilaporkan jam) dan log
           sambungan. Alamat Bluetooth dan nomor seri dihapus, tetapi log bisa memuat hal lain, jadi baca dulu
           sebelum mengirim. Tidak ada yang terkirim otomatis.
+        </p>
+        <p>
+          Kirim laporan mengirim ringkasan dan seluruh log itu, lengkap dengan riwayat putus sambungan, ke papan
+          laporan JoyoFit di Atur (app.diatur.com, produk milik pengembang yang sama), hanya setelah kamu mengetuk
+          Kirim. Ikut terkirim: teks yang kamu tulis, email untuk balasan (terisi dari akun JoyoRogo bila kamu
+          masuk, bisa kamu ubah atau kosongkan), dan id akun JoyoRogo-mu bila kamu masuk. Isinya hanya bisa dibaca
+          anggota tim pengembang dan dipakai untuk memperbaiki dukungan jam serta membalas laporanmu. Tanpa
+          internet, laporan disimpan di HP sampai bisa terkirim.
         </p>
       </Block>
 
@@ -832,6 +840,14 @@ function English() {
           builds a summary (app version, phone make and model, Android version, watch model and version) and a
           connection log. Bluetooth addresses and the serial number are removed, but the log can contain other
           text, so read it before sending. Nothing is sent automatically.
+        </p>
+        <p>
+          <span className="font-semibold">Send report</span> sends that summary and the whole log, with the
+          disconnect history, to the JoyoFit report board in Atur (app.diatur.com, a product of the same developer),
+          only after you tap Send. Also sent: the text you wrote, an email for a reply (filled from your JoyoRogo
+          account when you are signed in, which you can change or clear) and your JoyoRogo account id when you are
+          signed in. Only the developer team can read it, and it is used to improve watch support and to reply to
+          your report. Without internet the report waits on the phone until it can be sent.
         </p>
       </Block>
 
