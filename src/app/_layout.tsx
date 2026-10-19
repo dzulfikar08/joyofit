@@ -43,6 +43,7 @@ import { OnboardingProvider } from '@/state/OnboardingProvider';
 import { MealsProvider } from '@/state/MealsProvider';
 import { RecorderProvider } from '@/state/RecorderProvider';
 import { RideProvider } from '@/state/RideProvider';
+import { ScaleProvider } from '@/state/ScaleProvider';
 import { SensorsProvider } from '@/state/SensorsProvider';
 import { StravaProvider } from '@/state/StravaProvider';
 import { WatchProvider } from '@/state/WatchProvider';
@@ -152,6 +153,7 @@ function RootNavigator() {
           <CloudProvider>
             <StravaProvider>
               <SensorsProvider>
+              <ScaleProvider>
               <RecorderProvider>
               <BikeRideProvider>
               <RideProvider>
@@ -263,6 +265,7 @@ function RootNavigator() {
               </RideProvider>
               </BikeRideProvider>
               </RecorderProvider>
+              </ScaleProvider>
               </SensorsProvider>
             </StravaProvider>
           </CloudProvider>

@@ -1,0 +1,112 @@
+{
+  "title": "Smart scale",
+  "live": {
+    "title": "Your scale",
+    "stepOn": "Step on the scale…",
+    "unsettled": "Wait for the number to settle…",
+    "settled": "Saved to your history",
+    "weight": "{{value}} kg",
+    "status": {
+      "starting": "Getting ready…",
+      "waiting": "Waiting for you to step on the scale",
+      "connecting": "Connecting to the scale…",
+      "connected": "Connected, wait for the number to settle…",
+      "off": "Not listening. Turn on Capture automatically or tap Try a weigh-in."
+    },
+    "test": "Try a weigh-in",
+    "stop": "Stop"
+  },
+  "problem": {
+    "permission": "JoyoFit is not allowed to use Bluetooth yet. Open settings to allow it.",
+    "off": "Bluetooth is off. Turn it on, then try again.",
+    "unavailable": "Bluetooth can't be used right now.",
+    "openSettings": "Open settings"
+  },
+  "card": {
+    "kind": "Type: {{label}}",
+    "rename": "Rename",
+    "renameTitle": "Scale name",
+    "forget": "Forget",
+    "forgetTitle": "Forget this scale?",
+    "forgetMessage": "Your weigh-in history stays.",
+    "empty": "No scale yet. Find yours below."
+  },
+  "picker": {
+    "title": "Find your scale",
+    "explain": "JoyoFit will scan for Bluetooth devices around you to find your scale. The scan results are only used on this phone.",
+    "continue": "Continue",
+    "hint": "Step on the scale until its display lights up, then search. Many scales are only visible while they are awake.",
+    "search": "Search for scale",
+    "stopSearch": "Stop searching",
+    "searching": "Searching…",
+    "none": "Nothing in sight yet. Make sure the scale's display is on and your phone's Bluetooth is on.",
+    "scales": "Recognised scales",
+    "others": "Other devices",
+    "pick": "Use this one",
+    "chosen": "In use",
+    "reading": "Reading {{value}} kg",
+    "unnamed": "No name"
+  },
+  "settings": {
+    "title": "Settings",
+    "auto": "Capture automatically",
+    "autoHint": "While the app is open and you step on the scale, your weight is saved right away.",
+    "rogo": "Send to JoyoRogo",
+    "rogoHint": "Your weight goes into JoyoRogo's weight log: one number per day, the latest one counts.",
+    "guard": "Ask \"Is this you?\"",
+    "guardHint": "If the weight is far from your last weigh-in, for example someone else stepped on, you are asked first.",
+    "guardOff": "Off",
+    "guardNormal": "Normal",
+    "guardLoose": "Relaxed"
+  },
+  "confirm": {
+    "title": "Is this you?",
+    "message": "The scale read {{weight}} kg, but your last weight was {{last}} kg. Save it as your weight?",
+    "mine": "Yes, it's me",
+    "notMine": "Not me"
+  },
+  "history": {
+    "title": "Weigh-in history",
+    "empty": "No weigh-ins saved yet.",
+    "delete": "Delete",
+    "sent": "Sent to JoyoRogo",
+    "pending": "Waiting to be sent to JoyoRogo",
+    "skipped": "Not sent to JoyoRogo",
+    "waiting": "{{count}} weigh-ins not sent to JoyoRogo yet",
+    "retry": "Send again"
+  },
+  "body": {
+    "measured": "From the scale",
+    "estimate": "Estimate",
+    "estimateNote": "An estimate from a general formula using the impedance and the height, age and sex in your profile. It can differ from the number in the scale's own app.",
+    "fat": "Fat {{value}}%",
+    "water": "Water {{value}}%",
+    "muscle": "Muscle {{value}}%",
+    "bone": "Bone {{value}} kg",
+    "visceral": "Visceral fat {{value}}",
+    "bmr": "BMR {{value}} kcal",
+    "bmi": "BMI {{value}}",
+    "needProfile": "Fill in height, birth year and sex in Profile so body composition can be estimated."
+  },
+  "record": {
+    "title": "Record scale data",
+    "body": "Scale not recognised? Pick its device in the search list, start recording, then step on the scale. JoyoFit writes everything the scale sends to the app log. Copy or share the result so support for it can be added.",
+    "connect": "Also connect to the device",
+    "connectHint": "Also records the data sent over a connection. Nothing is sent to the scale.",
+    "start": "Start recording",
+    "stop": "Stop recording",
+    "recording": "Recording {{count}} devices…",
+    "pick": "Pick a device",
+    "picked": "Picked",
+    "none": "Search first, then pick the devices to record.",
+    "copy": "Copy recording",
+    "share": "Share recording",
+    "copied": "Copied",
+    "lines": "{{count}} lines recorded",
+    "shareTitle": "JoyoFit scale recording"
+  },
+  "supported": {
+    "title": "Supported scales",
+    "body": "JoyoFit reads scales with the protocols below. Others can be added through Record scale data."
+  }
+}

@@ -2,7 +2,7 @@
   <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
   <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
   <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-  <!-- Heart rate, cycling and running sensors are found by service UUID; the scan never derives a location. -->
+  <!-- Heart rate, cycling and running sensors are found by service UUID, bathroom scales by an unfiltered scan; the scan never derives a location. neverForLocation makes Android hide iBeacon-style advertisements from the results, which no scale uses. -->
   <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
   <!-- GPS fixes of a phone-recorded workout. Android 10 and 11 also need it to deliver scan results. -->
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />

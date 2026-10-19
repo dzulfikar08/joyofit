@@ -1,0 +1,112 @@
+{
+  "title": "Timbangan",
+  "live": {
+    "title": "Timbanganmu",
+    "stepOn": "Naik ke timbangan…",
+    "unsettled": "Tunggu angkanya berhenti…",
+    "settled": "Tersimpan di riwayat",
+    "weight": "{{value}} kg",
+    "status": {
+      "starting": "Menyiapkan…",
+      "waiting": "Menunggu kamu naik ke timbangan",
+      "connecting": "Menyambung ke timbangan…",
+      "connected": "Tersambung, tunggu angkanya stabil…",
+      "off": "Tidak mendengarkan. Nyalakan Tangkap otomatis atau tekan Coba timbang."
+    },
+    "test": "Coba timbang",
+    "stop": "Berhenti"
+  },
+  "problem": {
+    "permission": "JoyoFit belum boleh memakai Bluetooth. Buka pengaturan untuk mengizinkan.",
+    "off": "Bluetooth mati. Nyalakan dulu, lalu coba lagi.",
+    "unavailable": "Bluetooth tidak bisa dipakai sekarang.",
+    "openSettings": "Buka pengaturan"
+  },
+  "card": {
+    "kind": "Jenis: {{label}}",
+    "rename": "Ganti nama",
+    "renameTitle": "Nama timbangan",
+    "forget": "Lupakan",
+    "forgetTitle": "Lupakan timbangan ini?",
+    "forgetMessage": "Riwayat timbangmu tetap tersimpan.",
+    "empty": "Belum ada timbangan. Cari timbanganmu di bawah."
+  },
+  "picker": {
+    "title": "Cari timbangan",
+    "explain": "JoyoFit akan memindai perangkat Bluetooth di sekitar untuk menemukan timbanganmu. Hasil pindai hanya dipakai di HP ini.",
+    "continue": "Lanjut",
+    "hint": "Naik ke timbangan sampai layarnya menyala, lalu cari. Banyak timbangan baru terlihat saat sedang menyala.",
+    "search": "Cari timbangan",
+    "stopSearch": "Berhenti mencari",
+    "searching": "Mencari…",
+    "none": "Belum ada yang terlihat. Pastikan layar timbangan menyala dan Bluetooth HP aktif.",
+    "scales": "Timbangan dikenali",
+    "others": "Perangkat lain",
+    "pick": "Pakai ini",
+    "chosen": "Dipakai",
+    "reading": "Terbaca {{value}} kg",
+    "unnamed": "Tanpa nama"
+  },
+  "settings": {
+    "title": "Pengaturan",
+    "auto": "Tangkap otomatis",
+    "autoHint": "Saat aplikasi terbuka dan kamu naik ke timbangan, beratmu langsung disimpan.",
+    "rogo": "Kirim ke JoyoRogo",
+    "rogoHint": "Berat masuk ke catatan berat badan JoyoRogo: satu angka per hari, yang terakhir yang dipakai.",
+    "guard": "Tanya \"Ini kamu?\"",
+    "guardHint": "Kalau beratnya jauh beda dari timbangan terakhirmu, misalnya orang lain naik, kamu ditanya dulu.",
+    "guardOff": "Mati",
+    "guardNormal": "Normal",
+    "guardLoose": "Longgar"
+  },
+  "confirm": {
+    "title": "Ini kamu?",
+    "message": "Timbangan membaca {{weight}} kg, padahal terakhir kamu {{last}} kg. Simpan sebagai beratmu?",
+    "mine": "Ya, ini aku",
+    "notMine": "Bukan aku"
+  },
+  "history": {
+    "title": "Riwayat timbang",
+    "empty": "Belum ada timbangan yang tersimpan.",
+    "delete": "Hapus",
+    "sent": "Terkirim ke JoyoRogo",
+    "pending": "Menunggu dikirim ke JoyoRogo",
+    "skipped": "Tidak dikirim ke JoyoRogo",
+    "waiting": "{{count}} timbangan belum terkirim ke JoyoRogo",
+    "retry": "Kirim ulang"
+  },
+  "body": {
+    "measured": "Dari timbangan",
+    "estimate": "Perkiraan",
+    "estimateNote": "Perkiraan dari rumus umum memakai impedansi, tinggi, usia, dan jenis kelamin di profilmu. Bisa beda dari angka di aplikasi bawaan timbangan.",
+    "fat": "Lemak {{value}}%",
+    "water": "Air {{value}}%",
+    "muscle": "Otot {{value}}%",
+    "bone": "Tulang {{value}} kg",
+    "visceral": "Lemak visceral {{value}}",
+    "bmr": "BMR {{value}} kkal",
+    "bmi": "BMI {{value}}",
+    "needProfile": "Isi tinggi, tahun lahir, dan jenis kelamin di Profil supaya perkiraan komposisi tubuh bisa dihitung."
+  },
+  "record": {
+    "title": "Rekam data timbangan",
+    "body": "Timbanganmu belum dikenali? Pilih perangkatnya di daftar pencarian, mulai merekam, lalu naik ke timbangan. JoyoFit mencatat semua yang dikirim timbangan ke log aplikasi. Salin atau bagikan hasilnya supaya dukungannya bisa ditambahkan.",
+    "connect": "Sambungkan juga ke perangkatnya",
+    "connectHint": "Ikut mencatat data yang dikirim lewat sambungan. Tidak ada yang dikirim ke timbangan.",
+    "start": "Mulai merekam",
+    "stop": "Berhenti merekam",
+    "recording": "Merekam {{count}} perangkat…",
+    "pick": "Pilih perangkat",
+    "picked": "Dipilih",
+    "none": "Cari dulu, lalu pilih perangkat yang mau direkam.",
+    "copy": "Salin rekaman",
+    "share": "Bagikan rekaman",
+    "copied": "Disalin",
+    "lines": "{{count}} baris tercatat",
+    "shareTitle": "Rekaman timbangan JoyoFit"
+  },
+  "supported": {
+    "title": "Timbangan yang didukung",
+    "body": "JoyoFit membaca timbangan dengan protokol berikut. Timbangan lain bisa ditambahkan lewat Rekam data timbangan."
+  }
+}

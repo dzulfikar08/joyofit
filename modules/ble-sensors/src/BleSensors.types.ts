@@ -132,6 +132,40 @@ export interface WorkoutSessionState {
 
 export type WorkoutAction = 'pause' | 'resume' | 'lap';
 
+/**
+ * Bathroom scales. The native side only moves bytes; `src/features/scale` decodes them. Identifiers are normalised the same way on both
+ * platforms and in `src/features/scale/uuid.ts`: 4 lowercase hex digits for Bluetooth-base UUIDs, else the full lowercase 36-char form.
+ */
+export interface ScaleAdvertisementEvent {
+  /** Android: MAC address. iOS: CBPeripheral identifier (a UUID, stable on this phone only). */
+  id: string;
+  name: string | null;
+  rssi: number;
+  /** Milliseconds since the epoch, taken on the radio thread. */
+  ts: number;
+  serviceUuids: string[];
+  /** Service UUID to payload hex. */
+  serviceData: Record<string, string>;
+  /** Company identifier (4 lowercase hex digits of the 16-bit value) to the payload hex after it. */
+  manufacturerData: Record<string, string>;
+}
+
+export type ScaleCharacteristicProperty = 'read' | 'write' | 'writeNoResponse' | 'notify' | 'indicate';
+
+export interface ScaleServiceInfo {
+  uuid: string;
+  characteristics: { uuid: string; properties: ScaleCharacteristicProperty[] }[];
+}
+
+export interface ScaleLinkEvent {
+  id: string;
+  state: SensorLinkState;
+  /** Set when `state` is `connected`: every service GATT discovery found, with its characteristics. */
+  services: ScaleServiceInfo[];
+  /** English, for the log; null when the link was closed on request. */
+  error: string | null;
+}
+
 export type BleSensorsModuleEvents = {
   onScanResult: (event: ScanResultEvent) => void;
   onScanState: (event: ScanStateEvent) => void;
@@ -141,4 +175,8 @@ export type BleSensorsModuleEvents = {
   onBluetoothState: (event: { state: BluetoothState }) => void;
   /** Android: a button of the recording notification was pressed (only with `WorkoutSessionOptions.controls`). */
   onWorkoutAction: (event: { action: WorkoutAction }) => void;
+  onScaleAdvertisement: (event: ScaleAdvertisementEvent) => void;
+  onScaleScanState: (event: ScanStateEvent) => void;
+  onScaleLink: (event: ScaleLinkEvent) => void;
+  onScaleValue: (event: ValueEvent) => void;
 };

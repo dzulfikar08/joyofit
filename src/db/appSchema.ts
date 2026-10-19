@@ -5,6 +5,7 @@ import { ensureCoachSchema } from '@/features/coach/store';
 import { ensureCyclingSchema } from '@/features/cycling/store';
 import { ensureGearSchema } from '@/features/gear/store';
 import { ensureRecordingSchema } from '@/features/record/journal';
+import { ensureScaleSchema } from '@/features/scale/store';
 import { ensureSensorSchema } from '@/features/sensors/store';
 import { ensureStrengthSchema } from '@/features/strength/store';
 
@@ -21,6 +22,7 @@ export async function buildAppSchema(db: SQLiteDatabase): Promise<void> {
   await ensureStrengthSchema(db);
   await ensureCoachSchema(db);
   await ensureSensorSchema(db);
+  await ensureScaleSchema(db);
   await ensureCyclingSchema(db);
   await ensureRecordingSchema(db);
 }

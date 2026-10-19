@@ -49,6 +49,32 @@ declare class BleSensorsModule extends NativeModule<BleSensorsModuleEvents> {
   requestLocationPermission(): Promise<LocationPermission>;
 
   /**
+   * Bathroom scales. Starts an UNFILTERED scan (a scale that broadcasts its weight hides it in manufacturer data, so there is no service
+   * to filter by) and reports each advertisement as `onScaleAdvertisement`; an identical repeat arrives at most every 2 s, a changed payload
+   * at once. `ids` limits it to scales already picked (empty = everything around). `lowLatency` false asks for the battery friendly radio duty cycle (Android; iOS has one mode). Ends by itself after `durationMs` (5 s .. 180 s) or at
+   * `stopScaleScan`; `onScaleScanState` tells. Foreground only on iOS. Rejects with ERR_BLUETOOTH_PERMISSION, ERR_BLUETOOTH_OFF or
+   * ERR_BLUETOOTH_UNAVAILABLE. Independent from `startScan` (sports sensors).
+   */
+  startScaleScan(ids: string[], durationMs: number, lowLatency: boolean): Promise<void>;
+  stopScaleScan(): Promise<void>;
+  /**
+   * Connects to a scale and discovers every service. No reconnect: `onScaleLink` reports connecting, connected (with the services) and
+   * disconnected (with the reason), and JS decides what to do. Replaces an earlier link to the same scale.
+   */
+  scaleConnect(id: string): Promise<void>;
+  scaleDisconnect(id: string): Promise<void>;
+  /**
+   * GATT operations on a connected scale, run one at a time in call order. Each resolves when the operation finished (descriptor written,
+   * write acknowledged, read answered) and rejects with ERR_SCALE_NOT_CONNECTED, ERR_SCALE_NO_CHARACTERISTIC, ERR_SCALE_OPERATION_REFUSED
+   * or ERR_SCALE_GATT_<status>. Values of notifications, indications and reads arrive as `onScaleValue` (hex). Services and characteristics
+   * are in the normalised form of src/features/scale/uuid.ts; `hex` is bytes without separators. A write without response resolves once
+   * the stack took it.
+   */
+  scaleSubscribe(id: string, service: string, characteristic: string): Promise<void>;
+  scaleRead(id: string, service: string, characteristic: string): Promise<void>;
+  scaleWrite(id: string, service: string, characteristic: string, hex: string, withResponse: boolean): Promise<void>;
+
+  /**
    * Starts the phone side of a recorded workout so it survives a locked screen:
    * - Android: a foreground service (type location when `gps`, plus connectedDevice) with an ongoing notification and a partial wake lock.
    * - iOS: background location updates when `gps` (blue status-bar pill), nothing else; Bluetooth keeps running through the

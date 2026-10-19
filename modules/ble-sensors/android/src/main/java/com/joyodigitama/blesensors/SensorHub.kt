@@ -42,6 +42,7 @@ internal class SensorHub private constructor(val context: Context) {
   private val links = LinkedHashMap<String, SensorLink>()
   private var scanCallback: ScanCallback? = null
   private val scanTimeout = Runnable { stopScanOnHub(null) }
+  private val scale = ScaleRadio(this)
   private var lastBluetoothState: String
 
   private val adapter: BluetoothAdapter?
@@ -161,6 +162,47 @@ internal class SensorHub private constructor(val context: Context) {
     }
   }
 
+  // Bathroom scales (ScaleRadio): an unfiltered scan and one GATT link per scale, kept apart from the sensor links above.
+
+  fun startScaleScan(ids: List<String>?, durationMs: Long, lowLatency: Boolean) {
+    requireScan()
+    onHub { scale.startScan(ids, durationMs, lowLatency) }
+  }
+
+  fun stopScaleScan() = onHub { scale.stopScan(null) }
+
+  fun scaleConnect(id: String) {
+    val address = scaleAddress(id)
+    requireConnect()
+    onHub { scale.connect(address) }
+  }
+
+  fun scaleDisconnect(id: String) = onHub { scale.disconnect(scaleAddress(id)) }
+
+  /** Queues one GATT operation of a scale link. Returns at once; [done] runs on the hub thread with null or an error code. */
+  fun scaleOperation(
+    id: String,
+    kind: ScaleLink.Kind,
+    service: String,
+    characteristic: String,
+    value: ByteArray?,
+    withResponse: Boolean,
+    done: (String?) -> Unit,
+  ) {
+    val address = scaleAddress(id)
+    handler.post { scale.operation(address, kind, service, characteristic, value, withResponse, done) }
+  }
+
+  private fun scaleAddress(id: String): String {
+    val address = id.trim().uppercase()
+    if (!BluetoothAdapter.checkBluetoothAddress(address)) throw SensorException(ErrorCodes.INVALID_ARGUMENT, "Not a Bluetooth address: $id")
+    return address
+  }
+
+  fun scanner() = adapter?.bluetoothLeScanner
+
+  fun canConnect() = hasConnectPermission()
+
   fun disconnect(id: String) = onHub { links.remove(id.trim().uppercase())?.stop() }
 
   fun disconnectAll() = onHub {
@@ -246,6 +288,7 @@ internal class SensorHub private constructor(val context: Context) {
       BluetoothAdapter.STATE_TURNING_OFF, BluetoothAdapter.STATE_OFF -> {
         stopScanOnHub(ErrorCodes.BLUETOOTH_OFF)
         links.values.forEach { it.radioLost() }
+        scale.radioLost()
       }
       BluetoothAdapter.STATE_ON -> links.values.forEach { it.radioRestored() }
     }

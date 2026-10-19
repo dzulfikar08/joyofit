@@ -417,6 +417,11 @@ export const rogo = {
     const history = await rogoCall<{ entries: RogoWeightEntry[] }>('weight/history', { limit: 1 });
     return history.entries.at(-1) ?? null;
   },
+  /**
+   * A weigh-in (`weight.checkIn`, 25 to 400 kg): JoyoRogo keeps one weight per Jakarta day and the last write of a day wins. It has no
+   * field for the source (a scale) or for body composition, so only weight and day travel.
+   */
+  checkInWeight: (input: { weightKg: number; date: string }) => rogoCall<RogoWeightEntry>('weight/checkIn', input),
   /** Writes one item to the diary (a meal the watch quick-logged). */
   addFood: (input: { date: string; meal: RogoMeal; name: string; kcal: number }) =>
     rogoCall<RogoFoodItem>('food/add', { ...input, source: 'manual' }),

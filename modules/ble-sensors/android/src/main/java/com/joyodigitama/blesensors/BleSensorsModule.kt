@@ -3,6 +3,7 @@ package com.joyodigitama.blesensors
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import expo.modules.kotlin.Promise
 import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
@@ -46,10 +47,31 @@ class BleSensorsModule : Module() {
 
   private fun hub(): SensorHub = SensorHub.get(context())
 
+  private fun scaleOperation(
+    promise: Promise,
+    id: String,
+    kind: ScaleLink.Kind,
+    service: String,
+    characteristic: String,
+    value: ByteArray?,
+    withResponse: Boolean,
+  ) {
+    try {
+      hub().scaleOperation(id, kind, service, characteristic, value, withResponse) { error ->
+        if (error == null) promise.resolve() else promise.reject(error, error, null)
+      }
+    } catch (e: SensorException) {
+      promise.reject(e)
+    }
+  }
+
   override fun definition() = ModuleDefinition {
     Name("BleSensors")
 
-    Events("onScanResult", "onScanState", "onConnection", "onValue", "onLocation", "onBluetoothState", "onWorkoutAction")
+    Events(
+      "onScanResult", "onScanState", "onConnection", "onValue", "onLocation", "onBluetoothState", "onWorkoutAction",
+      "onScaleAdvertisement", "onScaleScanState", "onScaleLink", "onScaleValue",
+    )
 
     OnCreate {
       hub().install(this@BleSensorsModule) { name, payload -> sendEvent(name, payload) }
@@ -63,6 +85,34 @@ class BleSensorsModule : Module() {
     AsyncFunction("bluetoothState") { hub().bluetoothState() }
 
     AsyncFunction("startScan") { hub().startScan() }
+
+    // Bathroom scales: the transport behind src/features/scale. See BleSensorsModule.ts for the contract.
+    AsyncFunction("startScaleScan") { ids: List<String>, durationMs: Int, lowLatency: Boolean ->
+      hub().startScaleScan(ids.ifEmpty { null }, durationMs.toLong(), lowLatency)
+    }
+
+    AsyncFunction("stopScaleScan") { hub().stopScaleScan() }
+
+    AsyncFunction("scaleConnect") { id: String -> hub().scaleConnect(id) }
+
+    AsyncFunction("scaleDisconnect") { id: String -> hub().scaleDisconnect(id) }
+
+    AsyncFunction("scaleSubscribe") { id: String, service: String, characteristic: String, promise: Promise ->
+      scaleOperation(promise, id, ScaleLink.Kind.SUBSCRIBE, service, characteristic, null, false)
+    }
+
+    AsyncFunction("scaleRead") { id: String, service: String, characteristic: String, promise: Promise ->
+      scaleOperation(promise, id, ScaleLink.Kind.READ, service, characteristic, null, false)
+    }
+
+    AsyncFunction("scaleWrite") { id: String, service: String, characteristic: String, hex: String, withResponse: Boolean, promise: Promise ->
+      val bytes = ScaleLogic.fromHex(hex)
+      if (bytes == null) {
+        promise.reject(ErrorCodes.INVALID_ARGUMENT, "Not hex: $hex", null)
+      } else {
+        scaleOperation(promise, id, ScaleLink.Kind.WRITE, service, characteristic, bytes, withResponse)
+      }
+    }
 
     AsyncFunction("stopScan") { hub().stopScan() }
 

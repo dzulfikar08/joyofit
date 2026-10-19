@@ -98,7 +98,7 @@ flowchart LR
 | `src/db/`, `src/cloud/` | SQLite queries and migrations; JoyoRogo sign-in, cloud API client and uploaders |
 | `src/i18n/` | i18next setup and `locales/{id,en}/*.json` |
 | `modules/huawei-wear/` | Local Expo module: the watch protocol (port of [Gadgetbridge](https://codeberg.org/Freeyourgadget/Gadgetbridge)'s Huawei support) in Kotlin and Swift, plus the shared SQLite schema |
-| `modules/ble-sensors/` | Local Expo module: Bluetooth chest straps, cycling and running sensors, and the phone-recorded workout session (GPS, foreground service) |
+| `modules/ble-sensors/` | Local Expo module: Bluetooth chest straps, cycling and running sensors, bathroom-scale scan and GATT transport, and the phone-recorded workout session (GPS, foreground service) |
 | `protocol/` | Protocol notes and observations |
 | `server/` | Cloudflare Worker (Hono, D1, R2) for steps, sleep, gear and Strava glue |
 | `web/` | JoyoFit Studio, the watch-face editor (Vite, React) |
@@ -147,6 +147,7 @@ Site (`site/`): `bun install`, `bun run dev`, `bun run build` (typecheck, Vite b
 | [docs/strength.md](docs/strength.md), [docs/strength-cloud.md](docs/strength-cloud.md) | Strength logger and its cloud sync |
 | [docs/multi-watch.md](docs/multi-watch.md) | Several watches: device column, primary rules, switching, background visits |
 | [docs/sensors.md](docs/sensors.md) | External sensors, phone-recorded workouts, device test script |
+| [docs/scale.md](docs/scale.md) | Bluetooth bathroom scales: supported protocols and sources, JoyoRogo weight sync, test script |
 | [docs/replay.md](docs/replay.md) | Workout replay: player, camera, map, MP4 export with the native encoder, privacy, known limits |
 | [docs/ride.md](docs/ride.md) | Ride on the web: the phone as sensor bridge, the relay, the wire protocol, virtual power (the game: [docs/ride-web.md](docs/ride-web.md)) |
 | [docs/coach.md](docs/coach.md) | Coach rules, plans, library, chat |

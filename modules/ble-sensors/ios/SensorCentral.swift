@@ -120,7 +120,7 @@ final class SensorCentral: NSObject, CBCentralManagerDelegate, @unchecked Sendab
         }
     }
 
-    private func requireOn() async throws {
+    func requireOn() async throws {
         switch await settledRadio() {
         case "on": return
         case "off": throw SensorError.off

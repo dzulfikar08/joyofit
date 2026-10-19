@@ -37,10 +37,14 @@ public final class BleSensorsModule: Module {
     public func definition() -> ModuleDefinition {
         let central = SensorCentral.shared
         let location = WorkoutLocation.shared
+        let scales = ScaleCentral.shared
 
         Name("BleSensors")
 
-        Events("onScanResult", "onScanState", "onConnection", "onValue", "onLocation", "onBluetoothState", "onWorkoutAction")
+        Events(
+            "onScanResult", "onScanState", "onConnection", "onValue", "onLocation", "onBluetoothState", "onWorkoutAction",
+            "onScaleAdvertisement", "onScaleScanState", "onScaleLink", "onScaleValue"
+        )
 
         OnCreate {
             let module = self
@@ -62,6 +66,42 @@ public final class BleSensorsModule: Module {
 
         AsyncFunction("stopScan") { () async -> Void in
             await central.stopScan()
+        }
+
+        // Bathroom scales: the transport behind src/features/scale. See BleSensorsModule.ts for the contract.
+        AsyncFunction("startScaleScan") { (ids: [String], durationMs: Int, lowLatency: Bool) async throws -> Void in
+            try await bleCall { try await scales.startScan(ids: ids, durationMs: durationMs) }
+        }
+
+        AsyncFunction("stopScaleScan") { () async -> Void in
+            await scales.stopScan()
+        }
+
+        AsyncFunction("scaleConnect") { (id: String) async throws -> Void in
+            try await bleCall { try await scales.connect(id) }
+        }
+
+        AsyncFunction("scaleDisconnect") { (id: String) async -> Void in
+            await scales.disconnect(id)
+        }
+
+        AsyncFunction("scaleSubscribe") { (id: String, service: String, characteristic: String) async throws -> Void in
+            try await bleCall {
+                try await scales.operation(id: id, kind: .subscribe, service: service, characteristic: characteristic, value: nil, withResponse: false)
+            }
+        }
+
+        AsyncFunction("scaleRead") { (id: String, service: String, characteristic: String) async throws -> Void in
+            try await bleCall {
+                try await scales.operation(id: id, kind: .read, service: service, characteristic: characteristic, value: nil, withResponse: false)
+            }
+        }
+
+        AsyncFunction("scaleWrite") { (id: String, service: String, characteristic: String, hex: String, withResponse: Bool) async throws -> Void in
+            guard let bytes = ScaleLogic.fromHex(hex) else { throw BleSensorsException("ERR_INVALID_ARGUMENT", "Not hex: \(hex)") }
+            try await bleCall {
+                try await scales.operation(id: id, kind: .write, service: service, characteristic: characteristic, value: bytes, withResponse: withResponse)
+            }
         }
 
         AsyncFunction("connect") { (id: String) async throws -> Void in

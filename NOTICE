@@ -18,6 +18,12 @@ RouteFile.kt and RouteFile.swift (the route file sent to the watch) are ports of
 HuaweiRouteTrack.java, and the route push in P2pController follows its HuaweiP2PFitnessData.java; verbatim copies of the two
 converter classes live in modules/huawei-wear/ios/HuaweiProtocol/GoldenGen/vendor/ only to generate the test fixtures.
 
+The Bluetooth scale decoders in src/features/scale/ (protocols/*.ts, bodyComposition.ts) are TypeScript ports of
+openScale (https://github.com/oliexdev/openScale, Copyright (C) olie.xdev, GPL-3.0-or-later, which is compatible with this
+project's AGPL-3.0-or-later): the handlers under android_app/app/src/main/java/com/health/openscale/core/bluetooth/scales/ and
+the formula libraries under .../bluetooth/libs/. Each ported file names its openScale source files and the openScale tests its
+byte vectors come from, and keeps the copyright line. docs/scale.md lists them.
+
 The importer for Huawei's Privacy Centre health export (HuaweiExport*.kt, HuaweiHealthDetailParser.kt,
 HuaweiMotionPathParser.kt in modules/huawei-wear/android/) was written for this project. Its idea of the export
 layout (folders, record keys, the motion-path track records, the pause marker and the invalid-JSON quirks) comes from
