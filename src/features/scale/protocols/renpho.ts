@@ -93,7 +93,7 @@ class RenphoSession implements GattSession {
 export const RENPHO_PROTOCOL: GattProtocol = {
   kind: 'gatt',
   id: 'renpho-es-wbe28',
-  label: 'RENPHO ES-WBE28',
+  label: 'RENPHO ES-WBE28', // i18n-ok scale model name
   brands: ['Renpho'],
   source: ['scales/RenphoHandler.kt'],
   matches: (info: GattInfo) => {

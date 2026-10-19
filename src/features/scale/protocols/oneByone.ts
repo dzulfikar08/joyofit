@@ -191,7 +191,7 @@ function nameOf(info: GattInfo): string {
 export const ONE_BY_ONE_CLASSIC_PROTOCOL: GattProtocol = {
   kind: 'gatt',
   id: 'one-by-one-health-scale',
-  label: '1byone Health Scale',
+  label: '1byone Health Scale', // i18n-ok scale model name
   brands: ['1byone', 'New iWellness 4.0'],
   source: ['scales/OneByoneHandler.kt', 'libs/OneByoneLib.kt'],
   matches: (info) => nameOf(info).includes('health scale'),
@@ -201,7 +201,7 @@ export const ONE_BY_ONE_CLASSIC_PROTOCOL: GattProtocol = {
 export const EUFY_ONE_BY_ONE_PROTOCOL: GattProtocol = {
   kind: 'gatt',
   id: 'eufy-one-by-one',
-  label: 'Eufy Smart Scale C1 / P1 / A1',
+  label: 'Eufy Smart Scale C1 / P1 / A1', // i18n-ok scale model name
   brands: ['Eufy (T9146 C1, T9147 P1, T9120 A1)'],
   source: ['scales/OneByoneHandler.kt', 'libs/OneByoneLib.kt'],
   matches: (info) => {

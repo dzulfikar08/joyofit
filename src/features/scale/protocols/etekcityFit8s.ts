@@ -19,7 +19,7 @@ const UNITS: WeightUnit[] = ['kg', 'lb', 'st'];
 export const etekcityFit8sProtocol: BroadcastProtocol = {
   kind: 'broadcast',
   id: 'etekcity-fit8s-broadcast',
-  label: 'Etekcity Fit 8S',
+  label: 'Etekcity Fit 8S', // i18n-ok scale model name
   brands: ['Etekcity', 'VeSync'],
   source: ['scales/EtekcityFit8SHandler.kt', 'libs/EtekcityLib.kt'],
   matches(frame: AdFrame) {

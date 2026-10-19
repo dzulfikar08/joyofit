@@ -30,7 +30,7 @@ function record(frame: AdFrame): Uint8Array | null {
 export const qnBroadcastProtocol: BroadcastProtocol = {
   kind: 'broadcast',
   id: 'qn-broadcast',
-  label: 'QN / Renpho (broadcast)',
+  label: 'QN / Renpho (broadcast)', // i18n-ok scale model name
   brands: ['QN', 'Renpho', 'FITINDEX FT-26R', 'ES-CS20M'],
   source: ['scales/QNHandlerBroadcast.kt'],
   // The name is deliberately not used: "renpho" / "qn-scale" are also names of the connectable QN variants.

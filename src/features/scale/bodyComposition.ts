@@ -53,54 +53,38 @@ export interface BodyInput {
   activity?: 0 | 1 | 2;
 }
 
-export const BODY_FORMULAS: { id: BodyFormula; label: string; source: string; note: string }[] = [
+export const BODY_FORMULAS: { id: BodyFormula; source: string }[] = [
   {
     id: 'miscale',
-    label: 'Xiaomi Mi Body Composition Scale (Mi Fit port)',
     source: 'libs/MiScaleLib.kt',
-    note: 'Reverse-engineered Mi Fit regression. Used by openScale for Xiaomi Mi Scale 2 and clones.',
   },
   {
     id: 'bodyMiScale',
-    label: 'BodyMiScale (scientific variant)',
     source: 'libs/BodyMiScaleLib.kt',
-    note: 'Clamped variant of the Mi regression with protein and BMR; openScale offers it as an alternative for Mi scales.',
   },
   {
     id: 'oneByone',
-    label: '1byone / Health Scale (legacy)',
     source: 'libs/OneByoneLib.kt',
-    note: 'Used by openScale for the original 1byone protocol. Optional activity bucket.',
   },
   {
     id: 'oneByoneNew',
-    label: '1byone (new protocol)',
     source: 'libs/OneByoneNewLib.kt',
-    note: 'Used by openScale for the newer 1byone protocol. musclePct is the skeletal-muscle percentage.',
   },
   {
     id: 'yunmai',
-    label: 'Yunmai',
     source: 'libs/YunmaiLib.kt',
-    note: 'Fat derived from BMI + resistance; water/muscle/bone follow from fat. Activity 2 selects the fitness branch.',
   },
   {
     id: 'standard',
-    label: 'Generic bioimpedance (H²/R)',
     source: 'libs/StandardImpedanceLib.kt',
-    note: 'Plain height²/impedance regression; openScale uses it for AiLink and Etekcity scales. Fallback for scales that send only impedance.',
   },
   {
     id: 'trisa',
-    label: 'Trisa Body Analyze / QN',
     source: 'libs/TrisaBodyAnalyzeLib.kt',
-    note: 'Formula openScale applies to QN-family scales (QNHandler.kt: Renpho/Fit Plus style). Expects impedance in ohm, ~300-1000.',
   },
   {
     id: 'okokV2',
-    label: 'OKOK / Chipsea 0xC0 frames',
     source: 'libs/OkOkV2Lib.kt',
-    note: 'Used by openScale for OkOkHandler 0xC0 vendor frames (adults only; age <= 17 yields no water/visceral/protein).',
   },
 ];
 

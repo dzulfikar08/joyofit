@@ -43,7 +43,7 @@ function records(frame: AdFrame): { id: number; data: Uint8Array }[] {
 export const aaaxProtocol: BroadcastProtocol = {
   kind: 'broadcast',
   id: 'aaax-broadcast',
-  label: 'AAA-series (broadcast)',
+  label: 'AAA-series (broadcast)', // i18n-ok scale model name
   brands: ['Fitdays', 'Posture FG220LB', 'AAA002', 'AAA007', 'AAA013', 'AAA07A'],
   source: ['scales/AAAxHandler.kt'],
   matches(frame) {

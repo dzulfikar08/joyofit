@@ -127,7 +127,7 @@ function firstFrame(frame: AdFrame): AiLinkBroadcast | null {
 export const aiLinkProtocol: BroadcastProtocol = {
   kind: 'broadcast',
   id: 'ailink-broadcast',
-  label: 'AiLink / eLink (broadcast)',
+  label: 'AiLink / eLink (broadcast)', // i18n-ok scale model name
   brands: ['AiLink', 'eLink', 'Pingwang', 'Aicare'],
   source: ['scales/AiLinkBroadcastHandler.kt', 'libs/AiLinkLib.kt'],
   // The name ("EL1") is a meaningless default; the F0A0 service plus a record that checksums and decrypts is the fingerprint.

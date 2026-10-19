@@ -91,7 +91,7 @@ function createSession(ctx: GattContext): GattSession {
 export const INLIFE: GattProtocol = {
   id: 'inlife',
   kind: 'gatt',
-  label: 'Inlife',
+  label: 'Inlife', // i18n-ok scale model name
   brands: ['Inlife'],
   source: ['scales/InlifeHandler.kt'],
   matches: (i) => ['000fatscale01', '000fatscale02', '042fatscale01'].includes((i.name ?? '').toLowerCase()),

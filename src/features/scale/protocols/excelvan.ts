@@ -72,7 +72,7 @@ function createSession(ctx: GattContext): GattSession {
 export const EXCELVAN_CF36X: GattProtocol = {
   id: 'excelvan-cf36x',
   kind: 'gatt',
-  label: 'Excelvan CF36xBLE ("Electronic Scale")',
+  label: 'Excelvan CF36xBLE ("Electronic Scale")', // i18n-ok scale model name
   brands: ['Excelvan', 'Electronic Scale (generic)'],
   source: ['scales/ExcelvanCF36xHandler.kt'],
   matches: (i) => (i.name ?? '').toLowerCase() === 'electronic scale',

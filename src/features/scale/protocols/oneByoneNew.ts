@@ -166,7 +166,7 @@ function round2(v: number): number {
 export const ONE_BY_ONE_NEW_PROTOCOL: GattProtocol = {
   kind: 'gatt',
   id: 'one-by-one-new',
-  label: '1byone scale (new)',
+  label: '1byone scale (new)', // i18n-ok scale model name
   brands: ['1byone'],
   source: ['scales/OneByoneNewHandler.kt', 'libs/OneByoneNewLib.kt'],
   matches: (info: GattInfo) => (info.name ?? '').toLowerCase() === '1byone scale',

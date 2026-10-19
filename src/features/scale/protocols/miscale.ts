@@ -225,7 +225,7 @@ function createSession(ctx: GattContext): GattSession {
 export const MI_SCALE_PROTOCOL: GattProtocol = {
   kind: 'gatt',
   id: 'xiaomi-mi-scale',
-  label: 'Xiaomi Mi Scale (v1 / v2)',
+  label: 'Xiaomi Mi Scale (v1 / v2)', // i18n-ok scale model name
   brands: ['Xiaomi Mi Smart Scale', 'Xiaomi Mi Body Composition Scale', 'Mi Fit / Zepp Life'],
   source: ['scales/MiScaleHandler.kt', 'libs/MiScaleLib.kt'],
   matches(info: GattInfo): boolean {

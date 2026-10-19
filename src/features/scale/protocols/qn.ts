@@ -255,7 +255,7 @@ class QnSession implements GattSession {
 export const QN_PROTOCOL: GattProtocol = {
   kind: 'gatt',
   id: 'qn-scale',
-  label: 'QN-Scale / Yolanda / Renpho-QN',
+  label: 'QN-Scale / Yolanda / Renpho-QN', // i18n-ok scale model name
   brands: ['QN-Scale', 'Yolanda', 'Renpho (QN models)', 'FITINDEX', 'GE Fit Plus', 'SEB / Tefal'],
   source: ['scales/QNHandler.kt'],
   matches: matchesQn,

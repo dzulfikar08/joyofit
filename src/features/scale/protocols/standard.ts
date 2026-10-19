@@ -276,7 +276,7 @@ function createSession(ctx: GattContext): GattSession {
 export const STANDARD_WEIGHT_PROTOCOL: GattProtocol = {
   kind: 'gatt',
   id: 'standard-weight-profile',
-  label: 'Bluetooth standard weight scale',
+  label: 'Bluetooth standard weight scale', // i18n-ok scale model name
   brands: ['Bluetooth SIG Weight Scale / Body Composition', 'Beurer (BF105, BF500, BF600, BF720, BF950)', 'Sanitas (SBF73, SBF76, SBF77)', 'A&D UC-352BLE'],
   source: ['scales/StandardWeightProfileHandler.kt'],
   matches(info: GattInfo): boolean {

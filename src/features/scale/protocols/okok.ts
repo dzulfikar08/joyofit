@@ -190,7 +190,7 @@ export function decodeOkok(frame: AdFrame): OkokFrame | null {
 export const okokProtocol: BroadcastProtocol = {
   kind: 'broadcast',
   id: 'okok-chipsea-broadcast',
-  label: 'OKOK / Chipsea (broadcast)',
+  label: 'OKOK / Chipsea (broadcast)', // i18n-ok scale model name
   brands: ['OKOK International', 'Chipsea', 'Yoda'],
   source: ['scales/OkOkHandler.kt', 'libs/OkOkV2Lib.kt'],
   matches(frame) {

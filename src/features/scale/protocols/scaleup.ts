@@ -27,7 +27,7 @@ function scaleupKeys(frame: AdFrame): number[] {
 export const scaleupProtocol: BroadcastProtocol = {
   kind: 'broadcast',
   id: 'scaleup-broadcast',
-  label: 'Scale Up (broadcast)',
+  label: 'Scale Up (broadcast)', // i18n-ok scale model name
   brands: ['Scale Up'],
   source: ['scales/ScaleupHandler.kt'],
   matches(frame) {

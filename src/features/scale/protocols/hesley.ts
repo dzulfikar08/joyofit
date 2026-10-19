@@ -55,7 +55,7 @@ function createSession(): GattSession {
 export const HESLEY: GattProtocol = {
   id: 'hesley-yunchen',
   kind: 'gatt',
-  label: 'Hesley (YunChen)',
+  label: 'Hesley (YunChen)', // i18n-ok scale model name
   brands: ['Hesley', 'YunChen'],
   source: ['scales/HesleyHandler.kt'],
   matches: (i) => (i.name ?? '').toLowerCase() === 'yunchen',

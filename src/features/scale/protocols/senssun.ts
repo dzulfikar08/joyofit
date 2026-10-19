@@ -142,7 +142,7 @@ function createSession(ctx: GattContext): GattSession {
 export const SENSSUN: GattProtocol = {
   id: 'senssun-fat',
   kind: 'gatt',
-  label: 'Senssun Fat',
+  label: 'Senssun Fat', // i18n-ok scale model name
   brands: ['Senssun'],
   source: ['scales/SenssunHandler.kt'],
   matches: (i) => (i.name ?? '').toLowerCase() === 'senssun fat',

@@ -63,7 +63,7 @@ function createSession(ctx: GattContext): GattSession {
 export const EXINGTECH_Y1: GattProtocol = {
   id: 'exingtech-y1',
   kind: 'gatt',
-  label: 'Exingtech Y1 (VScale)',
+  label: 'Exingtech Y1 (VScale)', // i18n-ok scale model name
   brands: ['Exingtech', 'VScale'],
   source: ['scales/ExingtechY1Handler.kt'],
   matches: (i) => (i.name ?? '').toLowerCase() === 'vscale' || i.serviceUuids.includes(SERVICE),

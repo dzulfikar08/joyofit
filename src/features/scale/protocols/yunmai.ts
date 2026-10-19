@@ -137,7 +137,7 @@ function yunmaiSession(ctx: GattContext, mini: boolean): GattSession {
 export const YUNMAI_MINI: GattProtocol = {
   id: 'yunmai-mini',
   kind: 'gatt',
-  label: 'Yunmai Mini',
+  label: 'Yunmai Mini', // i18n-ok scale model name
   brands: ['Yunmai'],
   source: ['scales/YunmaiHandler.kt', 'libs/YunmaiLib.kt'],
   matches: (i) => {
@@ -150,7 +150,7 @@ export const YUNMAI_MINI: GattProtocol = {
 export const YUNMAI_SE: GattProtocol = {
   id: 'yunmai-se',
   kind: 'gatt',
-  label: 'Yunmai SE',
+  label: 'Yunmai SE', // i18n-ok scale model name
   brands: ['Yunmai'],
   source: ['scales/YunmaiHandler.kt', 'libs/YunmaiLib.kt'],
   matches: (i) => (i.name ?? '').startsWith('YUNMAI-ISSE'),
@@ -190,7 +190,7 @@ function findYunmaiX(frame: AdFrame): YunmaiXFrame | null {
 export const YUNMAI_X: BroadcastProtocol = {
   id: 'yunmai-x',
   kind: 'broadcast',
-  label: 'Yunmai X (YMBS-M268)',
+  label: 'Yunmai X (YMBS-M268)', // i18n-ok scale model name
   brands: ['Yunmai'],
   source: ['scales/YunmaiXHandler.kt'],
   matches: (f) => findYunmaiX(f) !== null || f.serviceUuids.includes('1320'),
