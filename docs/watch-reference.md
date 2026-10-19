@@ -221,8 +221,9 @@ when the watch connects, whenever the watch asks for it (opening its weather app
   fresh network fix, else the last position it stored. Without background location access Android may
   give the background service no fresh fix, so the last position is reused. Choose **A city** if that is not good enough.
 - Temperatures are always sent in °C, like Gadgetbridge; the unit setting tells the watch which one to show.
-- Open-Meteo has no moon rise/set, air quality or place name for a coordinate: the moon phase is computed,
-  the others are not sent, and a current-location name comes from Android's `Geocoder` when the phone has one.
+- Moon rise and set come from Open-Meteo's daily `moonrise` / `moonset` (unix seconds, null on a day the moon skips one) and are sent
+  with the sun times, so a watch that does not list sun rise/set (bit 0 of `0f/0a`) gets neither. The moon phase is computed.
+  Air quality is not sent, and a current-location name comes from Android's `Geocoder` when the phone has one.
 - Settings → Weather says what the watch did with the forecast of the last push: sent (24 hours, 8 days), refused (the code it
   answered), not confirmed, or "takes current weather only" when the watch does not list the forecast command. The support
   report carries the same lines, the commands the watch lists and every step of the last push, so a watch that shows today's

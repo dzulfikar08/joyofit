@@ -27,7 +27,7 @@ public enum OpenMeteo {
             + "?latitude=\(coordinate(latitude))&longitude=\(coordinate(longitude))"
             + "&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,uv_index"
             + "&hourly=temperature_2m,weather_code,precipitation_probability,uv_index"
-            + "&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset"
+            + "&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,moonrise,moonset"
             + "&timezone=auto&timeformat=unixtime&forecast_days=\(forecastDays)"
     }
 
@@ -80,6 +80,8 @@ public enum OpenMeteo {
             let dayMin = try daily.array("temperature_2m_min")
             let daySunrise = daily.optArray("sunrise")
             let daySunset = daily.optArray("sunset")
+            let dayMoonrise = daily.optArray("moonrise")
+            let dayMoonset = daily.optArray("moonset")
             var skippedDays = 0
             var days: [WeatherDay] = []
             days.reserveCapacity(dayTimes.count)
@@ -96,7 +98,10 @@ public enum OpenMeteo {
                         minC: try dayMin.double(i),
                         // Null at polar latitudes (no sunrise or sunset that day); the packet skips 0.
                         sunrise: try daySunrise.roundedIntOrNil(i) ?? 0,
-                        sunset: try daySunset.roundedIntOrNil(i) ?? 0
+                        sunset: try daySunset.roundedIntOrNil(i) ?? 0,
+                        // Null on the day the moon does not rise (or set) between local midnights; the packet skips 0.
+                        moonrise: try dayMoonrise.roundedIntOrNil(i) ?? 0,
+                        moonset: try dayMoonset.roundedIntOrNil(i) ?? 0
                     )
                 )
             }

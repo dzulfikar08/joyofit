@@ -63,7 +63,8 @@ public struct WeatherHour: Equatable, Sendable {
     }
 }
 
-/// One forecast day. Sun times are unix seconds, 0 when the sun does not rise or set (polar).
+/// One forecast day. Sun and moon times are unix seconds, 0 when the body does not rise or set that day (polar sun, or the day the moon skips its
+/// rise or set).
 public struct WeatherDay: Equatable, Sendable {
     /// Local midnight at the place, unix seconds.
     public var timestamp: Int32
@@ -72,14 +73,18 @@ public struct WeatherDay: Equatable, Sendable {
     public var minC: Double
     public var sunrise: Int32
     public var sunset: Int32
+    public var moonrise: Int32
+    public var moonset: Int32
 
-    public init(timestamp: Int32, code: Int32, maxC: Double, minC: Double, sunrise: Int32, sunset: Int32) {
+    public init(timestamp: Int32, code: Int32, maxC: Double, minC: Double, sunrise: Int32, sunset: Int32, moonrise: Int32 = 0, moonset: Int32 = 0) {
         self.timestamp = timestamp
         self.code = code
         self.maxC = maxC
         self.minC = minC
         self.sunrise = sunrise
         self.sunset = sunset
+        self.moonrise = moonrise
+        self.moonset = moonset
     }
 }
 
@@ -198,8 +203,8 @@ public enum Beaufort {
     }
 }
 
-/// Open-Meteo has no moon data, so the phase is computed from the mean synodic month. Accurate to about a day, which is what the watch's eight-step
-/// phase icon needs. 0 is new moon, 180 full moon.
+/// The moon phase is computed from the mean synodic month (not fetched; moon rise and set are). Accurate to about a day, which is what the watch's
+/// eight-step phase icon needs. 0 is new moon, 180 full moon.
 public enum Moon {
     private static let synodicDays = 29.530588853
     /// Julian date of a known new moon (2000-01-06 18:14 UTC).

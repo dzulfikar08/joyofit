@@ -53,7 +53,8 @@ final class WeatherModelTests: XCTestCase {
             days.append(
                 WeatherDay(
                     timestamp: Int32(midnight), code: 61, maxC: 31.4 + Double(i), minC: 22.6 - Double(i),
-                    sunrise: Int32(midnight + 5 * 3600 + 40 * 60), sunset: Int32(midnight + 17 * 3600 + 50 * 60)
+                    sunrise: Int32(midnight + 5 * 3600 + 40 * 60), sunset: Int32(midnight + 17 * 3600 + 50 * 60),
+                    moonrise: Int32(midnight + 12 * 3600 + 10 * 60), moonset: Int32(midnight + 7 * 60)
                 )
             )
         }
@@ -110,7 +111,8 @@ final class WeatherModelTests: XCTestCase {
          "hourly":{"time":[1760410800,1760414400,1760418000],"temperature_2m":[27.0,28.5,null],
            "weather_code":[2,3,3],"precipitation_probability":[10,null,30],"uv_index":[5.0,6.0,null]},
          "daily":{"time":[1760374800,1760461200],"weather_code":[61,3],"temperature_2m_max":[31.4,30.0],
-           "temperature_2m_min":[22.6,22.0],"sunrise":[1760395200,null],"sunset":[1760438400,1760481600]}}
+           "temperature_2m_min":[22.6,22.0],"sunrise":[1760395200,null],"sunset":[1760438400,1760481600],
+           "moonrise":[1760418600,null],"moonset":[1760375220,1760462100]}}
         """
         let place = WeatherPlace(name: "Bandung", latitude: -6.9, longitude: 107.6)
         let report = try OpenMeteo.parseForecast(json, place: place, fetchedAtSec: 1_760_412_700)
@@ -127,6 +129,11 @@ final class WeatherModelTests: XCTestCase {
         XCTAssertEqual(report.daily.count, 2)
         XCTAssertEqual(report.daily[1].sunrise, 0)
         XCTAssertEqual(report.daily[0].sunset, 1_760_438_400)
+        XCTAssertEqual(report.daily[0].moonrise, 1_760_418_600)
+        XCTAssertEqual(report.daily[0].moonset, 1_760_375_220)
+        // A day the moon does not rise (null) is 0, which the packet skips.
+        XCTAssertEqual(report.daily[1].moonrise, 0)
+        XCTAssertEqual(report.daily[1].moonset, 1_760_462_100)
         XCTAssertEqual(report.fetchedAtSec, 1_760_412_700)
     }
 
@@ -166,6 +173,7 @@ final class WeatherModelTests: XCTestCase {
         let url = OpenMeteo.forecastURL(latitude: -6.9147444, longitude: 107.6098111)
         XCTAssertTrue(url.hasPrefix("https://api.open-meteo.com/v1/forecast?latitude=-6.91&longitude=107.61&"))
         XCTAssertTrue(url.contains("timeformat=unixtime"))
+        XCTAssertTrue(url.contains("&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,moonrise,moonset&"))
         XCTAssertEqual(
             OpenMeteo.geocodingURL(name: "S\u{00E3}o Paulo", count: 1),
             "https://geocoding-api.open-meteo.com/v1/search?name=S%C3%A3o+Paulo&count=1&language=en&format=json"
@@ -235,7 +243,10 @@ final class WeatherModelTests: XCTestCase {
         XCTAssertEqual(try days[0].int(0x16), Int32(day(0) + 5 * 3600 + 40 * 60))
         XCTAssertEqual(try days[0].int(0x17), Int32(day(0) + 17 * 3600 + 50 * 60))
         XCTAssertTrue(days[0].contains(0x1E)) // moon phase
-        XCTAssertFalse(days[0].contains(0x1A)) // no moon rise
+        // Open-Meteo's moon times: 12:10 rise and 00:07 set of the local day, unix seconds, after the sun times.
+        XCTAssertEqual(try days[0].int(0x1A), Int32(day(0) + 12 * 3600 + 10 * 60))
+        XCTAssertEqual(try days[0].int(0x1B), Int32(day(0) + 7 * 60))
+        XCTAssertEqual(try days[3].int(0x1A), Int32(day(3) + 12 * 3600 + 10 * 60))
         // GB: later days are stamped observation + whole days and use the day's own icon (WMO 61 = LIGHT_RAIN 0x07).
         XCTAssertEqual(try days[1].int(0x12), Int32(now) + 86400)
         XCTAssertEqual(try days[1].byte(0x13), 0x07)
@@ -249,6 +260,34 @@ final class WeatherModelTests: XCTestCase {
         XCTAssertEqual(WeatherPackets.sunInDay(Int32(day(1) + 3600), zone: zone, nowSec: now, day: 0), 0)
         XCTAssertEqual(WeatherPackets.sunInDay(Int32(day(1) + 3600), zone: zone, nowSec: now, day: 1), Int32(day(1) + 3600))
         XCTAssertEqual(WeatherPackets.sunInDay(Int32(day(1)), zone: zone, nowSec: now, day: 0), Int32(day(1)), "the end of the day is still inside it")
+    }
+
+    func testMoonRiseAndSetFollowTheSunRiseSetBitAndTheDayCheck() throws {
+        let entries = WeatherPackets.forecastEntries(report: report(), nowSec: now, zone: zone)
+        // GB Weather.java:603-612: 0x1a / 0x1b sit under sunRiseSetSupported; the phase (0x1e) has its own bit.
+        var phaseOnly = allSupported()
+        phaseOnly.sunRiseSetSupported = false
+        let onlyPhase = try WeatherPackets.forecast(settings: phaseOnly, entries: entries).tlv!.object(0x90).objects(0x91)[0]
+        XCTAssertFalse(onlyPhase.contains(0x1A))
+        XCTAssertFalse(onlyPhase.contains(0x1B))
+        XCTAssertTrue(onlyPhase.contains(0x1E))
+        var noPhase = allSupported()
+        noPhase.moonPhaseSupported = false
+        let noPhaseDay = try WeatherPackets.forecast(settings: noPhase, entries: entries).tlv!.object(0x90).objects(0x91)[0]
+        XCTAssertTrue(noPhaseDay.contains(0x1A))
+        XCTAssertTrue(noPhaseDay.contains(0x1B))
+        XCTAssertFalse(noPhaseDay.contains(0x1E))
+
+        // A moon time outside its local day is dropped like a sun time (GB fixupWeather), 0 is skipped.
+        var outside = report()
+        outside.daily[0].moonrise = Int32(day(1) + 3600)
+        outside.daily[0].moonset = 0
+        let dropped = WeatherPackets.forecastEntries(report: outside, nowSec: now, zone: zone).days[0]
+        XCTAssertEqual(dropped.moonRiseTime, 0)
+        XCTAssertEqual(dropped.moonSetTime, 0)
+        let tlv = try WeatherPackets.forecast(settings: allSupported(), report: outside, nowSec: now, zone: zone).tlv!.object(0x90).objects(0x91)[0]
+        XCTAssertFalse(tlv.contains(0x1A))
+        XCTAssertFalse(tlv.contains(0x1B))
     }
 
     func testTheLocalDayFollowsTheZoneAcrossDst() {
@@ -298,7 +337,7 @@ final class WeatherModelTests: XCTestCase {
         let all = WeatherPackets.forecast(settings: allSupported(), entries: entries)
         XCTAssertEqual(
             WeatherPackets.forecastShape(packet: all, entries: entries),
-            "24 hours (tags 03 04 05 06 07), 8 days (tags 12 13 14 15 16 17 1e)"
+            "24 hours (tags 03 04 05 06 07), 8 days (tags 12 13 14 15 16 17 1a 1b 1e)"
         )
 
         // A Watch Fit 2 as far as is known: the support bitmap, but no extended bitmap, no sun/moon bitmap and no extended hourly capability.

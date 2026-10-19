@@ -14,7 +14,10 @@ internal data class WeatherHour(
   val uvIndex: Double?,
 )
 
-/** One forecast day. Sun times are unix seconds, 0 when the sun does not rise or set (polar). */
+/**
+ * One forecast day. Sun and moon times are unix seconds, 0 when the body does not rise or set that day (polar sun, or the day the
+ * moon skips its rise or set).
+ */
 internal data class WeatherDay(
   /** Local midnight at the place, unix seconds. */
   val timestamp: Int,
@@ -23,6 +26,8 @@ internal data class WeatherDay(
   val minC: Double,
   val sunrise: Int,
   val sunset: Int,
+  val moonrise: Int = 0,
+  val moonset: Int = 0,
 )
 
 /** What Open-Meteo returned, in the units GB's WeatherSpec uses (km/h, degrees Celsius, unix seconds). */
@@ -144,7 +149,7 @@ internal object Beaufort {
 }
 
 /**
- * Open-Meteo has no moon data, so the phase is computed from the mean synodic month. Accurate to
+ * The moon phase is computed from the mean synodic month (not fetched; moon rise and set are). Accurate to
  * about a day, which is what the watch's eight-step phase icon needs. 0 is new moon, 180 full moon.
  */
 internal object Moon {

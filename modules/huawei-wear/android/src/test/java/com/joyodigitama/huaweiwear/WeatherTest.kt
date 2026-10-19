@@ -57,6 +57,8 @@ class WeatherTest {
         minC = 22.6 - i,
         sunrise = (day(i.toLong()) + 5 * 3600 + 40 * 60).toInt(),
         sunset = (day(i.toLong()) + 17 * 3600 + 50 * 60).toInt(),
+        moonrise = (day(i.toLong()) + 12 * 3600 + 10 * 60).toInt(),
+        moonset = (day(i.toLong()) + 7 * 60).toInt(),
       )
     }
     return WeatherReport(
@@ -143,7 +145,8 @@ class WeatherTest {
        "hourly":{"time":[1760410800,1760414400,1760418000],"temperature_2m":[27.0,28.5,null],
          "weather_code":[2,3,3],"precipitation_probability":[10,null,30],"uv_index":[5.0,6.0,null]},
        "daily":{"time":[1760374800,1760461200],"weather_code":[61,3],"temperature_2m_max":[31.4,30.0],
-         "temperature_2m_min":[22.6,22.0],"sunrise":[1760395200,null],"sunset":[1760438400,1760481600]}}
+         "temperature_2m_min":[22.6,22.0],"sunrise":[1760395200,null],"sunset":[1760438400,1760481600],
+         "moonrise":[1760418600,null],"moonset":[1760375220,1760462100]}}
     """.trimIndent()
     val place = WeatherPlace("Bandung", -6.9, 107.6)
     val report = OpenMeteo.parseForecast(json, place, 1760412700L)
@@ -162,6 +165,11 @@ class WeatherTest {
     assertEquals(2, report.daily.size)
     assertEquals(0, report.daily[1].sunrise)
     assertEquals(1760438400, report.daily[0].sunset)
+    assertEquals(1760418600, report.daily[0].moonrise)
+    assertEquals(1760375220, report.daily[0].moonset)
+    // A day the moon does not rise (null) is 0, which the packet skips.
+    assertEquals(0, report.daily[1].moonrise)
+    assertEquals(1760462100, report.daily[1].moonset)
   }
 
   @Test
@@ -194,6 +202,7 @@ class WeatherTest {
     val url = OpenMeteo.forecastUrl(-6.9147444, 107.6098111)
     assertTrue(url.startsWith("https://api.open-meteo.com/v1/forecast?latitude=-6.91&longitude=107.61&"))
     assertTrue(url.contains("timeformat=unixtime"))
+    assertTrue(url.contains("&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,moonrise,moonset&"))
     assertEquals(
       "https://geocoding-api.open-meteo.com/v1/search?name=S%C3%A3o+Paulo&count=1&language=en&format=json",
       OpenMeteo.geocodingUrl("São Paulo", 1),
@@ -267,7 +276,10 @@ class WeatherTest {
     assertEquals((day(0) + 5 * 3600 + 40 * 60).toInt(), days[0].getInteger(0x16))
     assertEquals((day(0) + 17 * 3600 + 50 * 60).toInt(), days[0].getInteger(0x17))
     assertTrue(days[0].contains(0x1e)) // moon phase
-    assertFalse(days[0].contains(0x1a)) // no moon rise
+    // Open-Meteo's moon times: 12:10 rise and 00:07 set of the local day, unix seconds, after the sun times.
+    assertEquals((day(0) + 12 * 3600 + 10 * 60).toInt(), days[0].getInteger(0x1a))
+    assertEquals((day(0) + 7 * 60).toInt(), days[0].getInteger(0x1b))
+    assertEquals((day(3) + 12 * 3600 + 10 * 60).toInt(), days[3].getInteger(0x1a))
     // GB: later days are stamped observation + whole days and use the day's own icon (WMO 61 = LIGHT_RAIN 0x07).
     assertEquals(now.toInt() + 86400, days[1].getInteger(0x12))
     assertEquals(0x07.toByte(), days[1].getByte(0x13))
@@ -281,6 +293,33 @@ class WeatherTest {
     assertEquals(0, WeatherPackets.sunInDay(day(0).toInt(), zone, now, 0))
     assertEquals(0, WeatherPackets.sunInDay((day(1) + 3600).toInt(), zone, now, 0))
     assertEquals((day(1) + 3600).toInt(), WeatherPackets.sunInDay((day(1) + 3600).toInt(), zone, now, 1))
+  }
+
+  @Test
+  fun moonRiseAndSetFollowTheSunRiseSetBitAndTheDayCheck() {
+    val full = WeatherPackets.forecastEntries(report(), now, zone)
+    // GB Weather.java:603-612: 0x1a / 0x1b sit under sunRiseSetSupported; the phase (0x1e) has its own bit.
+    val phaseOnly = allSupported().apply { sunRiseSetSupported = false }
+    val noPhase = allSupported().apply { moonPhaseSupported = false }
+    val onlyPhase = WeatherPackets.forecast(params(), phaseOnly, full).tlv.getObject(0x90).getObjects(0x91)[0]
+    assertFalse(onlyPhase.contains(0x1a))
+    assertFalse(onlyPhase.contains(0x1b))
+    assertTrue(onlyPhase.contains(0x1e))
+    val noPhaseDay = WeatherPackets.forecast(params(), noPhase, full).tlv.getObject(0x90).getObjects(0x91)[0]
+    assertTrue(noPhaseDay.contains(0x1a))
+    assertTrue(noPhaseDay.contains(0x1b))
+    assertFalse(noPhaseDay.contains(0x1e))
+
+    // A moon time outside its local day is dropped like a sun time (GB fixupWeather), 0 is skipped.
+    val days = report().daily.toMutableList()
+    days[0] = days[0].copy(moonrise = (day(1) + 3600).toInt(), moonset = 0)
+    val skipped = WeatherPackets.forecastEntries(report().copy(daily = days), now, zone).days[0]
+    assertEquals(0, skipped.moonRiseTime)
+    assertEquals(0, skipped.moonSetTime)
+    val tlv = WeatherPackets.forecast(params(), allSupported(), WeatherPackets.forecastEntries(report().copy(daily = days), now, zone))
+      .tlv.getObject(0x90).getObjects(0x91)[0]
+    assertFalse(tlv.contains(0x1a))
+    assertFalse(tlv.contains(0x1b))
   }
 
   @Test
@@ -345,7 +384,7 @@ class WeatherTest {
   fun forecastShapeReadsBackWhatTheSupportFlagsKept() {
     val full = WeatherPackets.forecastEntries(report(), now, zone)
     val everything = WeatherPackets.forecast(params(), allSupported(), full)
-    assertEquals("24 hours (tags 03 04 05 06 07), 8 days (tags 12 13 14 15 16 17 1e)", WeatherPackets.forecastShape(everything, full))
+    assertEquals("24 hours (tags 03 04 05 06 07), 8 days (tags 12 13 14 15 16 17 1a 1b 1e)", WeatherPackets.forecastShape(everything, full))
 
     // What a watch without the extended and sun/moon commands is left with: no icon, no sun times, no moon phase.
     val plain = Weather.Settings().apply {

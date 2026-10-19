@@ -86,7 +86,8 @@ public enum WeatherPackets {
     }
 
     /// SendWeatherForecastRequest after GB's fixupWeather: the next 24 hours, then today (current icon, as GB does) and up to seven more days.
-    /// Open-Meteo has no moon times, so they are 0 and skipped by the packet; the moon phase is computed (`Moon`).
+    /// Moon rise/set come from Open-Meteo's daily `moonrise`/`moonset` and go through the same day check as the sun times (GB fixupWeather does
+    /// it for moonRise/moonSet too); the moon phase is computed (`Moon`).
     public static func forecast(settings: Weather.Settings, report: WeatherReport, nowSec: Int64, zone: TimeZone) -> HuaweiPacket {
         forecast(settings: settings, entries: forecastEntries(report: report, nowSec: nowSec, zone: zone))
     }
@@ -119,6 +120,8 @@ public enum WeatherPackets {
                 source: today,
                 sunrise: sunInDay(today.sunrise, calendar: calendar, nowSec: nowSec, day: 0),
                 sunset: sunInDay(today.sunset, calendar: calendar, nowSec: nowSec, day: 0),
+                moonrise: sunInDay(today.moonrise, calendar: calendar, nowSec: nowSec, day: 0),
+                moonset: sunInDay(today.moonset, calendar: calendar, nowSec: nowSec, day: 0),
                 moonPhaseAt: dayStartSec(calendar, nowSec, 0) + 12 * 3600
             )
         )
@@ -132,6 +135,8 @@ public enum WeatherPackets {
                     source: forecast,
                     sunrise: sunInDay(forecast.sunrise, calendar: calendar, nowSec: nowSec, day: i),
                     sunset: sunInDay(forecast.sunset, calendar: calendar, nowSec: nowSec, day: i),
+                    moonrise: sunInDay(forecast.moonrise, calendar: calendar, nowSec: nowSec, day: i),
+                    moonset: sunInDay(forecast.moonset, calendar: calendar, nowSec: nowSec, day: i),
                     moonPhaseAt: dayStartSec(calendar, nowSec, i) + 12 * 3600
                 )
             )
@@ -152,7 +157,9 @@ public enum WeatherPackets {
     /// The two counts the watch is known to want (Gadgetbridge issue 6973: a Watch GT 4 shows no forecast unless it gets exactly these).
     public static func countsAreComplete(_ entries: ForecastEntries) -> Bool { entries.hours.count == maxHours && entries.days.count == maxDays }
 
-    private static func day(timestamp: Int32, code: Int32, source: WeatherDay, sunrise: Int32, sunset: Int32, moonPhaseAt: Int64) -> Weather.WeatherForecastData.DayData {
+    private static func day(
+        timestamp: Int32, code: Int32, source: WeatherDay, sunrise: Int32, sunset: Int32, moonrise: Int32, moonset: Int32, moonPhaseAt: Int64
+    ) -> Weather.WeatherForecastData.DayData {
         Weather.WeatherForecastData.DayData(
             timestamp: timestamp,
             icon: WeatherIcons.forWmo(code),
@@ -160,8 +167,11 @@ public enum WeatherPackets {
             lowTemperature: temperatureByte(source.minC),
             sunriseTime: sunrise,
             sunsetTime: sunset,
-            moonRiseTime: 0,
-            moonSetTime: 0,
+            // Tags 0x1a / 0x1b: encoded and gated by `Weather.WeatherForecastData.request` (GB Weather.java:603-612: both under
+            // `sunRiseSetSupported`, bit 0 of the 0f/0a answer; the phase, 0x1e, follows `moonPhaseSupported`). GB feeds them from
+            // WeatherSpec.moonRise/moonSet (SendWeatherForecastRequest.java:64-65, 78-79) after fixupWeather (HuaweiWeatherManager.java:163-170, 184-191).
+            moonRiseTime: moonrise,
+            moonSetTime: moonset,
             moonPhase: Weather.degreesToMoonPhase(Moon.phaseDegrees(moonPhaseAt))
         )
     }

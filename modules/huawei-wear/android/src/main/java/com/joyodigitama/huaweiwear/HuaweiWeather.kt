@@ -88,8 +88,9 @@ internal object WeatherPackets {
 
   /**
    * SendWeatherForecastRequest after GB's fixupWeather: the next 24 hours, then today (current icon,
-   * as GB does) and up to seven more days. Open-Meteo has no moon times, so they are 0 and skipped by
-   * the packet; the moon phase is computed ([Moon]).
+   * as GB does) and up to seven more days. Sun and moon rise/set come from Open-Meteo's daily `moonrise`/`moonset`
+   * and go through the same day check as the sun times (GB fixupWeather does it for moonRise/moonSet too);
+   * the moon phase is computed ([Moon]).
    */
   fun forecast(
     params: HuaweiPacket.ParamsProvider,
@@ -125,6 +126,8 @@ internal object WeatherPackets {
         source = today,
         sunrise = sunInDay(today.sunrise, zone, nowSec, 0),
         sunset = sunInDay(today.sunset, zone, nowSec, 0),
+        moonrise = sunInDay(today.moonrise, zone, nowSec, 0),
+        moonset = sunInDay(today.moonset, zone, nowSec, 0),
         moonPhaseAt = todayStart + 12 * 3600L,
       ),
     )
@@ -138,6 +141,8 @@ internal object WeatherPackets {
           source = forecast,
           sunrise = sunInDay(forecast.sunrise, zone, nowSec, i),
           sunset = sunInDay(forecast.sunset, zone, nowSec, i),
+          moonrise = sunInDay(forecast.moonrise, zone, nowSec, i),
+          moonset = sunInDay(forecast.moonset, zone, nowSec, i),
           moonPhaseAt = zone.dayStartSec(nowSec, i) + 12 * 3600L,
         ),
       )
@@ -167,6 +172,8 @@ internal object WeatherPackets {
     source: WeatherDay,
     sunrise: Int,
     sunset: Int,
+    moonrise: Int,
+    moonset: Int,
     moonPhaseAt: Long,
   ) = Weather.WeatherForecastData.DayData().apply {
     this.timestamp = timestamp
@@ -175,8 +182,13 @@ internal object WeatherPackets {
     lowTemperature = temperatureByte(source.minC)
     sunriseTime = sunrise
     sunsetTime = sunset
-    moonRiseTime = 0
-    moonSetTime = 0
+    // Tags 0x1a / 0x1b (unix-second ints, written only when non-zero) are encoded and gated by the vendored
+    // Weather.WeatherForecastData.Request, GB Weather.java:603-612: both sit under `settings.sunRiseSetSupported`, bit 0 of the 0f/0a
+    // answer (not the moon phase bit; 0x1e at lines 613-614 follows `moonPhaseSupported`). GB feeds them from
+    // WeatherSpec.moonRise/moonSet (SendWeatherForecastRequest.java:64-65, 78-79) after HuaweiWeatherManager.fixupWeather, which
+    // zeroes a moon time outside its day exactly like a sun time (lines 163-170, 184-191; upstream master, 2026-10).
+    moonRiseTime = moonrise
+    moonSetTime = moonset
     moonPhase = Weather.degreesToMoonPhase(Moon.phaseDegrees(moonPhaseAt))
   }
 

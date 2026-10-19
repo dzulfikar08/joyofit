@@ -254,9 +254,11 @@ sequence goes on, so an unreadable receipt for the current weather cannot keep t
 A tag the watch did not report as supported is left out. Temperatures are whole degrees Celsius in a signed byte in
 every unit (GB sends `K - 273` and sets the unit tag only); whether the watch converts for display is not verified.
 Today's entry uses the current icon and the observation time, later days use the observation time plus whole days
-(GB's `SendWeatherForecastRequest`). Sun times outside their local day are sent as 0 (GB `fixupWeather`: a wrong one makes
-the watch show no weather at all). Open-Meteo has no moon rise/set (sent as 0, which the packet skips) so only
-the moon phase is sent, computed from the synodic month ([0..360) degrees to GB's eight phases).
+(GB's `SendWeatherForecastRequest`). Sun and moon times outside their local day are sent as 0 (GB `fixupWeather`: a wrong one makes
+the watch show no weather at all). Moon rise/set (`1a`/`1b`, unix seconds) are Open-Meteo's daily `moonrise`/`moonset`; GB writes them
+under the same `sunRiseSetSupported` bit as the sun times (`Weather.java` day loop), not under the moon-phase bit. A day the moon skips a
+rise or set has none (0, which the packet skips). The moon phase (`1e`) is computed from the synodic month ([0..360) degrees to GB's
+eight phases) and follows the moon-phase bit.
 
 **Counts.** Gadgetbridge issue 6973 (Watch GT 4, 2026-10): the watch showed only today, no hourly or daily forecast, and Gadgetbridge's
 developer found that the GT 4 firmware wants exactly 24 hours and 8 days (today first) and shows nothing with fewer; a GT 6 Pro does not.

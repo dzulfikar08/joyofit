@@ -31,7 +31,7 @@ internal object OpenMeteo {
     "?latitude=${coordinate(latitude)}&longitude=${coordinate(longitude)}" +
     "&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,uv_index" +
     "&hourly=temperature_2m,weather_code,precipitation_probability,uv_index" +
-    "&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset" +
+    "&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,moonrise,moonset" +
     "&timezone=auto&timeformat=unixtime&forecast_days=$FORECAST_DAYS"
 
   fun geocodingUrl(name: String, count: Int): String =
@@ -98,6 +98,8 @@ internal object OpenMeteo {
       val dayMin = daily.getJSONArray("temperature_2m_min")
       val daySunrise = daily.optJSONArray("sunrise")
       val daySunset = daily.optJSONArray("sunset")
+      val dayMoonrise = daily.optJSONArray("moonrise")
+      val dayMoonset = daily.optJSONArray("moonset")
       val days = ArrayList<WeatherDay>(dayTimes.length())
       var skippedDays = 0
       for (i in 0 until dayTimes.length()) {
@@ -114,6 +116,9 @@ internal object OpenMeteo {
             // Null at polar latitudes (no sunrise or sunset that day); the packet skips 0.
             sunrise = daySunrise.intOrNull(i) ?: 0,
             sunset = daySunset.intOrNull(i) ?: 0,
+            // Null on the day the moon does not rise (or set) between local midnights; the packet skips 0.
+            moonrise = dayMoonrise.intOrNull(i) ?: 0,
+            moonset = dayMoonset.intOrNull(i) ?: 0,
           ),
         )
       }
