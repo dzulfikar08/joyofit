@@ -43,10 +43,11 @@ import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiConstants
  * to the write characteristic and the watch answers with notifications on the read one, so notification payloads go to
  * [onData] exactly as RFCOMM read chunks do (the session reassembles packets, whatever the chunking).
  *
- * Like GB's BtLEQueue: connect without autoConnect, discover services, enable notifications on the read characteristic, and
- * run one GATT operation at a time. There is no Android bonding: GB's HuaweiLECoordinator uses BONDING_STYLE_NONE because the
- * watch authenticates through the Huawei protocol itself. Not like GB: autoConnect is off (it is on in HuaweiLESupport), so a
- * watch that is out of range fails the connect instead of waiting for it.
+ * Like GB's BtLEQueue: discover services, enable notifications on the read characteristic, and run one GATT operation at a time.
+ * There is no Android bonding: GB's HuaweiLECoordinator uses BONDING_STYLE_NONE because the watch authenticates through the Huawei
+ * protocol itself. Opening the link follows [LeConnectPlan]: two direct connects, then autoConnect (as GB's HuaweiLESupport uses it
+ * from the start), so a watch that is switched off or out of range at the moment is connected as soon as it comes back, within the
+ * budget [connect] is given, without another scan.
  */
 internal class BleTransport(
   private val context: Context,
@@ -166,7 +167,7 @@ internal class BleTransport(
    */
   @SuppressLint("MissingPermission")
   override suspend fun connect(timeoutMs: Long) {
-    val totalMs = timeoutMs + SCAN_MS
+    val totalMs = LeConnectPlan.totalMs(timeoutMs)
     try {
       withTimeout(totalMs) { open() }
     } catch (e: TimeoutCancellationException) {
@@ -252,21 +253,23 @@ internal class BleTransport(
   }
 
   /**
-   * Opens the GATT link, trying again when an attempt fails before the link is up: the first two without autoConnect (what
-   * nRF Connect does), the last with it, which waits for the watch to be connectable. Which variant connected is logged.
+   * Opens the GATT link, trying again when an attempt fails before the link is up ([LeConnectPlan]): the first two without
+   * autoConnect (what nRF Connect does), each cut off after [LeConnectPlan.DIRECT_ATTEMPT_MS] because Android would wait about 30 s
+   * for a watch that does not answer, the last with autoConnect, which Android keeps pending until the watch is connectable (a watch
+   * that has just been switched on, or that left the range and came back). Which variant connected is logged.
    */
   @SuppressLint("MissingPermission")
   private suspend fun connectWithRetry(target: BluetoothDevice): BluetoothGatt {
     var attempt = 0
     while (true) {
       attempt++
-      val autoConnect = attempt == CONNECT_ATTEMPTS
+      val autoConnect = LeConnectPlan.usesAutoConnect(attempt)
       linkUp = CompletableDeferred()
       mtuDone = CompletableDeferred()
       servicesDone = CompletableDeferred()
       synchronized(stateLock) { lostBeforeReady = null }
-      stage = "opening the GATT link (attempt $attempt of $CONNECT_ATTEMPTS)"
-      step("GATT connect to ${target.address}, attempt $attempt of $CONNECT_ATTEMPTS (transport LE, autoConnect ${if (autoConnect) "on" else "off"})")
+      stage = "opening the GATT link (attempt $attempt of ${LeConnectPlan.ATTEMPTS})"
+      step("GATT connect to ${target.address}, attempt $attempt of ${LeConnectPlan.ATTEMPTS} (transport LE, autoConnect ${if (autoConnect) "on" else "off"})")
       val client = target.connectGatt(context, autoConnect, callback, BluetoothDevice.TRANSPORT_LE, BluetoothDevice.PHY_LE_1M_MASK)
         ?: throw IOException("Android did not create a GATT client")
       gatt.set(client)
@@ -276,15 +279,20 @@ internal class BleTransport(
         throw IOException("Disconnected while connecting")
       }
       try {
-        linkUp.await()
+        val budget = LeConnectPlan.attemptBudgetMs(attempt)
+        if (budget == null) {
+          linkUp.await()
+        } else {
+          withTimeoutOrNull(budget) { linkUp.await() } ?: throw IOException("the watch did not answer within $budget ms")
+        }
         linkWasUp = true
         step("GATT link up on attempt $attempt: variant autoConnect ${if (autoConnect) "on" else "off"}, PHY LE 1M")
         return client
       } catch (e: IOException) {
-        if (closed.get() || attempt >= CONNECT_ATTEMPTS) throw e
-        step("GATT attempt $attempt failed (${e.message}); trying again in $RETRY_DELAY_MS ms")
+        if (closed.get() || attempt >= LeConnectPlan.ATTEMPTS) throw e
+        step("GATT attempt $attempt failed (${e.message}); trying again in ${LeConnectPlan.RETRY_DELAY_MS} ms")
         releaseClient()
-        delay(RETRY_DELAY_MS)
+        delay(LeConnectPlan.RETRY_DELAY_MS)
       }
     }
   }
@@ -341,10 +349,10 @@ internal class BleTransport(
       if (watchName != null) add(ScanFilter.Builder().setDeviceName(watchName).build())
       add(ScanFilter.Builder().setDeviceAddress(device.address).build())
     }
-    step("LE scan for \"${watchName ?: device.address}\", service $serviceUuid or address ${device.address}, up to $SCAN_MS ms")
+    step("LE scan for \"${watchName ?: device.address}\", service $serviceUuid or address ${device.address}, up to ${LeConnectPlan.SCAN_MS} ms")
     scanner.startScan(filters, ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(), scanCallback)
     val found = try {
-      withTimeoutOrNull(SCAN_MS) { match.await() }
+      withTimeoutOrNull(LeConnectPlan.SCAN_MS) { match.await() }
     } catch (e: IOException) {
       null
     } finally {
@@ -535,13 +543,6 @@ internal class BleTransport(
 
     /** The logcat tag of every connect step, scan result and packet on the LE link. */
     const val LOGCAT_TAG = "JoyoFitBle"
-
-    /** How long the LE scan waits for the watch before falling back to the bonded address. */
-    const val SCAN_MS = 6_000L
-
-    /** Attempts at opening the link (the last one with autoConnect), and the pause between two of them. */
-    const val CONNECT_ATTEMPTS = 3
-    const val RETRY_DELAY_MS = 1_500L
 
     /** Android refuses a characteristic value longer than this, whatever the ATT MTU. */
     const val MAX_ATTRIBUTE_BYTES = 512

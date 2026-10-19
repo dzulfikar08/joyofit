@@ -148,6 +148,10 @@ claims to have reached the watch unless it did.
 - **Background.** `setBackgroundEnabled` means: reconnect the remembered watch when iOS wakes the app for the `bluetooth-central` session
   (pending connect + state restoration), then authenticate, sync and read the battery inside a background task. Nothing runs while the process
   is suspended.
+- **Reconnect when the app opens.** With background mode off nothing holds the link once the app is suspended or closed, so on the next open the app connects the
+  remembered watch by its stored identifier by itself (`src/state/useAutoReconnect.ts`, JS only; see "Reconnecting a known watch" in `docs/watch-reference.md`): the
+  native connect already tries `retrievePeripherals` before any scan, and a first bind is never started (it stops with `ERR_BIND_CONFIRMATION` and the app stays quiet
+  until a tap on Connect). It does not run after the person tapped Disconnect. No Swift change, no new build.
 - **Family monitoring upload** (`FamilyUploader.swift`, `FamilySummary.swift`, `FamilySettings.swift`, `FamilyBackgroundSession.swift`; contract in
   `docs/family-monitoring.md` section 10). `familyConfigure` keeps the scopes in UserDefaults (`joyofit_family`) and the bearer token in the Keychain
   (after first unlock); `null` removes both with the last result, the last payload and any queued body. After every successful background sync

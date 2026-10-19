@@ -177,6 +177,32 @@ Sync results are written to the database by native code, so data accumulates whi
   runs but its notification is hidden.
 - Battery optimisation: if your phone kills the service, exempt JoyoFit from battery restrictions.
 
+### Reconnecting a known watch (watch off, app closed)
+
+JoyoFit stores the address of the last watch it connected to (`WearSettings.watchAddress`, a peripheral identifier on iOS) and its keys (`DeviceStore`, one
+preference file per watch). A reconnect uses those; **it never scans**, because a watch that holds a phone does not advertise (the hint on the Watch tab says so), and
+nothing in the app removes a pairing or deletes a key on its own: only the person's **Forget pairing** or **Remove watch** does.
+
+- **Background mode on**: the service reconnects, as above.
+- **Background mode off** (the default): the link ends with the app, so on the next open the app reconnects the remembered watch by itself
+  (`src/state/useAutoReconnect.ts`, rules in `src/features/device/autoReconnect.ts`): a first attempt 1.5 s after the app opens or comes forward, then 30 s and
+  2 min after each failure, then it waits for the next time the app comes forward; a link that drops while the app is open starts again from the first. It asks for
+  nothing and shows no error: a watch that is off just stays disconnected. It does not run when the person tapped **Disconnect** (remembered across launches, until
+  they connect again), without the Bluetooth permission (it never asks), or for a watch that needs a first bind (that stays a tap on **Connect** and its confirmation).
+  It also does not run on Android for a Classic watch Android has no pairing with, because a connect would make Android open its pairing dialog by itself: it reads
+  `paired` and `classic` from the native list (`androidPairingAllowsAutoReconnect`), and a row without them (an Android build from before that list existed, which
+  also leaves an unpaired remembered watch out) counts as not safe, so such a build never reconnects by itself. iOS has no such pairing and needs no new build. While a
+  connect, a sync or the first-bind question is open it looks again every 5 s; a failed connect the person started themselves settles it until the app comes forward.
+- **The list**: the remembered watch is always a row in the Watch tab's list, also when Android does not list it as paired (a band is never paired in Android;
+  a Classic watch whose pairing Android dropped) and when no scan sees it. Its row connects by the stored address. Android rows carry `paired`, `remembered` and
+  `classic`; a remembered Classic watch without an Android pairing says so.
+- **Classic watches (RFCOMM)** need Android's own pairing. If a connect to one fails and Android has no pairing with it, the error is `ERR_NOT_PAIRED` (worded in the app:
+  pair it in Android's Bluetooth settings, or remove the phone once on the watch) instead of the "busy elsewhere" hint. The connect log line says `Android pairing:
+  paired / not paired / pairing in progress`, so a support report shows whether Android still had the pairing when a connect failed.
+- **Bluetooth LE bands**: the GATT link is two direct attempts of at most 8 s each, then one with autoConnect, which Android keeps pending until the watch answers,
+  within `Timeouts.CONNECT_MS` (`LeConnectPlan`). Before, a direct attempt waited the ~30 s Android gives it, longer than the whole connect, so the autoConnect
+  attempt was never reached. A Classic watch whose RFCOMM failed gets the same LE attempt with `Timeouts.LE_AFTER_RFCOMM_MS` for its autoConnect step.
+
 ### Watch history and how long the watch keeps it
 
 The first sync after binding pulls everything the watch still holds (steps and heart rate, sleep, night HRV, workouts), not a fixed week. The

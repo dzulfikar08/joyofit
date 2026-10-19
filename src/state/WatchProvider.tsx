@@ -16,10 +16,12 @@ import { getLastSync } from '@/db/queries';
 import { purgeDeletedWorkouts } from '@/features/workouts/purgeDeleted';
 import { useWatchList, type WatchListActions } from '@/features/device/useWatchList';
 import type { WatchRow } from '@/features/device/watches';
-import { describeConnectFailure } from '@/features/device/connectFailure';
+import { describeConnectFailure, errorCode } from '@/features/device/connectFailure';
+import { outcomeOfFailure, type AutoOutcome } from '@/features/device/autoReconnect';
 import { reportDatabaseError } from '@/db/recovery';
 import { errorMessage } from '@/format';
 import { pushLog } from '@/state/logStore';
+import { setDisconnectedByUser, useAutoReconnect, useAutoReconnectControl } from '@/state/useAutoReconnect';
 import {
   HuaweiWear,
   type DeviceInfo,
@@ -110,6 +112,8 @@ export function WatchProvider({ children }: { children: ReactNode }) {
   // for the same failure carries the English log line, which must not replace it.
   const connectInFlight = useRef(false);
   const connectFailedAt = useRef(0);
+  // The automatic reconnect: a connect the person starts resets it.
+  const autoReconnect = useAutoReconnectControl();
 
   /** Adopts a link that the background service connected while the UI was not watching. */
   const adoptNativeLink = useCallback(async () => {
@@ -166,12 +170,20 @@ export function WatchProvider({ children }: { children: ReactNode }) {
   useEventListener(HuaweiWear, 'onLog', pushLog);
   useEventListener(HuaweiWear, 'onSyncComplete', applySummary);
 
-  const connect = useCallback(
-    async (address: string) => {
-      setError(null);
-      setRetryAddress(null);
-      setSilentWatch(false);
-      setBindRequest(null);
+  /**
+   * One connect to [address]. `silent` is the automatic reconnect: it asks nothing and shows nothing (no error, no Retry, no first-bind
+   * question; a watch that needs one stops it), so a watch that is off when the app opens is not an error the person has to read.
+   */
+  const connectTo = useCallback(
+    async (address: string, silent: boolean): Promise<AutoOutcome> => {
+      if (!silent) {
+        autoReconnect.reset();
+        void setDisconnectedByUser(false);
+        setError(null);
+        setRetryAddress(null);
+        setSilentWatch(false);
+        setBindRequest(null);
+      }
       setActiveAddress(address);
       connectInFlight.current = true;
       try {
@@ -179,24 +191,44 @@ export function WatchProvider({ children }: { children: ReactNode }) {
         setDevice(info);
         setBattery(info.batteryLevel);
         setLastSync(await getLastSync(db, info.address));
+        setRetryAddress(null);
+        setSilentWatch(false);
+        return 'connected';
       } catch (e) {
         connectFailedAt.current = Date.now();
         setActiveAddress(null);
+        if (silent) return outcomeOfFailure(errorCode(e));
+        // The error below is what the person reads next; an automatic retry behind it would replace it with another connecting state.
+        autoReconnect.settle();
         const failure = describeConnectFailure(e);
         if (failure.kind === 'bind') {
           // Nothing changed on the watch. Binding replaces its current phone pairing, so the person decides first.
           setBindRequest({ address });
-          return;
+          return 'blocked';
         }
         setError(failure.message);
-        if (failure.kind === 'unreachable' || failure.kind === 'silent') setRetryAddress(address);
+        if (failure.kind === 'unreachable' || failure.kind === 'silent' || failure.kind === 'unpaired') setRetryAddress(address);
         setSilentWatch(failure.kind === 'silent');
+        return 'failed';
       } finally {
         connectInFlight.current = false;
       }
     },
-    [db],
+    [db, autoReconnect],
   );
+
+  const connect = useCallback(
+    async (address: string) => {
+      await connectTo(address, false);
+    },
+    [connectTo],
+  );
+
+  useAutoReconnect(autoReconnect, {
+    linkState,
+    isBusy: () => connectInFlight.current || bindRequest !== null || syncing.current,
+    attempt: (address) => connectTo(address, true),
+  });
 
   /** The person agreed to the bind: the next connect to this watch may start it. */
   const confirmBind = useCallback(async () => {
@@ -208,6 +240,9 @@ export function WatchProvider({ children }: { children: ReactNode }) {
   const cancelBind = useCallback(() => setBindRequest(null), []);
 
   const disconnect = useCallback(async () => {
+    // The person chose to let go: closing the app, or the link event that follows, must not take the watch back. Written before the
+    // link closes, so the reconnect that closing wakes up already finds it.
+    await setDisconnectedByUser(true);
     try {
       await HuaweiWear.disconnect();
     } catch (e) {

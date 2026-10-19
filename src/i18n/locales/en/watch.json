@@ -65,7 +65,8 @@
     "hint": {
       "busy": "Could not connect to the watch. If it is still connected to another phone or app (Huawei Health, or JoyoFit on another phone), disconnect it there first. Keep the watch awake and close to this phone, then tap Retry.",
       "noWatchIos": "Watch not found. If it is still connected to another phone, disconnect it there first. Make sure the watch is on and close to this phone, then tap Refresh.",
-      "noWatchScan": "No watch found nearby. If it is still connected to another phone or app (Huawei Health, or JoyoFit on another phone), disconnect it there first. Make sure the watch is on and close to this phone, then scan again."
+      "noWatchScan": "No watch found nearby. If it is still connected to another phone or app (Huawei Health, or JoyoFit on another phone), disconnect it there first. Make sure the watch is on and close to this phone, then scan again.",
+      "notPaired": "Android has no Bluetooth pairing with this watch (it was removed, or the watch refused to pair again). Open Android's Bluetooth settings and pair the watch, then tap Try again. If the watch does not show up there, remove this phone once in the watch's own Bluetooth settings. JoyoFit deletes nothing."
     },
     "silent": {
       "short": "The watch connected over Bluetooth but does not answer. What to try is on the Watch tab.",
@@ -98,6 +99,7 @@
       "unnamed": "Unnamed device",
       "systemConnected": "Already connected to this iPhone. Tap Connect to use it here.",
       "notInReach": "Not in reach. If it is on another phone, disconnect it there first.",
+      "notPairedRemembered": "Remembered by JoyoFit, but Android no longer lists it as paired. Connect uses the saved address and asks Android to pair again if needed.",
       "disconnect": "Disconnect",
       "connect": "Connect",
       "switchHere": "Switch here"

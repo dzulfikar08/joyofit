@@ -3,7 +3,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
-import { supportRank } from '@/features/device/modelSupport';
+import { listBonded, sortBonded, withDiscovered } from '@/features/device/bondedList';
 import { ensureBluetoothScan } from '@/features/device/useBluetoothPermission';
 import { errorMessage } from '@/format';
 import { t } from '@/i18n';
@@ -21,13 +21,6 @@ interface BondedState {
 }
 
 type TimeoutHandle = ReturnType<typeof setTimeout>;
-
-/** Tested watches first, then experimental, unknown and unsupported, each by name. */
-function sortBonded(devices: BondedDevice[]): BondedDevice[] {
-  return [...devices].sort(
-    (a, b) => supportRank(a.support) - supportRank(b.support) || a.name.localeCompare(b.name),
-  );
-}
 
 /** The watch list and its actions, as `useBondedDevices` returns them. */
 export interface BondedDevices extends BondedState {
@@ -54,26 +47,18 @@ export function useBondedDevices(enabled: boolean): BondedDevices {
     setState((s) => ({ ...s, loading: true, error: null }));
     try {
       const bonded = await fetchDevices();
-      const discovered = HuaweiWear.getDiscoveredDevices();
       const activeDev = HuaweiWear.getDevice();
-      const map = new Map<string, BondedDevice>();
-      for (const d of bonded) map.set(d.address, d);
-      for (const d of discovered) {
-        if (!map.has(d.address)) map.set(d.address, d);
-      }
-      if (activeDev && !map.has(activeDev.address)) {
-        map.set(activeDev.address, {
-          address: activeDev.address,
-          name: activeDev.name || activeDev.address,
-          model: activeDev.model ?? null,
-          support: activeDev.support,
-          reason: null,
-        });
-      }
-      deviceMapRef.current = map;
+      const { address, name } = HuaweiWear.getBackgroundStatus();
+      const devices = listBonded({
+        bonded,
+        discovered: HuaweiWear.getDiscoveredDevices(),
+        active: activeDev,
+        remembered: { address, name },
+      });
+      deviceMapRef.current = new Map<string, BondedDevice>(devices.map((d) => [d.address, d]));
       setState((s) => ({
         ...s,
-        devices: sortBonded(Array.from(map.values())),
+        devices,
         loading: false,
         error: null,
         loaded: true,
@@ -127,8 +112,9 @@ export function useBondedDevices(enabled: boolean): BondedDevices {
 
   useEventListener(HuaweiWear, 'onDeviceDiscovered', (device) => {
     const map = deviceMapRef.current;
-    if (!map.has(device.address) || map.get(device.address)?.name !== device.name) {
-      map.set(device.address, device);
+    const existing = map.get(device.address);
+    if (!existing || existing.name !== device.name) {
+      map.set(device.address, withDiscovered(existing, device));
       setState((s) => ({
         ...s,
         devices: sortBonded(Array.from(map.values())),

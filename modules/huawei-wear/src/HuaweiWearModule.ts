@@ -52,7 +52,11 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    * names are not available; `sideload` is the APK from the website or a self-build. Set by `JOYOFIT_DISTRIBUTION` at build time.
    */
   readonly distribution: 'play' | 'sideload';
-  /** Bonded Bluetooth devices, each with the support level of its model. Requires BLUETOOTH_CONNECT on Android 12+. */
+  /**
+   * Bonded Bluetooth devices, each with the support level of its model. Requires BLUETOOTH_CONNECT on Android 12+. The watch JoyoFit
+   * remembers is always in the list (Android: `remembered`, with `paired` false when Android does not list it as paired), so it can be
+   * connected by its stored address without a scan finding it.
+   */
   getBondedDevices(): Promise<BondedDevice[]>;
   /**
    * Android only (iOS rejects ERR_UNSUPPORTED: its list scans by itself, see `refreshBondedDevices`): scans for nearby Huawei and Honor
@@ -76,7 +80,8 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    * joins that link. A successful connect remembers the watch for background mode and resumes a
    * paused auto-reconnect. A first bind (the watch does not know this phone) replaces the watch's current phone pairing, so it never
    * starts by itself: connect rejects `ERR_BIND_CONFIRMATION` before anything changes on the watch, and only a connect that follows
-   * `confirmBind(address)` binds. Other failures: `ERR_CONNECT_FAILED`, `ERR_TIMEOUT`, `ERR_DISCONNECTED`, `ERR_AUTH_FAILED`.
+   * `confirmBind(address)` binds. Other failures: `ERR_CONNECT_FAILED`, `ERR_TIMEOUT`, `ERR_DISCONNECTED`, `ERR_AUTH_FAILED`, and on
+   * Android `ERR_NOT_PAIRED` (a Classic watch that could not be reached while Android has no pairing with it; nothing is removed or reset).
    */
   connect(address: string): Promise<DeviceInfo>;
   /** The user agreed to bind this phone to the watch: the next `connect(address)` may start a first bind. Single use. */

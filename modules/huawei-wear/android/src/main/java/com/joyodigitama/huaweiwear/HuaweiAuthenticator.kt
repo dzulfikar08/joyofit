@@ -20,6 +20,12 @@ import nodomain.freeyourgadget.gadgetbridge.util.StringUtils
 internal object Timeouts {
   const val CONNECT_MS = 20_000L
 
+  /**
+   * How long the Bluetooth LE attempt that follows a Classic watch's failed RFCOMM connect waits for the watch in its last
+   * (autoConnect) attempt. A Classic watch is not LE-first, so this only checks that it answers over LE; an LE band waits [CONNECT_MS].
+   */
+  const val LE_AFTER_RFCOMM_MS = 8_000L
+
   /** Auth-phase requests on a reconnect. GB sets none; a silent watch would hang forever. */
   const val AUTH_MS = 10_000L
 

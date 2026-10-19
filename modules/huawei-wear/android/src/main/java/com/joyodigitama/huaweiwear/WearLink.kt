@@ -190,50 +190,46 @@ internal class WearLink(
 
   // Bluetooth access
 
+  /**
+   * True when [rawAddress] is a Classic watch that Android has no pairing with ([PairingState.missing]). Connecting to it would make
+   * Android start a pairing, which only a connect the person opened may do; the background reconnect checks this first.
+   */
+  @SuppressLint("MissingPermission")
+  fun needsPairing(rawAddress: String): Boolean {
+    val address = rawAddress.trim().uppercase(Locale.ROOT)
+    if (!BluetoothAdapter.checkBluetoothAddress(address)) return false
+    val adapter = try {
+      requireAdapter()
+    } catch (e: WearException) {
+      return false
+    }
+    val device = adapter.getRemoteDevice(address)
+    return PairingState.missing(WatchModels.match(bondedName(device)), bondState(device))
+  }
+
+  /**
+   * The rows of the Watch tab's list ([WatchListing]): Android's paired devices, the watch the link is on, the watch JoyoFit remembers
+   * (listed even when Android does not list it as paired, so it connects by its stored address without a scan) and the last scan's names.
+   */
   @SuppressLint("MissingPermission")
   fun bondedDevices(): List<Map<String, Any?>> {
     val adapter = requireAdapter()
     try {
-      val map = mutableMapOf<String, DiscoveredDevice>()
-      for (device in adapter.bondedDevices) {
-        val name = device.name ?: device.address
-        val match = WatchModels.match(device.name)
-        map[device.address] = DiscoveredDevice(
-          address = device.address,
-          name = name,
-          model = match.model?.name,
-          support = match.support.wire,
-          reason = match.reason,
-        )
-      }
-      synchronized(lock) {
-        val conn = current
-        if (conn != null && !map.containsKey(conn.address)) {
-          val name = conn.info?.get("name") as? String ?: lastAttemptName ?: conn.address
-          map[conn.address] = DiscoveredDevice(
+      val paired = adapter.bondedDevices.map { SystemPaired(it.address, it.name) }
+      val linked = synchronized(lock) {
+        current?.let { conn ->
+          DiscoveredDevice(
             address = conn.address,
-            name = name,
+            name = conn.info?.get("name") as? String ?: lastAttemptName ?: conn.address,
             model = conn.model.model?.name,
             support = conn.model.support.wire,
             reason = conn.model.reason,
+            classic = conn.model.model?.let { it.transport == ModelTransport.BR },
           )
         }
       }
-      for ((addr, name) in discoveredNames) {
-        if (!map.containsKey(addr)) {
-          val match = WatchModels.match(name)
-          if (match.connectable) {
-            map[addr] = DiscoveredDevice(
-              address = addr,
-              name = name,
-              model = match.model?.name,
-              support = match.support.wire,
-              reason = match.reason,
-            )
-          }
-        }
-      }
-      return map.values.sortedBy { it.name.lowercase(Locale.ROOT) }.map { it.toJs() }
+      val remembered = settings.watchAddress?.let { SystemPaired(it, settings.watchName) }
+      return WatchListing.build(paired, linked, remembered, discoveredNames).map { it.toJs() }
     } catch (e: SecurityException) {
       throw WearException(ErrorCodes.BLUETOOTH_PERMISSION, "BLUETOOTH_CONNECT permission denied: ${e.message}", e)
     }
@@ -437,7 +433,9 @@ internal class WearLink(
         null,
         null,
         "Connecting to $address \"${lastAttemptName ?: "no name"}\": ${model.model?.name ?: "unknown model"} (${model.support.wire}), " +
-          "$link${if (settings.forceBle) " (forced by the developer switch)" else ""}, encrypted ${model.crypted}" +
+          "$link${if (settings.forceBle) " (forced by the developer switch)" else ""}, encrypted ${model.crypted}, " +
+          "Android pairing: ${PairingState.label(bondState(connection.device))}, " +
+          "remembered ${settings.watchAddress.equals(address, ignoreCase = true)}" +
           if (allowFirstBind) ", first bind confirmed by the user" else "",
       )
 
@@ -449,7 +447,7 @@ internal class WearLink(
         connection.fallBackToLe()
         synchronized(lock) { lastAttemptTransport = ModelTransport.LE }
         try {
-          connection.transport.connect(Timeouts.CONNECT_MS)
+          connection.transport.connect(Timeouts.LE_AFTER_RFCOMM_MS)
         } catch (le: WearException) {
           throw afterRfcommFailure(le, e)
         }
@@ -508,7 +506,7 @@ internal class WearLink(
       }
       // Closed under us (user disconnect, watch dropped the link): report what closed it rather than
       // the I/O error that followed. A protocol-level failure of the operation itself wins.
-      val failure = connectFailure(t, connection.closeCause)
+      val failure = PairingState.explain(connectFailure(t, connection.closeCause), connection.model, bondState(connection.device))
       val needsConfirmation = failure.errorCode == ErrorCodes.BIND_CONFIRMATION
       connection.linkEvents.log(
         if (needsConfirmation) LogDirection.INFO else LogDirection.ERROR,
@@ -563,6 +561,15 @@ internal class WearLink(
       device.type == BluetoothDevice.DEVICE_TYPE_LE
     } catch (e: SecurityException) {
       false
+    }
+
+  /** Android's pairing state of [device] (`BluetoothDevice.BOND_*`); null when it cannot be read. Only read, never changed. */
+  @SuppressLint("MissingPermission")
+  private fun bondState(device: BluetoothDevice): Int? =
+    try {
+      device.bondState
+    } catch (e: SecurityException) {
+      null
     }
 
   // Disconnect / teardown

@@ -48,6 +48,12 @@ internal object ErrorCodes {
   /** The watch needs a first bind with this phone, which replaces its current phone pairing, and `confirmBind` was not called first. */
   const val BIND_CONFIRMATION = "ERR_BIND_CONFIRMATION"
 
+  /**
+   * A Classic watch could not be connected and Android has no Bluetooth pairing with it any more (a connect that finds none starts one,
+   * which the watch has to accept). Android only: iOS has no such pairing to lose. See [PairingState].
+   */
+  const val NOT_PAIRED = "ERR_NOT_PAIRED"
+
   /** The watch refused a file upload or a watch face operation; the message carries the exact code it returned. */
   const val UPLOAD_REJECTED = "ERR_UPLOAD_REJECTED"
 
@@ -91,6 +97,12 @@ internal data class DiscoveredDevice(
   val support: String = "unknown",
   val reason: String? = null,
   val rssi: Int? = null,
+  /** Android lists the device as paired; null where that was not asked (a scan result). */
+  val paired: Boolean? = null,
+  /** JoyoFit connected to this watch before and still holds its address (and keys), so it is connectable without a scan. */
+  val remembered: Boolean = false,
+  /** The model is a Classic one (RFCOMM), which needs Android's pairing; null when the name is in no list. */
+  val classic: Boolean? = null,
 ) {
   fun toJs(): Map<String, Any?> = buildMap {
     put("address", address)
@@ -99,6 +111,9 @@ internal data class DiscoveredDevice(
     put("support", support)
     put("reason", reason)
     if (rssi != null) put("rssi", rssi)
+    if (paired != null) put("paired", paired)
+    if (remembered) put("remembered", true)
+    if (classic != null) put("classic", classic)
   }
 }
 

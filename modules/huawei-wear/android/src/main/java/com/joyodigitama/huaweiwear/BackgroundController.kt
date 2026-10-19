@@ -200,6 +200,11 @@ internal class BackgroundController(private val runtime: WearRuntime) {
       runtime.setNote("Not bound yet. Connect once from the Device tab.")
       return Attempt.BLOCKED
     }
+    if (link.needsPairing(address)) {
+      // A connect would make Android start a pairing (a system dialog the watch has to accept); only a connect the person opens in the app may.
+      runtime.setNote("Not paired in Android's Bluetooth settings.")
+      return Attempt.BLOCKED
+    }
     try {
       // The background link never starts a first bind (allowFirstBind stays false): only a connect the user confirms in the app does.
       link.connect(address, allowFirstBind = false)
@@ -218,6 +223,12 @@ internal class BackgroundController(private val runtime: WearRuntime) {
         }
         ErrorCodes.BLUETOOTH_PERMISSION -> {
           runtime.setNote("Bluetooth permission is missing.")
+          return Attempt.BLOCKED
+        }
+        ErrorCodes.NOT_PAIRED -> {
+          // Android's pairing is gone: retrying with backoff cannot restore it. The next interval tick, Bluetooth coming back or the
+          // watch's own ACL link (it has reconnected after the user paired it again) tries once more.
+          runtime.setNote("Not paired in Android's Bluetooth settings.")
           return Attempt.BLOCKED
         }
       }

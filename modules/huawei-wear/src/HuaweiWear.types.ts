@@ -30,14 +30,23 @@ export interface BondedDevice {
   /** Why it is not `tested`, in a few words; null for tested models. */
   reason: string | null;
   /**
-   * iOS only (undefined on Android, where the list is the system's bonded devices): the watch was seen just now, advertising or held by
-   * iOS. False for the remembered watch that is out of reach, or still linked to another phone, which then does not advertise.
+   * iOS only (undefined on Android): the watch was seen just now, advertising or held by iOS. False for the remembered watch that is out
+   * of reach, or still linked to another phone, which then does not advertise.
    */
   nearby?: boolean;
   /** iOS only: iOS already holds a connection to this watch (paired in Settings > Bluetooth, or held by another app), so no scan shows it. */
   systemConnected?: boolean;
   /** Android: signal strength in dBm, only on a device the Bluetooth LE scan saw. */
   rssi?: number;
+  /**
+   * Android only: Android lists the device among its paired devices. False for a band (Android never pairs those), a device only a scan
+   * saw, and a remembered watch whose Android pairing is gone. Undefined where it was not asked.
+   */
+  paired?: boolean;
+  /** Android only: JoyoFit connected to this watch before. Its address and keys are stored, so Connect works without a scan finding it. */
+  remembered?: boolean;
+  /** Android only: a Classic (RFCOMM) model, which needs Android's own pairing. Undefined for a name in no list. */
+  classic?: boolean;
 }
 
 export interface DeviceInfo {

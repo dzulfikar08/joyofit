@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 
 import { applyLocale } from '@/i18n';
 
-import { BIND_CONFIRMATION, describeConnectFailure, isSilentWatch, silentWatchSteps, watchBusyHint } from './connectFailure';
+import { BIND_CONFIRMATION, NOT_PAIRED, describeConnectFailure, isSilentWatch, silentWatchSteps, watchBusyHint } from './connectFailure';
 
 function coded(code: string, message = 'native detail'): Error {
   return Object.assign(new Error(message), { code });
@@ -16,6 +16,19 @@ describe('describeConnectFailure', () => {
   it('explains every way a busy or unreachable watch fails with the same hint', () => {
     for (const code of ['ERR_CONNECT_FAILED', 'ERR_TIMEOUT', 'ERR_DISCONNECTED', 'ERR_AUTH_FAILED']) {
       expect(describeConnectFailure(coded(code))).toEqual({ kind: 'unreachable', message: watchBusyHint() });
+    }
+  });
+
+  it('says Android has lost its pairing instead of blaming another phone, in the active language', async () => {
+    const id = describeConnectFailure(coded(NOT_PAIRED));
+    expect(id.kind).toBe('unpaired');
+    await applyLocale('en');
+    try {
+      const en = describeConnectFailure(coded(NOT_PAIRED));
+      expect(en).toEqual({ kind: 'unpaired', message: expect.stringContaining('Android has no Bluetooth pairing with this watch') });
+      expect(en).not.toEqual(id);
+    } finally {
+      await applyLocale('id');
     }
   });
 

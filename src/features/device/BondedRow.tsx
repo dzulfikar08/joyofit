@@ -37,6 +37,8 @@ export function BondedRow({
   const switching = linkState === 'connected' && !isActive;
 
   const connectable = canConnect(device);
+  /** Android lost its pairing with a Classic watch JoyoFit remembers: it is still listed and connects by its stored address. */
+  const pairingLost = device.remembered === true && device.paired === false && device.classic === true;
 
   return (
     <View style={styles.row}>
@@ -61,6 +63,10 @@ export function BondedRow({
           ) : device.nearby === false && !isActive ? (
             <AppText variant="caption" muted>
               {t('watch:device.bonded.notInReach')}
+            </AppText>
+          ) : pairingLost && !isActive ? (
+            <AppText variant="caption" muted>
+              {t('watch:device.bonded.notPairedRemembered')}
             </AppText>
           ) : null}
         </View>

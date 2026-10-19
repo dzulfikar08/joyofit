@@ -65,7 +65,8 @@
     "hint": {
       "busy": "Tidak bisa terhubung ke jam. Kalau jam masih terhubung ke HP atau aplikasi lain (Huawei Health, atau JoyoFit di HP lain), putuskan dulu di sana. Biarkan jam tetap menyala dan dekat dengan HP ini, lalu ketuk Coba lagi.",
       "noWatchIos": "Jam tidak ditemukan. Kalau jam masih terhubung ke HP lain, putuskan dulu di sana. Pastikan jam menyala dan dekat dengan HP ini, lalu ketuk Segarkan.",
-      "noWatchScan": "Tidak ada jam di sekitar. Kalau jam masih terhubung ke HP atau aplikasi lain (Huawei Health, atau JoyoFit di HP lain), putuskan dulu di sana. Pastikan jam menyala dan dekat dengan HP ini, lalu cari lagi."
+      "noWatchScan": "Tidak ada jam di sekitar. Kalau jam masih terhubung ke HP atau aplikasi lain (Huawei Health, atau JoyoFit di HP lain), putuskan dulu di sana. Pastikan jam menyala dan dekat dengan HP ini, lalu cari lagi.",
+      "notPaired": "Android tidak punya pairing Bluetooth dengan jam ini (terhapus, atau jam menolak dipasangkan lagi). Buka pengaturan Bluetooth Android dan pasangkan jamnya, lalu ketuk Coba lagi. Kalau jam tidak muncul di sana, lepas HP ini sekali di pengaturan Bluetooth jam. JoyoFit tidak menghapus apa pun."
     },
     "silent": {
       "short": "Jam tersambung lewat Bluetooth tapi tidak menjawab. Langkah perbaikannya ada di tab Jam.",
@@ -98,6 +99,7 @@
       "unnamed": "Perangkat tanpa nama",
       "systemConnected": "Sudah terhubung ke iPhone ini. Ketuk Hubungkan untuk memakainya di sini.",
       "notInReach": "Di luar jangkauan. Kalau jam ada di HP lain, putuskan dulu di sana.",
+      "notPairedRemembered": "Diingat JoyoFit, tetapi Android tidak lagi mencatatnya sebagai terpasang. Hubungkan memakai alamat yang tersimpan dan meminta Android memasangkan lagi bila perlu.",
       "disconnect": "Putuskan",
       "connect": "Hubungkan",
       "switchHere": "Ganti ke sini"

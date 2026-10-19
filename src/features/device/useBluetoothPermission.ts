@@ -17,6 +17,12 @@ export async function ensureBluetoothConnect(): Promise<Exclude<PermissionStatus
   return result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN ? 'blocked' : 'denied';
 }
 
+/** Whether BLUETOOTH_CONNECT is granted already. Unlike `ensureBluetoothConnect` it never asks: for what the app does by itself. */
+export async function bluetoothConnectGranted(): Promise<boolean> {
+  if (Platform.OS !== 'android' || Number(Platform.Version) < RUNTIME_BLUETOOTH_API) return true;
+  return PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT);
+}
+
 /** The Bluetooth permission as the hook tracks it, and the button that asks for it. */
 export interface BluetoothPermission {
   status: PermissionStatus;

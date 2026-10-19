@@ -929,3 +929,20 @@ Support report from a user, no log attached. The app matched the model (Band 11,
 (service 0x01, command 0x28) within 30000 ms`. That is the Android 14+ LE limit above (the 514-byte step 1 reply is discarded) [INFERENCE: the report has no log, so a
 `Magic mismatch` line was not seen; the user may also not have tapped ACCEPT on the band in time]. The step 1 timeout on LE with Android 14+ now says so in its message
 (`FirstBind.leStepOneTimeoutHint`).
+
+### 2026-10-19: Huawei Watch GT 6 (user report): after the watch was off or the app was closed, "connect again", and a search finds no watch until the phone is removed on the watch
+
+Report in Indonesian from a user, no log, no phone model: "if the watch is off or I leave the app it asks to connect again, but when I search the Bluetooth of the watch does not
+show up; I have to disconnect it from the watch, it ends up like a reset". Read from the code, nothing run on a GT 6 [INFERENCE for every cause below that is not in the code]:
+
+- The GT 6 is a Classic (RFCOMM) model (`WatchModels`, from Gadgetbridge's `HuaweiBRCoordinator`), so a reconnect is `getRemoteDevice(address)` and an RFCOMM socket: no scan, and it
+  needs Android's own pairing. Nothing in the app removes a pairing or deletes a key (only **Forget pairing** and **Remove watch** do).
+- With background mode off (the default), the link is closed with the app (`WearRuntime.onModuleDestroyed`) and nothing in JS connected by itself, so the next open always meant a tap
+  on Connect. Fixed in JS: `src/state/useAutoReconnect.ts`.
+- The Watch tab list on Android was Android's paired devices, the current link and scan results. A watch Android did not list as paired (bands never are; a Classic watch
+  whose pairing Android dropped) was only reachable through a scan, which a watch that holds a phone does not answer. The remembered watch is now always a row (iOS already did this).
+- When RFCOMM fails the connect moves to LE. There the direct attempt waited the ~30 s Android gives it (the 2026-10-16 note: GATT status 147 after 30 s) inside a 26 s deadline, so the
+  autoConnect attempt that waits for a watch that has just come back never ran (`LeConnectPlan`). `BindConsentTest` quotes the message such a connect ends with ("Timed out after 26000 ms ... while opening the GATT link").
+- A Classic connect that fails while Android has no pairing now says so (`ERR_NOT_PAIRED`, and `Android pairing: ...` in the connect log) instead of the generic "busy elsewhere" hint, which sent
+  people to disconnect the watch elsewhere. **Not known:** whether the GT 6 drops the phone's pairing when it is switched off, or Android drops it after a failed reconnect. A report taken right
+  after a failed reconnect (Watch tab, Send report) shows it in the `Android pairing:` and `RFCOMM did not open (...)` lines.
