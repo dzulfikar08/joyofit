@@ -253,4 +253,52 @@ final class SyncStoreTests: XCTestCase {
         XCTAssertEqual(totals["calories"] as? Int, 6)
         XCTAssertEqual(SyncSummary(from: 1, to: 2, samples: 3, sleep: 4, totalSteps: 5, totalCalories: 6, totalDistance: 7).withWorkouts(2).workouts, 2)
     }
+
+    // releaseDatabase / resumeDatabase: the repair of a damaged file replaces it and the native connection must not be open meanwhile.
+
+    func testReleaseClosesTheConnectionAndResumeOpensItAgainOnTheSameData() throws {
+        let (store, _) = store()
+        try store.upsertDevice(address: "AA:AA:AA:AA:AA:01", name: "Band", productModel: nil, softwareVersion: nil)
+        store.release()
+        XCTAssertThrowsError(try store.read { db in try db.userVersion }, "a released store opens nothing")
+        XCTAssertThrowsError(try store.lastSync(address: "AA:AA:AA:AA:AA:01"))
+        store.resume()
+        let addresses: [String] = try store.read { db in try db.query("SELECT address FROM device") { $0.text(0)! } }
+        XCTAssertEqual(addresses, ["AA:AA:AA:AA:AA:01"])
+    }
+
+    func testAFileReplacedWhileReleasedIsTheOneThatOpensAfterResume() throws {
+        let (store, url) = store()
+        try store.upsertDevice(address: "AA:AA:AA:AA:AA:01", name: "Band", productModel: nil, softwareVersion: nil)
+        store.release()
+        for suffix in ["", "-wal", "-shm"] { try? FileManager.default.removeItem(atPath: url.path + suffix) }
+        store.resume()
+        let devices: Int = try store.read { db in try db.query("SELECT COUNT(*) FROM device") { $0.int(0) }.first! }
+        XCTAssertEqual(devices, 0, "the connection was reopened on the new file, not kept on the old one")
+        XCTAssertEqual(try store.read { db in try db.userVersion }, try SyncStore.sharedMigrations().count)
+    }
+
+    func testReleaseWaitsForAnAccessThatIsRunning() throws {
+        let (store, _) = store()
+        let inside = DispatchSemaphore(value: 0)
+        let finish = DispatchSemaphore(value: 0)
+        let reader = Thread {
+            _ = try? store.read { (db: SQLiteDatabase) -> Int in
+                inside.signal()
+                _ = finish.wait(timeout: .now() + 5)
+                return try db.userVersion
+            }
+        }
+        reader.start()
+        XCTAssertEqual(inside.wait(timeout: .now() + 5), .success)
+        let released = DispatchSemaphore(value: 0)
+        let releaser = Thread {
+            store.release()
+            released.signal()
+        }
+        releaser.start()
+        XCTAssertEqual(released.wait(timeout: .now() + 0.2), .timedOut, "release must wait for the running access")
+        finish.signal()
+        XCTAssertEqual(released.wait(timeout: .now() + 5), .success)
+    }
 }

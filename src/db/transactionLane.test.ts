@@ -87,11 +87,11 @@ describe('withTransactionAsync on the shared handle', () => {
 
   it('lets a transaction go ahead after maxWaitMs when the one before it never finishes (a task that waits for its own nested transaction)', async () => {
     const lane = createTransactionLane(50);
-    const never = lane(() => new Promise<void>(() => undefined));
-    void never;
-    const started = Date.now();
-    const result = await lane(async () => 'ran');
-    expect(result).toBe('ran');
-    expect(Date.now() - started).toBeGreaterThanOrEqual(40);
+    void lane(() => new Promise<void>(() => undefined));
+    const second = lane(async () => 'ran');
+    // Still waiting after 10 ms (the clock is not read: other test files may have frozen Date.now), then going ahead once the wait limit passed.
+    const early = await Promise.race([second, new Promise<string>((resolve) => setTimeout(() => resolve('waiting'), 10))]);
+    expect(early).toBe('waiting');
+    expect(await second).toBe('ran');
   });
 });

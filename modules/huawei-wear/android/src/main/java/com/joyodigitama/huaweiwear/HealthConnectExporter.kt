@@ -2,7 +2,6 @@ package com.joyodigitama.huaweiwear
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.database.sqlite.SQLiteDatabase
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.ActiveCaloriesBurnedRecord
@@ -340,7 +339,7 @@ internal class HealthConnectExporter(
     return counts
   }
 
-  private fun loadSamples(db: SQLiteDatabase, fromSec: Long, toSec: Long): List<StepSample> =
+  private fun loadSamples(db: WearDatabase, fromSec: Long, toSec: Long): List<StepSample> =
     db.rawQuery(
       """SELECT timestamp, steps, calories, distance, heart_rate, spo2, resting_heart_rate
          FROM step_samples WHERE imported = 0 AND timestamp >= ? AND timestamp < ? ORDER BY timestamp""",
@@ -557,7 +556,7 @@ internal class HealthConnectExporter(
     }
   }
 
-  private fun loadWorkouts(db: SQLiteDatabase): List<WorkoutRow> {
+  private fun loadWorkouts(db: WearDatabase): List<WorkoutRow> {
     val exists = db.rawQuery("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'workouts'", null).use { it.moveToFirst() }
     if (!exists) return emptyList()
     return db.rawQuery(

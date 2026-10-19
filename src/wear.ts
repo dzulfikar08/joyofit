@@ -97,6 +97,5 @@ export interface NativeDatabaseControl {
 /** The control, or null on a binary that does not have it (iOS, and Android builds older than the shared-SQLite change). */
 export function nativeDatabaseControl(): NativeDatabaseControl | null {
   if (!hasNative('releaseDatabase') || !hasNative('resumeDatabase')) return null;
-  const module = HuaweiWear as unknown as Record<'releaseDatabase' | 'resumeDatabase', () => Promise<void>>;
-  return { release: () => module.releaseDatabase(), resume: () => module.resumeDatabase() };
+  return { release: () => HuaweiWear.releaseDatabase(), resume: () => HuaweiWear.resumeDatabase() };
 }

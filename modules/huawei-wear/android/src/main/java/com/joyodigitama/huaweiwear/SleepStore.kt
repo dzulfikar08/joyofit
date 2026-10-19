@@ -1,7 +1,5 @@
 package com.joyodigitama.huaweiwear
 
-import android.database.sqlite.SQLiteDatabase
-
 /**
  * Reads `sleep_segments` for everything that totals or groups sleep, and cleans the stage-less rows on the way
  * ([SleepCleaning.cleanUnstagedSleep]). The raw rows stay as the watch sent them, so a rule change re-derives every
@@ -18,13 +16,13 @@ internal object SleepStore {
    * Cleaned segments whose end lies in `[fromEndSec, toEndSec)`, sorted by start. [importedOnly] keeps the
    * `imported = 0` filter of a consumer that ignores rows from a Huawei export; the evidence always covers every row.
    */
-  fun load(db: SQLiteDatabase, fromEndSec: Long, toEndSec: Long = Long.MAX_VALUE, importedOnly: Boolean = false): List<SleepSegment> {
+  fun load(db: WearDatabase, fromEndSec: Long, toEndSec: Long = Long.MAX_VALUE, importedOnly: Boolean = false): List<SleepSegment> {
     val raw = loadRaw(db, fromEndSec - CLEAN_MARGIN_SEC, if (toEndSec > Long.MAX_VALUE - CLEAN_MARGIN_SEC) Long.MAX_VALUE else toEndSec + CLEAN_MARGIN_SEC, importedOnly)
     return clean(db, raw).filter { it.end >= fromEndSec && it.end < toEndSec }
   }
 
   /** The stored rows whose end lies in `[fromEndSec, toEndSec)`, exactly as stored. */
-  fun loadRaw(db: SQLiteDatabase, fromEndSec: Long, toEndSec: Long = Long.MAX_VALUE, importedOnly: Boolean = false): List<SleepSegment> =
+  fun loadRaw(db: WearDatabase, fromEndSec: Long, toEndSec: Long = Long.MAX_VALUE, importedOnly: Boolean = false): List<SleepSegment> =
     db.rawQuery(
       "SELECT start, end, type, stage FROM sleep_segments WHERE end >= ? AND end < ?" +
         (if (importedOnly) " AND imported = 0" else "") + " ORDER BY start, end",
@@ -36,7 +34,7 @@ internal object SleepStore {
     }
 
   /** [raw] cleaned with the evidence the database holds about the span of its stage-less rows; staged-only history reads no evidence. */
-  fun clean(db: SQLiteDatabase, raw: List<SleepSegment>): List<SleepSegment> {
+  fun clean(db: WearDatabase, raw: List<SleepSegment>): List<SleepSegment> {
     var from = Long.MAX_VALUE
     var to = Long.MIN_VALUE
     for (s in raw) {
@@ -52,7 +50,7 @@ internal object SleepStore {
    * What the stored workouts, spot HRV measurements and per-minute steps say about `[from, to]`. Only minutes with real
    * walking are read, never the whole step history.
    */
-  fun evidence(db: SQLiteDatabase, from: Long, to: Long): SleepEvidence {
+  fun evidence(db: WearDatabase, from: Long, to: Long): SleepEvidence {
     val workouts = db.rawQuery(
       // The CAST: a bound string compares as text against an expression, which has no column affinity to turn it into a number.
       "SELECT start, end, duration FROM workouts WHERE start <= ? AND (end >= ? OR start + duration >= CAST(? AS INTEGER))",

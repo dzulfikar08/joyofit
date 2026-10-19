@@ -1,7 +1,5 @@
 package com.joyodigitama.huaweiwear
 
-import android.database.sqlite.SQLiteDatabase
-
 /**
  * What an update that changes the sleep rules ([SleepCleaning.SLEEP_RULES_VERSION]) has to re-derive besides what is
  * computed on every read (Today, the sleep report, the family summary, the model data all read through [SleepStore]):
@@ -27,7 +25,7 @@ internal object SleepRulesRepair {
   }
 
   /** Deletes the stale night HRV rows of all stored history; returns how many. */
-  fun pruneNightHrv(db: SQLiteDatabase): Int {
+  fun pruneNightHrv(db: WearDatabase): Int {
     val nights = NightHrv.nights(SleepStore.load(db, 0L))
     val rows = db.rawQuery("SELECT start, end FROM hrv_readings WHERE source = 'night'", null).use { c ->
       val out = ArrayList<TimeSpan>(c.count)

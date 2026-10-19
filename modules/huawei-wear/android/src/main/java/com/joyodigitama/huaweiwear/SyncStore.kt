@@ -1,10 +1,7 @@
 package com.joyodigitama.huaweiwear
 
 import android.content.Context
-import android.database.DatabaseErrorHandler
-import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteException
-import android.util.Log
 import java.io.File
 import org.json.JSONArray
 
@@ -80,25 +77,26 @@ internal class SyncSummary(
  * Schema and migrations come from the same JSON asset JS imports
  * (`modules/huawei-wear/schema/joyofit-db-migrations.json`); `PRAGMA user_version` counts applied
  * migrations in both. Upserts are the ones `src/db/queries.ts` used to run from JS.
+ *
+ * The connection is [WearDatabase], on the SQLite library of expo-sqlite, never `android.database.sqlite`: two copies of the
+ * library in one process do not lock each other out and corrupt a file they share (see [ExpoSqliteConnection]).
  */
 internal class SyncStore(context: Context) {
   private val appContext = context.applicationContext
   private val file = File(File(appContext.filesDir, "SQLite"), DATABASE_NAME)
-  private var database: SQLiteDatabase? = null
+  private var database: WearDatabase? = null
+
+  /** True while JS replaces the file ([release]): no connection is opened, every access fails as a storage error. */
+  private var released = false
 
   @Synchronized
-  internal fun db(): SQLiteDatabase {
+  internal fun db(): WearDatabase {
     database?.let { return it }
+    if (released) throw SQLiteException("The database is being repaired")
     file.parentFile?.mkdirs()
-    val opened = SQLiteDatabase.openDatabase(
-      file.path,
-      null,
-      SQLiteDatabase.OPEN_READWRITE or SQLiteDatabase.CREATE_IF_NECESSARY or SQLiteDatabase.ENABLE_WRITE_AHEAD_LOGGING,
-      KEEP_CORRUPT_FILE,
-    )
+    // JS may hold the file briefly (its own migration, a write): wait for it instead of failing.
+    val opened = WearDatabase.open(file.path, BUSY_TIMEOUT_MS)
     try {
-      // The framework default is 2.5 s. JS may hold the file briefly (its own migration), so wait longer.
-      opened.rawQuery("PRAGMA busy_timeout = $BUSY_TIMEOUT_MS", null).use { it.moveToFirst() }
       migrate(opened, loadMigrations())
     } catch (e: Exception) {
       opened.close()
@@ -106,6 +104,25 @@ internal class SyncStore(context: Context) {
     }
     database = opened
     return opened
+  }
+
+  /**
+   * Closes the connection and keeps it closed until [resume]: the repair of a damaged file (`src/db/recovery`) replaces the
+   * file, and a replaced file must not be open here. Waits for a transaction that is running; what uses the old connection
+   * afterwards fails with a storage error and tries again later.
+   */
+  fun release() {
+    val open = synchronized(this) {
+      released = true
+      database.also { database = null }
+    }
+    open?.close()
+  }
+
+  /** Lets [db] open the connection again after [release]. */
+  @Synchronized
+  fun resume() {
+    released = false
   }
 
   private fun loadMigrations(): List<List<String>> {
@@ -118,7 +135,7 @@ internal class SyncStore(context: Context) {
   }
 
   /** `migrate()` in `src/db/migrations.ts`: entry `i` upgrades `user_version` i to i + 1. */
-  private fun migrate(db: SQLiteDatabase, migrations: List<List<String>>) {
+  private fun migrate(db: WearDatabase, migrations: List<List<String>>) {
     val current = db.version
     if (current > migrations.size) {
       throw SQLiteException("Database schema v$current is newer than this app supports (v${migrations.size})")
@@ -139,7 +156,7 @@ internal class SyncStore(context: Context) {
   }
 
   /** Runs [block] against the open database; the Health Connect export reads stored rows through this. */
-  fun <T> read(block: (SQLiteDatabase) -> T): T = block(db())
+  fun <T> read(block: (WearDatabase) -> T): T = block(db())
 
   fun lastSync(address: String): Long? =
     db().rawQuery("SELECT last_sync FROM device WHERE address = ?", arrayOf(address)).use { cursor ->
@@ -158,7 +175,7 @@ internal class SyncStore(context: Context) {
   fun bgSyncWatches(): List<Pair<String, Long?>> =
     db().rawQuery(WatchSql.SELECT_BG_SYNC_WATCHES, null).use { cursor ->
       val out = ArrayList<Pair<String, Long?>>(cursor.count)
-      while (cursor.moveToNext()) out.add(cursor.getString(0) to (if (cursor.isNull(1)) null else cursor.getLong(1)))
+      while (cursor.moveToNext()) out.add(cursor.getString(0).orEmpty() to (if (cursor.isNull(1)) null else cursor.getLong(1)))
       out
     }
 
@@ -236,13 +253,5 @@ internal class SyncStore(context: Context) {
     const val DATABASE_NAME = "joyofit.db"
     const val MIGRATIONS_ASSET = "joyofit-db-migrations.json"
     const val BUSY_TIMEOUT_MS = 10_000
-    private const val TAG = "SyncStore"
-
-    /**
-     * The framework's default handler deletes the database file and its WAL when this connection meets corruption, while the JS
-     * connection (expo-sqlite, its own SQLite) still holds the file and writes into the deleted one. This one only says so: the
-     * JS repair (`src/db/recovery`) keeps a copy of the damaged file and rebuilds the database from what can be read.
-     */
-    val KEEP_CORRUPT_FILE = DatabaseErrorHandler { db -> Log.e(TAG, "Corruption reported by sqlite on ${db.path}; the file is left for the repair") }
   }
 }

@@ -229,6 +229,15 @@ public final class HuaweiWearModule: Module {
             runtime.forget(address)
         }
 
+        // The repair of a damaged joyofit.db (src/db/recovery) replaces the file: the native connection must not be open meanwhile.
+        AsyncFunction("releaseDatabase") { () async throws -> Void in
+            runtime.syncStore.release()
+        }
+
+        AsyncFunction("resumeDatabase") { () async throws -> Void in
+            runtime.syncStore.resume()
+        }
+
         // MARK: background session
 
         AsyncFunction("setBackgroundEnabled") { (address: String?) async throws -> Void in

@@ -141,6 +141,14 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    */
   setBackgroundEnabled(address: string | null): Promise<void>;
   getBackgroundStatus(): BackgroundStatus;
+  /**
+   * Closes the native connection to `joyofit.db` and keeps it closed (native reads and writes fail with ERR_STORAGE) until
+   * `resumeDatabase`; waits for a transaction that is running. The repair of a damaged file calls it before it replaces the file.
+   * Gate on `hasNative`: binaries older than the shared-SQLite change do not have it.
+   */
+  releaseDatabase(): Promise<void>;
+  /** Lets the native side open `joyofit.db` again after `releaseDatabase`. */
+  resumeDatabase(): Promise<void>;
   /** 5 to 1440 minutes. */
   setSyncIntervalMinutes(minutes: number): Promise<void>;
 

@@ -1,11 +1,10 @@
 package com.joyodigitama.huaweiwear
 
 import android.database.Cursor
-import android.database.sqlite.SQLiteDatabase
 
 /**
  * The few database operations the multi-watch write rules need, so the flows built on them ([WorkoutWriter],
- * [NightHrvStore]) run unchanged against Android's SQLite in the app and against a plain JDBC SQLite in the JVM unit tests.
+ * [NightHrvStore]) run unchanged against the app's database ([WearDatabase]) and against a plain JDBC SQLite in the JVM unit tests.
  * Query arguments are compared with columns only, never used in arithmetic (the Android side binds them as text).
  */
 internal interface WatchDb {
@@ -22,7 +21,7 @@ internal interface WatchDb {
 }
 
 /** [WatchDb] on the app's open database. */
-internal class AndroidWatchDb(private val db: SQLiteDatabase) : WatchDb {
+internal class AndroidWatchDb(private val db: WearDatabase) : WatchDb {
   override fun query(sql: String, vararg args: Any?): List<List<Any?>> =
     db.rawQuery(sql, Array(args.size) { args[it]?.toString() }).use { cursor ->
       val rows = ArrayList<List<Any?>>(cursor.count)
@@ -67,7 +66,7 @@ internal class AndroidWatchDb(private val db: SQLiteDatabase) : WatchDb {
     }
   }
 
-  private fun value(cursor: Cursor, column: Int): Any? = when (cursor.getType(column)) {
+  private fun value(cursor: WearCursor, column: Int): Any? = when (cursor.getType(column)) {
     Cursor.FIELD_TYPE_INTEGER -> cursor.getLong(column)
     Cursor.FIELD_TYPE_FLOAT -> cursor.getDouble(column)
     Cursor.FIELD_TYPE_STRING -> cursor.getString(column)

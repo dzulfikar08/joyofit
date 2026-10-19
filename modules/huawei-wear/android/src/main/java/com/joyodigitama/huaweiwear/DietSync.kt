@@ -333,7 +333,7 @@ internal class DietStore(private val store: SyncStore) {
     val dates = ArrayList<String>()
     try {
       store.db().rawQuery("SELECT date FROM diet_day ORDER BY date DESC LIMIT ?", arrayOf(limit.toString())).use { c ->
-        while (c.moveToNext()) dates.add(c.getString(0))
+        while (c.moveToNext()) dates.add(c.getString(0).orEmpty())
       }
     } catch (e: SQLiteException) {
       throw WearException(ErrorCodes.STORAGE, "Could not read diet_day: ${e.message}", e)
@@ -350,7 +350,7 @@ internal class DietStore(private val store: SyncStore) {
       val array = JSONArray(c.getString(1))
       for (i in 0 until array.length()) meals += DietMeal.fromJson(array.getJSONObject(i))
       DietDay(
-        date = c.getString(0),
+        date = c.getString(0).orEmpty(),
         meals = meals,
         goals = JSONObject(c.getString(2)).let { DietGoals.fromJson(it) },
         updatedAt = c.getLong(3),

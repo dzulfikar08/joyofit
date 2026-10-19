@@ -121,7 +121,7 @@ internal class BodyMetrics(
   fun load(): BodyMetricsData = try {
     val map = HashMap<String, String>()
     store.db().rawQuery("SELECT key, value FROM body_metrics", null).use { c ->
-      while (c.moveToNext()) map[c.getString(0)] = c.getString(1)
+      while (c.moveToNext()) map[c.getString(0).orEmpty()] = c.getString(1).orEmpty()
     }
     BodyMetricsData(
       weightKg = map["weight_kg"]?.toDoubleOrNull(),

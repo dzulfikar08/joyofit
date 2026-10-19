@@ -1,7 +1,5 @@
 package com.joyodigitama.huaweiwear
 
-import android.database.sqlite.SQLiteDatabase
-
 /**
  * Writes an import into `joyofit.db` through [SyncStore]'s connection. The rules, in one place:
  *
@@ -183,7 +181,7 @@ internal class SqliteHuaweiImportStore(private val store: SyncStore) : HuaweiImp
     }
   }
 
-  private fun workoutExists(db: SQLiteDatabase, start: Long): Boolean =
+  private fun workoutExists(db: WearDatabase, start: Long): Boolean =
     db.rawQuery(
       "SELECT 1 FROM workouts WHERE start BETWEEN ? AND ? LIMIT 1",
       arrayOf((start - WORKOUT_MATCH_SEC).toString(), (start + WORKOUT_MATCH_SEC).toString()),

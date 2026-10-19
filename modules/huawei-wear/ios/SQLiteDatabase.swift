@@ -1,13 +1,68 @@
-// A small wrapper over the system sqlite3 C API: what SyncStore and the HealthKit exporter need, nothing more.
-// Darwin ships SQLite3 as a system module; the Linux logic tests get the same C API from the `CSQLite` system library target.
+// A small wrapper over the sqlite3 C API: what SyncStore and the HealthKit exporter need, nothing more.
+//
+// On the phone it calls the SQLite library that expo-sqlite links (`exsqlite3_*`, the same copy the JS side opens `joyofit.db` with),
+// never Apple's libsqlite3. Two copies of SQLite in one process do not lock each other out (POSIX locks belong to the process, not to
+// the library) and a close() in one drops the other's locks, which corrupts a file they share; see
+// https://www.sqlite.org/howtocorrupt.html, "Multiple copies of SQLite linked into the same application", and docs/sqlite-one-library.md.
+// The logic tests (macOS: the system module; Linux: the `CSQLite` system library target) have no expo-sqlite and use the system copy.
 import Foundation
-#if canImport(SQLite3)
+#if canImport(ExpoSQLite)
+import ExpoSQLite
+#elseif canImport(SQLite3)
 import SQLite3
 #elseif canImport(CSQLite)
 import CSQLite
 #endif
 
-#if canImport(SQLite3) || canImport(CSQLite)
+#if canImport(ExpoSQLite)
+
+// expo-sqlite prefixes every function of its copy with `ex`; these forward the ones used here under the usual names, so the code
+// below reads the same on every platform. Constants (SQLITE_OK, SQLITE_ROW, ...) are not prefixed.
+private typealias Destructor = @convention(c) (UnsafeMutableRawPointer?) -> Void
+
+@discardableResult private func sqlite3_open_v2(_ file: UnsafePointer<CChar>?, _ db: UnsafeMutablePointer<OpaquePointer?>?, _ flags: Int32, _ vfs: UnsafePointer<CChar>?) -> Int32 {
+    exsqlite3_open_v2(file, db, flags, vfs)
+}
+@discardableResult private func sqlite3_close(_ db: OpaquePointer?) -> Int32 { exsqlite3_close(db) }
+@discardableResult private func sqlite3_busy_timeout(_ db: OpaquePointer?, _ ms: Int32) -> Int32 { exsqlite3_busy_timeout(db, ms) }
+private func sqlite3_errmsg(_ db: OpaquePointer?) -> UnsafePointer<CChar>! { exsqlite3_errmsg(db) }
+@discardableResult private func sqlite3_exec(_ db: OpaquePointer?, _ sql: UnsafePointer<CChar>?, _ callback: UnsafeRawPointer?, _ argument: UnsafeMutableRawPointer?, _ error: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?) -> Int32 {
+    exsqlite3_exec(db, sql, nil, argument, error)
+}
+private func sqlite3_free(_ pointer: UnsafeMutableRawPointer?) { exsqlite3_free(pointer) }
+@discardableResult private func sqlite3_prepare_v2(_ db: OpaquePointer?, _ sql: UnsafePointer<CChar>?, _ length: Int32, _ statement: UnsafeMutablePointer<OpaquePointer?>?, _ tail: UnsafeMutablePointer<UnsafePointer<CChar>?>?) -> Int32 {
+    exsqlite3_prepare_v2(db, sql, length, statement, tail)
+}
+@discardableResult private func sqlite3_finalize(_ statement: OpaquePointer?) -> Int32 { exsqlite3_finalize(statement) }
+@discardableResult private func sqlite3_step(_ statement: OpaquePointer?) -> Int32 { exsqlite3_step(statement) }
+@discardableResult private func sqlite3_reset(_ statement: OpaquePointer?) -> Int32 { exsqlite3_reset(statement) }
+@discardableResult private func sqlite3_clear_bindings(_ statement: OpaquePointer?) -> Int32 { exsqlite3_clear_bindings(statement) }
+@discardableResult private func sqlite3_bind_int64(_ statement: OpaquePointer?, _ index: Int32, _ value: Int64) -> Int32 { exsqlite3_bind_int64(statement, index, value) }
+@discardableResult private func sqlite3_bind_double(_ statement: OpaquePointer?, _ index: Int32, _ value: Double) -> Int32 { exsqlite3_bind_double(statement, index, value) }
+@discardableResult private func sqlite3_bind_null(_ statement: OpaquePointer?, _ index: Int32) -> Int32 { exsqlite3_bind_null(statement, index) }
+@discardableResult private func sqlite3_bind_text(_ statement: OpaquePointer?, _ index: Int32, _ text: UnsafePointer<CChar>?, _ length: Int32, _ destructor: Destructor?) -> Int32 {
+    exsqlite3_bind_text(statement, index, text, length, destructor)
+}
+@discardableResult private func sqlite3_column_type(_ statement: OpaquePointer?, _ column: Int32) -> Int32 { exsqlite3_column_type(statement, column) }
+private func sqlite3_column_int64(_ statement: OpaquePointer?, _ column: Int32) -> Int64 { exsqlite3_column_int64(statement, column) }
+private func sqlite3_column_double(_ statement: OpaquePointer?, _ column: Int32) -> Double { exsqlite3_column_double(statement, column) }
+private func sqlite3_column_text(_ statement: OpaquePointer?, _ column: Int32) -> UnsafePointer<UInt8>! { exsqlite3_column_text(statement, column) }
+@discardableResult private func sqlite3_changes(_ db: OpaquePointer?) -> Int32 { exsqlite3_changes(db) }
+private func sqlite3_last_insert_rowid(_ db: OpaquePointer?) -> Int64 { exsqlite3_last_insert_rowid(db) }
+
+/// SQLITE_TRANSIENT: SQLite copies the bound bytes before `sqlite3_bind_text` returns.
+private let sqliteTransient = unsafeBitCast(-1, to: Destructor.self)
+
+#elseif canImport(SQLite3) || canImport(CSQLite)
+
+private typealias Destructor = sqlite3_destructor_type
+
+/// SQLITE_TRANSIENT: SQLite copies the bound bytes before `sqlite3_bind_text` returns.
+private let sqliteTransient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+
+#endif
+
+#if canImport(ExpoSQLite) || canImport(SQLite3) || canImport(CSQLite)
 
 public struct SQLiteError: Error, CustomStringConvertible {
     public let code: Int32
@@ -27,9 +82,6 @@ public enum SQLValue: Equatable {
     public static func integer(_ v: Int?) -> SQLValue { v.map { .int(Int64($0)) } ?? .null }
     public static func string(_ v: String?) -> SQLValue { v.map { .text($0) } ?? .null }
 }
-
-/// SQLITE_TRANSIENT: SQLite copies the bound bytes before `sqlite3_bind_text` returns.
-private let sqliteTransient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
 /// One prepared statement; `reset()` clears the bindings and rewinds it so a loop can reuse it.
 public final class SQLiteStatement {

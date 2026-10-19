@@ -1,6 +1,5 @@
 package com.joyodigitama.huaweiwear
 
-import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteException
 import java.time.LocalDate
 import java.time.ZoneId
@@ -24,7 +23,7 @@ internal object HealthModelData {
   }
 
   /** The day to answer for: the requested one, else today (a request with `recordDay` 0 or an impossible date). */
-  fun load(db: SQLiteDatabase, requestedDay: Int, stepGoal: Int, nowMs: Long, zone: ZoneId = ZoneId.systemDefault()): HealthDay {
+  fun load(db: WearDatabase, requestedDay: Int, stepGoal: Int, nowMs: Long, zone: ZoneId = ZoneId.systemDefault()): HealthDay {
     val date = dateOf(requestedDay) ?: java.time.Instant.ofEpochMilli(nowMs).atZone(zone).toLocalDate()
     val recordDay = date.year * 10000 + date.monthValue * 100 + date.dayOfMonth
     val from = date.atStartOfDay(zone).toEpochSecond()
@@ -53,7 +52,7 @@ internal object HealthModelData {
   }
 
   /** Sum of `kcal` over the meals of the diet day (`diet_day.meals_json`, written by the diet card); null when the day has no row. */
-  fun intakeKcal(db: SQLiteDatabase, date: String): Double? = try {
+  fun intakeKcal(db: WearDatabase, date: String): Double? = try {
     db.rawQuery("SELECT meals_json FROM diet_day WHERE date = ?", arrayOf(date)).use { cursor ->
       if (!cursor.moveToFirst() || cursor.isNull(0)) {
         null
@@ -70,7 +69,7 @@ internal object HealthModelData {
     null
   }
 
-  private fun scalarLong(db: SQLiteDatabase, sql: String, vararg args: Long): Long? =
+  private fun scalarLong(db: WearDatabase, sql: String, vararg args: Long): Long? =
     try {
       db.rawQuery(sql, Array(args.size) { args[it].toString() }).use { if (it.moveToFirst() && !it.isNull(0)) it.getLong(0) else null }
     } catch (e: SQLiteException) {
@@ -78,7 +77,7 @@ internal object HealthModelData {
     }
 
   /** Seconds asleep in cleaned segments that end in `[fromEndSec, toEndSec)`; null when a table of a later migration is not there yet. */
-  private fun sleepSecondsEndingIn(db: SQLiteDatabase, fromEndSec: Long, toEndSec: Long): Long? =
+  private fun sleepSecondsEndingIn(db: WearDatabase, fromEndSec: Long, toEndSec: Long): Long? =
     try {
       SleepStore.load(db, fromEndSec, toEndSec).sumOf { if (it.stage == "awake") 0L else maxOf(0L, it.end - it.start) }
     } catch (e: SQLiteException) {

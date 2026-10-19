@@ -20,6 +20,7 @@ android {
     versionCode 1
     versionName "0.1.0"
     buildConfigField "String", "DISTRIBUTION", "\"${joyofitDistribution}\""
+    consumerProguardFiles 'consumer-rules.pro'
   }
   buildFeatures {
     buildConfig true
@@ -45,6 +46,22 @@ dependencies {
   implementation 'org.slf4j:slf4j-api:2.0.17'
   implementation 'androidx.annotation:annotation:1.9.1'
   implementation 'androidx.health.connect:connect-client:1.1.0'
+  // The SQLite library the JS side opens joyofit.db with; native code uses the same copy (ExpoSqliteConnection), never android.database.sqlite.
+  // Expo autolinking includes `:expo-sqlite` as a project only when it is built from source (an expo.sqlite.* property such as
+  // useSQLCipher is set); otherwise the app takes the precompiled AAR from expo-sqlite's local-maven-repo, which autolinking registers
+  // for every project, and there is no such project. Either way this module compiles against the same classes.
+  if (rootProject.findProject(':expo-sqlite') != null) {
+    implementation project(':expo-sqlite')
+  } else {
+    def expoSqlitePackage = [
+      file("${projectDir}/../../../node_modules/expo-sqlite/package.json"),
+      file("${rootProject.projectDir}/../node_modules/expo-sqlite/package.json"),
+    ].find { it.exists() }
+    if (expoSqlitePackage == null) {
+      throw new GradleException('expo-sqlite is not installed: huawei-wear needs it (joyofit.db is opened with its SQLite library)')
+    }
+    implementation "host.exp.exponent:expo.modules.sqlite:${new groovy.json.JsonSlurper().parse(expoSqlitePackage).version}"
+  }
   // AES-256 encrypted ZIP (the Huawei Privacy Centre export); Apache-2.0.
   implementation 'net.lingala.zip4j:zip4j:2.11.5'
   testImplementation 'junit:junit:4.13.2'

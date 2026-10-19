@@ -5,8 +5,9 @@
 // imports (modules/huawei-wear/schema/joyofit-db-migrations.json, compiled into WearMigrations.swift); `PRAGMA user_version` counts the
 // migrations applied in both. The upserts are the ones src/db/queries.ts used to run from JS.
 //
-// The connection stays open for the life of the process: expo-sqlite links its own copy of SQLite, and closing a descriptor on the file
-// in one copy would drop the POSIX locks the other holds.
+// The connection is on the SQLite library expo-sqlite links (see SQLiteDatabase.swift), the one JS opens the same file with, so the two
+// really lock each other out. It stays open until `release()` (the repair of a damaged file in src/db/recovery replaces the file and
+// needs it closed) and opens again on the next access after `resume()`.
 import Foundation
 #if canImport(HuaweiProtocol)
 import HuaweiProtocol
@@ -97,6 +98,8 @@ public final class SyncStore: @unchecked Sendable {
     private let migrationsOverride: [[String]]?
     private let lock = NSLock()
     private var database: SQLiteDatabase?
+    /// True between `release()` and `resume()`: no connection is opened and every access fails as a storage error.
+    private var released = false
 
     /// `url` defaults to `<Documents>/SQLite/joyofit.db`; `migrations` to the shared schema (parsed when the database is first opened, so a
     /// broken schema file surfaces as a storage error instead of failing the module).
@@ -125,6 +128,7 @@ public final class SyncStore: @unchecked Sendable {
     /// Opens the database on first use, enables WAL (as JS does and as Android's ENABLE_WRITE_AHEAD_LOGGING) and applies pending migrations.
     private func db() throws -> SQLiteDatabase {
         if let database { return database }
+        if released { throw SQLiteError(code: -1, message: "The database is being repaired") }
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let opened = try SQLiteDatabase(path: url.path)
         try opened.exec("PRAGMA journal_mode = WAL")
@@ -149,6 +153,22 @@ public final class SyncStore: @unchecked Sendable {
                 }
             }
         }
+    }
+
+    /// Closes the connection and keeps it closed until `resume()`: a file that is replaced must not be open here. Waits for an access that
+    /// is running (they hold the same lock).
+    public func release() {
+        lock.lock()
+        defer { lock.unlock() }
+        released = true
+        database = nil
+    }
+
+    /// Lets the next access open the connection again after `release()`.
+    public func resume() {
+        lock.lock()
+        defer { lock.unlock() }
+        released = false
     }
 
     /// Runs `block` against the open database, serialized with every other access; the HealthKit export reads stored rows through this.
