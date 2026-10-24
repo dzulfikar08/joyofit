@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { isIos } from '@/components/IosUnavailable';
 import { useStackOptions } from '@/components/navigation';
 
-export const unstable_settings = { initialRouteName: 'index' };
+export const unstable_settings = { anchor: 'index', initialRouteName: 'index' };
 
 export default function SettingsLayout() {
   const { t } = useTranslation('settings');

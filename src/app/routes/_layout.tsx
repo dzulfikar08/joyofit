@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { HeaderBackButton } from '@/components/HiddenTabHeader';
 import { useStackOptions } from '@/components/navigation';
 
-export const unstable_settings = { initialRouteName: 'index' };
+export const unstable_settings = { anchor: 'index', initialRouteName: 'index' };
 
 export default function RoutesLayout() {
   const { t } = useTranslation('routes');

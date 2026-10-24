@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useStackOptions } from '@/components/navigation';
 
-export const unstable_settings = { initialRouteName: 'index' };
+export const unstable_settings = { anchor: 'index', initialRouteName: 'index' };
 
 export default function SocialLayout() {
   const { t } = useTranslation('social');

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { HeaderBackButton } from '@/components/HiddenTabHeader';
 import { useStackOptions } from '@/components/navigation';
 
-export const unstable_settings = { initialRouteName: 'index' };
+export const unstable_settings = { anchor: 'index', initialRouteName: 'index' };
 
 /** "Main di web": `index` the room (join form, status, the ride), `join` the `joyofit://ride/join?code=` deep link from the game's QR. */
 export default function RideLayout() {

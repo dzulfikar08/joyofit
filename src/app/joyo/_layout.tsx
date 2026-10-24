@@ -10,7 +10,7 @@ import { useStackOptions } from '@/components/navigation';
  * to where the person came from (the tabs keep their own history, `backBehavior="history"` in `_layout.tsx`). The hardware back
  * button, the iOS swipe and the header arrow all take the same way.
  */
-export const unstable_settings = { initialRouteName: 'chats' };
+export const unstable_settings = { anchor: 'chats', initialRouteName: 'chats' };
 
 export default function JoyoLayout() {
   const { t } = useTranslation('ai');
