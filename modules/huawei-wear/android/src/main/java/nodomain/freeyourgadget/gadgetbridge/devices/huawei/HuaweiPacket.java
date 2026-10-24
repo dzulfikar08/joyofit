@@ -49,6 +49,7 @@ import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.Workout;
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.Weather;
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.FileUpload;
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.Watchface;
+import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.MusicControl;
 import nodomain.freeyourgadget.gadgetbridge.util.CheckSums;
 
 public class HuaweiPacket {
@@ -656,6 +657,18 @@ public class HuaweiPacket {
                         return new Watchface.WatchfaceConfirm.Response(paramsProvider).fromPacket(this);
                     case Watchface.WatchfaceNameInfo.id:
                         return new Watchface.WatchfaceNameInfo.Response(paramsProvider).fromPacket(this);
+                    default:
+                        this.isEncrypted = this.attemptDecrypt(); // Helps with debugging
+                        return this;
+                }
+            case MusicControl.id:
+                switch (this.commandId) {
+                    case MusicControl.MusicStatusResponse.id:
+                        return new MusicControl.MusicStatusResponse(paramsProvider).fromPacket(this);
+                    case MusicControl.MusicInfo.id:
+                        return new MusicControl.MusicInfo.Response(paramsProvider).fromPacket(this);
+                    case MusicControl.Control.id:
+                        return new MusicControl.Control.Response(paramsProvider).fromPacket(this);
                     default:
                         this.isEncrypted = this.attemptDecrypt(); // Helps with debugging
                         return this;
