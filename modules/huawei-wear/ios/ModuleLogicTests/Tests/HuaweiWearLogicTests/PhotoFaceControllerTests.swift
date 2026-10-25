@@ -415,14 +415,15 @@ final class PhotoFaceControllerTests: XCTestCase {
         XCTAssertEqual(events.results.first?.ok, true)
     }
 
-    func testATimeAreaOutsideThePhotoLeavesTheColourUnset() async throws {
+    func testATimeAreaOutsideThePhotoTakesTheColourOfTheWholePhoto() async throws {
         let (controller, _, watch) = make()
         let (url, _) = png(4, 3)
         defer { try? FileManager.default.removeItem(at: url) }
 
         _ = try await controller.add(uri: url.absoluteString)
 
-        XCTAssertEqual(try watch.saves.first?.object(0x82).object(0x83).string(0x0d), "#00000000")
+        // The 4 x 3 photo is dark (mean #4C4102): white.
+        XCTAssertEqual(try watch.saves.first?.object(0x82).object(0x83).string(0x0d), "#01ffffff")
     }
 
     func testAddingAPhotoAppliesTheFaceAgainOnceTheWatchHasReported() async throws {
