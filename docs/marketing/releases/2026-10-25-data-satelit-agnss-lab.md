@@ -5,7 +5,7 @@ shipped: 2026-10-25
 available: code
 tier: free
 post: skip (eksperimen untuk uji lab di jam pemilik, belum terbukti di jam mana pun)
-atur: JRG-408
+atur: JRG-411
 ---
 
 **Apa:** Saklar eksperimen baru di Pengaturan > Tentang & lanjutan > Eksperimental, mati secara bawaan. Kalau dinyalakan dan jam meminta data satelit jenis HW_AGNSS, JoyoFit mengirim berkas `HW_AGNSS_RTCM_33` yang dibuat server JoyoFit dari data siaran satelit publik (IGS/BKG), bukan dari Huawei. Baris "Data satelit" di tab Jam muncul untuk jam yang meminta jenis itu selama saklar menyala, dengan teks uji lab.

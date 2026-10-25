@@ -5,7 +5,7 @@ shipped: 2026-10-25
 available: code
 tier: free
 post: todo
-atur: JRG-407
+atur: JRG-410
 ---
 
 **Apa:** Jalan atau lari yang dimulai di jam (misalnya Watch Fit 4 Pro) sekarang menampilkan jarak, pace, dan tanjakan di layar Live JoyoFit sampai latihan selesai. Sebelumnya angka itu berhenti sekitar satu menit setelah mulai, karena jam yang sudah dapat sinyal GPS sendiri berhenti meminta GPS HP dan JoyoFit ikut mematikan GPS HP. Langkah ke titik start sebelum GO ditekan tidak ikut dihitung, jadi jarak dan waktu dihitung dari momen yang sama. Di iPhone, layar Live kini juga punya jarak, pace, dan posisi di peta dari GPS HP.
