@@ -914,6 +914,30 @@ final class LiveWorkoutTests: XCTestCase {
         l.link.linkDisconnected()
     }
 
+    func testThePauseAndResumeOfTheFit4ProProbeFollowTheWatchAndDoNotEndTheSession() async {
+        // 2026-10-25 17:43, Outdoor walk on a Fit 4 Pro: pre-start screen, GO (03 03), pause (03 04), resume (03 05), finish (02 00 03 00).
+        let script = Script()
+        script.answer = statusAnswer(operatorType: 1, workoutType: 13, trainMonitorState: 0)
+        let l = makeLink(poll: { script.answer })
+        await l.link.linkConnected(l.r.rig.source.current!)
+        l.r.rig.session.onData(gpsRequest(true))
+        await eventually("pre-start screen") { l.r.live.snapshot()?["sportType"] as? Int == 13 }
+        XCTAssertEqual(l.r.live.snapshot()?["status"] as? String, "preparing")
+        script.answer = statusAnswer(operatorType: 3, workoutType: 13, trainMonitorState: 1)
+        await eventually("GO") { l.r.live.snapshot()?["status"] as? String == "running" }
+        script.answer = statusAnswer(operatorType: 4, workoutType: 13, trainMonitorState: 1)
+        await eventually("paused") { l.r.live.snapshot()?["status"] as? String == "paused" }
+        // A pause is no "no workout": several answers later the session is still paused.
+        await sleepMs(300)
+        XCTAssertEqual(l.r.live.snapshot()?["status"] as? String, "paused")
+        script.answer = statusAnswer(operatorType: 5, workoutType: 13, trainMonitorState: 1)
+        await eventually("resumed") { l.r.live.snapshot()?["status"] as? String == "running" }
+        XCTAssertTrue(l.r.events.contains("the watch resumed the workout"))
+        script.answer = statusAnswer(operatorType: 0, workoutType: 13, trainMonitorState: 0)
+        await eventually("finished") { l.r.live.snapshot()?["status"] as? String == "ended" }
+        l.link.linkDisconnected()
+    }
+
     func testRoughFixesGoToTheMapButNotToTheWatch() async {
         let l = makeLink()
         await l.link.linkConnected(l.r.rig.source.current!)

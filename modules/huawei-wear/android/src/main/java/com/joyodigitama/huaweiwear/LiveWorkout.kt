@@ -336,7 +336,7 @@ internal class LiveWorkout(
    * countdown), so this is what starts the phone's timer for a session opened by a GPS request, and what starts one for a running
    * workout nothing else announced (indoor ones included). An open workout screen ([WatchPhase.OPEN], the GO screen) is not a start.
    * It follows pause and resume, and ends a session once the watch is idle ([LiveWorkoutPolicy.idleVerdict]; at once after the watch
-   * closed its workout screen, [workoutScreen]).
+   * closed its workout screen, [workoutScreen], which is how the Fit 4 Pro finishes: `18/08 {01: 0}`, then tag 02 back to 0).
    */
   fun watchStatus(phase: WatchPhase, workoutType: Int?) {
     if (mirrorBlocked()) return

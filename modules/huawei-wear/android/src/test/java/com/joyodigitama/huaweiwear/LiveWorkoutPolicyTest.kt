@@ -133,18 +133,22 @@ class LiveWorkoutPolicyTest {
 
   @Test
   fun statusPhasesAsTheFit4ProAnswered() {
-    // 2026-10-25 12:07, outdoor walk on a Fit 4 Pro 6.1.0.117 (`Workout link: workout status {tag: 81 - Value: ...}`).
-    assertEquals(WatchPhase.IDLE, WatchPhase.of(trainMonitorState = 0, operator = 0)) // 020100030100: nothing open
-    assertEquals(WatchPhase.OPEN, WatchPhase.of(trainMonitorState = 0, operator = 1)) // 020100030101: GO screen, 12:07:22 with the GPS request
-    assertEquals(WatchPhase.RUNNING, WatchPhase.of(trainMonitorState = 1, operator = 3)) // 020101030103: after GO, 12:07:43
-    assertEquals(WatchPhase.RUNNING, WatchPhase.of(trainMonitorState = 1, operator = 1))
+    // 2026-10-25 17:43, Outdoor walk on a Fit 4 Pro 6.1.0.117: GO at once, pause, resume after 20 s, finish (owner's times;
+    // `Workout link: workout status {tag: 81 - Value: ...}`).
+    assertEquals(WatchPhase.OPEN, WatchPhase.of(trainMonitorState = 0, operator = 1)) // 020100030101 17:43:44, pre-start screen
+    assertEquals(WatchPhase.RUNNING, WatchPhase.of(trainMonitorState = 1, operator = 3)) // 020101030103 17:43:50, GO
+    assertEquals(WatchPhase.PAUSED, WatchPhase.of(trainMonitorState = 1, operator = 4)) // 020101030104 17:44:50, pause
+    assertEquals(WatchPhase.RUNNING, WatchPhase.of(trainMonitorState = 1, operator = 5)) // 020101030105 17:45:10, resume
+    assertEquals(WatchPhase.IDLE, WatchPhase.of(trainMonitorState = 0, operator = 0)) // 020100030100 17:45:40, after the finish
+    // Not seen, read safely: a pause in the 17/02 numbering, an answer without an operator.
     assertEquals(WatchPhase.PAUSED, WatchPhase.of(trainMonitorState = 1, operator = 2))
-    assertEquals(WatchPhase.PAUSED, WatchPhase.of(trainMonitorState = 0, operator = 2))
-    assertEquals(WatchPhase.IDLE, WatchPhase.of(trainMonitorState = 1, operator = 4))
-    // A watch that sends no tag 02: its operator alone, as before.
+    assertEquals(WatchPhase.RUNNING, WatchPhase.of(trainMonitorState = 1, operator = 1))
+    assertEquals(WatchPhase.IDLE, WatchPhase.of(trainMonitorState = 0, operator = null))
+    // A watch that sends no tag 02: the 17/02 operators, as before.
     assertEquals(WatchPhase.RUNNING, WatchPhase.of(trainMonitorState = null, operator = 1))
     assertEquals(WatchPhase.RUNNING, WatchPhase.of(trainMonitorState = null, operator = 3))
     assertEquals(WatchPhase.PAUSED, WatchPhase.of(trainMonitorState = null, operator = 2))
+    assertEquals(WatchPhase.IDLE, WatchPhase.of(trainMonitorState = null, operator = 4))
     assertEquals(WatchPhase.IDLE, WatchPhase.of(trainMonitorState = null, operator = null))
   }
 
@@ -162,10 +166,11 @@ class LiveWorkoutPolicyTest {
     val s = LiveWorkout.Status.PREPARING
     val r = LiveWorkout.Status.RUNNING
     val p = LiveWorkout.Status.PAUSED
-    // Watch opened (GO screen) for 20 s, GO, a pause, resume. Before this change the first OPEN answer started the clock (16:09:32).
+    // The 17:43 probe, polled: pre-start screen, GO, running, pause, resume (05). Before this change the first OPEN answer started
+    // the clock, and the pause (04) and resume (05) counted as "no workout": the session ended 20 s into the pause.
     assertEquals(
-      listOf(s, s, r, r, p, r),
-      follow(WatchPhase.OPEN, WatchPhase.OPEN, WatchPhase.RUNNING, WatchPhase.RUNNING, WatchPhase.PAUSED, WatchPhase.RUNNING),
+      listOf(s, r, r, p, p, r),
+      follow(WatchPhase.OPEN, WatchPhase.RUNNING, WatchPhase.RUNNING, WatchPhase.PAUSED, WatchPhase.PAUSED, WatchPhase.RUNNING),
     )
     // A watch that stops counting but keeps its workout screen open (a pause told only by tag 02) pauses the phone too.
     assertEquals(listOf(r, p, r), follow(WatchPhase.RUNNING, WatchPhase.OPEN, WatchPhase.RUNNING))
@@ -175,7 +180,7 @@ class LiveWorkoutPolicyTest {
 
   @Test
   fun aClosedWorkoutScreenEndsOnTheFirstIdleAnswer() {
-    // Finish on the watch: 18/08 {01: 0}, then 17/03 idle 5 s later (12:07:58 / 12:08:03). One answer is enough.
+    // Finish on the Fit 4 Pro: 18/08 {01: 0} at 17:45:33, then 17/03 idle at 17:45:40. One answer is enough.
     assertEquals(Verdict.END, LiveWorkoutPolicy.idleVerdict(preparing = false, confirmed = true, idleAnswers = 1, msSinceGps = 5_000L, screenClosed = true))
     // The person left the GO screen without starting: ends too, even with a GPS request seconds ago.
     assertEquals(Verdict.END, LiveWorkoutPolicy.idleVerdict(preparing = true, confirmed = false, idleAnswers = 1, msSinceGps = 1_000L, screenClosed = true))

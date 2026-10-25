@@ -42,13 +42,17 @@ internal class WorkoutClock {
  * What the watch's `17/03` answer says about its workout. The answer is `81{02 trainMonitorState, 03 operatorType, [04 sport], [06 workout
  * type]}` (Huawei Health 17.0.8.300 `HwLinkageServiceManager.handleGetOperatorStatusTlvData`). Huawei Health reads tag 02 as "the watch is
  * busy with a workout" (`dfj.getDeviceBusyStatus`; `MyPlanInfoAdapter`: 0 is "device is not running"); JoyoFit read only tag 03 before.
- * Observed on the Fit 4 Pro 6.1.0.117 (2026-10-22 and 25, outdoor walk and strength):
- *  - `02 00, 03 00`: nothing open ([IDLE]);
- *  - `02 00, 03 01`: the workout screen is open, GO not pressed yet (it comes with the first GPS request, `18/02` and `18/08` `{01: 1}`);
- *    read by tag 03 alone it looked like a running workout and started the phone's clock on the GO screen ([OPEN]);
- *  - `02 01, 03 03`: the workout runs (after GO; 12:07:43 and 12:08:13 on 2026-10-25) ([RUNNING]);
- *  - operator 2 is a pause ([PAUSED]); operator 4 a stop ([IDLE]).
- * A watch that sends no tag 02 is read by its operator alone, as before: 1 or 3 running, 2 paused.
+ * Observed on the Fit 4 Pro 6.1.0.117 (2026-10-25, Outdoor walk, the owner's times; `docs/live-run.md`):
+ *  - `02 00, 03 00`: nothing open, also once the workout is finished ([IDLE]);
+ *  - `02 00, 03 01`: the workout's pre-start (GO) screen is open (it comes with the first GPS request, `18/02` and `18/08` `{01: 1}`);
+ *    read by tag 03 alone it looked like a running workout and started the phone's clock before GO ([OPEN]);
+ *  - `02 01, 03 03`: running, from GO on (17:43:50, 6 s after the screen opened) ([RUNNING]);
+ *  - `02 01, 03 04`: paused (17:44:50) ([PAUSED]); `02 01, 03 05`: running again after a resume (17:45:10) ([RUNNING]);
+ *  - the finish: `18/08 {01: 0}` (17:45:33), then `02 00, 03 00` (17:45:40).
+ * Tag 02 is 1 from GO to the finish. With it, tag 03 is the watch's own phase (1 open, 3 running, 4 paused, 5 resumed), not the `17/02`
+ * operators (1 start, 2 pause, 3 resume, 4 stop): the old reading took the pause (4) and the resume (5) for "no workout" and ended the
+ * phone's session 20 s into the pause. Operator 2 with tag 02 set is read as a pause too (not seen). A watch that sends no tag 02 is
+ * read by the `17/02` operators, as before: 1 or 3 running, 2 paused, anything else no workout.
  */
 internal enum class WatchPhase {
   IDLE,
@@ -58,12 +62,14 @@ internal enum class WatchPhase {
 
   companion object {
     fun of(trainMonitorState: Int?, operator: Int?): WatchPhase = when {
-      operator == 4 -> IDLE
-      operator == 2 -> PAUSED
-      trainMonitorState == null -> if (operator == 1 || operator == 3) RUNNING else IDLE
-      trainMonitorState != 0 -> RUNNING
-      operator == 1 || operator == 3 -> OPEN
-      else -> IDLE
+      trainMonitorState == null -> when (operator) {
+        1, 3 -> RUNNING
+        2 -> PAUSED
+        else -> IDLE
+      }
+      trainMonitorState != 0 -> if (operator == 2 || operator == 4) PAUSED else RUNNING
+      operator == null || operator == 0 -> IDLE
+      else -> OPEN
     }
   }
 }

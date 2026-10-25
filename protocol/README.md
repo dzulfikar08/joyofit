@@ -369,23 +369,27 @@ What a watch that sends no reverse linkage (Fit 4 Pro 6.1.0.117; the Band 9/11 t
 | Frame | Fields | Meaning |
 |---|---|---|
 | `17/03` request `81 00`, answer | `81{02 trainMonitorState, 03 operatorType, [04 sportType], [05 run plan date], [06 workoutType]}`; `7F 04 <code>` when there is nothing (`000186A4`, 100004, seen after a workout) | Field names from Huawei Health 17.0.8.300 `HwLinkageServiceManager.handleGetOperatorStatusTlvData`. Huawei Health reads tag 02 as "the watch is busy with a workout" (`dfj.getDeviceBusyStatus`, `MyPlanInfoAdapter`: 0 is "device is not running") |
-| `18/08 {01: 1}` / `{01: 0}`, watch to phone | answered `18/08 {7F: 100000}` (`HwActivityRecognitionManager.notifyDeviceReceiveSuccess`) | Huawei Health's activity-recognition switch (`HwGpsUtil.arKitSwitch`): 1 with the first GPS request when a workout screen opens, 0 when it closes |
+| `18/08 {01: 1}` / `{01: 0}`, watch to phone | answered `18/08 {7F: 100000}` (`HwActivityRecognitionManager.notifyDeviceReceiveSuccess`) | Huawei Health's activity-recognition switch (`HwGpsUtil.arKitSwitch`): 1 with the first GPS request when a workout screen opens, 0 when the screen closes: after the finish, or when the pre-start screen is left without GO. Both times with a `18/02` request |
 
-The `17/03` states, from JoyoFit's log of the Fit 4 Pro (`Workout link: workout status ...`, logged on change, 2026-10-22 and 25):
+The `17/03` states, from JoyoFit's log of the Fit 4 Pro (`Workout link: workout status ...`, logged on change) and the owner's times of two probes on 2026-10-25
+(17:27: Outdoor walk opened, GO never pressed; 17:43: opened, GO at once, pause, resume after 20 s, finish):
 
 | Answer (inside `81`) | When | `WatchPhase` |
 |---|---|---|
-| `02 01 00 03 01 00` | nothing open | idle |
-| `02 01 00 03 01 01` | the workout screen is open, GO not pressed: Outdoor walk opened at 12:07:22 (with `18/02` and `18/08 {01: 1}`), 15:35:40 and 16:09:32 | open |
-| `02 01 01 03 01 03` | after GO (12:07:43, 12:08:13; also seen in the strength probe of 2026-10-22) | running |
-| `02 01 00 03 01 00` again | 5 s after `18/08 {01: 0}` (12:07:58 / 12:08:03, 12:08:18 / 12:08:23, 15:35:53 / 15:35:54) | idle |
+| `02 01 00 03 01 00` | nothing open; also after the finish (17:45:40) and after the pre-start screen closed without GO (17:28:02) | idle |
+| `02 01 00 03 01 01` | the pre-start (GO) screen is open, GO not pressed: 17:27:34, 17:43:44 (with `18/02` and `18/08 {01: 1}`); also 12:07:22, 15:35:40, 16:09:32 | open |
+| `02 01 01 03 01 03` | running, from GO (17:43:50, 6 s after the screen opened; 12:07:43) | running |
+| `02 01 01 03 01 04` | paused (17:44:50) | paused |
+| `02 01 01 03 01 05` | running again after a resume (17:45:10) | running |
 
-Reading tag 03 alone, as JoyoFit did, took the GO screen for a running workout: the phone's timer started 20 to 30 s before the watch's
-(`Live workout: the watch started the workout; timer running` at 16:09:32 with only Outdoor walk opened). Operator 2 is read as a pause and 4 as
-a stop, as in `17/02`; **what the Fit 4 Pro answers while paused was not captured**: a pause that only clears tag 02 reads as "open", which
-pauses a session that ran (`LiveWorkoutPolicy.statusTarget`). A watch that sends no tag 02 is read by its operator alone. The poll runs every 2 s
-while a session waits for GO, every 5 s while one runs, every 30 s otherwise, and at once on a GPS request, on `18/08 {01: 0}` and on a
-withdrawn GPS request while live; after `18/08 {01: 0}` one idle answer ends the session (three otherwise).
+Tag 02 is 1 from GO to the finish; with it, tag 03 is the watch's own phase (1 open, 3 running, 4 paused, 5 resumed), not the `17/02` operators
+(1 start, 2 pause, 3 resume, 4 stop). The finish is `18/08 {01: 0}` (17:45:33) and then `02 00 03 00` (17:45:40). Reading tag 03 alone, in the `17/02`
+numbering, as JoyoFit did, took the GO screen for a running workout (the phone's timer started 6 to 30 s before the watch's: `Live workout: the watch
+started the workout; timer running` at 17:43:44, 16:09:32) and the pause and the resume for "no workout" (the phone's session ended at 17:45:10, 20 s
+into the pause, then again "running" for the watch). Operator 2 with tag 02 set is read as a pause too (not seen); a watch that sends no tag 02 is read
+by the `17/02` operators as before (1 or 3 running, 2 paused). The poll runs every 2 s while a session waits for GO, every 5 s while one runs, every
+30 s otherwise, and at once on a GPS request, on `18/08 {01: 0}` and on a withdrawn GPS request while live; after `18/08 {01: 0}` one idle answer
+ends the session (three otherwise).
 
 ### Workout started from the phone (`WatchWorkout.kt`, `WatchWorkoutModuleApi.kt`; iOS `WatchWorkoutCodec.swift`, `WatchWorkoutControl.swift`; as Huawei Health 17.0.8.300 behaves, UNVERIFIED on any watch)
 

@@ -111,6 +111,26 @@ final class LiveWorkoutPolicyTests: XCTestCase {
         XCTAssertTrue(P.watchFedEnds(preparing: true, idleAnswers: 9, msSinceFrame: 301_000))
     }
 
+    func testStatusPhasesAsTheFit4ProAnswered() {
+        // 2026-10-25 17:43, Outdoor walk on a Fit 4 Pro 6.1.0.117: GO at once, pause, resume after 20 s, finish (owner's times;
+        // `Workout link: workout status {tag: 81 - Value: ...}`).
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 0, operator: 1), .open) // 020100030101 17:43:44, pre-start screen
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 1, operator: 3), .running) // 020101030103 17:43:50, GO
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 1, operator: 4), .paused) // 020101030104 17:44:50, pause
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 1, operator: 5), .running) // 020101030105 17:45:10, resume
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 0, operator: 0), .idle) // 020100030100 17:45:40, after the finish
+        // Not seen, read safely: a pause in the 17/02 numbering, an answer without an operator.
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 1, operator: 2), .paused)
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 1, operator: 1), .running)
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 0, operator: nil), .idle)
+        // A watch that sends no tag 02: the 17/02 operators, as before.
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: nil, operator: 1), .running)
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: nil, operator: 3), .running)
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: nil, operator: 2), .paused)
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: nil, operator: 4), .idle)
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: nil, operator: nil), .idle)
+    }
+
     /// The phone-side session states a run of status answers leads to, from a session the GPS request opened (preparing).
     private func follow(_ phases: WatchPhase...) -> [LiveWorkoutStatus] {
         var status = LiveWorkoutStatus.preparing
@@ -122,8 +142,9 @@ final class LiveWorkoutPolicyTests: XCTestCase {
 
     func testTheGoScreenDoesNotStartTheClockGoDoes() {
         let s = LiveWorkoutStatus.preparing, r = LiveWorkoutStatus.running, p = LiveWorkoutStatus.paused
-        // Watch opened (GO screen) for 20 s, GO, a pause, resume. Before this change the first OPEN answer started the clock (16:09:32).
-        XCTAssertEqual(follow(.open, .open, .running, .running, .paused, .running), [s, s, r, r, p, r])
+        // The 17:43 probe, polled: pre-start screen, GO, running, pause, resume (05). Before this change the first OPEN answer started the
+        // clock, and the pause (04) and resume (05) counted as "no workout": the session ended 20 s into the pause.
+        XCTAssertEqual(follow(.open, .running, .running, .paused, .paused, .running), [s, r, r, p, p, r])
         // A watch that stops counting but keeps its workout screen open (a pause told only by tag 02) pauses the phone too.
         XCTAssertEqual(follow(.running, .open, .running), [r, p, r])
         // Idle answers move nothing here: the end is idleVerdict's.
@@ -131,7 +152,7 @@ final class LiveWorkoutPolicyTests: XCTestCase {
     }
 
     func testAClosedWorkoutScreenEndsOnTheFirstIdleAnswer() {
-        // Finish on the watch: 18/08 {01: 0}, then 17/03 idle 5 s later (12:07:58 / 12:08:03). One answer is enough.
+        // Finish on the Fit 4 Pro: 18/08 {01: 0} at 17:45:33, then 17/03 idle at 17:45:40. One answer is enough.
         XCTAssertEqual(P.idleVerdict(preparing: false, confirmed: true, idleAnswers: 1, msSinceGps: 5_000, screenClosed: true), .end)
         // The person left the GO screen without starting: ends too, even with a GPS request seconds ago.
         XCTAssertEqual(P.idleVerdict(preparing: true, confirmed: false, idleAnswers: 1, msSinceGps: 1_000, screenClosed: true), .end)
