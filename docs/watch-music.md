@@ -1,6 +1,6 @@
 # Music on the watch: feasibility and plan
 
-Status: **plan only, nothing implemented.** Asked by a user (Salim, Watch Fit 2): "can I put songs on the watch?". Sources: Gadgetbridge
+Status: **remote control (`25/01`, `25/02`, `25/03`) implemented on Android (`WatchMediaControl.kt`, `MediaBridge.kt`, `MusicControl.java`); song storage upload (`25/04..0D`) plan only. Android only; iOS cannot control another app's playback. UNVERIFIED on a watch (acks `7F = 0x000186A0` on success or `0` on failure, whereas GB always acks `0x000186A0`).** Asked by a user (Salim, Watch Fit 2): "can I put songs on the watch?". Sources: Gadgetbridge
 (`HuaweiMusicManager`, `HuaweiMusicUtils`, `packets/MusicControl`, `HuaweiSupportProvider.onInstallApp`, `HuaweiState`), JoyoFit's
 `protocol/README.md` and the Fit 4 / Fit 4 Pro observations in it. Nothing here was run against a watch.
 
@@ -8,7 +8,7 @@ Status: **plan only, nothing implemented.** Asked by a user (Salim, Watch Fit 2)
 
 Yes in principle, on the watches that list the Music service (`25`) with command `04`: Gadgetbridge uploads MP3 files to Huawei watches over
 the same file-upload service JoyoFit already uses for watch faces (`28`, file type `2`), and lists and deletes songs over service `25`.
-JoyoFit has none of the service-`25` packets yet. Whether a given watch can do it is only known at connect time (SupportedCommands), not
+JoyoFit implements `25/01`, `25/02` and `25/03` for phone media control; the song-upload packets (`25/04..0D`) are not implemented yet. Whether a given watch can store songs is only known at connect time (SupportedCommands), not
 from the model name.
 
 ## Which of our watches

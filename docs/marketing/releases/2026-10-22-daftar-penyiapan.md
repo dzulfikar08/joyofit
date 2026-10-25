@@ -2,7 +2,7 @@
 app: joyofit
 feature: Daftar penyiapan di Hari ini
 shipped: 2026-10-22
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-375

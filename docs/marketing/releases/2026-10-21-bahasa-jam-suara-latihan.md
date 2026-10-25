@@ -2,7 +2,7 @@
 app: joyofit
 feature: Bahasa jam ikut bahasa aplikasi
 shipped: 2026-10-21
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-355

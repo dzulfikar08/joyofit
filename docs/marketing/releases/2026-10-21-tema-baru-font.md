@@ -2,7 +2,7 @@
 app: joyofit
 feature: 8 tema baru dengan font sendiri
 shipped: 2026-10-21
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-345

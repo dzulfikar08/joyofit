@@ -2,7 +2,7 @@
 app: joyofit
 feature: Pace dan jarak live untuk latihan yang dimulai di jam ber-GPS
 shipped: 2026-10-25
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-410

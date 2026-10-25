@@ -2,7 +2,7 @@
 app: joyofit
 feature: Login Google tanpa browser di Android
 shipped: 2026-10-22
-available: code
+available: test-build
 tier: free
 post: todo
 ---

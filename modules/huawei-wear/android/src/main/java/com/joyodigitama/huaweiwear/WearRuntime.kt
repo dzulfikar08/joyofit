@@ -73,6 +73,7 @@ internal class WearRuntime private constructor(context: Context) {
       listeners.forEach { it.state(state, error) }
       if (state == LinkState.DISCONNECTED || state == LinkState.CONNECTED) controller?.onLinkChanged()
       forwarder.onLinkState(state)
+      mediaControl.onLinkState(state)
       dataSync.onLinkState(state)
       features.onLinkState(state)
       weather.onLinkState(state)
@@ -187,6 +188,7 @@ internal class WearRuntime private constructor(context: Context) {
   val forwarder = NotificationForwarder(appContext, settings, link, events, scope)
   val features = PhoneFeatures(appContext, PhoneFeatureSettings(appContext), link, events, scope, forwarder::nextMessageId)
   val voipCalls = VoipCallNotifications(appContext, settings, features.calls)
+  val mediaControl = WatchMediaControl(appContext, link, events, scope)
   val healthConnect = HealthConnectExporter(appContext, syncStore, events, scope)
   val weatherSettings = WeatherSettings(appContext)
   val weather = WeatherController(appContext, weatherSettings, link, events, scope)

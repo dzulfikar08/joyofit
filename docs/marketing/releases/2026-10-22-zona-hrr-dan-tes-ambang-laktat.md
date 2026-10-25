@@ -2,7 +2,7 @@
 app: joyofit
 feature: Zona HRR seperti jam, LTHR, dan Tes ambang laktat
 shipped: 2026-10-22
-available: code
+available: test-build
 tier: free
 post: todo
 atur:

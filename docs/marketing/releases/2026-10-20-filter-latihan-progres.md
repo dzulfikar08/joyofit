@@ -2,7 +2,7 @@
 app: joyofit
 feature: Filter olahraga dan progres mingguan di Latihan
 shipped: 2026-10-20
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-331

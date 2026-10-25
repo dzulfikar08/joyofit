@@ -20,6 +20,7 @@
 // Modified for watch-fit (AGPL-3.0-or-later): parse()/parseOutgoing() dispatch limited to the ported packet classes (DeviceConfig, FitnessData, FileDownloadService0A/2C, Notifications constraints/capabilities); other packet classes not ported.
 // Modified for watch-fit (AGPL-3.0-or-later): parse() also dispatches the FileUpload (0x28) and Watchface (0x27) services; WatchfaceOperation (0x27/0x03) is parsed too (GB leaves it generic).
 // Modified for watch-fit (AGPL-3.0-or-later): parse() also dispatches the P2P service (0x34/0x01, packets/P2P.java).
+// Modified for watch-fit (AGPL-3.0-or-later): parse() also dispatches the MusicControl service (0x25).
 package nodomain.freeyourgadget.gadgetbridge.devices.huawei;
 
 import static nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiConstants.HUAWEI_MAGIC;
@@ -49,6 +50,7 @@ import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.Workout;
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.Weather;
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.FileUpload;
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.Watchface;
+import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.MusicControl;
 import nodomain.freeyourgadget.gadgetbridge.util.CheckSums;
 
 public class HuaweiPacket {
@@ -656,6 +658,19 @@ public class HuaweiPacket {
                         return new Watchface.WatchfaceConfirm.Response(paramsProvider).fromPacket(this);
                     case Watchface.WatchfaceNameInfo.id:
                         return new Watchface.WatchfaceNameInfo.Response(paramsProvider).fromPacket(this);
+                    default:
+                        this.isEncrypted = this.attemptDecrypt(); // Helps with debugging
+                        return this;
+                }
+            // Modified for watch-fit (AGPL-3.0-or-later): dispatches MusicControl packets (status 01, info 02, control 03).
+            case MusicControl.id:
+                switch (this.commandId) {
+                    case MusicControl.MusicStatusResponse.id:
+                        return new MusicControl.MusicStatusResponse(paramsProvider).fromPacket(this);
+                    case MusicControl.MusicInfo.id:
+                        return new MusicControl.MusicInfo.Response(paramsProvider).fromPacket(this);
+                    case MusicControl.Control.id:
+                        return new MusicControl.Control.Response(paramsProvider).fromPacket(this);
                     default:
                         this.isEncrypted = this.attemptDecrypt(); // Helps with debugging
                         return this;
