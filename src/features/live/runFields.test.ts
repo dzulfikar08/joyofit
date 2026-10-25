@@ -25,11 +25,18 @@ describe('normalizeLayout', () => {
 
 describe('withCount', () => {
   test('cuts and fills', () => {
-    const four = defaultLayout('run');
+    const four = defaultLayout('ride');
     const six = withCount(four, 6);
     expect(six.ids.slice(0, 4)).toEqual(four.ids);
     expect(new Set(six.ids).size).toBe(6);
     expect(withCount(six, 4).ids).toEqual(four.ids);
+  });
+
+  test('run and walk start with six fields, elevation gain among them', () => {
+    for (const kind of ['run', 'walk'] as const) {
+      expect(defaultLayout(kind).ids).toEqual(['duration', 'distance', 'pace', 'hr', 'elevationGain', 'calories']);
+      expect(withCount(defaultLayout(kind), 4).ids).toEqual(['duration', 'distance', 'pace', 'hr']);
+    }
   });
 });
 

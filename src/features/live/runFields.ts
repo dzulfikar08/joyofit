@@ -35,7 +35,7 @@ export interface RunLayout {
   big: boolean;
 }
 
-const FOOT_DEFAULT: RunMetricId[] = ['duration', 'distance', 'pace', 'hr', 'calories', 'cadence'];
+const FOOT_DEFAULT: RunMetricId[] = ['duration', 'distance', 'pace', 'hr', 'elevationGain', 'calories'];
 const RIDE_DEFAULT: RunMetricId[] = ['duration', 'distance', 'speed', 'hr', 'calories', 'elevationGain'];
 
 const DEFAULT_IDS: Record<FieldSportKind, RunMetricId[]> = {
@@ -46,9 +46,13 @@ const DEFAULT_IDS: Record<FieldSportKind, RunMetricId[]> = {
   other: ['duration', 'distance', 'hr', 'calories', 'pace', 'cadence'],
 };
 
-/** The layout of a sport kind before anything was changed: four fields (duration, distance, pace or speed, heart rate), the first large. */
+/**
+ * The layout of a sport kind before anything was changed: the first field large. Run and walk get six (duration, distance, pace, heart
+ * rate, elevation gain, calories: the climb was asked for, JRG-418), the others four (duration, distance, pace or speed, heart rate).
+ */
 export function defaultLayout(kind: FieldSportKind): RunLayout {
-  return { ids: DEFAULT_IDS[kind].slice(0, 4), big: true };
+  const count = kind === 'run' || kind === 'walk' ? 6 : 4;
+  return { ids: DEFAULT_IDS[kind].slice(0, count), big: true };
 }
 
 function isMetricId(value: unknown): value is RunMetricId {

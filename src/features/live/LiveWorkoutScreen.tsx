@@ -110,8 +110,17 @@ export function LiveWorkoutScreen() {
             router.replace('/workouts');
           }}
         />
-      ) : live.source !== 'watch' ? (
+      ) : live.source === 'manual' ? (
         <Button label={t('live.finish')} icon="stop" onPress={() => HuaweiWear.finishLiveWorkout()} />
+      ) : live.source !== 'watch' ? (
+        // The watch takes no stop from the phone (every 17/01 is refused with 123002 on the Fit 4 Pro, docs/live-run.md): the workout
+        // ends on the watch, and the phone can only stop following it.
+        <>
+          <AppText variant="caption" muted>
+            {t('live.finishOnWatch')}
+          </AppText>
+          <Button label={t('live.stopFollowing')} onPress={() => HuaweiWear.finishLiveWorkout()} />
+        </>
       ) : null}
     </Screen>
   );

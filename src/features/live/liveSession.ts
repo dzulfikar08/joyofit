@@ -70,12 +70,20 @@ export function sportKindOf(sportType: number): SportKind {
   return KIND_BY_TYPE[sportType]?.kind ?? 'other';
 }
 
-/** The sport kind and whether it is a guess. `override`: what the person picked. */
-export function deriveSportKind(live: LiveWorkout, override: SportKind | null): { kind: SportKind | null; inferred: boolean } {
+/**
+ * The sport kind and whether it is a guess. `override`: what the person picked. `lastPick`: what they picked for the last workout the band
+ * did not name, the better guess for the next one (a walker walks again).
+ */
+export function deriveSportKind(
+  live: LiveWorkout,
+  override: SportKind | null,
+  lastPick: SportKind | null = null,
+): { kind: SportKind | null; inferred: boolean } {
   if (override !== null) return { kind: override, inferred: false };
   if (live.sportType !== null) return { kind: sportKindOf(live.sportType), inferred: false };
-  // The band asks for the phone's GPS (`18/02`) only in an outdoor workout, and Band 11 sends no sport tag: running is the usual one.
-  if (asksForGps(live)) return { kind: 'run', inferred: true };
+  // The band asks for the phone's GPS (`18/02`) only in an outdoor workout, and neither the Fit 4 Pro nor (as far as known) a Band 11 names
+  // the sport on the link, not even after GO (`17/03` `02 01 03 03`, 2026-10-25): the last pick, else running, the usual one.
+  if (asksForGps(live)) return { kind: lastPick ?? 'run', inferred: true };
   return { kind: null, inferred: false };
 }
 
@@ -127,9 +135,12 @@ export function deriveMetrics(live: LiveWorkout, kind: SportKind | null): LiveSe
   };
 }
 
-/** The session the screens read. `override`: the kind the person picked (`useLiveSession.setSportKind`). */
-export function deriveSession(live: LiveWorkout, override: SportKind | null, nowMs: number): LiveSession {
-  const { kind, inferred } = deriveSportKind(live, override);
+/**
+ * The session the screens read. `override`: the kind the person picked for this session (`useLiveSession.setSportKind`). `lastPick`:
+ * the kind they picked for the last workout the band did not name, the guess for this one (else running).
+ */
+export function deriveSession(live: LiveWorkout, override: SportKind | null, nowMs: number, lastPick: SportKind | null = null): LiveSession {
+  const { kind, inferred } = deriveSportKind(live, override, lastPick);
   const location = live.location ?? null;
   const locatedAt = live.locationAt ?? null;
   return {

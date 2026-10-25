@@ -87,6 +87,8 @@
     "emptyDescription": "Outdoor walks, runs and rides started on the watch open here. Indoors, start on the watch, then tap Start.",
     "start": "Start",
     "finish": "Finish",
+    "finishOnWatch": "Finish the workout on the watch. This screen ends with it.",
+    "stopFollowing": "Stop following on the phone",
     "workout": "Workout",
     "status": {
       "searching": "Waiting for the start on the watch…",

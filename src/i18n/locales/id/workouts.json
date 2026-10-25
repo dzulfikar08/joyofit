@@ -556,7 +556,11 @@
         "sensorsNoneA11y": "Belum ada sensor yang tersambung otomatis. Buka daftar sensor.",
         "steps": "Langkah",
         "stepsOnA11y": "Langkah dan kadens dari HP aktif. Ketuk untuk penjelasan.",
-        "stepsOffA11y": "Langkah dan kadens dari HP belum aktif. Ketuk untuk mengaktifkannya."
+        "stepsOffA11y": "Langkah dan kadens dari HP belum aktif. Ketuk untuk mengaktifkannya.",
+        "band": "Band",
+        "bandConnectedA11y": "Band terhubung. Buka tab Jam.",
+        "bandConnectingA11y": "Sedang menghubungkan band. Buka tab Jam.",
+        "bandDisconnectedA11y": "Band tidak terhubung. Buka tab Jam untuk menghubungkannya."
       },
       "map": {
         "searching": "Mencari posisimu. Peta muncul begitu GPS menemukan sinyal.",
@@ -686,7 +690,9 @@
       "starting": "Memulai di band…",
       "linked": "Band terhubung",
       "refused": "Band tidak memulai latihan. Hanya ponsel yang merekam.",
-      "unavailable": "Band tidak terhubung. Hanya ponsel yang merekam.",
+      "connecting": "Band tidak terhubung. Ponsel yang merekam; band ikut mulai begitu terhubung.",
+      "unsupported": "Band ini tidak bisa memulai latihan dari ponsel. Ponsel yang merekam; detak jantung dari band tetap dipakai.",
+      "nobuild": "Versi aplikasi ini belum bisa memulai band. Hanya ponsel yang merekam.",
       "ended": "Band menghentikan latihannya. Rekaman di ponsel dijeda.",
       "setting": "Mulai band bersama lari",
       "settingHint": "Band ikut mulai, jeda, dan berhenti bersama lari, lalu mengirim detak jantung ke ponsel. Jika band menolak, ponsel tetap merekam sendiri."

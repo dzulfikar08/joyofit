@@ -30,7 +30,7 @@ import { lapRows, liveTiles, paceSecPerKm, sensorErrorKind, type SensorChannel }
 
 const DASH = '--';
 
-/** The phone has no altitude reading in a recording, so these two fields are not offered here. */
+/** Without GPS (treadmill, indoor ride) a recording has no altitude, so these two fields are not offered. */
 const NO_ALTITUDE: readonly RunMetricId[] = ['elevationGain', 'altitude'];
 
 /** The sport kind a recording's data fields are saved under (a treadmill run is a run, an indoor ride a ride). */
@@ -97,8 +97,11 @@ export function LiveView({ saving, saveError, onFinish, onSaveAgain, onDiscard }
     hr: live.hr,
     calories: live.calories,
     cadence: live.cadence,
+    elevationGain: live.elevationGainM,
+    altitude: live.altitudeM,
   };
-  const bandKey = band.phase === 'refused' || band.phase === 'unavailable' || band.phase === 'ended' ? bandLinkLine(band.phase) : null;
+  // Only what the person should know: the band is not part of this recording (or not yet); a start under way or confirmed says nothing.
+  const bandKey = band.phase === 'off' || band.phase === 'starting' || band.phase === 'linked' ? null : bandLinkLine(band.phase);
 
   return (
     <>
@@ -126,7 +129,7 @@ export function LiveView({ saving, saveError, onFinish, onSaveAgain, onDiscard }
         <LiveRunMap position={snapshot.position} trail={trail} fix={{ accuracyM: live.fixAccuracyM, ageSec: live.fixAgeSec }} />
       ) : null}
 
-      <MetricGrid kind={fieldKind(sport)} values={values} editor={editor} exclude={NO_ALTITUDE} />
+      <MetricGrid kind={fieldKind(sport)} values={values} editor={editor} exclude={snapshot.gps ? undefined : NO_ALTITUDE} />
 
       {failed ? (
         <>

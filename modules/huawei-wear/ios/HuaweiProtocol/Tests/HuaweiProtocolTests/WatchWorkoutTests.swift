@@ -66,15 +66,33 @@ final class WatchWorkoutTests: XCTestCase {
     }
 
     func testStatusAnswerSaysWhetherTheWatchRunsAWorkout() throws {
-        let running = try XCTUnwrap(WatchWorkoutWire.parseStatus(try HuaweiTLV(parsing: hex("81 0c  02 01 01  03 01 01  04 01 01  06 01 8c"))))
-        XCTAssertEqual(running.operatorType, 1)
+        let running = try XCTUnwrap(WatchWorkoutWire.parseStatus(try HuaweiTLV(parsing: hex("81 0c  02 01 01  03 01 03  04 01 01  06 01 8c"))))
+        XCTAssertEqual(running.operatorType, 3)
         XCTAssertEqual(running.workoutType, 140)
         XCTAssertTrue(running.running)
+        XCTAssertEqual(running.trainMonitorState, 1)
+        XCTAssertEqual(running.phase, .running)
         let paused = try XCTUnwrap(WatchWorkoutWire.parseStatus(try HuaweiTLV(parsing: hex("81 06  02 01 01  03 01 02"))))
         XCTAssertFalse(paused.running)
+        XCTAssertEqual(paused.phase, .paused)
         let stopped = try XCTUnwrap(WatchWorkoutWire.parseStatus(try HuaweiTLV(parsing: hex("81 03  03 01 04"))))
         XCTAssertFalse(stopped.running)
+        XCTAssertEqual(stopped.phase, .idle)
         XCTAssertNil(WatchWorkoutWire.parseStatus(HuaweiTLV()))
+    }
+
+    func testTheGoScreenIsOpenNotRunning() throws {
+        // Fit 4 Pro, 2026-10-25 17:43: Outdoor walk opened (GO not pressed), GO, pause, resume.
+        let goScreen = try XCTUnwrap(WatchWorkoutWire.parseStatus(try HuaweiTLV(parsing: hex("81 06  02 01 00  03 01 01"))))
+        XCTAssertEqual(goScreen.trainMonitorState, 0)
+        XCTAssertEqual(goScreen.operatorType, 1)
+        XCTAssertEqual(goScreen.phase, .open)
+        XCTAssertFalse(goScreen.running)
+        let afterGo = try XCTUnwrap(WatchWorkoutWire.parseStatus(try HuaweiTLV(parsing: hex("81 06  02 01 01  03 01 03"))))
+        XCTAssertEqual(afterGo.phase, .running)
+        XCTAssertTrue(afterGo.running)
+        XCTAssertEqual(try XCTUnwrap(WatchWorkoutWire.parseStatus(try HuaweiTLV(parsing: hex("81 06  02 01 01  03 01 04")))).phase, .paused)
+        XCTAssertEqual(try XCTUnwrap(WatchWorkoutWire.parseStatus(try HuaweiTLV(parsing: hex("81 06  02 01 01  03 01 05")))).phase, .running)
     }
 
     func testNoticeFromTheWatchCarriesOperatorAndWorkoutType() throws {

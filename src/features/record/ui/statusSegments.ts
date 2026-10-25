@@ -1,7 +1,9 @@
 import { useTranslation } from 'react-i18next';
 
+import { isLinkUp, linkDotColor } from '@/features/device/linkState';
 import { fmtInt } from '@/i18n';
 import { useColors } from '@/theme';
+import type { LinkState } from '@/wear';
 
 import type { GpsChipKind } from './format';
 import type { PillSegment } from './StatusPill';
@@ -68,5 +70,29 @@ export function useStepsSegment(allowed: boolean, onPress: () => void): PillSegm
     lead: { kind: 'dot', color: allowed ? colors.link : colors.warning, on: allowed },
     quiet: !allowed,
     onPress,
+  };
+}
+
+/**
+ * The band segment: the watch link the band's start and heart rate go over, as the dot of the Watch tab (solid and pulsing while
+ * connected, warning while connecting, hollow while not connected); a button to the Watch tab.
+ */
+export function useBandSegment(linkState: LinkState, onPress: () => void): PillSegment {
+  const { t } = useTranslation('workouts');
+  const colors = useColors();
+  const up = isLinkUp(linkState);
+  const a11yLabel = up
+    ? t('record.setup.chip.bandConnectedA11y')
+    : linkState === 'disconnected'
+      ? t('record.setup.chip.bandDisconnectedA11y')
+      : t('record.setup.chip.bandConnectingA11y');
+  return {
+    key: 'band',
+    label: t('record.setup.chip.band'),
+    a11yLabel,
+    lead: { kind: 'dot', color: linkDotColor(linkState, colors), on: up, pulse: up },
+    quiet: linkState === 'disconnected',
+    onPress,
+    live: true,
   };
 }
