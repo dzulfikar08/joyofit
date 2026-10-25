@@ -48,8 +48,11 @@ export interface WatchContextValue {
   /** Call after rows were written outside a sync (a FIT import), so the data screens re-query. */
   dataChanged: () => void;
   connect: (address: string) => Promise<void>;
-  /** Set when a connect stopped before a first bind; the watch the person has to agree to bind this phone to. */
-  bindRequest: { address: string } | null;
+  /**
+   * Set when a connect stopped before a first bind; the watch the person has to agree to bind this phone to. `lost`: the watch forgot a
+   * binding this phone holds (another app, usually Huawei Health, paired it again).
+   */
+  bindRequest: { address: string; lost: boolean } | null;
   /** Agree to the bind and connect again. */
   confirmBind: () => Promise<void>;
   cancelBind: () => void;
@@ -91,7 +94,7 @@ export function WatchProvider({ children }: { children: ReactNode }) {
   const db = useSQLiteContext();
   const [linkState, setLinkState] = useState<LinkState>(() => HuaweiWear.getState());
   const [error, setError] = useState<string | null>(null);
-  const [bindRequest, setBindRequest] = useState<{ address: string } | null>(null);
+  const [bindRequest, setBindRequest] = useState<{ address: string; lost: boolean } | null>(null);
   const [retryAddress, setRetryAddress] = useState<string | null>(null);
   const [silentWatch, setSilentWatch] = useState(false);
   // The background service may already own the link when the UI starts; read it synchronously.
@@ -207,7 +210,7 @@ export function WatchProvider({ children }: { children: ReactNode }) {
         const failure = describeConnectFailure(e);
         if (failure.kind === 'bind') {
           // Nothing changed on the watch. Binding replaces its current phone pairing, so the person decides first.
-          setBindRequest({ address });
+          setBindRequest({ address, lost: failure.lost });
           return 'blocked';
         }
         setError(failure.message);

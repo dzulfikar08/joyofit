@@ -49,6 +49,30 @@ class BindConsentTest {
   }
 
   @Test
+  fun onlyAStoredBindTheWatchForgotIsALostBinding() {
+    // JRG-414: Huawei Health re-bound the watch while JoyoFit was away; the watch answered authType 5 to the stored identity.
+    assertTrue(FirstBind.decide(authMode = 4, authType = 5, storedFirstConnection = false).lostBinding)
+    assertFalse(FirstBind.decide(authMode = 4, authType = 5, storedFirstConnection = true).lostBinding)
+    assertFalse(FirstBind.decide(authMode = 4, authType = 6, storedFirstConnection = true).lostBinding)
+    assertFalse(FirstBind.decide(authMode = 4, authType = 6, storedFirstConnection = false).lostBinding)
+    assertFalse(FirstBind.decide(authMode = 2, authType = 5, storedFirstConnection = false).lostBinding)
+  }
+
+  @Test
+  fun aLostBindingSaysSoInTheStopAndTheBackgroundNote() {
+    assertEquals(FirstBind.MESSAGE, FirstBind.confirmationMessage(lostBinding = false))
+    val lost = FirstBind.confirmationMessage(lostBinding = true)
+    assertTrue(lost.contains(FirstBind.LOST_MARKER))
+    assertTrue(lost.contains("Huawei Health"))
+    // The iOS port and connectFailure.ts match the same words.
+    assertEquals("no longer knows this phone's pairing", FirstBind.LOST_MARKER)
+
+    assertEquals("Not bound yet. Connect once from the Device tab.", FirstBind.backgroundNote(FirstBind.MESSAGE))
+    assertEquals("Not bound yet. Connect once from the Device tab.", FirstBind.backgroundNote(null))
+    assertTrue(FirstBind.backgroundNote(lost).contains("Huawei Health"))
+  }
+
+  @Test
   fun knownPhoneFollowsTheLocalState() {
     assertFalse(FirstBind.decide(authMode = 4, authType = 6, storedFirstConnection = false).firstConnection)
     assertTrue(FirstBind.decide(authMode = 4, authType = 6, storedFirstConnection = true).firstConnection)

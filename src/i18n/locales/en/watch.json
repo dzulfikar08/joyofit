@@ -143,6 +143,8 @@
       "title": "Pair this watch with this phone?",
       "messageIos": "This watch is not paired with this iPhone yet. A watch keeps one phone pairing, so continuing replaces the pairing with your other phone or app (Huawei Health, or JoyoFit on another phone), which will have to pair again. You will then confirm on the watch.",
       "messageAndroid": "This watch is not paired with this phone yet. A watch keeps one phone pairing, so continuing replaces the pairing with your other phone or app (Huawei Health, or JoyoFit on another phone), which will have to pair again. You will then confirm on the watch.",
+      "lostAndroid": "JoyoFit was paired with this watch, but the watch no longer knows this phone: another app paired it again while JoyoFit was not connected. On a phone with Huawei Health that is almost always Huawei Health: while the watch is in its device list, it reconnects whenever the link is free and pairs the watch again without asking, even when you are not using it. Remove the watch in Huawei Health (Devices, the watch, Unpair) or uninstall Huawei Health first, then continue and confirm on the watch.",
+      "lostIos": "JoyoFit was paired with this watch, but the watch no longer knows this iPhone: another app or phone paired it again while JoyoFit was not connected. That is usually Huawei Health: while the watch is in its device list, it reconnects whenever the link is free and pairs the watch again without asking. Remove the watch in Huawei Health (Devices, the watch, Unpair) first, then continue and confirm on the watch.",
       "continue": "Continue"
     },
     "sync": {

@@ -162,7 +162,7 @@ internal class HuaweiAuthenticator(
       if (FirstBind.needsConfirmation(firstConnection, firstBindAllowed)) {
         // Decided before the PinCode request: the watch has not been touched.
         events.log(LogDirection.INFO, null, null, null, "Auth: a first bind is needed; this connection may not start one")
-        throw WearException(ErrorCodes.BIND_CONFIRMATION, FirstBind.MESSAGE)
+        throw WearException(ErrorCodes.BIND_CONFIRMATION, FirstBind.confirmationMessage(decision.lostBinding))
       }
       hiChainMode(firstConnection, authTimeout)
     } else if (authType == 0x01 || authType == 0x02) {

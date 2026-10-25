@@ -170,6 +170,26 @@ JoyoRogo sign-in, JoyoRogo Pro (hidden when the build has no cloud server), Done
   works: stop JoyoFit, reset the watch from its own menu (Settings, System, Reset) or unpair it in Huawei Health, **Lupakan pairing** in JoyoFit, then pair: Android's
   pairing dialog, then `firstConnection=true`, the bind confirmation (`ERR_BIND_CONFIRMATION`, "Pasangkan jam ini dengan HP ini?"), then the accept on the watch. The
   confirmation is asked after the link closed, so the watch shows "pair failed" once before the accept; asking first would avoid that (not changed yet).
+  - **Why the prompt comes (JRG-414).** It is the watch's account check, not a key problem: after `01/37` the phone sends its account in `1A/05`; the watch keeps the account of the
+    app that paired it last with one (Huawei Health sends its Huawei user id, JoyoFit sends none), answers "different account", shows the prompt, and reports the tap in
+    `1A/06` (`01 = 00` Yes, `01 = 01` Back). Huawei Health confirms a Yes with `1A/06 {7F: 000186A0}` and pairs again; JoyoFit answers nothing, so the watch keeps both the
+    prompt and JoyoFit's key (authType 6 on every reconnect). Details and frame references: `protocol/README.md`, Observations, 2026-10-25.
+- **The watch forgets JoyoFit after the link ends** (JRG-414, same run). Each time JoyoFit's link ended (Bluetooth switched off and on, `adb install -r`), Huawei Health on the
+  same phone reconnected within seconds and paired the watch again by itself (PinCode and HiChain op 1, no prompt on the watch), which removed JoyoFit's identity; the next
+  JoyoFit connect got authType 5 (`Auth: the watch does not know this identity (authType 5) although a bind key is stored locally`). Huawei Health does this as long as the
+  watch is in its device list, also when it is paused or force-stopped. JoyoFit now says so in the bind confirmation of that case ("this watch no longer knows this phone's
+  pairing", `device.bind.lostAndroid` / `lostIos`) and in the background note; Pair again restores the binding, nothing on the watch is lost.
+- **Device experiments still to run for JRG-414** (Fit 4 Pro; capture `adb logcat -v threadtime` with JoyoFit's frame log on):
+  1. *Unbind cause, control.* `pm disable-user com.huawei.health`; bind JoyoFit fresh (Lupakan pairing, Connect, Lanjut, ✓); switch Bluetooth off for 30 s and on; then
+     `adb install -r` the same build. Expected: authType 6 after both. Then `pm enable com.huawei.health`, wait until its process runs, repeat the Bluetooth toggle. Expected:
+     `pin code parse 1` and `The device is successfully bound!` from `DEVMGR`/`HiChain` within ~30 s, and authType 5 for JoyoFit.
+  2. *Unpair in Huawei Health is enough.* With Huawei Health enabled, remove the watch in Huawei Health (Devices, the watch, Unpair), note whether the watch resets, bind
+     JoyoFit, toggle Bluetooth. Expected: no `DEVMGR_ReconnectManager start reconnect device` for the watch and authType 6.
+  3. *What the prompt's Yes does.* Pair Huawei Health once (its account goes to the watch), then bind JoyoFit with Huawei Health disabled. On the next JoyoFit connect wait
+     for the prompt with the link up and tap Yes; note the `1A/06` frame and what the watch shows for 60 s. A build that answers that `1A/06` with `{7F: 000186A0}`
+     (Huawei Health's `mri.e`) is the second half: only with the owner's agreement, since Huawei Health calls this "reset" and the watch's own data may be erased.
+  4. *Does JoyoFit's op 1 clear the account?* After 3 without confirming, Lupakan pairing and bind again (op 1); connect twice more. A `1A/06` or a watch-ended link within
+     40 s means the account survived op 1 (as after 14:21:10 on 2026-10-25); none means op 1 replaced it (as after 11:52:58).
 - **First sync** is not a step: it starts by itself once the watch is linked (from the pairing step on, `firstSyncStarts`), runs in the background as Huawei Health's does, and shows
   as one line under the progress bar on the following steps (`useFirstSync`, `FirstSyncLine`), with a retry when it fails. A run stored on the old `sync` step resumes on what now
   follows pairing.

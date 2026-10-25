@@ -36,15 +36,42 @@ public typealias LinkRecovery = @Sendable (_ attempt: Int) async throws -> Strin
 public struct FirstBindNeededError: Error, Equatable, CustomStringConvertible {
     /// The SecurityNegotiation authType: 5 when the watch does not know this phone, 6 when it does but no key is stored here.
     public let authType: Int
+    /// True when the watch does not know this phone although a bind key is stored here: something else bound the watch since. On
+    /// 2026-10-25 that was twice Huawei Health on the same phone, re-binding by itself after JoyoFit's link ended (JRG-414).
+    public let lostBinding: Bool
+
+    public init(authType: Int, lostBinding: Bool = false) {
+        self.authType = authType
+        self.lostBinding = lostBinding
+    }
 
     public var description: String {
         authType == 5 ? "watch does not know this phone: first bind needed" : "no bind key is stored for this watch: first bind needed"
     }
 }
 
+/// The ERR_BIND_CONFIRMATION texts, worded as Kotlin's `FirstBind`: JS (`connectFailure.ts`) tells a lost binding by `marker`.
+public enum FirstBindMessage {
+    public static let marker = "no longer knows this phone's pairing"
+    public static let lost =
+        "This watch no longer knows this phone's pairing: another app or phone paired it again while JoyoFit was not connected. " +
+        "Huawei Health does that by itself while the watch is still in its device list. Pairing again replaces that pairing."
+    public static let notBound =
+        "This watch has to be paired with this phone first. Pairing replaces the watch's current phone pairing (another phone or app)."
+
+    /// The background service's note for a stop before a first bind.
+    public static func backgroundNote(lostBinding: Bool) -> String {
+        lostBinding
+            ? "Paired again by another app (usually Huawei Health). Remove the watch there, then connect from the app."
+            : "The watch does not know this phone. Connect from the app to bind it."
+    }
+}
+
 extension WearError {
     /// True for the ERR_AUTH_FAILED of `authenticate(firstBindAllowed: false)` that only a user-started bind can resolve.
     public var isFirstBindNeeded: Bool { underlying is FirstBindNeededError }
+    /// True when that stop is for a binding the watch forgot (`FirstBindNeededError.lostBinding`).
+    public var isLostBinding: Bool { (underlying as? FirstBindNeededError)?.lostBinding == true }
 }
 
 public final class HuaweiAuthenticator {
@@ -147,9 +174,11 @@ public final class HuaweiAuthenticator {
             // Real-hardware evidence (Fit 4 Pro over LE, authMode 4): the SecurityNegotiation answer tells whether the watch knows our
             // authId, tag 0x02 = 2 gives authType 6 (known) and 1 gives authType 5 (new). Kotlin trusts the local bond flag alone;
             // here a stored key the watch does not recognise starts a first bind (PIN, op 1, op 2) instead of failing in op 2.
+            var lostBinding = false
             if params.authMode == 4 && authType == 5 && !firstConnection {
                 info("Auth: the watch does not know this identity (authType 5) although a bind key is stored locally: running the first-bind path (PinCode, HiChain op 1, op 2)")
                 firstConnection = true
+                lostBinding = true
                 authTimeout = timeouts.firstAuthMs
             } else if params.authMode == 4 && authType == 6 && firstConnection {
                 info("Auth: the watch already knows this identity (authType 6) but no bind is stored locally: following the local state (first-bind path)")
@@ -163,7 +192,7 @@ public final class HuaweiAuthenticator {
                     ? "watch does not know this phone: first bind needed"
                     : "no bind key is stored for this watch: first bind needed"
                 info("Auth: \(message) (authType=\(authType)); this connection may not start a first bind")
-                throw WearError(.authFailed, message, underlying: FirstBindNeededError(authType: authType))
+                throw WearError(.authFailed, message, underlying: FirstBindNeededError(authType: authType, lostBinding: lostBinding))
             }
             try await hiChainMode(firstConnection: firstConnection, authTimeout: authTimeout)
         } else if authType == 0x01 || authType == 0x02 {

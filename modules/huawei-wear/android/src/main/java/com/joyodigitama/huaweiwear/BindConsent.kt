@@ -14,14 +14,41 @@ internal object FirstBind {
   const val MESSAGE =
     "This watch has to be paired with this phone first. Pairing replaces the watch's current phone pairing."
 
+  /**
+   * The stop when the watch forgot a binding this phone still holds (authType 5 with a stored key). On 2026-10-25 both such losses were
+   * Huawei Health on the same phone: it reconnects within seconds of JoyoFit's link ending and, finding its own identity unknown, runs
+   * PinCode and HiChain operationCode 1 without any prompt on the watch (docs/watch-reference.md, JRG-414). The iOS port words it the
+   * same way; JS tells the two stops apart by [LOST_MARKER].
+   */
+  const val LOST_MESSAGE =
+    "This watch no longer knows this phone's pairing: another app or phone paired it again while JoyoFit was not connected. " +
+      "Huawei Health does that by itself while the watch is still in its device list. Pairing again replaces that pairing."
+
+  /** The part of [LOST_MESSAGE] that `describeConnectFailure` (src/features/device/connectFailure.ts) looks for. */
+  const val LOST_MARKER = "no longer knows this phone's pairing"
+
+  /** The ERR_BIND_CONFIRMATION text for a [Decision]. */
+  fun confirmationMessage(lostBinding: Boolean): String = if (lostBinding) LOST_MESSAGE else MESSAGE
+
+  /** The background service's note for an ERR_BIND_CONFIRMATION stop with [message]. */
+  fun backgroundNote(message: String?): String =
+    if (message?.contains(LOST_MARKER) == true) {
+      "Paired again by another app (usually Huawei Health). Remove the watch there, then connect from the Device tab."
+    } else {
+      "Not bound yet. Connect once from the Device tab."
+    }
+
   /** SecurityNegotiation authType of authMode 4: the watch does not know this phone's authId. */
   const val AUTH_TYPE_UNKNOWN_PHONE = 5
 
   /** SecurityNegotiation authType of authMode 4: the watch knows this phone's authId. */
   const val AUTH_TYPE_KNOWN_PHONE = 6
 
-  /** What the authenticator follows: [firstConnection] and the line for the log that says why. */
-  class Decision(val firstConnection: Boolean, val note: String)
+  /**
+   * What the authenticator follows: [firstConnection], the line for the log that says why, and [lostBinding]: the watch does not know
+   * this phone although a bind is stored here, so something else bound the watch since.
+   */
+  class Decision(val firstConnection: Boolean, val note: String, val lostBinding: Boolean = false)
 
   /**
    * The HiChain first-bind decision, as the iOS port makes it. A stored key the watch does not recognise (authMode 4, authType 5:
@@ -32,6 +59,7 @@ internal object FirstBind {
     authMode == 4 && authType == AUTH_TYPE_UNKNOWN_PHONE && !storedFirstConnection -> Decision(
       true,
       "the watch does not know this identity (authType 5) although a bind key is stored locally: first bind (PinCode, HiChain op 1, op 2)",
+      lostBinding = true,
     )
     authMode == 4 && authType == AUTH_TYPE_KNOWN_PHONE && storedFirstConnection -> Decision(
       true,

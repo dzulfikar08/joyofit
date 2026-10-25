@@ -218,7 +218,7 @@ internal class BackgroundController(private val runtime: WearRuntime) {
           return Attempt.BLOCKED
         }
         ErrorCodes.BIND_CONFIRMATION -> {
-          runtime.setNote("Not bound yet. Connect once from the Device tab.")
+          runtime.setNote(FirstBind.backgroundNote(e.message))
           return Attempt.BLOCKED
         }
         ErrorCodes.BLUETOOTH_PERMISSION -> {

@@ -3,8 +3,11 @@ import { t } from '@/i18n';
 
 /** What the Watch tab does with a rejected `HuaweiWear.connect`. */
 export type ConnectFailure =
-  /** The watch does not know this phone: ask the user before a bind replaces its current phone pairing. */
-  | { kind: 'bind' }
+  /**
+   * The watch does not know this phone: ask the user before a bind replaces its current phone pairing. `lost`: a binding was stored
+   * here and the watch forgot it, so another app paired the watch since (Huawei Health does by itself, JRG-414).
+   */
+  | { kind: 'bind'; lost: boolean }
   /** The Bluetooth link came up but the watch never answered the first request: the checklist and the report button. */
   | { kind: 'silent'; message: string }
   /** The watch could not be reached or refused the link: say what to check, offer Retry. */
@@ -51,9 +54,17 @@ export function silentWatchSteps(platform: 'ios' | 'android'): string[] {
   return steps;
 }
 
+/**
+ * The ERR_BIND_CONFIRMATION for a binding the watch forgot. Kotlin (`FirstBind.LOST_MESSAGE`) and Swift (`FirstBindMessage.lost`)
+ * both say "no longer knows this phone's pairing" there; the stop for a watch that was never bound does not.
+ */
+function isLostBinding(e: unknown): boolean {
+  return errorCode(e) === BIND_CONFIRMATION && /no longer knows this phone's pairing/.test(errorMessage(e));
+}
+
 export function describeConnectFailure(e: unknown): ConnectFailure {
   const code = errorCode(e);
-  if (code === BIND_CONFIRMATION) return { kind: 'bind' };
+  if (code === BIND_CONFIRMATION) return { kind: 'bind', lost: isLostBinding(e) };
   if (code === NOT_PAIRED) return { kind: 'unpaired', message: t('watch:device.hint.notPaired') };
   if (isSilentWatch(e)) return { kind: 'silent', message: t('watch:device.silent.short') };
   if (code !== null && UNREACHABLE_CODES[code]) return { kind: 'unreachable', message: watchBusyHint() };

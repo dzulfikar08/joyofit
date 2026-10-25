@@ -241,9 +241,9 @@ public final class BackgroundController: @unchecked Sendable {
                     runtime?.setNote("Bluetooth permission is missing.")
                     outcome.value = .blocked
                 case .authFailed where e.isFirstBindNeeded:
-                    // The watch lost or replaced this phone's credential (another phone bound it): retrying cannot fix that, and a bind must
-                    // be the user's decision.
-                    runtime?.setNote("The watch does not know this phone. Connect from the app to bind it.")
+                    // The watch lost or replaced this phone's credential (another phone or app bound it, Huawei Health by itself in
+                    // JRG-414): retrying cannot fix that, and a bind must be the user's decision.
+                    runtime?.setNote(FirstBindMessage.backgroundNote(lostBinding: e.isLostBinding))
                     outcome.value = .blocked
                 default:
                     log.info("Background connect failed [\(e.code.rawValue)]: \(e.message)")

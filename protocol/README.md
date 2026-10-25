@@ -52,6 +52,8 @@ ProductInfo with their own tag sets. None of this has been tried on a real band 
 | `01` | `05` | TimeRequest | read/set watch time |
 | `01` | `08` | BatteryLevel | battery % |
 | `01` | `02` / `03` | SupportedServices / SupportedCommands | capability discovery |
+| `1A` AccountRelated | `05` | SendExtendedAccountToDevice | the account the watch judges ("account judgment"). Huawei Health sends `01` = its Huawei user id (17-18 digits) and, with ExpandCapability 172 ("diff account pairing optimization"), `03 01 01`, plus `04`-`09` (account type, country, site, GPS country, language, EU flag) when ExpandCapability 269 is set (jadx `c11/mrj.java:148-238`). JoyoFit sends GB's default `01 = 00` (one zero byte, no account). Answer tag `02`: `1` = a different account than the one the watch holds (Huawei Health then waits for `1A/06`), `0` / `4` other states (`mrj.java:425-438`). The answer is logged encrypted only (`ExtendedAccount: acknowledged`); its tag `02` was never read by JoyoFit |
+| `1A` | `06` (watch → phone) | DeviceReportUserSelect | the answer to the watch's own "reset to pair with this phone?" prompt, shown when `1A/05` named a different account: `01 = 00` Yes (reset), `01 = 01` Back (keep). Huawei Health confirms Yes with `1A/06 {7F: 000186A0}` (`c11/mri.java:43-106`). JoyoFit does not answer it (see Observations, 2026-10-25) |
 | `0C` LocaleConfig | `01` | SetLanguageSetting | `01` locale text `xx-YY` (`in-ID`, `en-US`), `02` unit byte (0 metric, 1 imperial), `03` script (`Latn`, `Hant`; only with ExpandCapability 57). Sent last in init when the watch lists `0C/01`, and again when the app's language or the phone's changes; see Language |
 | `07` FitnessData | `0C` / `0D` | sleep MessageCount / MessageData | sleep segments `(start, minutes, type)` |
 | `07` | `0A` / `0B` | step MessageCount / MessageData | per-minute steps / kcal / distance / HR / SpO₂ / resting HR |
@@ -1164,3 +1166,42 @@ Support report with a 1000-line log (00:59 to 04:04 on 2026-10-21, five syncs), 
   (2) Asking for the frames without the new-steps flag (tag 0x06) might give a shorter record [INFERENCE: GB sets the flag only to read the step-rate field as cadence; nothing shows it changes the field list].
 - **Other lines of the report, not related:** `TruSleep on: sent, no reply`, `TruSleep: sequence file empty` (no sleep stages: the 07/0d frames are type 0x01 only), `hw.watch.health.filesync is not available (ping not answered)` and `rrisqi_data.bin cannot be downloaded using this method` (HRV, stress, apnea
   and arrhythmia are not read from this firmware), and the first connect after a screen-off drop had `SleepDataCount`, `WorkoutCapability` and `BatteryLevel` unanswered for a minute (the watch was not answering anything; the next sync at 01:29 was fine).
+
+### 2026-10-25: JRG-414, the watch forgets JoyoFit after the link ends, and shows "reset to pair with this phone?" on every connect (Fit 4 Pro 6.1.0.117, Xiaomi Android 16, Huawei Health 17.0.8.300 installed)
+
+Sources: `~/re/agps/logcat_e2e.txt` (phone logcat 11:21-14:04, line numbers below), `~/re/agps/logcat_1404_on.txt` (14:13-14:47), `~/re/agps/btsnoop_hci.log` (Huawei Health's own pairing,
+08:37-09:00, frame numbers = record index from 1), Huawei Health decompiled with jadx (`~/re/agps/jadx`).
+
+- **The unbinds are Huawei Health re-binding the watch by itself.** Huawei Health was "suspended" but its device manager (pid 8066) kept a foreground service and its
+  ReconnectManager. Both times JoyoFit's link ended, Huawei Health connected first, the watch answered its SecurityNegotiation as an unknown client (`pin code parse 1`,
+  `openHiChainAuth isAdd:true,isFirstPair:true`), and Huawei Health ran PinCode and HiChain operationCode 1 with **no prompt on the watch** (op 1 done in 0.3 s), then op 2:
+  - Bluetooth toggle: JoyoFit's link lost 12:08:36; Huawei Health `start reconnect device` 12:08:34.515 (l. 1213874), `pin code parse 1` 12:08:52.504 (l. 1217986),
+    `The device is successfully bound!` 12:08:52.810 (l. 1218209). JoyoFit's RFCOMM connect at 12:09:07 failed (Huawei Health held it), LE got authType 5 at 12:09:14 (l. 1237027).
+  - `adb install -r` of JoyoFit at 13:15:57: Huawei Health `onBtDeviceHfpConnected` 13:16:10.314 (l. 2092299), `pin code parse 1` 13:16:11.024 (l. 2092557), `[DB]: Start to delete
+    a trusted device` and `successfully bound` 13:16:11.384-.387 (l. 2092720-2092732); the watch closed Huawei Health's link 66 s later (l. 2095149); JoyoFit got authType 5 at
+    13:20:46 (l. 2122580).
+  - 14:09-14:13 Huawei Health was paired on purpose (`onHandshakeFinish` 14:13:02, `logcat_1404_on.txt` l. 1) and re-authenticated at 14:17:40 (l. 7): JoyoFit's authType 5 at
+    14:20:08 (l. 80) is the same eviction.
+  - Huawei Health's own bind on a reconnect is not new: its 08:46:25 connect had authType 6 (snoop frame 12371, tag `02 = 02`) and still ran PinCode and op 1 (frames 12372-12387),
+    because it had deleted its local member after the failed first attempt.
+  - `am force-stop` and `pm suspend` do not stop it: its processes were back after a force-stop at ~14:19 (owner's note). Removing the watch in Huawei Health, disabling or
+    uninstalling it is what stops the re-bind [INFERENCE for unpair: not run with a JoyoFit bind in place yet].
+- **The watch keeps more than one phone identity.** Huawei Health's identity (bound 08:45:46) and JoyoFit's identity `FEAEFFF0…` (bound before 08:37) both authenticated with
+  op 2 between 11:22 and 11:47 (Huawei Health l. 46821/46987, JoyoFit authType 6 from 11:31). JoyoFit's new identity `B434305E…` (op 1 at 11:52:58) and Huawei Health's
+  evicted each other at every op 1 afterwards. Which identity an op 1 evicts is not known; "a watch holds one credential" (above, 2026-10-16) is too strong.
+- **The reset prompt is the watch's account check.** After `01/37` Huawei Health runs an extra handshake ("OOBE", `c4/cnt.java:47,118-122`): `1A/05` with its user id; the
+  watch answers tag `02 = 1` when it holds a different account, Huawei Health shows "This watch is logged in to a different HUAWEI ID than your phone" (state 13, `mrj.java:404-407`),
+  and the watch asks "reset to pair with this phone?". Snoop of Huawei Health's first attempt at 08:45: `1A/05` frames 11286/11288, the watch's `1A/06` (the owner's tap)
+  frame 11308 2.8 s later, Huawei Health's confirm frame 11309, the watch's `7F 000186A4` frame 11311, link closed, Huawei Health deleted its member and paired again
+  (frames 12372-12387); that time `1A/05` (12646/12648) went straight on to `01/31` and the agreements `01/30` (12816/12975), no prompt.
+  - JoyoFit sends no account (`01 = 00`). While the watch held Huawei Health's account, JoyoFit's sessions got `1A/06` answers it ignores: `{01: 00}` 11:32:23 (l. 303378), link
+    lost 8 s later (l. 305652); `{01: 01}` 11:34:07.534 (l. 342354), the watch ended the link 30 ms later (l. 342456); `{01: 00}` 11:39:16 (l. 469855) and 11:40:22 (l. 495306),
+    each followed by a drop. The JoyoFit binding survived all of them (op 2, authType 6 on every reconnect): these were the "ordinary drops".
+  - After 14:21 (JoyoFit op 1 at 14:21:10 on a watch Huawei Health had just paired with its account) the prompt came back on every connect, and the link dropped at 14:21:39,
+    14:22:32 and 14:24:46. No `1A/06` reached JoyoFit, so the owner's Yes at about 14:25 was given while the link was down [INFERENCE from the frame log]; JoyoFit's 14:25:29
+    connect was authType 6 again. JoyoFit's op 1 did not replace the account here, while its op 1 at 11:52 was followed by 16 min and 1 h sessions without any `1A/06`.
+    Why the two differ is open.
+- **Changed:** the connect stop for a stored binding the watch forgot now says so and names Huawei Health (Kotlin `FirstBind.LOST_MESSAGE`, Swift `FirstBindMessage.lost`,
+  `BindConfirmDialog` `device.bind.lostAndroid` / `lostIos`, background note). **Not changed:** `1A/05` still sends no account and `1A/06` is still not answered; what the
+  watch does after a confirmed Yes (Huawei Health's `7F 000186A0`) is not known and may be a reset of the watch's data. The device experiments are in
+  `docs/watch-reference.md` (A watch Huawei Health paired again).
