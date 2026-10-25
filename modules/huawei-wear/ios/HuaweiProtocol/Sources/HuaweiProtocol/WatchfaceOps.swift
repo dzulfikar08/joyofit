@@ -286,6 +286,14 @@ public final class WatchfaceOps: @unchecked Sendable {
         return after
     }
 
+    /// 27/03 operation 1 for `face` as listed, also when it is the current face, without listing before or after; the watch's status
+    /// (tag 0x7f) or nil when it sends none. Huawei Health sends this after every photo face save: the Apply button of its My watch faces
+    /// page saves the album (27/09 and the photo upload), then calls `applyWatchFace`, which is this packet
+    /// (`OperateWatchFaceService.sendApplyWatchFaceCommand`). See protocol/README.md, "Photo faces".
+    public func apply(_ face: WatchfaceEntry) async throws -> Int? {
+        try await operation(face, Watchface.WatchfaceOperation.operationActive, "apply")
+    }
+
     /// GB `HuaweiWatchfaceManager.deleteWatchface`, then the list again to check that it is gone.
     public func delete(_ id: String) async throws -> WatchfaceList {
         let face = try find(try await list(), id)

@@ -380,13 +380,15 @@
     "revert": "Kembalikan"
   },
   "photo": {
-    "added": "Foto ditambahkan ke tampilan jam.",
+    "added": "Foto ditambahkan. Jam kini menampilkan tampilan foto.",
     "title": "Tampilan jam foto",
     "photoA11y": "Foto {{n}}",
     "noPreview": "Ditambahkan dari HP lain, tanpa pratinjau",
     "deleteN": "Hapus foto {{n}}",
     "deleteTitle": "Hapus foto",
     "deleteMessage": "Hapus foto {{n}} dari tampilan jam?",
+    "deleteMessageSwitch": "Hapus foto {{n}} dari tampilan jam? Jam lalu beralih ke tampilan foto.",
+    "notApplied": "Foto sudah tersimpan, tapi jam tidak beralih ke tampilan foto: {{reason}}",
     "connect": "Hubungkan jam untuk mengelola foto di tampilan fotonya.",
     "summary": "{{used}} dari {{max}} foto · {{width}} x {{height}} px",
     "add": "Tambah foto",

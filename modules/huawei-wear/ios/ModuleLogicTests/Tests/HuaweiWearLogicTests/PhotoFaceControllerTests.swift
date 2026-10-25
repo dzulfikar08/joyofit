@@ -26,6 +26,9 @@ private final class PhotoWatch: FrameSink, @unchecked Sendable {
     var photos: [String]
     var maxPhotos: Int
     var saveStatus: Int32 = 100_000
+    var applyStatus: Int32 = 100_000
+    /// Every 27/03 the phone sent: face id, version and operation.
+    private(set) var operations: [(id: String, version: String, operation: Int)] = []
     private(set) var received: [String: Bytes] = [:]
     private var pending: [String] = []
     private var current = ""
@@ -110,9 +113,12 @@ private final class PhotoWatch: FrameSink, @unchecked Sendable {
                 t.put(0x82, tlv: names)
                 return [frame(0x27, 0x06, t)]
             case (0x27, 0x03):
-                if (try? packet.tlv?.string(0x01)) == "2180736265" { faceCurrent = true }
+                let id = (try? packet.tlv?.string(0x01)) ?? ""
+                let operation = Int(packet.tlv?.byte(0x03, default: -1) ?? -1)
+                operations.append((id, (try? packet.tlv?.string(0x02)) ?? "", operation))
+                if id == "2180736265" && operation == 1 && applyStatus == 100_000 { faceCurrent = true }
                 var t = HuaweiTLV()
-                t.put(0x7f, int: 100_000)
+                t.put(0x7f, int: applyStatus)
                 return [frame(0x27, 0x03, t)]
             case (0x27, 0x08):
                 var list = HuaweiTLV()
@@ -343,6 +349,68 @@ final class PhotoFaceControllerTests: XCTestCase {
         XCTAssertEqual(events.progress.first?.0, 0)
         XCTAssertEqual(events.progress.last?.0, expectedBin.count)
         XCTAssertEqual(events.progress.last?.1, expectedBin.count)
+    }
+
+    func testAddingAPhotoAppliesTheFaceAgainOnceTheWatchHasReported() async throws {
+        let (controller, _, watch) = make()
+        let (url, _) = png(4, 3)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let js = try await controller.add(uri: url.absoluteString)
+
+        // Huawei Health's Apply: 27/09, the upload, the 27/05 report (acknowledged), then 27/03 operation 1 for the photo face.
+        XCTAssertEqual(watch.operations.count, 1)
+        XCTAssertEqual(watch.operations.first?.id, "2180736265")
+        XCTAssertEqual(watch.operations.first?.version, "2.4.11")
+        XCTAssertEqual(watch.operations.first?.operation, 1)
+        let reportAck = try XCTUnwrap(watch.seen.lastIndex { $0 == (0x27, 0x05) })
+        let apply = try XCTUnwrap(watch.seen.firstIndex { $0 == (0x27, 0x03) })
+        XCTAssertGreaterThan(apply, reportAck)
+        XCTAssertEqual((js["face"] as? [String: Any])?["active"] as? Bool, true)
+    }
+
+    func testTheFaceIsAppliedAgainEvenWhenItIsAlreadyTheActiveFace() async throws {
+        let (controller, _, watch) = make(photos: ["a.png"], tweak: { $0.faceCurrent = true })
+
+        _ = try await controller.delete(name: "a.png")
+
+        XCTAssertEqual(watch.operations.map(\.operation), [1])
+        XCTAssertEqual(watch.operations.first?.id, "2180736265")
+        let save = try XCTUnwrap(watch.seen.firstIndex { $0 == (0x27, 0x09) })
+        let apply = try XCTUnwrap(watch.seen.firstIndex { $0 == (0x27, 0x03) })
+        XCTAssertGreaterThan(apply, save)
+    }
+
+    func testDeletingTheLastPhotoOfAFaceThatIsNotOnTheScreenLeavesTheWatchOnItsFace() async throws {
+        let (controller, _, watch) = make(photos: ["a.png"])
+
+        let js = try await controller.delete(name: "a.png")
+
+        XCTAssertTrue(watch.operations.isEmpty, "an emptied, inactive photo face is not applied")
+        XCTAssertEqual((js["face"] as? [String: Any])?["active"] as? Bool, false)
+        XCTAssertTrue(js["applyError"] is NSNull)
+    }
+
+    func testDeletingOneOfSeveralPhotosAppliesAnInactiveFace() async throws {
+        let (controller, _, watch) = make(photos: ["a.png", "b.png"])
+
+        let js = try await controller.delete(name: "a.png")
+
+        XCTAssertEqual(watch.operations.map(\.operation), [1])
+        XCTAssertEqual((js["face"] as? [String: Any])?["active"] as? Bool, true)
+    }
+
+    func testARefusedApplyKeepsThePhotoAndSaysWhatTheWatchAnswered() async throws {
+        let (controller, events, _) = make(tweak: { $0.applyStatus = 140_004 })
+        let (url, _) = png(4, 3)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let js = try await controller.add(uri: url.absoluteString)
+
+        XCTAssertEqual((js["photos"] as? [[String: Any]])?.count, 1)
+        XCTAssertEqual(events.results.first?.ok, true)
+        XCTAssertEqual(events.results.first?.message, "Photo added, but the watch answered 140004 when the photo face was applied again.")
+        XCTAssertEqual(js["applyError"] as? String, "the watch answered 140004 when the photo face was applied again")
     }
 
     func testAPhotoOfTheWrongSizeIsRefusedBeforeAnythingIsSent() async throws {
