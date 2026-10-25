@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import type { AgpsStatus } from '@/wear';
 
-import { AGPS_LAB_SOURCE, agpsLabActive, agpsView, agpsVisible } from './agps';
+import { AGPS_LAB_SOURCE, AGPS_PGNSS_SOURCE, agpsLabActive, agpsPgnssActive, agpsView, agpsVisible } from './agps';
 
 const NOW = 1_800_000_000_000;
 const HOUR = 3_600_000;
@@ -159,6 +159,69 @@ describe('agpsView', () => {
     expect(view.tone).toBe('ok');
     expect(view.sizeKb).toBe(7);
     expect(agpsView({ ...delivered, expiresAt: NOW - 1 }, NOW).statusKey).toBe('expired');
+  });
+
+  test('with the PRED switch on the row shows for a watch whose last ask was exactly HW_PGNSS_PRED, and only with that switch', () => {
+    const asked = { ...BLANK, lastAskAt: NOW, lastAskVersion: 3, lastAskTags: 'HW_PGNSS_PRED', outcome: 'unsupported' as const };
+    expect(agpsVisible(asked, NOW)).toBe(false);
+    expect(agpsVisible({ ...asked, labAgnss: true }, NOW)).toBe(false);
+    expect(agpsVisible({ ...asked, labPgnss: false }, NOW)).toBe(false);
+    expect(agpsVisible({ ...asked, labPgnss: true }, NOW)).toBe(true);
+    expect(agpsPgnssActive({ ...asked, labPgnss: true })).toBe(true);
+    expect(agpsLabActive({ ...asked, labPgnss: true })).toBe(false);
+    expect(agpsVisible({ ...asked, labPgnss: true, lastAskTags: 'HW_AGNSS' }, NOW)).toBe(false);
+    expect(agpsVisible({ ...asked, labPgnss: true, lastAskTags: 'HW_AGNSS,HW_PGNSS_PRED' }, NOW)).toBe(false);
+    expect(agpsVisible({ ...asked, labPgnss: true, lastAskVersion: 0 }, NOW)).toBe(true);
+    expect(agpsVisible({ ...asked, labPgnss: true, lastAskVersion: 4 }, NOW)).toBe(false);
+    expect(agpsVisible({ ...asked, labPgnss: true, lastAskAt: 0 }, NOW)).toBe(false);
+  });
+
+  test('a delivery of the PRED files says so, expires after the three days they cover, and stays shown after a declined HW_AGNSS ask', () => {
+    const delivered: AgpsStatus = {
+      ...BLANK,
+      labPgnss: true,
+      outcome: 'delivered',
+      deliveredAt: NOW - HOUR,
+      deliveredSize: 799_112,
+      deliveredSource: AGPS_PGNSS_SOURCE,
+      expiresAt: NOW + 71 * HOUR,
+      lastAskAt: NOW - HOUR,
+      lastAskVersion: 3,
+      lastAskTags: 'HW_PGNSS_PRED',
+    };
+    expect(agpsVisible(delivered, NOW)).toBe(true);
+    const view = agpsView(delivered, NOW);
+    expect(view.statusKey).toBe('deliveredPgnss');
+    expect(view.tone).toBe('ok');
+    expect(view.sizeKb).toBe(780);
+    expect(agpsView({ ...delivered, expiresAt: NOW - 1 }, NOW).statusKey).toBe('expired');
+    // The watch then asks HW_AGNSS with that switch off: declined, the PRED files are still what it holds.
+    const afterAgnss: AgpsStatus = { ...delivered, lastAskAt: NOW, lastAskTags: 'HW_AGNSS', outcome: 'unsupported' };
+    expect(agpsVisible(afterAgnss, NOW)).toBe(true);
+    expect(agpsView(afterAgnss, NOW).statusKey).toBe('deliveredPgnss');
+    expect(agpsVisible({ ...afterAgnss, labPgnss: false }, NOW)).toBe(false);
+    expect(agpsVisible({ ...afterAgnss, expiresAt: NOW - 1 }, NOW)).toBe(false);
+  });
+
+  test('with both switches on, the HW_AGNSS delivery and the PRED ask after it both keep the row', () => {
+    // Fit 4 Pro device run of 2026-10-25: HW_AGNSS first, PRED two seconds after its transfer closed.
+    const afterAgnss: AgpsStatus = {
+      ...BLANK,
+      labAgnss: true,
+      labPgnss: true,
+      outcome: 'delivered',
+      deliveredAt: NOW - 2000,
+      deliveredSize: 6666,
+      deliveredSource: AGPS_LAB_SOURCE,
+      expiresAt: NOW + 4 * HOUR,
+      lastAskAt: NOW - 2000,
+      lastAskVersion: 3,
+      lastAskTags: 'HW_AGNSS',
+    };
+    expect(agpsVisible(afterAgnss, NOW)).toBe(true);
+    const predAsked: AgpsStatus = { ...afterAgnss, lastAskAt: NOW, lastAskTags: 'HW_PGNSS_PRED', phase: 'downloading' };
+    expect(agpsVisible(predAsked, NOW)).toBe(true);
+    expect(agpsView(predAsked, NOW).statusKey).toBe('downloading');
   });
 
   test('every native outcome has a status line', () => {

@@ -1,0 +1,12 @@
+{
+  "name": "@joyofit/agps-pgnss",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Builds and checks the six HW_PGNSS_PRED files (predicted ICD ephemerides fitted to public CODE orbit predictions) and the bundle the Worker serves them in; shared by scripts/agps-pgnss.ts and the Worker.",
+  "main": "src/pgnss.ts",
+  "types": "src/pgnss.ts",
+  "scripts": {
+    "test": "bun test"
+  }
+}

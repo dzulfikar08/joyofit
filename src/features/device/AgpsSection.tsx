@@ -6,7 +6,7 @@ import { ButtonRow } from '@/components/ButtonRow';
 import { Details } from '@/components/Details';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
-import { agpsLabActive, agpsView, agpsVisible } from '@/features/device/agps';
+import { agpsLabActive, agpsPgnssActive, agpsView, agpsVisible } from '@/features/device/agps';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage, formatClock, formatDateTime } from '@/format';
@@ -25,8 +25,8 @@ function read(): AgpsStatus | null {
 
 /**
  * The satellite-data (A-GPS) row of the Watch tab: when the watch last took data, how big it was, "Update now", the last result
- * in words. It shows only for a watch that asked for a kind JoyoFit serves (`agpsVisible`: the Broadcom kind, or HW_AGNSS with the experimental
- * switch on). The exchange lives in the native module (Kotlin and
+ * in words. It shows only for a watch that asked for a kind JoyoFit serves (`agpsVisible`: the Broadcom kind, or HW_AGNSS / HW_PGNSS_PRED with
+ * that kind's experimental switch on). The exchange lives in the native module (Kotlin and
  * Swift). OTA bundles on an older binary have no `getAgps` and show nothing.
  */
 export function AgpsSection() {
@@ -98,7 +98,9 @@ export function AgpsSection() {
           <Button label={t('agps.cancel')} variant="secondary" icon="close" onPress={() => void HuaweiWear.cancelAgps().then(refresh)} />
         ) : null}
       </ButtonRow>
-      <Details>{agpsLabActive(status) ? t('agps.detailsLab') : t('agps.details')}</Details>
+      <Details>
+        {agpsPgnssActive(status) ? t('agps.detailsPgnss') : agpsLabActive(status) ? t('agps.detailsLab') : t('agps.details')}
+      </Details>
     </Section>
   );
 }

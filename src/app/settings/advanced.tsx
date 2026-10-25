@@ -27,6 +27,16 @@ function readAgpsLab(): boolean | null {
   }
 }
 
+/** The experimental HW_PGNSS_PRED switch, or null on a binary without it or when the status cannot be read. */
+function readAgpsPgnssLab(): boolean | null {
+  if (!hasNative('setAgpsPgnssLab')) return null;
+  try {
+    return HuaweiWear.getAgps().labPgnss === true;
+  } catch {
+    return null;
+  }
+}
+
 export default function AdvancedScreen() {
   const { t } = useTranslation('settings');
   const theme = useTheme();
@@ -41,12 +51,15 @@ export default function AdvancedScreen() {
   const [bleError, setBleError] = useState<string | null>(null);
   const [agpsLab, setAgpsLab] = useState(readAgpsLab);
   const [agpsLabError, setAgpsLabError] = useState<string | null>(null);
+  const [pgnssLab, setPgnssLab] = useState(readAgpsPgnssLab);
+  const [pgnssLabError, setPgnssLabError] = useState<string | null>(null);
 
   useNativeRefresh(
     useCallback(() => {
       setCourses(HuaweiWear.getCourses());
       setForceBle(HuaweiWear.getForceBle());
       setAgpsLab(readAgpsLab());
+      setPgnssLab(readAgpsPgnssLab());
     }, []),
   );
 
@@ -85,6 +98,17 @@ export default function AdvancedScreen() {
       setAgpsLabError(errorMessage(e));
     } finally {
       setAgpsLab(readAgpsLab());
+    }
+  };
+
+  const togglePgnssLab = async (enabled: boolean) => {
+    setPgnssLabError(null);
+    try {
+      await HuaweiWear.setAgpsPgnssLab(enabled);
+    } catch (e) {
+      setPgnssLabError(errorMessage(e));
+    } finally {
+      setPgnssLab(readAgpsPgnssLab());
     }
   };
 
@@ -138,6 +162,13 @@ export default function AdvancedScreen() {
               <SwitchRow label={t('advanced.agnssLab')} value={agpsLab} onValueChange={(enabled) => void toggleAgpsLab(enabled)} />
               <Notice tone={agpsLab ? 'danger' : 'info'}>{t('advanced.agnssLabRisk')}</Notice>
               {agpsLabError ? <Notice tone="danger">{agpsLabError}</Notice> : null}
+            </>
+          ) : null}
+          {pgnssLab !== null ? (
+            <>
+              <SwitchRow label={t('advanced.pgnssLab')} value={pgnssLab} onValueChange={(enabled) => void togglePgnssLab(enabled)} />
+              <Notice tone={pgnssLab ? 'danger' : 'info'}>{t('advanced.pgnssLabRisk')}</Notice>
+              {pgnssLabError ? <Notice tone="danger">{pgnssLabError}</Notice> : null}
             </>
           ) : null}
           {__DEV__ ? (

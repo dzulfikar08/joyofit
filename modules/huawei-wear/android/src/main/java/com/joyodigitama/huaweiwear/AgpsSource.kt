@@ -43,8 +43,9 @@ internal object AgpsSources {
 /**
  * The real source: the public Broadcom LTO file, for version 0. Every other kind the watch can ask for is data that only the watch maker's own
  * app prepares (from servers and with a decoder this app does not use), and sending anything else to a watch that does not validate what it is
- * given can wedge its GPS: those are declined, never substituted. The one exception is the experimental [AgpsLab] path: with the user's switch
- * on, a watch that asks for exactly `HW_AGNSS` gets the RTCM file JoyoFit's server builds from open data.
+ * given can wedge its GPS: those are declined, never substituted. The exceptions are the experimental paths, each behind its own switch: a
+ * watch that asks for exactly `HW_AGNSS` gets the RTCM file ([AgpsLab]), one that asks for `HW_PGNSS_PRED` gets the six HW_PGNSS_* files
+ * ([AgpsPgnss]), both built by JoyoFit's server from open data.
  */
 internal class NetworkAgpsSource(
   private val cache: AgpsCache,
@@ -57,15 +58,30 @@ internal class NetworkAgpsSource(
 
   override fun fetch(consult: AgpsConsult, force: Boolean): AgpsFetch = when (consult.version) {
     0 -> fetchBroadcom(force)
-    in 1..3 -> if (store.labAgnss && AgpsLab.asksHwAgnss(consult)) {
-      fetchAgnss(force)
-    } else {
-      AgpsFetch.failed(
-        AgpsOutcome.UNSUPPORTED,
-        "the watch asked for kinds only the watch maker's app prepares (version ${consult.version}: ${consult.tagNames.ifEmpty { "no names" }})",
-      )
+    in 1..3 -> {
+      val kinds = AgpsLab.servedKinds(consult, store.labAgnss, store.labPgnss)
+      if (kinds.isEmpty()) {
+        AgpsFetch.failed(
+          AgpsOutcome.UNSUPPORTED,
+          "the watch asked for kinds only the watch maker's app prepares (version ${consult.version}: ${consult.tagNames.ifEmpty { "no names" }})",
+        )
+      } else {
+        combine(kinds.map { if (it == AgpsPgnss.KIND) fetchPgnss(force) else fetchAgnss(force) })
+      }
     }
     else -> AgpsFetch.failed(AgpsOutcome.UNSUPPORTED, "download version ${consult.version} is not known")
+  }
+
+  /**
+   * One fetch per served kind into one answer: the files in that order. Any failure is the answer (the watch gets every kind it is offered or
+   * none). Two kinds at once (never seen) are dated by the older and carry the PGNSS source.
+   */
+  private fun combine(parts: List<AgpsFetch>): AgpsFetch {
+    if (parts.size == 1) return parts[0]
+    parts.firstOrNull { !it.ok }?.let { return it }
+    val files = LinkedHashMap<String, ByteArray>()
+    parts.forEach { files.putAll(it.files) }
+    return AgpsFetch(files, AgpsPgnss.SOURCE, parts.minOf { it.dataTimeMs }, AgpsOutcome.NONE, "", parts.all { it.fromCache })
   }
 
   private class Got(val body: ByteArray, val dataMs: Long, val fromCache: Boolean)
@@ -127,6 +143,33 @@ internal class NetworkAgpsSource(
     AgpsFetch(mapOf(AgpsLab.FILE to got.body), AgpsLab.SOURCE, got.dataMs, AgpsOutcome.NONE, "", got.fromCache)
   } catch (e: AgpsFetchException) {
     failure(e, "HW_AGNSS")
+  }
+
+  /**
+   * The experimental HW_PGNSS_PRED bundle from JoyoFit's server (fixed address, plain GET, nothing about the user), split into its six files in
+   * the watch's pull order. The phone's copy is reused while it is at most [PgnssBundle.MAX_AGE_MS] old and still passes [PgnssBundle.validate]
+   * against its recorded build time; a download is checked the same way before it is kept or offered.
+   */
+  private fun fetchPgnss(force: Boolean): AgpsFetch = try {
+    val url = EphemerisNet.PGNSS_URL
+    val cachedBuilt = store.pgnssBuiltMs
+    val hit = if (force) null else cache.read(url, PgnssBundle.MAX_AGE_MS)
+    if (hit != null && PgnssBundle.validate(hit, cachedBuilt, nowMs()) == null) {
+      log("HW_PGNSS_PRED: from the phone's copy, ${hit.size} bytes")
+      AgpsFetch(PgnssBundle.files(hit), AgpsPgnss.SOURCE, cachedBuilt, AgpsOutcome.NONE, "", fromCache = true)
+    } else {
+      if (hit != null) cache.delete(url)
+      if (!isOnline()) throw AgpsFetchException("no network")
+      val started = nowMs()
+      val download = http(url, PgnssBundle.BUNDLE_BYTES)
+      PgnssBundle.validate(download.body, download.lastModifiedMs, nowMs())?.let { throw AgpsInvalidFileException(it) }
+      log("HW_PGNSS_PRED: downloaded ${download.body.size} bytes in ${nowMs() - started} ms")
+      cache.write(url, download.body)
+      store.recordPgnssBuilt(download.lastModifiedMs)
+      AgpsFetch(PgnssBundle.files(download.body), AgpsPgnss.SOURCE, download.lastModifiedMs, AgpsOutcome.NONE, "")
+    }
+  } catch (e: AgpsFetchException) {
+    failure(e, "HW_PGNSS_PRED")
   }
 
   private fun failure(e: AgpsFetchException, label: String): AgpsFetch {

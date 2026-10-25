@@ -536,8 +536,8 @@ public actor AgpsExchange {
         if force { store.clearRetry() }
         let waitUntil = store.retryAtMs()
         // The last download failed a moment ago; the watch asks every few seconds, so it is not hammered with retries. Only for asks that download
-        // (Broadcom, or HW_AGNSS with the switch on): a declined kind keeps its own answer.
-        let waiting = !force && AgpsLab.downloads(consult, labOn: store.labAgnss) && nowMs() < waitUntil
+        // (Broadcom, or an experimental kind with its switch on): a declined kind keeps its own answer.
+        let waiting = !force && AgpsLab.downloads(consult, agnssOn: store.labAgnss, pgnssOn: store.labPgnss) && nowMs() < waitUntil
         let result: AgpsFetch
         if waiting {
             result = .failed(AgpsOutcome.downloadFailed, "waiting \((waitUntil - nowMs()) / 1000) s before trying the download again")
@@ -703,12 +703,15 @@ public actor AgpsExchange {
         if complete, let name {
             delivered.insert(name)
             let all = ready.allSatisfy { delivered.contains($0.name) }
-            let fetch = lastFetch
-            store.recordDelivered(nowMs: nowMs(), dataMs: fetch?.dataTimeMs ?? nowMs(), size: total, source: fetch?.source ?? "", address: address)
             if all {
+                // One delivery for the whole request (the six PGNSS files are one data set), recorded once the watch closed the last of them.
+                let fetch = lastFetch
+                let size = ready.reduce(0) { $0 + $1.data.count }
+                store.recordDelivered(nowMs: nowMs(), dataMs: fetch?.dataTimeMs ?? nowMs(), size: size, source: fetch?.source ?? "", address: address)
                 task = false
                 finishWith(AgpsOutcome.delivered)
             } else {
+                log("\(name) delivered; \(delivered.count) of \(ready.count) files so far")
                 armIdle(timing.pullWaitMs)
             }
         } else {
@@ -826,6 +829,7 @@ public final class EphemerisLink: LinkObserver, @unchecked Sendable {
             "retryAt": store.retryAtMs(),
             "failures": store.failures,
             "labAgnss": store.labAgnss,
+            "labPgnss": store.labPgnss,
         ]
     }
 
@@ -863,9 +867,12 @@ public final class EphemerisLink: LinkObserver, @unchecked Sendable {
         return result(outcome, store.lastError)
     }
 
-    /// What "Update now" downloads when the watch is not part of it: the HW_AGNSS file when the experimental switch is on and the watch's last ask was
-    /// exactly that kind, else the default data.
+    /// What "Update now" downloads when the watch is not part of it: the experimental kind the watch last asked for (exactly `HW_PGNSS_PRED` or
+    /// exactly `HW_AGNSS`) when that kind's switch is on, else the default data.
     private func refreshConsult() -> AgpsConsult {
+        if store.labPgnss && AgpsPgnss.askedPred(version: store.lastAskVersion, tagNames: store.lastAskTags) {
+            return AgpsConsult(version: store.lastAskVersion, tag: "/\(AgpsPgnss.kind)", urls: [])
+        }
         if store.labAgnss && AgpsLab.askedHwAgnss(version: store.lastAskVersion, tagNames: store.lastAskTags) {
             return AgpsConsult(version: store.lastAskVersion, tag: "/\(AgpsLab.kind)", urls: [])
         }
@@ -907,6 +914,12 @@ public final class EphemerisLink: LinkObserver, @unchecked Sendable {
     public func setLabAgnss(_ enabled: Bool) {
         store.setLabAgnss(enabled)
         log("experimental HW_AGNSS data \(enabled ? "on" : "off")")
+    }
+
+    /// The second experimental switch of Settings > Advanced (`AgpsPgnss`); it takes effect at the watch's next ask.
+    public func setLabPgnss(_ enabled: Bool) {
+        store.setLabPgnss(enabled)
+        log("experimental HW_PGNSS_PRED data \(enabled ? "on" : "off")")
     }
 
     /// From the sync, once per round: keeps the phone-side copy fresh so the watch's next request is answered at once, and the failure wait

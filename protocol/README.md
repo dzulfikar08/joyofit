@@ -334,8 +334,11 @@ Bluetooth address. Observed consult answers (all download version 3, one tag eac
 (7 436 bytes). The `1F/03` state 4 in a support log is JoyoFit's own "failed" answer, not a refusal by the watch. Experimental, off by default (`setAgpsLab`):
 a consult that is exactly one tag ending `/HW_AGNSS` (versions 1 to 3) is answered state 3 and served `HW_AGNSS_RTCM_33` (RTCM 3 frames 1019/1020/1042/1046,
 built by `GET /v1/agps/hw-agnss` from BKG's open broadcast ephemeris with `packages/agps-rtcm`, checked again on the phone) through the same `1C` sender;
-with the switch off, or any other tag, the bytes are those of the decline. Policy, safety rules, sources, chips and why Huawei's servers are not used:
-[docs/agps.md](../docs/agps.md).
+with the switch off, or any other tag, the bytes are those of the decline. A second, separate switch, also off by default (`setAgpsPgnssLab`): a consult that is
+exactly one tag whose last segment is `HW_PGNSS_PRED` (versions 1 to 3, not the `SEVEN` variant) is answered state 3 and every `1C/01` with the six names
+`HW_PGNSS_GPS;HW_PGNSS_BDS;HW_PGNSS_GLONASS;HW_PGNSS_GALILEO;HW_PGNSS_QZS;HW_PGNSS_EXTRA` (the order the watch pulled them from Huawei Health); the watch then pulls
+one file per `1C/01` ... `1C/06` round through the same sender (sizes 93 312, 209 808, 361 584, 99 648, 28 512, 6 248; from `GET /v1/agps/hw-pgnss`, checked again on the
+phone). Policy, safety rules, sources, chips and why Huawei's servers are not used: [docs/agps.md](../docs/agps.md).
 
 ### Live workout (`LiveWorkout.kt`, `LiveWorkoutCodec.kt`; as Huawei Health 17.0.8.300 behaves, UNVERIFIED on the Fit 4 Pro)
 

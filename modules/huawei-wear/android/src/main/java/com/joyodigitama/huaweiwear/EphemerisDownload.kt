@@ -24,8 +24,14 @@ internal object EphemerisNet {
   const val LTO_HOST = "https://gllto.glpals.com"
   const val LTO_PATH = "/7day/v6/latest/lto.dat"
 
-  /** JoyoFit's own server: the experimental HW_AGNSS file built from BKG's open broadcast ephemeris (server/src/agps.ts). Only with the switch on. */
-  const val AGNSS_URL = "https://api.fit.joyorogo.com/v1/agps/hw-agnss"
+  /** JoyoFit's own server (server/src/agps.ts); the experimental files below come from there, each only with its switch on. */
+  const val API_BASE = "https://api.fit.joyorogo.com"
+
+  /** The experimental HW_AGNSS file built from BKG's open broadcast ephemeris. */
+  const val AGNSS_URL = "$API_BASE/v1/agps/hw-agnss"
+
+  /** The experimental HW_PGNSS_PRED bundle (six files, [PgnssBundle]) built from public data. */
+  const val PGNSS_URL = "$API_BASE/v1/agps/hw-pgnss"
 
   private const val CONNECT_TIMEOUT_MS = 15_000
   private const val READ_TIMEOUT_MS = 30_000

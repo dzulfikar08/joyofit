@@ -13,7 +13,11 @@ notifications to that watch over Bluetooth.
   phone contacts Broadcom's public file server (`gllto.glpals.com`), with a plain request and no identification of any app, and,
   only with the experimental HW_AGNSS switch turned on (off by default), JoyoFit's own server (`api.fit.joyorogo.com`), which
   builds that file from open IGS/BKG broadcast ephemeris (IGS data terms: open use with attribution, no warranty) and serves the
-  same bytes to everyone; that request carries no account, location or ID. Details: [docs/agps.md](docs/agps.md).
+  same bytes to everyone; that request carries no account, location or ID. With the separate experimental HW_PGNSS_PRED switch
+  (also off by default) the phone fetches six predicted-ephemeris files from the same server, which generates them from the
+  open GNSS orbit predictions of CODE (Astronomical Institute, University of Bern; Dach et al., CODE ultra-rapid product series
+  for the IGS, DOI 10.48620/97774; IGS product terms) and the same BKG data; that request carries no account, location or ID
+  either. Details: [docs/agps.md](docs/agps.md).
 - It is **not affiliated with, endorsed by or sponsored by** Huawei Technologies Co., Ltd. or Honor.
 - "Huawei", "Honor", "HUAWEI WATCH FIT" and similar names are trademarks of their owners. They are used here only to say
   which watches the software works with.

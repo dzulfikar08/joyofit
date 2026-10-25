@@ -76,8 +76,9 @@ public protocol AgpsCache: AnyObject, Sendable {
 
 /// The real source: the public Broadcom LTO file, for download version 0. Every other kind the watch can ask for is data that only the watch maker's
 /// own app prepares (from servers and with a decoder this app does not use), and sending anything else to a watch that does not validate what it is
-/// given can wedge its GPS: those are declined, never substituted. The one exception is the experimental `AgpsLab` path: with the user's switch on,
-/// a watch that asks for exactly `HW_AGNSS` gets the RTCM file JoyoFit's server builds from open data.
+/// given can wedge its GPS: those are declined, never substituted. The exceptions are the experimental paths, each behind its own switch: a watch
+/// that asks for exactly `HW_AGNSS` gets the RTCM file (`AgpsLab`), one that asks for `HW_PGNSS_PRED` gets the six HW_PGNSS_* files (`AgpsPgnss`),
+/// both built by JoyoFit's server from open data.
 public final class NetworkAgpsSource: AgpsSource, @unchecked Sendable {
     private let cache: AgpsCache
     private let store: AgpsStore
@@ -104,15 +105,37 @@ public final class NetworkAgpsSource: AgpsSource, @unchecked Sendable {
         case 0:
             return await fetchBroadcom(force: force)
         case 1, 2, 3:
-            if store.labAgnss && AgpsLab.asksHwAgnss(consult) { return await fetchAgnss(force: force) }
-            let names = consult.tagNames
-            return .failed(
-                AgpsOutcome.unsupported,
-                "the watch asked for kinds only the watch maker's app prepares (version \(consult.version): \(names.isEmpty ? "no names" : names))"
-            )
+            let kinds = AgpsLab.servedKinds(consult, agnssOn: store.labAgnss, pgnssOn: store.labPgnss)
+            if kinds.isEmpty {
+                let names = consult.tagNames
+                return .failed(
+                    AgpsOutcome.unsupported,
+                    "the watch asked for kinds only the watch maker's app prepares (version \(consult.version): \(names.isEmpty ? "no names" : names))"
+                )
+            }
+            var parts: [AgpsFetch] = []
+            for kind in kinds {
+                if kind == AgpsPgnss.kind {
+                    parts.append(await fetchPgnss(force: force))
+                } else {
+                    parts.append(await fetchAgnss(force: force))
+                }
+            }
+            return combine(parts)
         default:
             return .failed(AgpsOutcome.unsupported, "download version \(consult.version) is not known")
         }
+    }
+
+    /// One fetch per served kind into one answer: the files in that order. Any failure is the answer (the watch gets every kind it is offered or
+    /// none). Two kinds at once (never seen) are dated by the older and carry the PGNSS source.
+    private func combine(_ parts: [AgpsFetch]) -> AgpsFetch {
+        if parts.count == 1 { return parts[0] }
+        if let failed = parts.first(where: { !$0.ok }) { return failed }
+        return AgpsFetch(
+            files: parts.flatMap(\.files), source: AgpsPgnss.source, dataTimeMs: parts.map(\.dataTimeMs).min() ?? 0, outcome: AgpsOutcome.none,
+            message: "", fromCache: parts.allSatisfy(\.fromCache)
+        )
     }
 
     private func fail(_ error: Error, _ label: String) -> AgpsFetch {
@@ -159,6 +182,42 @@ public final class NetworkAgpsSource: AgpsSource, @unchecked Sendable {
         }
     }
 
+    /// The experimental HW_PGNSS_PRED bundle from JoyoFit's server (fixed address, plain GET, nothing about the user), split into its six files in
+    /// the watch's pull order. The phone's copy is reused while it is at most `PgnssBundle.maxAgeMs` old and still passes `PgnssBundle.validate`
+    /// against its recorded build time; a download is checked the same way before it is kept or offered.
+    private func fetchPgnss(force: Bool) async -> AgpsFetch {
+        let url = EphemerisNet.pgnssUrl
+        do {
+            if !force {
+                let hit = cache.read(url, maxAgeMs: PgnssBundle.maxAgeMs)
+                let builtMs = store.pgnssBuiltMs
+                if let hit, PgnssBundle.validate(hit, builtMs: builtMs, nowMs: nowMs()) == nil {
+                    log("HW_PGNSS_PRED: from the phone's copy, \(hit.count) bytes")
+                    return AgpsFetch(
+                        files: PgnssBundle.split(hit), source: AgpsPgnss.source, dataTimeMs: builtMs, outcome: AgpsOutcome.none, message: "",
+                        fromCache: true
+                    )
+                }
+                if hit != nil { cache.delete(url) }
+            }
+            if !isOnline() { throw AgpsFetchError("no network", kind: .noNetwork) }
+            let started = nowMs()
+            let download = try await httpGet(url, PgnssBundle.bundleBytes)
+            if let problem = PgnssBundle.validate(download.body, builtMs: download.lastModifiedMs, nowMs: nowMs()) {
+                throw AgpsFetchError(problem, kind: .invalidFile)
+            }
+            log("HW_PGNSS_PRED: downloaded \(download.body.count) bytes in \(nowMs() - started) ms")
+            cache.write(url, data: download.body)
+            store.recordPgnssBuilt(download.lastModifiedMs)
+            return AgpsFetch(
+                files: PgnssBundle.split(download.body), source: AgpsPgnss.source, dataTimeMs: download.lastModifiedMs, outcome: AgpsOutcome.none,
+                message: ""
+            )
+        } catch {
+            return fail(error, "HW_PGNSS_PRED")
+        }
+    }
+
     /// Version 0: always the fixed Broadcom address, whatever address the watch names. The file is `gpslocation.dat`. The phone-side copy is used
     /// when it is young enough and still passes the validation; a download is saved for next time only when it passed it.
     private func fetchBroadcom(force: Bool) async -> AgpsFetch {
@@ -200,8 +259,14 @@ public enum EphemerisNet {
     public static let ltoHost = "https://gllto.glpals.com"
     public static let ltoPath = "/7day/v6/latest/lto.dat"
 
-    /// JoyoFit's own server: the experimental HW_AGNSS file built from BKG's open broadcast ephemeris (server/src/agps.ts). Only with the switch on.
-    public static let agnssUrl = "https://api.fit.joyorogo.com/v1/agps/hw-agnss"
+    /// JoyoFit's own server (server/src/agps.ts); the experimental files below come from there, each only with its switch on.
+    public static let apiBase = "https://api.fit.joyorogo.com"
+
+    /// The experimental HW_AGNSS file built from BKG's open broadcast ephemeris.
+    public static let agnssUrl = apiBase + "/v1/agps/hw-agnss"
+
+    /// The experimental HW_PGNSS_PRED bundle (six files, `PgnssBundle`) built from public data.
+    public static let pgnssUrl = apiBase + "/v1/agps/hw-pgnss"
 
     private static let readTimeoutSec: TimeInterval = 30
     private static let resourceTimeoutSec: TimeInterval = TimeInterval(AgpsPolicy.downloadTimeoutMs / 1000)

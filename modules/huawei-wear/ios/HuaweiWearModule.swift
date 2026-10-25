@@ -4,7 +4,7 @@
 //
 // Implemented for real: the link (getBondedDevices, connect, disconnect, getState, getDevice, getSupportReport, refreshBattery, syncActivity,
 // forgetDevice), the background session, the user profile, the HealthKit export, the family monitoring upload and the satellite data exchange
-// (getAgps, refreshAgps, cancelAgps, setAgpsLab). Everything else the Android module offers has no iOS
+// (getAgps, refreshAgps, cancelAgps, setAgpsLab, setAgpsPgnssLab). Everything else the Android module offers has no iOS
 // counterpart or no ported protocol layer yet and keeps its name: getters answer with the inert status of InertStatus.swift, commands reject
 // with ERR_UNSUPPORTED ("... not available on iOS yet"). Nothing claims to have reached the watch that did not.
 #if canImport(ExpoModulesCore) && canImport(CoreBluetooth) && (canImport(SQLite3) || canImport(CSQLite))
@@ -684,6 +684,12 @@ public final class HuaweiWearModule: Module {
         // Experimental, off by default: serve JoyoFit's HW_AGNSS file to a watch that asks for exactly that kind (docs/agps.md, "Lab path").
         AsyncFunction("setAgpsLab") { (enabled: Bool) async throws -> Void in
             runtime.ephemeris.setLabAgnss(enabled)
+        }
+
+        // Experimental, off by default and separate from the switch above: serve JoyoFit's six HW_PGNSS_* files to a watch that asks for
+        // HW_PGNSS_PRED (docs/agps.md, "Lab path for HW_PGNSS_PRED").
+        AsyncFunction("setAgpsPgnssLab") { (enabled: Bool) async throws -> Void in
+            runtime.ephemeris.setLabPgnss(enabled)
         }
 
         // MARK: commands that would reach the watch or Android-only screens: ERR_UNSUPPORTED

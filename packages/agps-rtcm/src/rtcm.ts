@@ -60,13 +60,13 @@ function* fields(line: string, from: number, count: number): Generator<number> {
   }
 }
 
-// Record layout by index into NavRecord.v (RINEX 3.05 tables A3, A4 and A6 to A9).
-const K = {
+// Record layout by index into NavRecord.v (RINEX 3.05 tables A3, A4 and A6 to A9). Also read by packages/agps-pgnss (health, clocks, group delays).
+export const K = {
   af0: 0, af1: 1, af2: 2, iode: 3, crs: 4, dn: 5, m0: 6, cuc: 7, e: 8, cus: 9, sqrtA: 10, toe: 11, cic: 12, omega0: 13, cis: 14,
   i0: 15, crc: 16, omega: 17, omegaDot: 18, idot: 19, codes: 20, week: 21, acc: 23, health: 24, tgd: 25, tgd2: 26, iodc: 26,
 } as const;
 /** GLONASS: -tauN, +gammaN, message frame time (UTC week s), then X/Y/Z km, km/s, km/s2 with health, frequency, age, and the line-5 delay. */
-const R = { tauN: 0, gamma: 1, tof: 2, x: 3, health: 6, y: 7, freq: 10, z: 11, age: 14, dgd: 16 } as const;
+export const R = { tauN: 0, gamma: 1, tof: 2, x: 3, health: 6, y: 7, freq: 10, z: 11, age: 14, dgd: 16 } as const;
 
 /** Field `i` of a record; a field the record does not have reads as 0, like an empty column. */
 const at = (r: NavRecord, i: number): number => r.v[i] ?? 0;

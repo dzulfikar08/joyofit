@@ -468,8 +468,8 @@ internal class AgpsExchange(
     if (force) store.clearRetry()
     val waitUntil = store.retryAtMs()
     // The last download failed a moment ago; the watch asks every few seconds, so it is not hammered with retries. Only for asks that download
-    // (Broadcom, or HW_AGNSS with the switch on): a declined kind keeps its own answer.
-    val waiting = !force && AgpsLab.downloads(consult, store.labAgnss) && nowMs() < waitUntil
+    // (Broadcom, or an experimental kind with its switch on): a declined kind keeps its own answer.
+    val waiting = !force && AgpsLab.downloads(consult, store.labAgnss, store.labPgnss) && nowMs() < waitUntil
     val result = if (waiting) {
       AgpsFetch.failed(AgpsOutcome.DOWNLOAD_FAILED, "waiting ${(waitUntil - nowMs()) / 1000} s before trying the download again")
     } else {
@@ -631,13 +631,15 @@ internal class AgpsExchange(
     if (!task) return
     if (complete) {
       delivered += name!!
-      val all = synchronized(this) { ready.keys.all { it in delivered } }
-      val fetch = fetched
-      store.recordDelivered(nowMs(), fetch?.dataTimeMs ?: nowMs(), total, fetch?.source ?: "", address)
+      val (all, size) = synchronized(this) { ready.keys.all { it in delivered } to ready.values.sumOf { it.size } }
       if (all) {
+        // One delivery for the whole request (the six PGNSS files are one data set), recorded once the watch closed the last of them.
+        val fetch = fetched
+        store.recordDelivered(nowMs(), fetch?.dataTimeMs ?: nowMs(), size, fetch?.source ?: "", address)
         task = false
         finishWith(AgpsOutcome.DELIVERED)
       } else {
+        log("$name delivered; ${delivered.size} of ${synchronized(this) { ready.size }} files so far")
         armIdle(timing.pullWaitMs)
       }
     } else {
@@ -731,6 +733,7 @@ internal class EphemerisLink(
       "retryAt" to store.retryAtMs(),
       "failures" to store.failures,
       "labAgnss" to store.labAgnss,
+      "labPgnss" to store.labPgnss,
     )
   }
 
@@ -762,15 +765,16 @@ internal class EphemerisLink(
   private fun result(outcome: String, message: String): Map<String, Any?> = mapOf("outcome" to outcome, "message" to message)
 
   /**
-   * What "Update now" downloads when the watch is not part of it: the HW_AGNSS file when the experimental switch is on and the watch's last ask
-   * was exactly that kind, else the default data.
+   * What "Update now" downloads when the watch is not part of it: the experimental kind the watch last asked for (exactly `HW_PGNSS_PRED` or
+   * exactly `HW_AGNSS`) when that kind's switch is on, else the default data.
    */
-  private fun refreshConsult(): AgpsConsult =
-    if (store.labAgnss && AgpsLab.askedHwAgnss(store.lastAskVersion, store.lastAskTags)) {
+  private fun refreshConsult(): AgpsConsult = when {
+    store.labPgnss && AgpsPgnss.askedPred(store.lastAskVersion, store.lastAskTags) ->
+      AgpsConsult(store.lastAskVersion, "/${AgpsPgnss.KIND}", emptyList())
+    store.labAgnss && AgpsLab.askedHwAgnss(store.lastAskVersion, store.lastAskTags) ->
       AgpsConsult(store.lastAskVersion, "/${AgpsLab.KIND}", emptyList())
-    } else {
-      AgpsConsult.DEFAULT
-    }
+    else -> AgpsConsult.DEFAULT
+  }
 
   /** Downloads the data for [refreshConsult] to the phone; [okOutcome] is what a good download is reported as. */
   private suspend fun downloadOnly(okOutcome: String): String {
@@ -802,6 +806,12 @@ internal class EphemerisLink(
   fun setLabAgnss(enabled: Boolean) {
     store.setLabAgnss(enabled)
     log("experimental HW_AGNSS data ${if (enabled) "on" else "off"}")
+  }
+
+  /** The second experimental switch of Settings > Advanced ([AgpsPgnss]); it takes effect at the watch's next ask. */
+  fun setLabPgnss(enabled: Boolean) {
+    store.setLabPgnss(enabled)
+    log("experimental HW_PGNSS_PRED data ${if (enabled) "on" else "off"}")
   }
 
   /**

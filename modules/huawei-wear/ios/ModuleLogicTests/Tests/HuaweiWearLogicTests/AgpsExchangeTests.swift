@@ -176,21 +176,24 @@ final class AgpsExchangeTests: XCTestCase {
         fromWatch(0x1C, 0x06, tlv)
     }
 
-    /// Drives the whole pull as the watch does, returning the bytes it received.
+    /// Drives the whole pull of one file as the watch does (after any earlier pulls in the same test), returning the bytes it received.
     private func pull(_ name: String, size: Int, maxData: Int, transferSize: Int) async -> Bytes {
+        let lists = watch.all(0x1C, 0x01).count
+        let consults = watch.all(0x1C, 0x02).count
+        let infos = watch.all(0x1C, 0x03).count
         var listTlv = HuaweiTLV()
         listTlv.put(0x02, byte: 1)
         listTlv.put(0x03, string: "p")
         fromWatch(0x1C, 0x01, listTlv)
-        _ = await awaitMsg(0x1C, 0x01)
+        _ = await awaitMsg(0x1C, 0x01, lists + 1)
         fileConsult(transferSize: transferSize, maxData: maxData)
-        _ = await awaitMsg(0x1C, 0x02)
+        _ = await awaitMsg(0x1C, 0x02, consults + 1)
         fileInfo(name)
-        _ = await awaitMsg(0x1C, 0x03)
+        _ = await awaitMsg(0x1C, 0x03, infos + 1)
         var received = Bytes(repeating: 0, count: size)
         var offset = 0
-        var requests = 0
-        var frames = 0
+        var requests = watch.all(0x1C, 0x04).count
+        var frames = watch.all(0x1C, 0x05).count
         while offset < size {
             dataRequest(name, offset: offset, length: min(maxData, size - offset))
             requests += 1
@@ -741,5 +744,185 @@ final class AgpsExchangeTests: XCTestCase {
         XCTAssertEqual(state(status), 4)
         XCTAssertEqual(store.lastOutcome, AgpsOutcome.unsupported)
         XCTAssertEqual(store.lastError, "the watch asked for kinds only the watch maker's app prepares (version 3: HW_AGNSS)")
+    }
+
+    // MARK: the experimental HW_PGNSS_PRED path (AgpsPgnss), ports of the Kotlin cases
+
+    /// The Fit 4 Pro's PRED consult tag (logcat of 2026-10-18, capture of 2026-10-25).
+    private static let predTag = "com.huawei.higeo_dataModule_PGNSSConfig?type=HW_EEV2/HW_PGNSS_PRED;"
+
+    /// What the phone sent so far, one line per message: service/command and the TLV bytes.
+    private func sentSoFar() -> [String] { watch.messages.map { "\($0.service)/\($0.command) \($0.tlv?.serialize() ?? [])" } }
+
+    /// Today's decline of a kind: operator ok, parameter consult, state 4, and the file list refused.
+    private static let declineBytes = [
+        (0x1F, 0x01, AgpsMessages.operatorAnswer(code: AgpsMessages.codeOk)),
+        (0x1F, 0x02, AgpsMessages.parameterConsult()),
+        (0x1F, 0x03, AgpsMessages.fileStatus(state: AgpsMessages.stateFailed)),
+        (0x1C, 0x01, AgpsMessages.refused()),
+    ].map { "\($0.0)/\($0.1) \($0.2.serialize())" }
+
+    private final class Index: @unchecked Sendable {
+        private let lock = NSLock()
+        private var value = 0
+        var current: Int {
+            get { lock.locked { value } }
+            set { lock.locked { value = newValue } }
+        }
+    }
+
+    func testWithThePgnssSwitchOffAPredAskIsDeclinedWithTodaysBytesAndNoDownload() async {
+        XCTAssertFalse(store.labPgnss, "off by default")
+        store.setLabAgnss(true)
+        _ = await start(labSource { _ in throw AgpsFetchError("the network must not be used") })
+        op1()
+        _ = await awaitMsg(0x1F, 0x02)
+        consult(3, Self.predTag)
+        _ = await awaitMsg(0x1F, 0x03)
+        fileList()
+        _ = await awaitMsg(0x1C, 0x01)
+        XCTAssertEqual(sentSoFar(), Self.declineBytes)
+        XCTAssertEqual(store.lastOutcome, AgpsOutcome.unsupported)
+        XCTAssertEqual(store.lastError, "the watch asked for kinds only the watch maker's app prepares (version 3: HW_PGNSS_PRED)")
+        XCTAssertEqual(store.failures, 0)
+        XCTAssertEqual(store.cachedAtMs, 0)
+    }
+
+    func testWithOnlyThePgnssSwitchOnAHwAgnssAskIsStillDeclinedWithTodaysBytes() async {
+        store.setLabPgnss(true)
+        _ = await start(labSource { _ in throw AgpsFetchError("the network must not be used") })
+        op1()
+        _ = await awaitMsg(0x1F, 0x02)
+        consult(3, Self.hwAgnssTag)
+        _ = await awaitMsg(0x1F, 0x03)
+        fileList()
+        _ = await awaitMsg(0x1C, 0x01)
+        XCTAssertEqual(sentSoFar(), Self.declineBytes)
+        XCTAssertEqual(store.lastError, "the watch asked for kinds only the watch maker's app prepares (version 3: HW_AGNSS)")
+    }
+
+    func testWithThePgnssSwitchOnAPredAskGetsTheSixFilesOneAfterTheOtherOverTheFileService() async throws {
+        store.setLabPgnss(true)
+        let built = Self.nowMs() - 60_000
+        let files = pgnssFiles(builtMs: built)
+        let bundle = pgnssBundle(files)
+        let asked = Urls()
+        let ex = await start(labSource { url in
+            asked.add(url)
+            return AgpsDownload(body: bundle, lastModifiedMs: built)
+        })
+
+        op1()
+        _ = await awaitMsg(0x1F, 0x02)
+        consult(3, Self.predTag)
+        let status = await awaitMsg(0x1F, 0x03)
+        XCTAssertEqual(state(status), 3, "ready")
+        XCTAssertEqual(asked.all, [EphemerisNet.pgnssUrl])
+
+        // The order the Fit 4 Pro pulled them from Huawei Health: one 1C/01 ... 1C/06 round per file, every 1C/01 answered with all six names.
+        let names = ["HW_PGNSS_GPS", "HW_PGNSS_BDS", "HW_PGNSS_GLONASS", "HW_PGNSS_GALILEO", "HW_PGNSS_QZS", "HW_PGNSS_EXTRA"]
+        XCTAssertEqual(files.map(\.name), names)
+        for (k, file) in files.enumerated() {
+            let received = await pull(file.name, size: file.data.count, maxData: 32_768, transferSize: 862)
+            XCTAssertEqual(received, file.data, file.name)
+            let list = await awaitMsg(0x1C, 0x01, k + 1)
+            XCTAssertEqual(try list.tlv!.string(0x01), names.joined(separator: ";"))
+            let info = await awaitMsg(0x1C, 0x03, k + 1)
+            XCTAssertEqual(try info.tlv!.int(0x02), Int32(file.data.count))
+            XCTAssertEqual(try info.tlv!.short(0x03), Int16(truncatingIfNeeded: Int(CRC16.checksum(file.data))))
+            XCTAssertEqual(try watch.all(0x1C, 0x04).last!.tlv!.string(0x02), EphemerisNet.addressDigest("AA:BB:CC:DD:EE:FF") + file.name)
+            uploadDone(result: 1)
+            let done = await awaitMsg(0x1C, 0x06, k + 1)
+            XCTAssertEqual(code(done), 100_000)
+            if k < files.count - 1 {
+                XCTAssertEqual(store.deliveredAtMs, 0, "no delivery is recorded before the last file")
+                XCTAssertTrue(ex.busy)
+            }
+        }
+        await eventually(timeoutMs: 5_000, "delivery recorded") { store.deliveredAtMs > 0 }
+        XCTAssertEqual(store.lastOutcome, AgpsOutcome.delivered)
+        XCTAssertEqual(store.deliveredSource, AgpsPgnss.source)
+        XCTAssertEqual(store.deliveredSize, 799_112, "all six files")
+        XCTAssertEqual(store.deliveredDataMs, built)
+        XCTAssertEqual(store.cachedSource, AgpsPgnss.source)
+        XCTAssertEqual(store.lastAskTags, "HW_PGNSS_PRED")
+        XCTAssertEqual(asked.all.count, 1)
+        XCTAssertFalse(ex.busy)
+    }
+
+    func testWithThePgnssSwitchOnAWrongStaleOrMisorderedBundleIsDeclinedAsToday() async {
+        store.setLabPgnss(true)
+        let now = Self.nowMs()
+        let files = pgnssFiles(builtMs: now - 60_000)
+        let shortGps = replacing(files, "HW_PGNSS_GPS") { Array($0[0..<93_311]) }
+        let badHeader = replacing(files, "HW_PGNSS_GPS") { data in
+            var copy = data
+            copy[12 * 2 + 4] = 0
+            return copy
+        }
+        let cases: [(AgpsDownload, String)] = [
+            (AgpsDownload(body: pgnssBundle(shortGps), lastModifiedMs: now - 60_000), "HW_PGNSS_PRED: HW_PGNSS_GPS is 93311 bytes (93312 expected)"),
+            (
+                AgpsDownload(body: pgnssBundle(Array(files.reversed())), lastModifiedMs: now - 60_000),
+                "HW_PGNSS_PRED: file 1 is \"HW_PGNSS_EXTRA\" (HW_PGNSS_GPS expected)"
+            ),
+            (
+                AgpsDownload(body: pgnssBundle(badHeader), lastModifiedMs: now - 60_000),
+                "HW_PGNSS_PRED: HW_PGNSS_GPS header entry 2 points at 5888 (6136 expected)"
+            ),
+            (AgpsDownload(body: pgnssBundle(files), lastModifiedMs: now - 7 * 3_600_000), "HW_PGNSS_PRED: the bundle was built 420 minutes ago"),
+        ]
+        let answers = cases.map(\.0)
+        let next = Index()
+        _ = await start(labSource { _ in answers[next.current] })
+        for (k, item) in cases.enumerated() {
+            next.current = k
+            store.clearRetry()
+            op1()
+            _ = await awaitMsg(0x1F, 0x02, k + 1)
+            consult(3, Self.predTag)
+            let status = await awaitMsg(0x1F, 0x03, k + 1)
+            XCTAssertEqual(state(status), 4, item.1)
+            XCTAssertEqual(store.lastOutcome, AgpsOutcome.invalidFile)
+            XCTAssertEqual(store.lastError, item.1)
+            fileList()
+            let list = await awaitMsg(0x1C, 0x01, k + 1)
+            XCTAssertEqual(code(list), 100_001, "nothing is offered")
+        }
+        XCTAssertTrue(watch.all(0x1C, 0x03).isEmpty)
+        XCTAssertEqual(store.deliveredAtMs, 0)
+    }
+
+    func testWithBothSwitchesOnTheHwAgnssAskAndThePredAskAfterItAreEachServedOnTheirOwn() async throws {
+        store.setLabAgnss(true)
+        store.setLabPgnss(true)
+        let built = Self.nowMs() - 60_000
+        let rtcm = rtcmFile(110)
+        let bundle = pgnssBundle(pgnssFiles(builtMs: built))
+        _ = await start(labSource { url in
+            url == EphemerisNet.agnssUrl ? AgpsDownload(body: rtcm, lastModifiedMs: built) : AgpsDownload(body: bundle, lastModifiedMs: built)
+        })
+
+        // Device run of 2026-10-25: HW_AGNSS first, then HW_PGNSS_PRED in its own 1F/01 exchange two seconds after the transfer closed.
+        op1()
+        _ = await awaitMsg(0x1F, 0x02)
+        consult(3, Self.hwAgnssTag)
+        let first = await awaitMsg(0x1F, 0x03)
+        XCTAssertEqual(state(first), 3)
+        let received = await pull(AgpsLab.file, size: rtcm.count, maxData: 2048, transferSize: 232)
+        XCTAssertEqual(received, rtcm)
+        let list = await awaitMsg(0x1C, 0x01)
+        XCTAssertEqual(try list.tlv!.string(0x01), AgpsLab.file)
+        uploadDone(result: 1)
+        await eventually(timeoutMs: 5_000, "HW_AGNSS delivered") { store.deliveredSource == AgpsLab.source }
+
+        op1()
+        _ = await awaitMsg(0x1F, 0x02, 2)
+        consult(3, Self.predTag)
+        let second = await awaitMsg(0x1F, 0x03, 2)
+        XCTAssertEqual(state(second), 3)
+        fileList()
+        let predList = await awaitMsg(0x1C, 0x01, 2)
+        XCTAssertEqual(try predList.tlv!.string(0x01), PgnssBundle.files.map(\.name).joined(separator: ";"))
     }
 }

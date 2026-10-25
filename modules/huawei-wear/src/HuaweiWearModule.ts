@@ -488,6 +488,12 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    * broadcast ephemeris) instead of declining. The watch does not check the data. Takes effect at the watch's next ask.
    */
   setAgpsLab(enabled: boolean): Promise<void>;
+  /**
+   * Experimental, off by default, separate from `setAgpsLab`: answer a watch that asks for `HW_PGNSS_PRED` with JoyoFit's six HW_PGNSS_* files
+   * (three days of predicted ephemeris built by our server from public data, Huawei Health's layout) instead of declining. The watch does not
+   * check the data. Takes effect at the watch's next ask.
+   */
+  setAgpsPgnssLab(enabled: boolean): Promise<void>;
 
   /** The cycle log, estimates and switches. Predictions are an average-cycle estimate. */
   getCycle(): Promise<CycleOverview>;

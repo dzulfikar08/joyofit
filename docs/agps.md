@@ -9,15 +9,18 @@ kind, declines every other kind, and shows honestly what happened. It cannot cle
 data (`HW_PGNSS_PRED`): that data is prepared by Huawei's app from Huawei servers, with formats nobody has fully documented, and the watch does
 not check what it is given. The `HW_AGNSS` kind (asked by the Band 11 Pro, and by the Fit 4 Pro in the Huawei Health capture of 2026-10-25) can be
 rebuilt from open data: since 2026-10-25 an **experimental switch, off by default** (Settings > Tentang & lanjutan > Eksperimental), serves it
-from JoyoFit's own server for a lab test on the owner's watch (owner decision, 2026-10-25). Its acceptance by any watch is unverified.
+from JoyoFit's own server for a lab test on the owner's watch (owner decision, 2026-10-25). Its acceptance by any watch is unverified. Since stage 2
+(2026-10-25) a **second, separate switch, also off by default**, answers `HW_PGNSS_PRED` with six files in Huawei Health's layout generated from public data
+(`~/re/agps/FORMAT.md`; "Lab path for `HW_PGNSS_PRED`"); equally unverified, and riskier (three days of predicted orbits the watch keeps).
 
 Code (Android): `modules/huawei-wear/android/.../Ephemeris.kt` (exchange, status, update now), `EphemerisDownload.kt` (HTTP, cache),
-`AgpsSource.kt` (where the data comes from), `AgpsPolicy.kt` (schedule, validation), `AgpsStore.kt` (persisted state),
+`AgpsSource.kt` (where the data comes from), `AgpsPolicy.kt` (schedule, validation), `PgnssBundle.kt` (the `HW_PGNSS_PRED` kind and bundle check), `AgpsStore.kt` (persisted state),
 `AgpsModuleApi.kt` (JS API). Code (iOS, `modules/huawei-wear/ios`): `Ephemeris.swift` (`AgpsExchange`, `EphemerisLink`), `AgpsSource.swift` (source,
 HTTP, Caches copy), `AgpsStore.swift`, `AgpsReachability.swift`, and in `HuaweiProtocol/Sources/HuaweiProtocol`: `AgpsWire.swift` (`AgpsPolicy`,
-`AgpsMessages`, `AgpsLab`) and `Packet+FileChunk.swift` (the `1C/05` frames). UI: `src/features/device/AgpsSection.tsx`, `agps.ts`, the switch in
-`src/app/settings/advanced.tsx`. Server: `server/src/agps.ts` with the encoder in `packages/agps-rtcm`. **The Watch tab row is hidden** unless the
-watch's last ask was download version 0, or exactly `HW_AGNSS` with the experimental switch on (`agpsVisible`; owner decisions 2026-10-18 and
+`AgpsMessages`, `AgpsLab`), `PgnssBundle.swift` and `Packet+FileChunk.swift` (the `1C/05` frames). UI: `src/features/device/AgpsSection.tsx`, `agps.ts`, the switches in
+`src/app/settings/advanced.tsx`. Server: `server/src/agps.ts` with the encoder in `packages/agps-rtcm`, and `server/src/agpsPgnss.ts` with the generator in
+`packages/agps-pgnss` ("PGNSS lab path"). **The Watch tab row is hidden** unless the
+watch's last ask was download version 0, or exactly `HW_AGNSS` / `HW_PGNSS_PRED` with that kind's experimental switch on (`agpsVisible`; owner decisions 2026-10-18 and
 2026-10-25). Wire details:
 `protocol/README.md`, section "AGPS / ephemeris".
 
@@ -48,6 +51,7 @@ watch's last ask was download version 0, or exactly `HW_AGNSS` with the experime
 |---|---|---|---|
 | 0 | none (URLs in the consult) | Broadcom LTO file, `https://gllto.glpals.com/7day/v6/latest/lto.dat` | served, only when the watch asks for version 0 |
 | 1 to 3 | exactly one tag ending `/HW_AGNSS` | JoyoFit's server, built from BKG open broadcast ephemeris (`GET /v1/agps/hw-agnss`, see "Lab path") | **experimental switch on**: state 3, one file `HW_AGNSS_RTCM_33`; switch off (default): declined like the row below |
+| 1 to 3 | exactly one tag whose last segment is `HW_PGNSS_PRED` (not the `SEVEN` variant) | JoyoFit's server, predicted ephemeris from public data in Huawei Health's layout (`GET /v1/agps/hw-pgnss`, see "Lab path for `HW_PGNSS_PRED`") | **its own experimental switch on**: state 3, six files `HW_PGNSS_GPS`, `_BDS`, `_GLONASS`, `_GALILEO`, `_QZS`, `_EXTRA`; switch off (default): declined like the row below |
 | 1 to 3 | `HW_AGNSS` (`HW_AGNSS_RTCM_33`), `HW_PGNSS_*` (GPS, GLONASS, GALILEO, BDS, QZS, EXTRA, `HW_PGNSS_PRED`, `HW_PGNSS_TRANS`), `MTK_EPO_*`, `HW_RSMC_*`, `HW_PRECSION_ION` | Huawei servers and MediaTek EPO, converted by Huawei Health | declined: state 4 "failed", outcome `unsupported`; nothing else is ever offered instead |
 
 What each watch asked for, from JoyoFit's own logs (consult answer, tag names only), plus the external captures:
@@ -125,6 +129,7 @@ The Gadgetbridge Huawei page lists slow GPS as a known issue for that reason.
 | Broadcom LTO (`gllto.glpals.com`) | 7-day LTO, version 0 | no published terms, best effort (see below) | watches that ask version 0 (none of ours has) |
 | MediaTek EPO | `MTK_EPO_*` | vendor / project / device id service, no public terms, 403 for a dummy id | part of a GT 4's set only |
 | BKG broadcast ephemeris | GPS, GLONASS, Galileo, BeiDou, QZSS broadcast orbits, every 15 min | IGS terms: open, commercial use allowed, cite IGS and providers, no warranty; BKG licence text not found | the **content** of `HW_AGNSS_RTCM_33` (see "Lab path") |
+| CODE orbit products (AIUB Bern, `download.aiub.unibe.ch/CODE`) | GPS, GLONASS, Galileo precise orbits with predictions (ultra-rapid: ~25 h; 5-day prediction), SP3, every 6 h / daily | open access; acknowledge by citing the product DOI (10.48620/97774); CODE is an IGS analysis centre, so the IGS terms above apply; no further licence text found | the **content** of the `HW_PGNSS_*` files (see "PGNSS lab path") |
 | Sony (CXD5603 / CXD5605) | Sony receivers show up in Garmin watches ([chipset list](https://logiqx.github.io/gps-details/devices/garmin/chipsets)); no public assistance service was looked up | | no evidence a Huawei watch uses one |
 
 Chips (what could be found; Huawei publishes no GNSS vendor for these watches):
@@ -149,11 +154,14 @@ The watches ask for Huawei's own kinds, never for a UBX, LTO or Sony file (LTO o
   writes. Unconfirmed: whether Huawei's file has a header in front, whether Huawei sends fewer or other messages (the decoder lists 1019, 1020, 1042, 1046 and skips anything
   before the first `D3` byte), and the chip's tolerance of a different mix of satellites. That is what the lab test answers.
 - Fit 4 Pro (`HW_PGNSS_PRED`): Huawei's predicted ephemeris, built by Huawei Health from Huawei's `HiEE.dat`-style data with a proprietary conversion. Its content is not public
-  broadcast data (a community attempt to match it to public ephemeris failed). No correct payload can be made. Not in `pgnss/` of the community repo either (no decoder for `PRED`).
+  broadcast data (a community attempt to match it to public ephemeris failed). Not in `pgnss/` of the community repo either (no decoder for `PRED`). The on-disk layout of the six
+  files was since read out of Huawei Health's `libPgnssJni.so` and matched byte-for-byte in size against a real transfer (`~/re/agps/FORMAT.md`); the content (ICD-style
+  broadcast elements fitted to predicted orbits) can be generated from public data, which the second lab switch tests. Whether the watch takes it is unverified.
 
 ### Recommendation
 
-1. **Fit 4 Pro `HW_PGNSS_PRED`: do nothing** except what exists: phone GPS over `0x18`, and the decline. The watch's own satellite update over Wi-Fi (Settings, Workout settings,
+1. **Fit 4 Pro `HW_PGNSS_PRED`**: by default, nothing except what exists: phone GPS over `0x18`, and the decline. Since 2026-10-25 a second experimental switch serves
+   JoyoFit's generated files for a lab test ("Lab path for `HW_PGNSS_PRED`"). The watch's own satellite update over Wi-Fi (Settings, Workout settings,
    Location Services, Satellite updates) is the one route that is not blocked by us; Huawei's support page says watches after the Watch 4 series can do it over Wi-Fi or eSIM.
    Not tried on the owner's watch (it changes a watch setting and needs the watch on Wi-Fi). If it works for the owner, a help text could say so.
 2. **`HW_AGNSS`: decided 2026-10-25 (owner) to lab-test on the owner's Fit 4 Pro**, after the capture showed the Fit 4 Pro asks this kind too and pulls exactly one file
@@ -194,6 +202,7 @@ data), and `LEGAL.md`, the privacy page and the Play data-safety notes say so.
 | u-blox AssistNow | UBX-MGA for u-blox receivers; free tier needs a token. Not this watch's chip. |
 | Galileo GSC almanac | Almanac only; no ephemeris, wrong format. |
 | Google SUPL | Network assistance protocol, no public terms, no file interface. |
+| Predicted orbits for `HW_PGNSS_PRED` (checked 2026-10-25) | **CODE** ultra-rapid and 5-day predictions over plain HTTPS: used (see "PGNSS lab path"). IGS ultra-rapid at BKG: GPS only, 15 min, and the 00:00 solution was still missing there at 05:05 UTC. ESA ultra-rapid (`navigation-office.esa.int`): GPS and GLONASS only. GFZ ultra-rapid (GPS, GLONASS, Galileo, CC BY 4.0, `isdc-data.gfz.de`): every request timed out (40 to 100 s, three tries). Wuhan's multi-GNSS ultra-rapid (the only one with BeiDou and QZSS): FTP only, HTTP refused. IGN mirror: timed out. `ftp.aiub.unibe.ch` no longer resolves. CDDIS: login. So no reachable public prediction carries BeiDou or QZSS. |
 
 ### Lab path for `HW_AGNSS` (experimental switch, off by default)
 
@@ -254,6 +263,135 @@ Needs a native build with this change (Android build or TestFlight) and the Work
 Record every run in "Device findings" below, table "HW_AGNSS lab runs": date and time, file age (`Last-Modified`), what the watch asked, outcome, TTFF before
 and after, warning cleared or not, logcat excerpt. The release entry stays `Jangan klaim: unverified` until a run there shows a shorter fix.
 
+### Lab path for `HW_PGNSS_PRED` (second experimental switch, off by default)
+
+The Fit 4 Pro's own kind. Format: `~/re/agps/FORMAT.md` (Huawei Health 17.0.8.300 `libPgnssJni.so`, checked against the 2026-10-25 capture, section 8): three-day mode,
+no gzip, six files of exact sizes (`HW_PGNSS_GPS` 93 312, `HW_PGNSS_BDS` 209 808, `HW_PGNSS_GLONASS` 361 584, `HW_PGNSS_GALILEO` 99 648, `HW_PGNSS_QZS` 28 512,
+`HW_PGNSS_EXTRA` 6 248), each ephemeris file a 1008-byte header of 84 `{u32 GPS-second slot time, u32 offset, u32 size}` (36 used, one per two hours) and
+fixed blocks. The watch pulled them in the order GPS, BDS, GLONASS, GALILEO, QZS, EXTRA, one `1C/01` ... `1C/06` round each, every `1C/01` answered with all
+six names. Stronger risk than `HW_AGNSS`: these are predicted orbits for three days, the watch keeps them and checks nothing, and our predictions are
+unverified against Huawei's.
+
+The Worker answers `GET https://api.fit.joyorogo.com/v1/agps/hw-pgnss` (same base address as `hw-agnss`) with one bundle: ASCII `JFPG`, u8 version 1, u8 count 6,
+then per file in pull order u8 name length, ASCII name, u32 little-endian size, bytes; `Last-Modified` is the build time; a failure is 503 with `Retry-After: 60`.
+
+Phone checks (`PgnssBundle.validate`, Kotlin and Swift, the same rules as the Worker's validator): magic, version, count; the six names in pull order with their
+exact sizes and nothing after the last; in each ephemeris header entries 0 to 35 at the packed offsets `1008 + i * block` with the block size (GLONASS 10 016 =
+8 sub-blocks of 1 252), slot times exactly 7 200 s apart, entries 36 to 83 all zero; the count byte of every block (GLONASS: every sub-block) at most its capacity
+(GPS 32, BDS 63, GLONASS 24, Galileo 36, QZSS 10); `HW_PGNSS_EXTRA` by size only; the server's `Last-Modified` present and at most 6 h before the phone clock; and
+the first slot of every ephemeris file within 2 h of that build time in GPS seconds (`unix - 315964800 + 18`, Huawei Health's own conversion), BeiDou's 14 s
+offset taken off first. A bundle that fails is never kept or offered; the watch then gets today's decline.
+
+With the switch on (`setAgpsPgnssLab`, stored as `lab_pgnss` in `joyofit_agps`, independent of `lab_agnss`) and a consult of versions 1 to 3 that is exactly one tag
+whose last `/` segment is `HW_PGNSS_PRED` (a tag containing `SEVEN`, Huawei Health's gzipped seven-day mode, is not served), `NetworkAgpsSource` fetches the
+bundle (phone copy reused while it still passes the checks, up to 6 h; its build time is kept apart as `pgnss_built`, because the watch's `HW_AGNSS` ask two
+seconds earlier overwrites the general copy record), the exchange answers `1F/03` state 3, and the existing `1C` sender serves the six files with every
+existing safety rule (bounds, timeouts, CRC16 file info, stored name `sha256(address) + name`, the 60 s pull wait between files). One delivery is recorded when the
+watch closed the last of the six (source `joyofit_pgnss`, 799 112 bytes, validity shown 3 days from the build time). Failures share the retry schedule.
+"Perbarui sekarang" downloads this bundle when the switch is on and the watch's last ask was exactly `HW_PGNSS_PRED`. Logs: `consult answer ... (HW_PGNSS_PRED)`,
+`HW_PGNSS_PRED: downloaded N bytes`, then file-list, file-info, data and upload-done lines per file and `<name> delivered; k of 6 files so far`.
+
+Both switches are independent: the Fit 4 Pro asks `HW_AGNSS` and then `HW_PGNSS_PRED` in a separate `1F/01` exchange two seconds after the first transfer closes
+(device run of 2026-10-25), and each ask is served or declined by its own switch. A consult naming exactly both kinds at once (never seen) is served only with the
+PRED switch on, with the files of every kind whose switch is on (the `HW_AGNSS_RTCM_33` file first when the tag lists it first); if either download fails nothing is
+offered. With the PRED switch off that consult stays declined exactly as before. Switch off, any other tag list, or no valid bundle: today's decline (state 4,
+bytes asserted in `AgpsExchangeTest` / `AgpsExchangeTests`).
+
+Lab test (needs a native build with this change and the Worker deployed; a factory reset of the watch must be acceptable):
+
+1. Baseline as in the `HW_AGNSS` test, step 1 (switch off, phone Bluetooth off during the timed fixes, three runs, same place, open sky).
+2. Turn on Settings > Tentang & lanjutan > Eksperimental > "Data satelit prediksi HW_PGNSS_PRED dari JoyoFit (uji lab)". Phone online, watch connected.
+3. Trigger: on the watch, Settings > Workout settings > Location Services > Satellite updates > Update. That manual update asks `HW_PGNSS_PRED` (2026-10-18:
+   four PRED requests, no other kind). Watch `adb logcat -s JoyoFit` (`AGPS:` lines): consult, download, six file rounds, delivery. The row then says the
+   experimental predicted data was delivered; note whether the watch's update screen reports success and whether "GNSS data expired" goes away.
+4. Repeat the timed fixes (phone Bluetooth off, three runs) within the 3-day validity, also on the second and third day to see whether later slots work.
+5. If GPS misbehaves (no fix, reboots): turn the switch off; if it does not recover, factory-reset the watch. Record it.
+
+Record every run in "Device findings" in a table "HW_PGNSS_PRED lab runs", started with the first run (same columns as the `HW_AGNSS` table, plus which day of the three).
+
+#### PGNSS lab path: data source, generator, quality gate, Worker
+
+Code: `packages/agps-pgnss` (`src/sp3.ts` SP3 reader and interpolation, `src/orbit.ts` ICD models and the fit, `src/records.ts` byte layouts of FORMAT.md 2 to 4,
+`src/bundle.ts` bundle codec and the validator the phone re-implements, `src/pgnss.ts` sources, build and quality gate; tests `test/pgnss.test.ts` on real data in
+`test/fixture.ts`), the lab CLI `scripts/agps-pgnss.ts`, and the Worker route `server/src/agpsPgnss.ts` (tests `server/test/agpsPgnss.test.ts`).
+
+**Data source (decided 2026-10-25).** CODE's products at `https://download.aiub.unibe.ch/CODE/` (a 301 to SWITCH's S3, plain anonymous GET, reachable from a Worker):
+
+| File | Content | Measured 2026-10-25 |
+|---|---|---|
+| `COD0OPSULT.SP3` (static name) | ultra-rapid GPS + GLONASS + Galileo, 48 h at 5 min, "observed/predicted 23/25 hours" | 3.4 MB uncompressed (no gzip offered), `Last-Modified` 00:07 UTC for data up to 23:00 the day before; renewed every 6 h |
+| `COD0OPSPRD_<year><doy>0000_05D_05M_ORB.SP3` | 5-day prediction of the same three systems at 5 min, named for the last observed day, starting 00:00 the next day | 9.6 to 9.8 MB; yesterday's name appeared at 00:07 UTC with the ultra-rapid file. The static `COD0OPSPRD_05D.SP3` still held the previous day's prediction at 05:30 UTC, so the dated name is used (yesterday's, then the day before's) |
+| BKG `BRDC00WRD_S_...` (as in "Lab path") | broadcast records | health (only satellites with a healthy record not older than stage 1's limits get records), TGD / BGD, and each satellite's broadcast clock at the build time |
+| BKG `BRDM00DLR_S_<yesterday>...` header | GPS Klobuchar, GPS UTC, leap seconds | the 15-minute WRD files have an empty header; the Worker unpacks this file only up to `END OF HEADER` |
+
+Terms: the DataCite record of DOI 10.48620/97774 says "open access"; CODE asks users to acknowledge its products with that reference (`AIUB_AFTP.TXT`); CODE is an
+IGS analysis centre and the IGS terms (open, commercial use allowed, cite IGS and the providers, no warranty) apply. No separate licence text was found. `LEGAL.md`
+cites CODE. BeiDou and QZSS: no reachable public prediction carries them (see "Open alternatives that were checked"), so `HW_PGNSS_BDS` and `HW_PGNSS_QZS` are sent
+well-formed with every block count 0. The generator fills them by itself when an orbit product with `C`/`J` satellites is added (packers, BDT +14 s slot times and
+the 18-bit BDS range check are implemented and tested on synthetic records).
+
+**Generator.** Slot times exactly as FORMAT.md 2.3 (GPS seconds `unix - 315964782`, `base = floor(t/7200)·7200`, slots `base + 7200 (k+1)`, BeiDou +14 s). For every
+slot and healthy satellite: the source orbit at toe ± 2 h every 300 s (49 epochs; Lagrange interpolation, from the freshest product that covers all 49: ultra-rapid
+first, then the 5-day prediction); a Gauss-Newton/Levenberg fit of the 15 broadcast elements with the ICD constants of the system (run on h = e·sin ω, k = e·cos ω,
+L = M0 + ω, because Galileo's e of about 2·10^-4 makes e, ω and M0 degenerate; 3 iterations on real data, RMS 0.03 to 0.6 m). Clock: a straight line through the
+product's clocks over the same 4 h, shifted per satellite so that it equals the satellite's broadcast clock at the build time (GPS: the L1/L2 reference TGD belongs
+to; Galileo: I/NAV E1/E5b, BGD E5b/E1 in the record; GLONASS: GLONASS time), af2 = 0. Fixed fields as Huawei writes them (GPS aodo `0xFF`, GLONASS p1 = 1,
+the rest 0). A value outside its field drops the satellite from that slot, like Huawei's range check. GLONASS: every 900 s the product's position and velocity
+(km, ECEF), the luni-solar acceleration from low-precision Sun and Moon positions, tauN and gammaN from the product clock on the same broadcast alignment. The
+900 s epochs are true GLONASS epochs (Huawei's formula with L = 18; Huawei's first run in a process has L = 0 and labels its states 18 s off, FORMAT.md 3.5).
+Slots no product covers stay in the header with count 0, as Huawei's own files skip a satellite without a fit and leave no hole; nothing is extrapolated. With the
+5-day prediction every slot of the three days is normally covered.
+
+`HW_PGNSS_EXTRA`: GPS UTC (A0, A1, tot, WNt, dtLS, WNlsf, dtLSF, DN as the raw ICD integers; field order [INFERENCE] from the code's signed and unsigned bytes, and
+while no leap second is announced, dtLS = dtLSF, every reading consistent with the signedness gives the same UTC), GPS ionosphere (the 8 Klobuchar raw
+integers), and the trailer (start = slot base, end = the validity end of the last covered GPS slot [INFERENCE: the watch may read it as the data's expiry],
+Huawei's last-slot field 0 as on every first run in a process, leap seconds). The other nine sections are zeros, which is what Huawei Health writes for a section
+its seed lacks: their meaning (almanac satellite numbering, integrity flags, the third GLONASS AUX byte) is not known well enough to fill them without guessing.
+Without the BRDM header the UTC and ionosphere sections are zeros too.
+
+**Quality gate** (`qualityGate`, in the build, in the tests and in the CLI). Every record is decoded back from the finished bytes, evaluated with the ICD
+algorithm (GLONASS: the ICD Runge-Kutta with J2 and the record's accelerations) and compared with the source orbit. A Kepler record more than 5 m off at any of its
+49 epochs is not written (Huawei's fitter rejects a sigma above 1.0 the same way), nor a GLONASS record more than 10 m off within ±450 s (the next record takes over
+after that). The build is refused if a system's RMS over all epochs exceeds 1.5 m or its maximum 5 m (GLONASS: RMS 3 m, maximum 10 m at ±450 s), or if the
+first slot has fewer than 8 GPS, 6 Galileo or 6 GLONASS records, or fewer than 6 GPS slots (12 h) are covered. Why these numbers: broadcast ephemerides are fitted
+at the decimetre level and their total error is about 0.5 to 2 m, so a few metres is generous for an honest fit and still far below the tens of metres where a
+receiver would be misled; the floors only catch nearly empty inputs (a real build has 31, 28 and 21 satellites).
+
+Real run, 2026-10-25 05:34 UTC, today's public data (`bun scripts/agps-pgnss.ts --out /tmp/pgnss`): six files of exactly 93 312, 209 808, 361 584, 99 648,
+28 512 and 6 248 bytes, bundle 799 230 bytes, passes `validatePgnssBundle`; prediction covers all 36 slots (72.4 h ahead): GPS 1 116 records (31 satellites, 279
+from the ultra-rapid file, 837 from the 5-day prediction), Galileo 1 008 (28), GLONASS 6 048 (21 satellites × 288 epochs), BeiDou and QZSS 0, nothing dropped.
+Decoded-record error against the source orbit, RMS / maximum:
+
+| System | At the record epoch | At ±2 h (GLONASS ±450 s) | All epochs (GLONASS up to ±900 s) |
+|---|---|---|---|
+| GPS | 0.29 / 0.91 m | 0.72 / 2.52 m | 0.29 / 2.52 m |
+| Galileo | 0.19 / 0.59 m | 0.44 / 1.39 m | 0.19 / 1.39 m |
+| GLONASS | 0.49 / 0.82 m | 0.66 / 1.37 m | 0.84 / 2.45 m |
+
+Checks against independent data, run once on that build: the first GPS slot (toe 06:00) against the real broadcast records with the same toe: orbit within 1.1 to
+3.5 m over ±2 h (broadcast error plus the antenna offset; SP3 is the centre of mass), af0 within 0 to 2 ns, af1 and TGD equal to 1 unit; Galileo against the
+broadcast records of 04:40: 0.7 to 2.3 m, af0 within 3.4 ns; GLONASS at 04:15 and 04:45 UTC against the broadcast records of the same tb: position within 1 to 12 m,
+velocity within 2 mm/s, accelerations within one 2^-30 km/s^2 unit, tauN within 5 ns. How good the predictions themselves are, measured with CODE's own older
+5-day predictions against the observed part of the 2026-10-25 ultra-rapid orbit: RMS 0.4 to 0.7 m on the first predicted day, 0.8 to 1.0 m on the second, 1.4 to
+1.8 m on the third (maximum 7.3 m, GLONASS). Clock drift over a day against the next solution's broadcast-aligned clocks: median 0.6 to 1.5 m GPS, 2 to 3 m
+Galileo, 5 to 7 m GLONASS, worst single satellites 10 m (GPS) to 49 m (Galileo) [the reference clocks are themselves broadcast-derived, so part of this is
+theirs]. Not verified: what the watch's chip does with any of it.
+
+**Where it is built: on request, in the Worker** (`GET /v1/agps/hw-pgnss`). The Worker fetches the four inputs in parallel (about 14 MB, the CODE files are not
+compressed), builds, gates and validates, and keeps the bundle in the Cache API until the next full hour (`Cache-Control: public, max-age=<seconds to the hour>`,
+recomputed for every cached answer; the slots move every 2 h, CODE's file every 6 h). Either CODE file alone is enough. A failure answers 503 `agps_unavailable`
+with `no-store` and `Retry-After: 60` and is remembered for 60 s. Cost measured in Bun on an Apple laptop with the 05:34 inputs: parsing both SP3 files 53 to
+61 ms, build and gate 556 to 563 ms; JavaScript heap after the parse about 18 MB (20 MB after the build). That fits the Workers paid plan's default CPU limit of
+30 s per request many times over (the free plan's 10 ms would not), so no Cron Trigger or R2 copy is needed [INFERENCE: not measured on Workers]. The fetch took
+21 s from Indonesia; a Worker's network is faster [INFERENCE].
+
+```sh
+bun scripts/agps-pgnss.ts --out /tmp/pgnss          # fetches today's inputs, writes the six files and bundle.jfpg, prints the gate's statistics
+bun scripts/agps-pgnss.ts --out /tmp/pgnss --ultra COD0OPSULT.SP3 --prediction COD0OPSPRD_..._ORB.SP3 --nav BRDC.rnx.gz --header BRDM.rnx.gz --now 2026-10-25T05:34:00Z
+(cd packages/agps-pgnss && bun test)
+curl -sD - -o /tmp/served.jfpg https://api.fit.joyorogo.com/v1/agps/hw-pgnss   # after the Worker deploy: 200, 799 230 bytes, Last-Modified = build time
+```
+
 ## What is implemented
 
 | What | Value |
@@ -262,10 +400,13 @@ and after, warning cleared or not, logcat excerpt. The release entry stays `Jang
 | Validity shown | 7 days from the server's `Last-Modified` |
 | Phone copy reused for | 6 h (`AgpsPolicy.CACHE_FRESH_MS`) |
 | Offered to the watch again after | 24 h (`DELIVER_EVERY_MS`) |
-| Download retry after failures | 1 min, 5 min, 15 min, 1 h, then every 6 h; reset by a success or by "Perbarui sekarang"; Broadcom and, with the switch on, HW_AGNSS |
+| Download retry after failures | 1 min, 5 min, 15 min, 1 h, then every 6 h; reset by a success or by "Perbarui sekarang"; Broadcom and, with their switches on, HW_AGNSS and HW_PGNSS_PRED |
 | HW_AGNSS file (experimental) accepted | 512 B to 16 KiB, CRC-24Q of every frame, messages 1019/1020/1042/1046 only, at least 20 satellites, built at most 2 h ago |
 | HW_AGNSS validity shown | 4 h from the build time (`AGNSS_VALID_MS`) |
 | HW_AGNSS phone copy reused for | 15 min (`AGNSS_CACHE_FRESH_MS`); the Worker caches its build 15 min as well |
+| HW_PGNSS_PRED bundle (experimental) accepted | exactly 799 230 bytes, six files in pull order at exact sizes, header layout and counts as in "Lab path for `HW_PGNSS_PRED`", built at most 6 h ago, first slot within 2 h of the build |
+| HW_PGNSS_PRED validity shown | 3 days from the build time (`PgnssBundle.VALID_MS`) |
+| HW_PGNSS_PRED phone copy reused for | up to 6 h (`PgnssBundle.MAX_AGE_MS`) while it still passes the checks |
 
 When data is sent:
 
@@ -324,7 +465,7 @@ the download runs on its own task), `EphemerisLink` (a `LinkObserver` that `Wear
 completed sync), `AgpsStore` (UserDefaults suite `joyofit_agps`), `NetworkAgpsSource`, `AgpsPolicy` and `AgpsMessages`. The constants, outcome
 strings, wire bytes and safety rules are the Android ones, and the Swift tests (`AgpsTests`, `AgpsExchangeTests`, in
 `ModuleLogicTests`) are ports of `AgpsTest` and `AgpsExchangeTest` with the same cases and spec bytes. JS API: `getAgps`, `refreshAgps`,
-`cancelAgps`, `setAgpsLab` on the Swift module; the Watch tab row shows on iOS wherever `HuaweiWear.getAgps` exists.
+`cancelAgps`, `setAgpsLab`, `setAgpsPgnssLab` on the Swift module; the Watch tab row shows on iOS wherever `HuaweiWear.getAgps` exists.
 
 Differences, all forced by the platform:
 
@@ -357,5 +498,6 @@ this kind, so there is no code fix; the decline is the intended behaviour. The s
 (capture of 2026-10-25, after PRED) and to JoyoFit (six requests on 2026-10-25 08:38 to 08:44, with no PRED before them). That second kind is what the lab path serves.
 
 **Consequence for the UI (owner decisions, 2026-10-18 and 2026-10-25):** the "Data satelit" row in Watch is not shown for a watch whose asks can only be declined. It
-appears if a watch asks for version 0, or asks exactly `HW_AGNSS` while the experimental switch is on (then with a lab-test help text). The switch itself sits in
-Settings > Tentang & lanjutan > Eksperimental with its risk text; no help text or onboarding step mentions it.
+appears if a watch asks for version 0, or asks exactly `HW_AGNSS` or `HW_PGNSS_PRED` while that kind's experimental switch is on (then with a lab-test help text), and it
+stays while experimental data delivered with its switch on is valid. The switches sit in Settings > Tentang & lanjutan > Eksperimental with their risk texts; no help text
+or onboarding step mentions them.

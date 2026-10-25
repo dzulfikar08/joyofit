@@ -142,6 +142,8 @@ export interface AgpsStatus {
   failures: number;
   /** The experimental switch (`setAgpsLab`): JoyoFit's HW_AGNSS file is served to a watch that asks for exactly that kind. Absent on older binaries. */
   labAgnss?: boolean;
+  /** The second experimental switch (`setAgpsPgnssLab`): JoyoFit's six HW_PGNSS_* files are served to a watch that asks for `HW_PGNSS_PRED`. Absent on older binaries. */
+  labPgnss?: boolean;
 }
 
 /** What `refreshAgps` came to. */

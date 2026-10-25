@@ -59,9 +59,14 @@ public enum AgpsPolicy {
     }
 
     /// When the data the watch holds stops being good; 0 when it was never delivered. The experimental HW_AGNSS file (`AgpsLab`) is good for hours,
-    /// not days.
+    /// the experimental HW_PGNSS_PRED files (`AgpsPgnss`) for the three days they cover, the Broadcom file for seven days.
     public static func expiresAtMs(dataTimeMs: Int, source: String = "") -> Int {
-        dataTimeMs <= 0 ? 0 : dataTimeMs + (source == AgpsLab.source ? agnssValidMs : validMs)
+        if dataTimeMs <= 0 { return 0 }
+        switch source {
+        case AgpsLab.source: return dataTimeMs + agnssValidMs
+        case AgpsPgnss.source: return dataTimeMs + PgnssBundle.validMs
+        default: return dataTimeMs + validMs
+        }
     }
 
     /// Broadcom LTO size bounds: the real file is about 115 KB; anything far outside is not that file.
@@ -188,20 +193,37 @@ public enum AgpsLab {
     /// `AgpsFetch.source` and the stored delivery source of this data.
     public static let source = "joyofit_rtcm"
 
-    /// The consult is a download version 1 to 3 asking for exactly one kind, a tag that ends in `/HW_AGNSS`.
-    public static func asksHwAgnss(_ consult: AgpsConsult) -> Bool {
-        let entries = consult.tag.split(separator: ";", omittingEmptySubsequences: false)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        return (1...3).contains(consult.version) && entries.count == 1 && entries[0].hasSuffix("/\(kind)")
-    }
-
     /// The stored last ask (version, tag names only) was for exactly this kind.
     public static func askedHwAgnss(version: Int, tagNames: String) -> Bool { (1...3).contains(version) && tagNames == kind }
 
-    /// The consult leads to a download: version 0 (Broadcom), or exactly HW_AGNSS with the switch `labOn`. These asks share the retry schedule
-    /// (`AgpsPolicy.retryAtMs`); every other kind is declined without touching the network.
-    public static func downloads(_ consult: AgpsConsult, labOn: Bool) -> Bool { consult.version == 0 || (labOn && asksHwAgnss(consult)) }
+    /// The experimental kinds JoyoFit serves for `consult`, in the order the consult names them; empty means "decline as always". Versions 1 to 3
+    /// only. A consult of exactly one tag: `HW_AGNSS` with `agnssOn`, or `HW_PGNSS_PRED` (`AgpsPgnss.isPredEntry`) with `pgnssOn`. A consult of
+    /// exactly the two tags `HW_AGNSS` and `HW_PGNSS_PRED` (never seen: the Fit 4 Pro asks them in separate exchanges) is served only with `pgnssOn`,
+    /// with the files of the kinds whose switch is on; with the PRED switch off it stays declined exactly as before that switch existed. Any other
+    /// tag list is declined.
+    public static func servedKinds(_ consult: AgpsConsult, agnssOn: Bool, pgnssOn: Bool) -> [String] {
+        if !(1...3).contains(consult.version) { return [] }
+        let entries = consult.tag.split(separator: ";", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let kinds: [String?] = entries.map { entry in
+            if entry.hasSuffix("/\(kind)") { return kind }
+            if AgpsPgnss.isPredEntry(entry) { return AgpsPgnss.kind }
+            return nil
+        }
+        if kinds.count == 1 && kinds[0] == kind { return agnssOn ? [kind] : [] }
+        if kinds.count == 1 && kinds[0] == AgpsPgnss.kind { return pgnssOn ? [AgpsPgnss.kind] : [] }
+        if kinds.count == 2 && pgnssOn && Set(kinds.compactMap { $0 }) == [kind, AgpsPgnss.kind] && !kinds.contains(nil) {
+            return kinds.compactMap { $0 }.filter { $0 == AgpsPgnss.kind || agnssOn }
+        }
+        return []
+    }
+
+    /// The consult leads to a download: version 0 (Broadcom), or an experimental kind whose switch is on (`servedKinds`). These asks share the retry
+    /// schedule (`AgpsPolicy.retryAtMs`); every other kind is declined without touching the network.
+    public static func downloads(_ consult: AgpsConsult, agnssOn: Bool, pgnssOn: Bool) -> Bool {
+        consult.version == 0 || !servedKinds(consult, agnssOn: agnssOn, pgnssOn: pgnssOn).isEmpty
+    }
 }
 
 /// What the watch said in its answer to the phone's parameter question (1F/02).

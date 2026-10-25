@@ -55,9 +55,15 @@ internal object AgpsPolicy {
   /** The watch has not been given data for a day (or ever): worth offering it again. */
   fun deliveryDue(deliveredAtMs: Long, nowMs: Long): Boolean = deliveredAtMs <= 0L || nowMs - deliveredAtMs >= DELIVER_EVERY_MS
 
-  /** When the data the watch holds stops being good; 0 when it was never delivered. The experimental HW_AGNSS file ([AgpsLab]) is good for hours, not days. */
-  fun expiresAtMs(dataTimeMs: Long, source: String = ""): Long =
-    if (dataTimeMs <= 0L) 0L else dataTimeMs + if (source == AgpsLab.SOURCE) AGNSS_VALID_MS else VALID_MS
+  /**
+   * When the data the watch holds stops being good; 0 when it was never delivered. The experimental HW_AGNSS file ([AgpsLab]) is good for hours,
+   * the experimental HW_PGNSS_PRED files ([AgpsPgnss]) for the three days they cover, the Broadcom file for seven days.
+   */
+  fun expiresAtMs(dataTimeMs: Long, source: String = ""): Long = if (dataTimeMs <= 0L) 0L else dataTimeMs + when (source) {
+    AgpsLab.SOURCE -> AGNSS_VALID_MS
+    AgpsPgnss.SOURCE -> PgnssBundle.VALID_MS
+    else -> VALID_MS
+  }
 
   /** Broadcom LTO size bounds: the real file is about 115 KB; anything far outside is not that file. */
   const val LTO_MIN_BYTES = 16 * 1024
@@ -183,18 +189,37 @@ internal object AgpsLab {
   /** [AgpsFetch.source] and the stored delivery source of this data. */
   const val SOURCE = "joyofit_rtcm"
 
-  /** The consult is a download version 1 to 3 asking for exactly one kind, a tag that ends in `/HW_AGNSS`. */
-  fun asksHwAgnss(consult: AgpsConsult): Boolean {
-    val entries = consult.tag.split(';').map { it.trim() }.filter { it.isNotEmpty() }
-    return consult.version in 1..3 && entries.size == 1 && entries[0].endsWith("/$KIND")
-  }
-
   /** The stored last ask (version, tag names only) was for exactly this kind. */
   fun askedHwAgnss(version: Int, tagNames: String): Boolean = version in 1..3 && tagNames == KIND
 
   /**
-   * The consult leads to a download: version 0 (Broadcom), or exactly HW_AGNSS with the switch [labOn]. These asks share the retry schedule
-   * ([AgpsPolicy.retryAtMs]); every other kind is declined without touching the network.
+   * The experimental kinds JoyoFit serves for [consult], in the order the consult names them; empty means "decline as always". Versions 1 to 3
+   * only. A consult of exactly one tag: `HW_AGNSS` with [agnssOn], or `HW_PGNSS_PRED` ([AgpsPgnss.isPredEntry]) with [pgnssOn]. A consult of exactly
+   * the two tags `HW_AGNSS` and `HW_PGNSS_PRED` (never seen: the Fit 4 Pro asks them in separate exchanges) is served only with [pgnssOn], with
+   * the files of the kinds whose switch is on; with the PRED switch off it stays declined exactly as before that switch existed. Any other tag
+   * list is declined.
    */
-  fun downloads(consult: AgpsConsult, labOn: Boolean): Boolean = consult.version == 0 || (labOn && asksHwAgnss(consult))
+  fun servedKinds(consult: AgpsConsult, agnssOn: Boolean, pgnssOn: Boolean): List<String> {
+    if (consult.version !in 1..3) return emptyList()
+    val entries = consult.tag.split(';').map { it.trim() }.filter { it.isNotEmpty() }
+    fun kindOf(entry: String): String? = when {
+      entry.endsWith("/$KIND") -> KIND
+      AgpsPgnss.isPredEntry(entry) -> AgpsPgnss.KIND
+      else -> null
+    }
+    val kinds = entries.map(::kindOf)
+    return when {
+      kinds.size == 1 && kinds[0] == KIND -> if (agnssOn) kinds.filterNotNull() else emptyList()
+      kinds.size == 1 && kinds[0] == AgpsPgnss.KIND -> if (pgnssOn) kinds.filterNotNull() else emptyList()
+      kinds.size == 2 && pgnssOn && kinds.toSet() == setOf(KIND, AgpsPgnss.KIND) -> kinds.filterNotNull().filter { it == AgpsPgnss.KIND || agnssOn }
+      else -> emptyList()
+    }
+  }
+
+  /**
+   * The consult leads to a download: version 0 (Broadcom), or an experimental kind whose switch is on ([servedKinds]). These asks share the retry
+   * schedule ([AgpsPolicy.retryAtMs]); every other kind is declined without touching the network.
+   */
+  fun downloads(consult: AgpsConsult, agnssOn: Boolean, pgnssOn: Boolean): Boolean =
+    consult.version == 0 || servedKinds(consult, agnssOn, pgnssOn).isNotEmpty()
 }

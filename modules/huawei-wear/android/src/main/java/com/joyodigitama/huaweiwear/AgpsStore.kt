@@ -52,6 +52,23 @@ internal class AgpsStore(private val prefs: SharedPreferences) {
     prefs.edit().putBoolean(KEY_LAB_AGNSS, enabled).apply()
   }
 
+  /** The second experimental switch ([AgpsPgnss]): serve JoyoFit's six HW_PGNSS_* files to a watch that asks for `HW_PGNSS_PRED`. Off by default. */
+  val labPgnss: Boolean get() = prefs.getBoolean(KEY_LAB_PGNSS, false)
+
+  fun setLabPgnss(enabled: Boolean) {
+    prefs.edit().putBoolean(KEY_LAB_PGNSS, enabled).apply()
+  }
+
+  /**
+   * The server's build time (Last-Modified) of the PGNSS bundle on the phone; 0 when none. Kept apart from [cachedDataMs], which the watch's
+   * HW_AGNSS ask two seconds earlier overwrites, so the 800 KB copy is not fetched again for every PRED ask.
+   */
+  val pgnssBuiltMs: Long get() = prefs.getLong(KEY_PGNSS_BUILT, 0L)
+
+  fun recordPgnssBuilt(builtMs: Long) {
+    prefs.edit().putLong(KEY_PGNSS_BUILT, builtMs).apply()
+  }
+
   /** The watch asked (its op 1) but has not yet said what kind of data it wants. */
   fun touchAsk(nowMs: Long) {
     prefs.edit().putLong(KEY_ASK_AT, nowMs).apply()
@@ -108,6 +125,8 @@ internal class AgpsStore(private val prefs: SharedPreferences) {
     const val KEY_FAILURES = "failures"
     const val KEY_FAILURE_AT = "failure_at"
     const val KEY_LAB_AGNSS = "lab_agnss"
+    const val KEY_LAB_PGNSS = "lab_pgnss"
+    const val KEY_PGNSS_BUILT = "pgnss_built"
     const val MAX_TAGS_CHARS = 120
     const val MAX_ERROR_CHARS = 200
   }

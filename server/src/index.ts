@@ -23,6 +23,7 @@ import { watchfaces } from "./watchfaces";
 import { waitlist } from "./waitlist";
 import { appConfig } from "./appConfig";
 import { agps } from "./agps";
+import { agpsPgnss } from "./agpsPgnss";
 
 const app = new Hono<AppContext>();
 
@@ -34,6 +35,8 @@ app.route("/v1/waitlist", waitlist);
 app.route("/v1/app-config", appConfig);
 // Public: satellite data for the watch (HW_AGNSS), built from open data; the request carries nothing about the user (docs/agps.md).
 app.route("/v1/agps", agps);
+// Public, lab only: the HW_PGNSS_PRED bundle built from open orbit predictions (docs/agps.md "PGNSS lab path"); no user data either.
+app.route("/v1/agps", agpsPgnss);
 // Device-token auth, not a session: the monitored phone uploads from native background code.
 app.route("/v1/family", familyDevice);
 // Live tracking link: the phone posts with its write key (Bearer) and anyone with the link reads; neither uses a session.

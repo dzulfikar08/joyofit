@@ -451,24 +451,27 @@ final class AgpsTests: XCTestCase {
         XCTAssertEqual(AgpsPolicy.expiresAtMs(dataTimeMs: now, source: AgpsSources.broadcom), now + 7 * 24 * hour)
     }
 
+    /// The HW_AGNSS switch alone serves exactly the HW_AGNSS kind for `consult`.
+    private func asksHwAgnss(_ consult: AgpsConsult) -> Bool { AgpsLab.servedKinds(consult, agnssOn: true, pgnssOn: false) == [AgpsLab.kind] }
+
     func testOnlyAConsultForExactlyOneHwAgnssKindQualifies() {
-        XCTAssertTrue(AgpsLab.asksHwAgnss(AgpsConsult(version: 3, tag: "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", urls: [])))
-        XCTAssertTrue(AgpsLab.asksHwAgnss(AgpsConsult(version: 3, tag: " higeo/v1/gnssinfo?type=0x0004/HW_AGNSS; ", urls: [])))
-        XCTAssertFalse(AgpsLab.asksHwAgnss(AgpsConsult(version: 0, tag: "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", urls: [])))
-        XCTAssertFalse(AgpsLab.asksHwAgnss(AgpsConsult(version: 4, tag: "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", urls: [])))
-        XCTAssertFalse(AgpsLab.asksHwAgnss(AgpsConsult(version: 3, tag: "a/HW_AGNSS;b/HW_PGNSS_GPS", urls: [])))
-        XCTAssertFalse(AgpsLab.asksHwAgnss(AgpsConsult(version: 3, tag: "com.huawei.higeo_dataModule_PGNSSConfig?type=HW_EEV2/HW_PGNSS_PRED;", urls: [])))
-        XCTAssertFalse(AgpsLab.asksHwAgnss(AgpsConsult(version: 3, tag: "x/HW_AGNSS_RTCM_33", urls: [])))
+        XCTAssertTrue(asksHwAgnss(AgpsConsult(version: 3, tag: "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", urls: [])))
+        XCTAssertTrue(asksHwAgnss(AgpsConsult(version: 3, tag: " higeo/v1/gnssinfo?type=0x0004/HW_AGNSS; ", urls: [])))
+        XCTAssertFalse(asksHwAgnss(AgpsConsult(version: 0, tag: "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", urls: [])))
+        XCTAssertFalse(asksHwAgnss(AgpsConsult(version: 4, tag: "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", urls: [])))
+        XCTAssertFalse(asksHwAgnss(AgpsConsult(version: 3, tag: "a/HW_AGNSS;b/HW_PGNSS_GPS", urls: [])))
+        XCTAssertFalse(asksHwAgnss(AgpsConsult(version: 3, tag: "com.huawei.higeo_dataModule_PGNSSConfig?type=HW_EEV2/HW_PGNSS_PRED;", urls: [])))
+        XCTAssertFalse(asksHwAgnss(AgpsConsult(version: 3, tag: "x/HW_AGNSS_RTCM_33", urls: [])))
         XCTAssertTrue(AgpsLab.askedHwAgnss(version: 3, tagNames: "HW_AGNSS"))
         XCTAssertFalse(AgpsLab.askedHwAgnss(version: 3, tagNames: "HW_AGNSS,HW_PGNSS_GPS"))
     }
 
     func testTheRetryScheduleCoversBroadcomAndHwAgnssWithTheSwitchOnOnly() {
         let agnss = AgpsConsult(version: 3, tag: "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", urls: [])
-        XCTAssertTrue(AgpsLab.downloads(.default, labOn: false))
-        XCTAssertTrue(AgpsLab.downloads(agnss, labOn: true))
-        XCTAssertFalse(AgpsLab.downloads(agnss, labOn: false), "switch off: declined, the retry wait does not apply")
-        XCTAssertFalse(AgpsLab.downloads(AgpsConsult(version: 3, tag: "x/HW_PGNSS_PRED;", urls: []), labOn: true))
+        XCTAssertTrue(AgpsLab.downloads(.default, agnssOn: false, pgnssOn: false))
+        XCTAssertTrue(AgpsLab.downloads(agnss, agnssOn: true, pgnssOn: false))
+        XCTAssertFalse(AgpsLab.downloads(agnss, agnssOn: false, pgnssOn: true), "switch off: declined, the retry wait does not apply")
+        XCTAssertFalse(AgpsLab.downloads(AgpsConsult(version: 3, tag: "x/HW_PGNSS_PRED;", urls: []), agnssOn: true, pgnssOn: false))
     }
 
     func testTheSwitchIsOffByDefaultAndRemembered() {
@@ -564,6 +567,238 @@ final class AgpsTests: XCTestCase {
         let pred = await source.fetch(AgpsConsult(version: 3, tag: "x/HW_PGNSS_PRED;", urls: []), force: false)
         XCTAssertEqual(pred.outcome, AgpsOutcome.unsupported)
     }
+
+    // MARK: the experimental HW_PGNSS_PRED path, ports of the Kotlin cases
+
+    private let pred = AgpsConsult(version: 3, tag: "com.huawei.higeo_dataModule_PGNSSConfig?type=HW_EEV2/HW_PGNSS_PRED;", urls: [])
+
+    /// 2026-10-25 01:47 UTC (08:47 WIB, the Huawei Health capture), the build time of the test bundles.
+    private let built = 1_792_892_820_000
+
+    func testTheBundleLayoutHasTheExactSizesOfHuaweiHealthsFiles() {
+        XCTAssertEqual(
+            PgnssBundle.files.map(\.name),
+            ["HW_PGNSS_GPS", "HW_PGNSS_BDS", "HW_PGNSS_GLONASS", "HW_PGNSS_GALILEO", "HW_PGNSS_QZS", "HW_PGNSS_EXTRA"]
+        )
+        XCTAssertEqual(PgnssBundle.files.map(\.size), [93_312, 209_808, 361_584, 99_648, 28_512, 6_248])
+        XCTAssertEqual(PgnssBundle.bundleBytes, 799_230)
+        XCTAssertEqual(PgnssBundle.gpsSeconds(unixMs: built), 1_792_892_820 - 315_964_782, "HH's gpsTime = unixSeconds - 315964782")
+    }
+
+    func testAGoodBundlePassesAndSplitsIntoTheSixFilesInPullOrder() {
+        let files = pgnssFiles(builtMs: built)
+        let bundle = pgnssBundle(files)
+        XCTAssertEqual(bundle.count, PgnssBundle.bundleBytes)
+        XCTAssertNil(PgnssBundle.validate(bundle, builtMs: built, nowMs: built + 60_000))
+        XCTAssertNil(PgnssBundle.validate(bundle, builtMs: built, nowMs: built + 6 * 3_600_000), "six hours old is still good")
+        let split = PgnssBundle.split(bundle)
+        XCTAssertEqual(split.map(\.name), files.map(\.name))
+        for (k, file) in files.enumerated() { XCTAssertEqual(split[k].data, file.data, file.name) }
+    }
+
+    func testABundleWithAWrongContainerIsRefused() {
+        let files = pgnssFiles(builtMs: built)
+        func check(_ bundle: Bytes) -> String? { PgnssBundle.validate(bundle, builtMs: built, nowMs: built) }
+        XCTAssertEqual(check([1, 2, 3]), "not a PGNSS bundle (unexpected header)")
+        var wrongMagic = pgnssBundle(files)
+        wrongMagic[0] = UInt8(ascii: "X")
+        XCTAssertEqual(check(wrongMagic), "not a PGNSS bundle (unexpected header)")
+        XCTAssertEqual(check(pgnssBundle(files, version: 2)), "bundle version 2 is not known")
+        XCTAssertEqual(check(pgnssBundle(files, count: 5)), "the bundle has 5 files (6 expected)")
+        let swapped = [files[1], files[0]] + files[2...]
+        XCTAssertEqual(check(pgnssBundle(swapped)), "file 1 is \"HW_PGNSS_BDS\" (HW_PGNSS_GPS expected)")
+        let short = replacing(files, "HW_PGNSS_QZS") { Array($0[0..<28_511]) }
+        XCTAssertEqual(check(pgnssBundle(short)), "HW_PGNSS_QZS is 28511 bytes (28512 expected)")
+        XCTAssertEqual(check(pgnssBundle(files) + [0]), "1 bytes after the last file")
+        XCTAssertEqual(check(Array(pgnssBundle(files).dropLast(10))), "the bundle is cut off in HW_PGNSS_EXTRA")
+    }
+
+    func testABundleWithABadHeaderOrTooManySatellitesIsRefused() {
+        func withFile(_ name: String, _ change: (inout Bytes) -> Void) -> String? {
+            let files = replacing(pgnssFiles(builtMs: built), name) { data in
+                var copy = data
+                change(&copy)
+                return copy
+            }
+            return PgnssBundle.validate(pgnssBundle(files), builtMs: built, nowMs: built)
+        }
+        XCTAssertEqual(withFile("HW_PGNSS_GPS") { putU32(&$0, 12 * 3 + 4, 0) }, "HW_PGNSS_GPS header entry 3 points at 0 (8700 expected)")
+        XCTAssertEqual(withFile("HW_PGNSS_BDS") { putU32(&$0, 8, 5801) }, "HW_PGNSS_BDS header entry 0 has size 5801 (5800 expected)")
+        XCTAssertEqual(withFile("HW_PGNSS_GALILEO") { putU32(&$0, 12 * 5, 1) }, "HW_PGNSS_GALILEO slot 5 is not 7200 s after the one before")
+        XCTAssertEqual(withFile("HW_PGNSS_QZS") { putU32(&$0, 12 * 36, 1) }, "HW_PGNSS_QZS header entry 36 is not empty")
+        XCTAssertEqual(withFile("HW_PGNSS_GPS") { $0[1008] = 33 }, "HW_PGNSS_GPS block 0 lists 33 satellites (at most 32)")
+        // GLONASS: 8 sub-blocks of 1252 bytes per header entry, each with its own count.
+        XCTAssertEqual(withFile("HW_PGNSS_GLONASS") { $0[1008 + 9 * 1252] = 25 }, "HW_PGNSS_GLONASS block 9 lists 25 satellites (at most 24)")
+        XCTAssertEqual(
+            withFile("HW_PGNSS_GLONASS") { putU32(&$0, 12 + 4, 1008 + 1252) }, "HW_PGNSS_GLONASS header entry 1 points at 2260 (11024 expected)"
+        )
+        XCTAssertNil(withFile("HW_PGNSS_EXTRA") { $0 = Bytes(repeating: 0x7F, count: $0.count) }, "EXTRA has no header to check")
+    }
+
+    func testAStaleUndatedOrMistimedBundleIsRefused() {
+        let bundle = pgnssBundle(pgnssFiles(builtMs: built))
+        XCTAssertEqual(PgnssBundle.validate(bundle, builtMs: built, nowMs: built + 6 * 3_600_000 + 60_000), "the bundle was built 361 minutes ago")
+        XCTAssertEqual(PgnssBundle.validate(bundle, builtMs: 0, nowMs: built), "the server did not say when the bundle was built")
+        // Slots made for a build five hours earlier than the server says: the first slot is too far from the build time.
+        let early = pgnssBundle(pgnssFiles(builtMs: built - 5 * 3_600_000))
+        XCTAssertTrue(PgnssBundle.validate(early, builtMs: built, nowMs: built)?.hasPrefix("HW_PGNSS_GPS starts -") ?? false)
+    }
+
+    func testOnlyAPredConsultQualifiesAndOnlyWithItsOwnSwitch() {
+        XCTAssertEqual(AgpsLab.servedKinds(pred, agnssOn: false, pgnssOn: true), [AgpsPgnss.kind])
+        XCTAssertEqual(AgpsLab.servedKinds(pred, agnssOn: true, pgnssOn: false), [])
+        XCTAssertEqual(AgpsLab.servedKinds(AgpsConsult(version: 0, tag: pred.tag, urls: []), agnssOn: true, pgnssOn: true), [])
+        XCTAssertEqual(AgpsLab.servedKinds(AgpsConsult(version: 4, tag: pred.tag, urls: []), agnssOn: true, pgnssOn: true), [])
+        let seven = AgpsConsult(version: 3, tag: "com.huawei.higeo_dataModule_PGNSSConfig?type=HW_EEV2_SEVEN/HW_PGNSS_PRED;", urls: [])
+        XCTAssertEqual(AgpsLab.servedKinds(seven, agnssOn: true, pgnssOn: true), [], "the seven-day variant is gzipped and longer: not served")
+        XCTAssertEqual(AgpsLab.servedKinds(AgpsConsult(version: 3, tag: "x/HW_PGNSS_PRED_X", urls: []), agnssOn: true, pgnssOn: true), [])
+        XCTAssertEqual(AgpsLab.servedKinds(AgpsConsult(version: 3, tag: "x/HW_PGNSS_PRED;y/HW_PGNSS_GPS", urls: []), agnssOn: true, pgnssOn: true), [])
+        XCTAssertEqual(AgpsLab.servedKinds(agnss, agnssOn: true, pgnssOn: true), [AgpsLab.kind])
+        XCTAssertTrue(AgpsPgnss.askedPred(version: 3, tagNames: "HW_PGNSS_PRED"))
+        XCTAssertFalse(AgpsPgnss.askedPred(version: 0, tagNames: "HW_PGNSS_PRED"))
+        XCTAssertFalse(AgpsPgnss.askedPred(version: 3, tagNames: "HW_AGNSS,HW_PGNSS_PRED"))
+        XCTAssertTrue(AgpsLab.downloads(pred, agnssOn: false, pgnssOn: true))
+        XCTAssertFalse(AgpsLab.downloads(pred, agnssOn: true, pgnssOn: false))
+    }
+
+    func testAConsultNamingBothKindsServesWhatIsSwitchedOnAndOnlyWithThePredSwitch() {
+        let both = AgpsConsult(version: 3, tag: "a/HW_AGNSS;\(pred.tag)", urls: [])
+        XCTAssertEqual(AgpsLab.servedKinds(both, agnssOn: true, pgnssOn: true), [AgpsLab.kind, AgpsPgnss.kind])
+        XCTAssertEqual(AgpsLab.servedKinds(both, agnssOn: false, pgnssOn: true), [AgpsPgnss.kind])
+        XCTAssertEqual(AgpsLab.servedKinds(both, agnssOn: true, pgnssOn: false), [], "PRED switch off: declined as before")
+    }
+
+    func testThePgnssSwitchIsOffByDefaultSeparateAndRemembered() {
+        let defaults = ephemeralDefaults()
+        XCTAssertFalse(AgpsStore(defaults: defaults).labPgnss)
+        AgpsStore(defaults: defaults).setLabAgnss(true)
+        XCTAssertFalse(AgpsStore(defaults: defaults).labPgnss, "the HW_AGNSS switch does not turn it on")
+        AgpsStore(defaults: defaults).setLabPgnss(true)
+        XCTAssertTrue(AgpsStore(defaults: defaults).labPgnss)
+        AgpsStore(defaults: defaults).recordPgnssBuilt(42)
+        XCTAssertEqual(AgpsStore(defaults: defaults).pgnssBuiltMs, 42)
+    }
+
+    func testPgnssDataIsShownValidForTheThreeDaysItCovers() {
+        XCTAssertEqual(AgpsPolicy.expiresAtMs(dataTimeMs: built, source: AgpsPgnss.source), built + 72 * 3_600_000)
+    }
+
+    private func pgnssSource(
+        _ cache: AgpsCache, _ store: AgpsStore, now: Int? = nil, online: Bool = true, _ answer: @escaping @Sendable () throws -> AgpsDownload
+    ) -> NetworkAgpsSource {
+        let nowMs = now ?? built + 60_000
+        return NetworkAgpsSource(cache: cache, store: store, log: { _ in }, isOnline: { online }, nowMs: { nowMs }, httpGet: { url, max in
+            XCTAssertEqual(url, EphemerisNet.pgnssUrl)
+            XCTAssertEqual(max, PgnssBundle.bundleBytes)
+            return try answer()
+        })
+    }
+
+    func testWithThePgnssSwitchOffPredIsDeclinedWithoutTheNetworkAsToday() async {
+        let store = AgpsStore(defaults: ephemeralDefaults())
+        store.setLabAgnss(true)
+        let fetch = await pgnssSource(MemoryCache(), store) { throw AgpsFetchError("the network must not be used") }.fetch(pred, force: false)
+        XCTAssertEqual(fetch.outcome, AgpsOutcome.unsupported)
+        XCTAssertEqual(fetch.message, "the watch asked for kinds only the watch maker's app prepares (version 3: HW_PGNSS_PRED)")
+    }
+
+    func testWithThePgnssSwitchOnTheBundleIsCheckedSplitKeptAndReused() async {
+        let cache = MemoryCache()
+        let store = AgpsStore(defaults: ephemeralDefaults())
+        store.setLabPgnss(true)
+        let files = pgnssFiles(builtMs: built)
+        let bundle = pgnssBundle(files)
+        let calls = Calls()
+        let builtMs = built
+        let source = pgnssSource(cache, store) {
+            calls.add()
+            return AgpsDownload(body: bundle, lastModifiedMs: builtMs)
+        }
+        let fetch = await source.fetch(pred, force: false)
+        XCTAssertTrue(fetch.ok, fetch.message)
+        XCTAssertFalse(fetch.fromCache)
+        XCTAssertEqual(fetch.source, AgpsPgnss.source)
+        XCTAssertEqual(fetch.dataTimeMs, built)
+        XCTAssertEqual(fetch.files.map(\.name), files.map(\.name))
+        XCTAssertEqual(fetch.files[2].data, files[2].data)
+        XCTAssertEqual(cache.entries[EphemerisNet.pgnssUrl], bundle)
+        XCTAssertEqual(store.pgnssBuiltMs, built)
+        // The watch's next ask is answered from the phone's copy, even after an HW_AGNSS download changed the general copy record.
+        store.recordDownloaded(nowMs: built + 1_000, dataMs: built, size: 7_000, source: AgpsLab.source)
+        let again = await source.fetch(pred, force: false)
+        XCTAssertTrue(again.fromCache)
+        XCTAssertEqual(again.dataTimeMs, built)
+        XCTAssertEqual(calls.count, 1)
+        // A forced update goes to the server.
+        let forced = await source.fetch(pred, force: true)
+        XCTAssertFalse(forced.fromCache)
+        XCTAssertEqual(calls.count, 2)
+    }
+
+    func testWithThePgnssSwitchOnABrokenStaleOrMissingBundleIsNotOffered() async {
+        let store = AgpsStore(defaults: ephemeralDefaults())
+        store.setLabPgnss(true)
+        let cache = MemoryCache()
+        let files = pgnssFiles(builtMs: built)
+        let builtMs = built
+        let wrong = pgnssBundle(replacing(files, "HW_PGNSS_EXTRA") { _ in Bytes(repeating: 0, count: 6_000) })
+        let broken = await pgnssSource(cache, store) { AgpsDownload(body: wrong, lastModifiedMs: builtMs) }.fetch(pred, force: true)
+        XCTAssertEqual(broken.outcome, AgpsOutcome.invalidFile)
+        XCTAssertEqual(broken.message, "HW_PGNSS_PRED: HW_PGNSS_EXTRA is 6000 bytes (6248 expected)")
+        XCTAssertTrue(cache.entries.isEmpty, "a bad bundle is never kept")
+        XCTAssertEqual(store.pgnssBuiltMs, 0)
+        let good = pgnssBundle(files)
+        let stale = await pgnssSource(cache, store, now: built + 7 * 3_600_000) { AgpsDownload(body: good, lastModifiedMs: builtMs) }
+            .fetch(pred, force: true)
+        XCTAssertEqual(stale.outcome, AgpsOutcome.invalidFile)
+        XCTAssertEqual(stale.message, "HW_PGNSS_PRED: the bundle was built 420 minutes ago")
+        // A phone copy that got too old is dropped and fetched again.
+        cache.entries[EphemerisNet.pgnssUrl] = good
+        store.recordPgnssBuilt(built)
+        let down = await pgnssSource(cache, store, now: built + 7 * 3_600_000) { throw AgpsFetchError("HTTP 503") }.fetch(pred, force: false)
+        XCTAssertEqual(down.outcome, AgpsOutcome.downloadFailed)
+        XCTAssertEqual(down.message, "HW_PGNSS_PRED: HTTP 503")
+        XCTAssertTrue(cache.entries.isEmpty)
+        let offline = await pgnssSource(cache, store, online: false) { throw AgpsFetchError("offline") }.fetch(pred, force: true)
+        XCTAssertEqual(offline.outcome, AgpsOutcome.noNetwork)
+    }
+
+    private final class Flag: @unchecked Sendable {
+        private let lock = NSLock()
+        private var value = true
+        var on: Bool {
+            get { lock.locked { value } }
+            set { lock.locked { value = newValue } }
+        }
+    }
+
+    func testAConsultNamingBothKindsWithBothSwitchesOnGetsTheSevenFilesOrNothing() async {
+        let store = AgpsStore(defaults: ephemeralDefaults())
+        store.setLabAgnss(true)
+        store.setLabPgnss(true)
+        let rtcm = rtcmFile(24)
+        let bundle = pgnssBundle(pgnssFiles(builtMs: built))
+        let builtMs = built
+        let agnssUp = Flag()
+        let source = NetworkAgpsSource(
+            cache: MemoryCache(), store: store, log: { _ in }, isOnline: { true }, nowMs: { builtMs + 60_000 },
+            httpGet: { url, _ in
+                if url == EphemerisNet.agnssUrl {
+                    if agnssUp.on { return AgpsDownload(body: rtcm, lastModifiedMs: builtMs) }
+                    throw AgpsFetchError("HTTP 503")
+                }
+                return AgpsDownload(body: bundle, lastModifiedMs: builtMs)
+            }
+        )
+        let both = AgpsConsult(version: 3, tag: "a/HW_AGNSS;\(pred.tag)", urls: [])
+        let fetch = await source.fetch(both, force: true)
+        XCTAssertEqual(fetch.files.map(\.name), [AgpsLab.file] + PgnssBundle.files.map(\.name))
+        XCTAssertEqual(fetch.source, AgpsPgnss.source)
+        agnssUp.on = false
+        let half = await source.fetch(both, force: true)
+        XCTAssertFalse(half.ok, "every kind offered or none")
+        XCTAssertEqual(half.message, "HW_AGNSS: HTTP 503")
+    }
 }
 
 /// An HW_AGNSS-shaped file for the tests: `satellites` frames of 61-byte messages of `type` (1019, GPS, by default), each `D3`, length, message
@@ -577,6 +812,62 @@ func rtcmFile(_ satellites: Int, type: Int = 1019) -> Bytes {
         let head: Bytes = [0xD3, 0, UInt8(message.count)] + message
         let crc = AgpsPolicy.crc24q(head)
         out += head + [UInt8(truncatingIfNeeded: crc >> 16), UInt8(truncatingIfNeeded: crc >> 8), UInt8(truncatingIfNeeded: crc)]
+    }
+    return out
+}
+
+func putU32(_ data: inout Bytes, _ at: Int, _ value: Int) {
+    for k in 0..<4 { data[at + k] = UInt8(truncatingIfNeeded: value >> (8 * k)) }
+}
+
+/// The six PGNSS files for the tests, at their exact sizes: each ephemeris file with the header of a server build at `builtMs` (36 slots 7200 s apart
+/// from the next two-hour boundary, BeiDou +14 s, GLONASS +18 + 3600 s; packed offsets; the other 48 entries zero) and every (sub-)block listing its
+/// full capacity of satellites; the record bytes are filler.
+func pgnssFiles(builtMs: Int) -> [(name: String, data: Bytes)] {
+    let base = PgnssBundle.gpsSeconds(unixMs: builtMs) / 7200 * 7200
+    var out: [(name: String, data: Bytes)] = []
+    for spec in PgnssBundle.files {
+        let salt = spec.name.utf8.count
+        var file = Bytes((0..<spec.size).map { UInt8(truncatingIfNeeded: $0 &* 7 &+ salt) })
+        if spec.blockBytes > 0 {
+            for i in 0..<PgnssBundle.headerBytes { file[i] = 0 }
+            let first: Int
+            switch spec.name {
+            case "HW_PGNSS_BDS": first = base + 7214
+            case "HW_PGNSS_GLONASS": first = base + 18 + 3600
+            default: first = base + 7200
+            }
+            for i in 0..<PgnssBundle.slots {
+                putU32(&file, 12 * i, first + 7200 * i)
+                putU32(&file, 12 * i + 4, PgnssBundle.headerBytes + i * spec.blockBytes)
+                putU32(&file, 12 * i + 8, spec.blockBytes)
+            }
+            var block = PgnssBundle.headerBytes
+            while block < spec.size {
+                file[block] = UInt8(spec.capacity)
+                block += spec.subBlockBytes
+            }
+        }
+        out.append((spec.name, file))
+    }
+    return out
+}
+
+/// `files` with the one named `name` changed by `change`.
+func replacing(_ files: [(name: String, data: Bytes)], _ name: String, _ change: (Bytes) -> Bytes) -> [(name: String, data: Bytes)] {
+    files.map { $0.name == name ? ($0.name, change($0.data)) : $0 }
+}
+
+/// `files` as the server's bundle: `JFPG`, `version`, `count` (the number of files by default), then name, u32 LE size and bytes per file.
+func pgnssBundle(_ files: [(name: String, data: Bytes)], version: Int = 1, count: Int? = nil) -> Bytes {
+    var out = Array("JFPG".utf8)
+    out.append(UInt8(version))
+    out.append(UInt8(count ?? files.count))
+    for file in files {
+        out.append(UInt8(file.name.utf8.count))
+        out += Array(file.name.utf8)
+        for k in 0..<4 { out.append(UInt8(truncatingIfNeeded: file.data.count >> (8 * k))) }
+        out += file.data
     }
     return out
 }
