@@ -12,6 +12,7 @@ import { sportWorkout } from '../testing/sportWorkouts';
 import type { JsonObject } from '../subject';
 import { buildRunSubject } from './run';
 import { DEFAULT_GROUP, METRIC_FIELDS, SPORT_METRICS } from './sportMetrics';
+import { slideData } from './threads';
 
 beforeAll(() => applyLocale('id'));
 afterAll(() => applyLocale('id'));
@@ -200,6 +201,14 @@ describe('sport families: what the share sheet offers', () => {
     const shown = everyCardText('swim.pool');
     expect(shown).not.toContain('km');
     expect(shown).toContain('1.500');
+  });
+
+  test('the Threads summary slide reads a swim in metres', () => {
+    const { subject } = subjectOf('swim.pool');
+    const summary = TEMPLATES.find((t) => t.id === 'threads.summary.portrait')!;
+    const shown = texts(renderTemplate(summary, slideData(subject, { n: 1, total: 1 }), { locale: 'id', mode: 'dark', date: subject.date }).scene.nodes);
+    expect(shown).toContain('1.500');
+    expect(shown).not.toContain('km');
   });
 
   test('durations read as a clock, never as "52m" (metres)', () => {

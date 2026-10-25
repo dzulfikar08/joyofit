@@ -179,7 +179,8 @@ function summary() {
     k.group(
       { w: 'fill', h: 'auto' },
       [
-        k.stat({ w: 'fill' }, '{run.distanceM|km}', { unit: tl('unit.km'), label: tl('label.distance'), size, unitSize: Math.round(size * 0.24), labelSize: 28, labelPos: 'above', gap: 12, weight: 800, color: '$accent', minSize: 100, when: has('run.distanceM') }),
+        k.stat({ w: 'fill' }, '{run.distanceM|km}', { unit: tl('unit.km'), label: tl('label.distance'), size, unitSize: Math.round(size * 0.24), labelSize: 28, labelPos: 'above', gap: 12, weight: 800, color: '$accent', minSize: 100, when: all(has('run.distanceM'), not(is('run.category', 'swim'))) }),
+        k.stat({ w: 'fill' }, '{run.distanceM|int}', { unit: tl('unit.m'), label: tl('label.distance'), size, unitSize: Math.round(size * 0.24), labelSize: 28, labelPos: 'above', gap: 12, weight: 800, color: '$accent', minSize: 100, when: all(has('run.distanceM'), is('run.category', 'swim')) }),
         k.stat({ w: 'fill' }, '{run.movingSec|dur}', { label: tl('label.time'), size, labelSize: 28, labelPos: 'above', gap: 12, weight: 800, color: '$accent', minSize: 100, when: lacks('run.distanceM') }),
       ],
       { dir: 'column', when },
@@ -313,7 +314,8 @@ function splitsPage(id: 'splits' | 'splits2' | 'splits3', path: string) {
   const table = k.group({ w: 'fill', h: 'auto' }, [header, ...rows], { dir: 'column', gap: 4, align: 'stretch' });
   const step = k.text({ w: 'fill' }, tl('threads.text.splitStep', { km: '{th.splitStep}' }), { size: 28, weight: 600, color: '$fgMuted', when: { bind: 'th.splitStep', gt: 1 } });
   const recap = tileRow(k, [
-    { value: '{run.distanceM|km}', label: tl('label.distance'), unit: tl('unit.km') },
+    { value: '{run.distanceM|km}', label: tl('label.distance'), unit: tl('unit.km'), when: all(has('run.distanceM'), not(is('run.category', 'swim'))) },
+    { value: '{run.distanceM|int}', label: tl('label.distance'), unit: tl('unit.m'), when: all(has('run.distanceM'), is('run.category', 'swim')) },
     { value: '{run.movingSec|dur}', label: tl('label.time') },
     { value: '{run.paceSecKm|pace}', label: tl('label.pace'), unit: tl('unit.perKm') },
     { value: '{run.speedKmh|num:1}', label: tl('label.speed'), unit: tl('unit.kmh') },
@@ -352,7 +354,8 @@ function chartPanel(k: Kit, p: PanelSpec): LayerJson {
         [
           k.text({ w: 'auto' }, tl('threads.text.axisStart'), { size: 24, weight: 600, color: '$fgMuted' }),
           k.shape({ w: 'fill', h: 1 }, 'rect'),
-          k.text({ w: 'auto' }, '{run.distanceM|km:1} km', { size: 24, weight: 600, color: '$fgMuted', when: has('run.distanceM') }),
+          k.text({ w: 'auto' }, '{run.distanceM|km:1} km', { size: 24, weight: 600, color: '$fgMuted', when: all(has('run.distanceM'), not(is('run.category', 'swim'))) }),
+          k.text({ w: 'auto' }, '{run.distanceM|int} m', { size: 24, weight: 600, color: '$fgMuted', when: all(has('run.distanceM'), is('run.category', 'swim')) }),
           k.text({ w: 'auto' }, '{run.movingSec|dur}', { size: 24, weight: 600, color: '$fgMuted', when: lacks('run.distanceM') }),
         ],
         { dir: 'row', gap: 8, align: 'center' },

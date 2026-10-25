@@ -38,8 +38,11 @@ export function sportGlyph(k: Kit, x: number, y: number, size: number, color: st
     ['ride', 'bike'],
     ['swim', 'swim'],
   ];
-  const layers = kinds.map(([kind, icon]) => k.icon({ x, y, w: size, h: size }, icon, color, { when: all(plain, is(bind, kind)) }));
-  layers.push(k.icon({ x, y, w: size, h: size }, 'fitness', color, { when: all(plain, not({ bind, in: kinds.map(([kind]) => kind) })) }));
+  // The family wins over the sport kind: BMX is a ride and orienteering a walk although their sport kind reads `other`.
+  const named = kinds.map(([kind]) => kind);
+  const kindOnly = not({ bind: family, in: named });
+  const layers = kinds.map(([kind, icon]) => k.icon({ x, y, w: size, h: size }, icon, color, { when: all(plain, any(is(family, kind), all(kindOnly, is(bind, kind)))) }));
+  layers.push(k.icon({ x, y, w: size, h: size }, 'fitness', color, { when: all(plain, kindOnly, not({ bind, in: named })) }));
   for (const [name, glyph] of FAMILY_ICONS) {
     const when = is(family, name);
     layers.push(
