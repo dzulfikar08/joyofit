@@ -2,7 +2,7 @@
 app: joyofit
 feature: Kartu Upgrade ke Pro
 shipped: 2026-10-21
-available: code
+available: test-build
 tier: pro
 post: todo
 atur: JRG-350

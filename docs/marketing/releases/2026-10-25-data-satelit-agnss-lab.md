@@ -2,7 +2,7 @@
 app: joyofit
 feature: Data satelit HW_AGNSS dari JoyoFit (uji lab, eksperimen)
 shipped: 2026-10-25
-available: code
+available: test-build
 tier: free
 post: skip (eksperimen untuk uji lab di jam pemilik, belum terbukti di jam mana pun)
 atur: JRG-411

@@ -2,7 +2,7 @@
 app: joyofit
 feature: balasan cepat di jam
 shipped: 2026-10-21
-available: code
+available: test-build
 tier: free
 post: todo
 atur:

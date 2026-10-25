@@ -2,7 +2,7 @@
 app: joyofit
 feature: Langkah 7 hari dan layar detail
 shipped: 2026-10-22
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-374

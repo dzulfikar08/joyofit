@@ -2,7 +2,7 @@
 app: joyofit
 feature: Tema Titik (hitam putih, angka dot-matrix)
 shipped: 2026-10-22
-available: code
+available: test-build
 tier: free
 post: todo
 atur: todo

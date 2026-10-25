@@ -2,7 +2,7 @@
 app: joyofit
 feature: Panduan penyiapan: pasang jam lebih cepat (cari otomatis, ketuk ✓ di jam)
 shipped: 2026-10-25
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-412

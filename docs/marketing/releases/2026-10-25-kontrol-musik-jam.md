@@ -2,7 +2,7 @@
 app: joyofit
 feature: kontrol musik dari jam
 shipped: 2026-10-25
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-415

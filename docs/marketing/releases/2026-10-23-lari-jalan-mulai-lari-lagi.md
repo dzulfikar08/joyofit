@@ -2,7 +2,7 @@
 app: joyofit
 feature: Lari-jalan, rencana mulai lari lagi (Coach)
 shipped: 2026-10-23
-available: code
+available: test-build
 tier: pro
 post: todo
 atur: JRG-399

@@ -2,7 +2,7 @@
 app: joyofit
 feature: Peta dan grafik latihan panjang tetap tajam
 shipped: 2026-10-23
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-398

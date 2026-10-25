@@ -2,7 +2,7 @@
 app: joyofit
 feature: Baterai HP lebih hemat di latar belakang
 shipped: 2026-10-23
-available: code
+available: test-build
 tier: free
 post: skip (invisible fix)
 atur:

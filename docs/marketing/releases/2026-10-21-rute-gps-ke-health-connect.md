@@ -2,7 +2,7 @@
 app: joyofit
 feature: Rute GPS ke Health Connect
 shipped: 2026-10-21
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-359
