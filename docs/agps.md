@@ -309,6 +309,13 @@ HW_AGNSS lab runs (see "Lab test"):
 | Date, time | File age | Watch asked | Outcome | TTFF before (3 runs) | TTFF after (3 runs) | Warning cleared | Notes / logcat |
 |---|---|---|---|---|---|---|---|
 | 2026-10-25 11:53 WIB, lab APK 1480579 (tag `v1.1-lab.1`), Worker version `6a5f797d` | fresh build, downloaded in 1.5 s (6 666 B, 97 satellites) | `higeo/v1/gnssinfo?type=0x0024/HW_AGNSS` 17 s after the first bind of a factory-reset watch, then `HW_PGNSS_PRED` 2 s after the transfer (declined, state 4) | **transfer accepted**: state 3 acked `100000`, `1C/01` type 1 one file, `1C/02` protocol 1.0.0 / transfer size 862, `1C/03` crc16 `bf54`, 8 frames, `1C/06` result 1 after 6 666 of 6 666 bytes | not measured (the reset wiped the watch's data; the baseline needs a run after this file expires, switch off) | pending | pending | logcat of the run kept on the owner's machine (`~/re/agps/e2e/agnss_exchange.log`); the Data satelit row was hidden after the PRED decline (fixed in `08ce40b`: the row keeps a valid lab delivery) |
+| 2026-10-25 12:07 WIB, same build, same file (14 min old on the watch) | the 11:53 delivery | no new ask (the watch already held the file) | outdoor walk started on the watch, open sky | not measured yet (see row above) | **about 3 s**, watch alone, timed by the owner; **4.7 s** in the log, from the watch's GPS request when the walk started (`Live workout: the watch asked for the phone's GPS` 12:07:22.025) to its withdrawal once its own receiver had a fix (`the watch stopped asking for the phone's GPS` 12:07:26.679); later starts within the minute withdrew after about 1 s | not checked | one run, not three, and no baseline yet: before this file the same watch took minutes for a first fix (section "What JoyoFit sends and what the watch would need"), but the comparison is only valid against a run with the switch off after this file expired |
+
+Unexplained so far, same session: at 12:08:36 the link dropped and the watch showed its "reset to pair with this phone?" prompt again, about 15 minutes after JoyoFit's
+first bind of the reset watch (no Huawei Health involved, it was suspended). On reconnect the watch no longer knew JoyoFit's identity (`authType 5`,
+`firstConnection=true` while a bind key was stored) although the Bluetooth bond still worked (RFCOMM connected); Back on the prompt did not bring the binding back.
+Lanjut on the bind confirmation and the accept on the watch re-bound it at 12:13:45 with nothing lost: the watch then asked only `HW_PGNSS_PRED`, so it still held the
+HW_AGNSS file, i.e. an unbind, not a reset. Watch for it to recur; the phone Bluetooth was switched off and on for the fix-time test just before (12:08:24).
 
 ## iOS
 
