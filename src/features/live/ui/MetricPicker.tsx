@@ -11,7 +11,7 @@ import { Segmented } from '@/components/Segmented';
 import { SwitchRow } from '@/components/SwitchRow';
 import { spacing, useTheme } from '@/theme';
 
-import { assignMetric, RUN_METRIC_IDS, withCount, type FieldCount, type RunLayout, type RunMetricId } from '../runFields';
+import { assignMetric, FIELD_COUNTS, PAGE_SIZE, RUN_METRIC_IDS, withCount, type FieldCount, type RunLayout, type RunMetricId } from '../runFields';
 
 interface MetricPickerProps {
   visible: boolean;
@@ -25,8 +25,8 @@ interface MetricPickerProps {
 }
 
 /**
- * The editor of a live workout's data fields: four or six fields, a large first field, and for each slot the metric it shows.
- * Choosing a metric already shown in another slot swaps the two, so no figure appears twice.
+ * The editor of a live workout's data fields: four to twelve fields (more than six on further pages), a large first field, and for each
+ * slot the metric it shows. Choosing a metric already shown in another slot swaps the two, so no figure appears twice.
  */
 export function MetricPicker({ visible, initialSlot, layout, exclude, onChange, onClose }: MetricPickerProps) {
   // The key restarts the sheet's own state (which slot is open) each time it is shown.
@@ -94,13 +94,13 @@ function Sheet({ initialSlot, layout, exclude = NONE, onChange, onClose }: Sheet
               <View style={styles.setting}>
                 <AppText variant="bodyStrong">{t('live.fields.count')}</AppText>
                 <Segmented<FieldCount>
-                  options={[
-                    { value: 4, label: '4' },
-                    { value: 6, label: '6' },
-                  ]}
-                  value={layout.ids.length === 6 ? 6 : 4}
-                  onChange={(count) => onChange(withCount(layout, count))}
+                  options={FIELD_COUNTS.map((count) => ({ value: count, label: String(count) }))}
+                  value={FIELD_COUNTS.find((count) => count === layout.ids.length) ?? 4}
+                  onChange={(count) => onChange(withCount(layout, count, exclude))}
                 />
+                <AppText variant="caption" muted>
+                  {t('live.fields.pagesHint', { count: PAGE_SIZE })}
+                </AppText>
               </View>
               <SwitchRow
                 label={t('live.fields.big')}

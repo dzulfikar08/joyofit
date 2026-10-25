@@ -66,10 +66,24 @@ The band's number wins when it is above zero. A band without GPS reports a flat 
 
 - distance: sum of steps of at least 3 m from the last kept fix; fixes worse than 30 m accuracy and jumps above 30 m/s are dropped;
 - climb: the altitude smoothed (alpha 0.25), counted past a 3 m dead band, so noise adds nothing;
-- climb on the screen: run and walk now start with six fields, elevation gain among them (`runFields.ts` `defaultLayout`; the owner saw none on a walk, 2026-10-25). It reads 0 m from the first fix with a position, also on a flat walk; a layout the person saved is kept;
+- climb on the screen: run and walk start with ten fields on two pages, elevation gain among them (`runFields.ts` `defaultLayout`; the owner saw none on a walk, 2026-10-25, then asked for "all the run details"). It reads 0 m from the first fix with a position, also on a flat walk; a layout the person saved is kept;
 - pace: distance over the last 10 s (at least 3 s of it), nothing below 0.28 m/s;
 - average pace: duration over distance (`averagePace`, from 10 m), computed in JS;
-- cadence: steps per minute on foot (`0x06`), revolutions per minute on a bike.
+- cadence: steps per minute on foot (`0x06`), revolutions per minute on a bike; without a `17/11` report, the phone's step counter (below).
+
+### Figures added on the phone (`liveStats.ts`, `liveExtras.ts`, JRG-418)
+
+`LiveExtrasFeed` (mounted once in `app/_layout.tsx`, inside `LiveWorkoutProvider`) feeds every payload to a `LiveExtrasSession` per session id; the screen reads `useLiveExtras`. Kept in JS for as long as the app runs: each figure covers what this app heard, so after the app was killed mid-workout the averages and the step count start over at its next start.
+
+- **Average and maximum heart rate** (`HrStats`): over the `19/03` readings of the running stretches. The average is weighted by time (a reading holds until the next payload, at most 20 s, `HR_HOLD_MS`), so the 1 s payloads of the phone's GPS do not outweigh a reading that changed less often, and a gap (app in the background on iOS, link lost) is not filled with the last value. Readings while preparing, paused or ended count for neither figure.
+- **Heart-rate zone**: the zone of the current reading in the person's zone settings (`useHrZones`, Settings > HR zones, `docs/hr-zones.md`), the same rule that tints the heart-rate tile (`heartZone`). A field of its own (`hrZone`): the number large, the zone's name below. The watch's own `17/11` `0x04` zone is not used: its numbering is unverified and the Fit 4 Pro does not send it.
+- **Cadence, steps, stride from the phone's step counter**: `BleSensors.startLiveSteps()` (`modules/ble-sensors`: Android `TYPE_STEP_COUNTER` through the Run recorder's `WorkoutSteps.kt`, a second instance `LiveSteps` with its own event `onLiveSteps`; iOS `WorkoutSteps.live`, a second `CMPedometer`), so a recorded run's counter and the live screen's never stop each other. It runs only while a watch-started session on foot (run, walk, hike, also a guessed run) is open, from the GO screen on (the first reading is the baseline), and stops at the end, when the kind changes to a ride, or when the session goes. The numbers come from `PhoneStepCount` (`sensors/phoneSteps.ts`), the code the Run recorder counts with: steps only while the clock runs, cadence = steps over the last 10 s (at least 4 s apart, 0 after 4 s of silence, nothing while paused, nothing above 260). Stride = distance since the counter's first reading / its steps (from 20 steps and 10 m). These tiles say "(phone)" / "(ponsel)": they count the **phone's** steps, not the wrist's; a watch that sends its own cadence or steps (`17/11`) wins and the label goes.
+- **Permission**: the counter starts by itself only when the permission is already given (`stepCounterState`). Otherwise, while a step field is on the screen, a card asks ("Allow step counter": `ensureStepCounter`, ACTIVITY_RECOGNITION on Android 10+, the motion prompt on iOS, whose usage text now names watch-started workouts). Nothing is asked in the middle of a workout without a tap. A phone without a step counter, or a binary without `startLiveSteps`, shows `--`.
+- **Background**: Android delivers the counter's events while `WatchService` keeps the process; the count is cumulative, so steps batched while the screen is off arrive with the next event [INFERENCE: not tried with the screen off]. iOS sends pedometer updates only in the foreground; the cumulative count catches up when the app comes back (steps of a pause in that gap are counted, as in the recorder).
+
+### The grid: pages
+
+Four to twelve fields (`FieldCount` 4, 6, 8, 10, 12). The first six are the first page as before (a large first field, rows of three; or pairs); every further six are a page of their own in pairs, swiped sideways (`gridPages`, `MetricGrid`: a paging horizontal scroll, dots below that also switch the page). A layout saved by an older build (four or six fields) reads back unchanged, also one equal to an old default; only a kind without a saved layout gets the new default (run and walk: time, distance, pace, average pace, heart rate, HR zone | cadence, elevation gain, calories, average heart rate). The Run recorder's live view shares the grid, so it pages too, and it has the new fields as well: average and maximum heart rate of the recorded seconds, HR zone, steps (a pod's, else the phone's) and stride; its phone-counted cadence, steps and stride carry "(phone)" when no running pod is paired. Steps and stride are offered on foot only.
 
 The phone's position (`location`) is in the payload for the map; the trail is the screen's (`trail.ts`).
 
@@ -82,13 +96,17 @@ What reached the phone during the 17:43 and 18:49 walks (`logcat_go_probe.txt`, 
 | duration | `17/11` 02 (not sent) | | | phone clock from GO (`WorkoutClock`) | yes |
 | distance, pace, speed | `17/11` 08 / 07 (not sent) | `SessionTrack` | | | yes (phone GPS) |
 | avg pace | | | | duration / distance (`averagePace`) | yes |
-| hr | `19/03` | | | | yes |
+| hr | `19/03` | | | | yes (watch) |
+| avg hr, max hr | | | | `HrStats` over the `19/03` readings, running stretches only | yes (from the watch's HR) |
+| hr zone | `17/11` 04 (not sent, not used) | | | `heartZone` with the person's zone settings | yes (from the watch's HR) |
 | calories | `17/11` 09 (not sent) | | | `HeartRateEnergy` from HR, weight, age, sex | yes (estimate) |
 | elevation gain, altitude | `17/11` 0A / 0C (not sent) | `SessionTrack` (smoothed, 3 m dead band) | | | yes (phone GPS; 0 m on the flat) |
-| descent, training effect, HR zone, steps | `17/11` 0B, 0D/0E, 04, 05 (not sent) | | | | no: shown under "More" only when a watch sends them |
-| cadence | `17/11` 06 (not sent) | | not wired in the watch-live path | | **no** |
+| cadence | `17/11` 06 (not sent) | | `startLiveSteps`, `PhoneStepCount.cadence` | | yes (phone, labelled) |
+| steps | `17/11` 05 (not sent) | | `PhoneStepCount.total` | | yes (phone, labelled) |
+| stride | | | | phone distance / phone steps (`strideLength`) | yes (phone, labelled) |
+| descent, training effect | `17/11` 0B, 0D/0E (not sent) | | | | no: shown under "More" only when a watch sends them |
 
-Not possible today, and why: **cadence, steps and stride** need the phone's step counter in the watch-live session. It runs only inside the Run recorder's native session (`ble-sensors`, with its own foreground service); the watch-live path (`huawei-wear` `LiveWorkout`, Kotlin and Swift) has no step-counter source, so a phone-side cadence is new native work on both platforms (Android `TYPE_STEP_COUNTER`, iOS `CMPedometer`), and it would count the phone's steps, not the wrist's. **HR zone, average and maximum HR** are not fields of the live grid (only the watch's zone, which the Fit 4 Pro does not send); deriving them in JS from the `19/03` readings needs the person's zone method (`docs/hr-zones.md`). The grid has four or six fields (`FieldCount`); a longer default needs pages or a scrolling grid, which the live screen does not have.
+Watch-measured on the Fit 4 Pro: heart rate only (and the derived average, maximum, zone and calories). Phone-measured: distance, pace, speed, average pace, elevation gain, altitude (GPS) and cadence, steps, stride (step counter, the phone's steps). Not possible: descent from the phone is not computed (the track counts rises only), and training effect needs the watch's own `17/11`.
 
 ## Phone-started run (`bandLinkCore.ts`, `bandLink.ts`, `controller.ts`)
 
@@ -129,6 +147,8 @@ After the app was killed mid-run the recording comes back paused. A band workout
 | JRG-418 recorder: band lines (`unsupported`, `connecting` with the start on reconnect), the Band status segment, live elevation gain and altitude | yes | nothing |
 | JRG-418 band-started run: the GO screen is not a start (`WatchPhase`), fast status poll, end on `18/08` close, fused location, 30 m feed gate | no | `WatchPhase`, `LiveWorkoutPolicy`, `WorkoutLink` (Kotlin and Swift) |
 | JRG-418 band-started run: an unnamed outdoor workout guesses the last picked kind | yes | nothing |
+| JRG-418 full live metrics: grid pages (4 to 12 fields), the new run/walk default, average and maximum heart rate, HR zone field, recorder average/maximum heart rate, steps and stride | yes | nothing |
+| JRG-418 phone cadence, steps and stride on the watch-started screen | no: an older binary has no `startLiveSteps`, the fields stay `--` | `startLiveSteps` / `stopLiveSteps` / `onLiveSteps` (`ble-sensors`, Kotlin and Swift); the motion usage text (iOS) |
 
 ## Unverifiable without a Band 11
 

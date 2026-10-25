@@ -149,6 +149,10 @@
     "map": {
       "waiting": "Menunggu posisi GPS ponsel"
     },
+    "steps": {
+      "ask": "Kadensi, langkah, dan panjang langkah diambil dari penghitung langkah ponselmu (jam tidak mengirimnya). Izinkan agar tampil di sini.",
+      "allow": "Izinkan penghitung langkah"
+    },
     "route": {
       "title": "Rute di peta",
       "none": "Tanpa rute",
@@ -168,6 +172,9 @@
       "slotTitle": "Kolom {{number}}",
       "shownIn": "Sekarang di kolom {{number}}, ditukar dengan itu",
       "longPress": "Tahan untuk mengganti kolom ini",
+      "phoneLabel": "{{label}} (ponsel)",
+      "page": "Halaman {{current}} dari {{total}}",
+      "pagesHint": "Lebih dari {{count}} kolom masuk ke halaman berikutnya: geser kolom ke samping.",
       "metric": {
         "duration": "Waktu",
         "distance": "Jarak",
@@ -175,8 +182,13 @@
         "avgPace": "Pace rata-rata",
         "speed": "Kecepatan",
         "hr": "Detak jantung",
+        "hrZone": "Zona detak jantung",
+        "avgHr": "Detak jantung rata-rata",
+        "maxHr": "Detak jantung maks",
         "calories": "Kalori",
         "cadence": "Kadensi",
+        "steps": "Langkah",
+        "stride": "Panjang langkah",
         "elevationGain": "Tanjakan",
         "altitude": "Ketinggian"
       }

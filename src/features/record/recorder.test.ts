@@ -473,6 +473,28 @@ describe("the phone's step counter", () => {
     expect(w.steps).toBe(15);
   });
 
+  it('shows the average and highest heart rate of the recorded seconds and the steps so far, pauses excluded, also after a restore', () => {
+    const r = new Recorder(config('run'));
+    r.sensor('2a37', hr(120), T0);
+    r.start(T0);
+    r.steps(0, T0);
+    for (let s = 0; s < 10; s++) {
+      r.sensor('2a37', hr(s < 5 ? 120 : 160), T0 + s * 1000);
+      r.steps(s * 3, T0 + s * 1000);
+      r.tick(T0 + s * 1000);
+    }
+    r.pause(T0 + 9_000);
+    // a peak while paused counts for nothing
+    r.sensor('2a37', hr(190), T0 + 12_000);
+    r.steps(60, T0 + 12_000);
+    const live = r.live(T0 + 12_000);
+    expect(live.avgHr).toBe(140);
+    expect(live.maxHr).toBe(160);
+    expect(live.steps).toBe(27);
+    const restored = Recorder.restore(r.meta(), r.drainNew());
+    expect(restored.live(T0 + 12_000)).toMatchObject({ avgHr: 140, maxHr: 160, steps: 27 });
+  });
+
   it('ignores readings before start and after finish', () => {
     const r = new Recorder(config('run'));
     r.steps(500, T0 - 1000);

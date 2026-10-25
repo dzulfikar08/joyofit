@@ -39,11 +39,12 @@ public final class BleSensorsModule: Module {
         let location = WorkoutLocation.shared
         let scales = ScaleCentral.shared
         let steps = WorkoutSteps.shared
+        let liveSteps = WorkoutSteps.live
 
         Name("BleSensors")
 
         Events(
-            "onScanResult", "onScanState", "onConnection", "onValue", "onLocation", "onBluetoothState", "onWorkoutAction", "onSteps",
+            "onScanResult", "onScanState", "onConnection", "onValue", "onLocation", "onBluetoothState", "onWorkoutAction", "onSteps", "onLiveSteps",
             "onScaleAdvertisement", "onScaleScanState", "onScaleLink", "onScaleValue"
         )
 
@@ -137,6 +138,15 @@ public final class BleSensorsModule: Module {
         // Raises the system motion prompt (iOS asks on the first pedometer use) and answers with the new state.
         AsyncFunction("requestStepCounterPermission") { () async -> String in
             await steps.requestPermission()
+        }
+
+        // The live screen of a workout started on the watch: the phone's pedometer alone, counted from now. False without it or its permission.
+        AsyncFunction("startLiveSteps") { () async -> Bool in
+            liveSteps.start { ts, count in central.emit("onLiveSteps", ["ts": ts, "steps": count]) }
+        }
+
+        AsyncFunction("stopLiveSteps") { () async -> Void in
+            liveSteps.stop()
         }
 
         // `options` is WorkoutSessionOptions: title, text, gps and `openUrl` and `controls` (the Android notification's link and buttons). Only `gps` matters here: iOS has no notification.
