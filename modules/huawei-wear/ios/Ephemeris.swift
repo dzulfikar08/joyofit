@@ -815,7 +815,7 @@ public final class EphemerisLink: LinkObserver, @unchecked Sendable {
             "deliveredAt": forThisWatch ? store.deliveredAtMs : 0,
             "deliveredSize": forThisWatch ? store.deliveredSize : 0,
             "deliveredSource": forThisWatch ? store.deliveredSource : "",
-            "expiresAt": forThisWatch ? AgpsPolicy.expiresAtMs(dataTimeMs: store.deliveredDataMs) : 0,
+            "expiresAt": forThisWatch ? AgpsPolicy.expiresAtMs(dataTimeMs: store.deliveredDataMs, source: store.deliveredSource) : 0,
             "lastAskAt": store.lastAskMs,
             "lastAskVersion": store.lastAskVersion,
             "lastAskTags": store.lastAskTags,
@@ -824,6 +824,7 @@ public final class EphemerisLink: LinkObserver, @unchecked Sendable {
             "attemptAt": store.lastAttemptMs,
             "retryAt": store.retryAtMs(),
             "failures": store.failures,
+            "labAgnss": store.labAgnss,
         ]
     }
 
@@ -861,11 +862,21 @@ public final class EphemerisLink: LinkObserver, @unchecked Sendable {
         return result(outcome, store.lastError)
     }
 
-    /// Downloads the default data to the phone; `okOutcome` is what a good download is reported as.
+    /// What "Update now" downloads when the watch is not part of it: the HW_AGNSS file when the experimental switch is on and the watch's last ask was
+    /// exactly that kind, else the default data.
+    private func refreshConsult() -> AgpsConsult {
+        if store.labAgnss && AgpsLab.askedHwAgnss(version: store.lastAskVersion, tagNames: store.lastAskTags) {
+            return AgpsConsult(version: store.lastAskVersion, tag: "/\(AgpsLab.kind)", urls: [])
+        }
+        return .default
+    }
+
+    /// Downloads the data for `refreshConsult` to the phone; `okOutcome` is what a good download is reported as.
     private func downloadOnly(_ okOutcome: String) async -> String {
         let source = self.source
+        let consult = refreshConsult()
         let fetch =
-            await agpsTimeout(ms: AgpsPolicy.downloadTimeoutMs) { await source.fetch(.default, force: true) }
+            await agpsTimeout(ms: AgpsPolicy.downloadTimeoutMs) { await source.fetch(consult, force: true) }
             ?? .failed(AgpsOutcome.downloadFailed, "download timed out after \(AgpsPolicy.downloadTimeoutMs / 1000) s")
         let now = nowMs()
         if fetch.ok {
@@ -889,6 +900,12 @@ public final class EphemerisLink: LinkObserver, @unchecked Sendable {
     /// The user cancels an update that is running.
     public func cancel() async {
         await currentExchange()?.cancel()
+    }
+
+    /// The experimental switch of Settings > Advanced (`AgpsLab`); it takes effect at the watch's next ask.
+    public func setLabAgnss(_ enabled: Bool) {
+        store.setLabAgnss(enabled)
+        log("experimental HW_AGNSS data \(enabled ? "on" : "off")")
     }
 
     /// From the sync, once per round: keeps the phone-side copy fresh so the watch's next request is answered at once, and the failure wait

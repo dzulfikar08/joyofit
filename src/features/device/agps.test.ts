@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import type { AgpsStatus } from '@/wear';
 
-import { agpsView, agpsVisible } from './agps';
+import { AGPS_LAB_SOURCE, agpsLabActive, agpsView, agpsVisible } from './agps';
 
 const NOW = 1_800_000_000_000;
 const HOUR = 3_600_000;
@@ -114,6 +114,26 @@ describe('agpsView', () => {
     expect(agpsVisible({ ...BLANK, lastAskAt: 0, lastAskVersion: 0 })).toBe(false);
     expect(agpsVisible({ ...BLANK, lastAskAt: NOW, lastAskVersion: 1 })).toBe(false);
     expect(agpsVisible({ ...BLANK, lastAskAt: NOW, lastAskVersion: 3, outcome: 'unsupported' })).toBe(false);
+  });
+
+  test('with the experimental switch on the row also shows for a watch whose last ask was exactly HW_AGNSS', () => {
+    const asked = { ...BLANK, lastAskAt: NOW, lastAskVersion: 3, lastAskTags: 'HW_AGNSS' };
+    expect(agpsVisible(asked)).toBe(false);
+    expect(agpsVisible({ ...asked, labAgnss: false })).toBe(false);
+    expect(agpsVisible({ ...asked, labAgnss: true })).toBe(true);
+    expect(agpsLabActive({ ...asked, labAgnss: true })).toBe(true);
+    expect(agpsVisible({ ...asked, labAgnss: true, lastAskTags: 'HW_PGNSS_PRED' })).toBe(false);
+    expect(agpsVisible({ ...asked, labAgnss: true, lastAskTags: 'HW_AGNSS,HW_PGNSS_GPS' })).toBe(false);
+    expect(agpsVisible({ ...asked, labAgnss: true, lastAskAt: 0 })).toBe(false);
+  });
+
+  test('a delivery of the experimental file says so, and it expires in hours like the native expiry says', () => {
+    const delivered = { ...BLANK, outcome: 'delivered' as const, deliveredAt: NOW - HOUR, deliveredSize: 7436, deliveredSource: AGPS_LAB_SOURCE };
+    const view = agpsView({ ...delivered, expiresAt: NOW + 3 * HOUR }, NOW);
+    expect(view.statusKey).toBe('deliveredLab');
+    expect(view.tone).toBe('ok');
+    expect(view.sizeKb).toBe(7);
+    expect(agpsView({ ...delivered, expiresAt: NOW - 1 }, NOW).statusKey).toBe('expired');
   });
 
   test('every native outcome has a status line', () => {

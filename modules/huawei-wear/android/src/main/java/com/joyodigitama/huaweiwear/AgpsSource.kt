@@ -41,9 +41,10 @@ internal object AgpsSources {
 }
 
 /**
- * The real source: the public Broadcom LTO file, for version 0 only. Every other kind the watch can ask for is data that only the
- * watch maker's own app prepares (from servers and with a decoder this app does not use), and sending anything else to a watch
- * that does not validate what it is given can wedge its GPS: those are declined, never substituted.
+ * The real source: the public Broadcom LTO file, for version 0. Every other kind the watch can ask for is data that only the watch maker's own
+ * app prepares (from servers and with a decoder this app does not use), and sending anything else to a watch that does not validate what it is
+ * given can wedge its GPS: those are declined, never substituted. The one exception is the experimental [AgpsLab] path: with the user's switch
+ * on, a watch that asks for exactly `HW_AGNSS` gets the RTCM file JoyoFit's server builds from open data.
  */
 internal class NetworkAgpsSource(
   private val cache: AgpsCache,
@@ -51,14 +52,19 @@ internal class NetworkAgpsSource(
   private val log: (String) -> Unit,
   private val isOnline: () -> Boolean,
   private val nowMs: () -> Long = System::currentTimeMillis,
+  private val http: (url: String, maxBytes: Int) -> AgpsDownload = EphemerisNet::get,
 ) : AgpsSource {
 
   override fun fetch(consult: AgpsConsult, force: Boolean): AgpsFetch = when (consult.version) {
     0 -> fetchBroadcom(force)
-    in 1..3 -> AgpsFetch.failed(
-      AgpsOutcome.UNSUPPORTED,
-      "the watch asked for kinds only the watch maker's app prepares (version ${consult.version}: ${consult.tagNames.ifEmpty { "no names" }})",
-    )
+    in 1..3 -> if (store.labAgnss && AgpsLab.asksHwAgnss(consult)) {
+      fetchAgnss(force)
+    } else {
+      AgpsFetch.failed(
+        AgpsOutcome.UNSUPPORTED,
+        "the watch asked for kinds only the watch maker's app prepares (version ${consult.version}: ${consult.tagNames.ifEmpty { "no names" }})",
+      )
+    }
     else -> AgpsFetch.failed(AgpsOutcome.UNSUPPORTED, "download version ${consult.version} is not known")
   }
 
@@ -77,7 +83,7 @@ internal class NetworkAgpsSource(
     }
     if (!isOnline()) throw AgpsFetchException("no network")
     val started = nowMs()
-    val download = EphemerisNet.get(url, AgpsPolicy.LTO_MAX_BYTES)
+    val download = http(url, AgpsPolicy.LTO_MAX_BYTES)
     AgpsPolicy.validateLto(download.body)?.let { throw AgpsInvalidFileException(it) }
     log("LTO: downloaded ${download.body.size} bytes in ${nowMs() - started} ms")
     cache.write(url, download.body)
@@ -89,12 +95,47 @@ internal class NetworkAgpsSource(
     val got = cachedLto(EphemerisNet.LTO_HOST + EphemerisNet.LTO_PATH, force)
     AgpsFetch(mapOf(AgpsSources.LTO_FILE to got.body), AgpsSources.BROADCOM, got.dataMs, AgpsOutcome.NONE, "", got.fromCache)
   } catch (e: AgpsFetchException) {
+    failure(e, "LTO")
+  }
+
+  /**
+   * The experimental HW_AGNSS file from JoyoFit's server (fixed address, plain GET, nothing about the user). The phone's copy is reused while it
+   * is young and still passes [AgpsPolicy.validateAgnss]; a download is checked the same way before it is kept or offered.
+   */
+  private fun fetchAgnss(force: Boolean): AgpsFetch = try {
+    val url = EphemerisNet.AGNSS_URL
+    var got: Got? = null
+    if (!force) {
+      val hit = cache.read(url, AgpsPolicy.AGNSS_CACHE_FRESH_MS)
+      val builtMs = if (store.cachedSource == AgpsLab.SOURCE) store.cachedDataMs else 0L
+      if (hit != null && AgpsPolicy.validateAgnss(hit, builtMs, nowMs()) == null) {
+        log("HW_AGNSS: from the phone's copy, ${hit.size} bytes")
+        got = Got(hit, builtMs, true)
+      } else if (hit != null) {
+        cache.delete(url)
+      }
+    }
+    if (got == null) {
+      if (!isOnline()) throw AgpsFetchException("no network")
+      val started = nowMs()
+      val download = http(url, AgpsPolicy.RTCM_MAX_BYTES)
+      AgpsPolicy.validateAgnss(download.body, download.lastModifiedMs, nowMs())?.let { throw AgpsInvalidFileException(it) }
+      log("HW_AGNSS: downloaded ${download.body.size} bytes, ${AgpsPolicy.rtcmFrames(download.body)} satellites, in ${nowMs() - started} ms")
+      cache.write(url, download.body)
+      got = Got(download.body, download.lastModifiedMs, false)
+    }
+    AgpsFetch(mapOf(AgpsLab.FILE to got.body), AgpsLab.SOURCE, got.dataMs, AgpsOutcome.NONE, "", got.fromCache)
+  } catch (e: AgpsFetchException) {
+    failure(e, "HW_AGNSS")
+  }
+
+  private fun failure(e: AgpsFetchException, label: String): AgpsFetch {
     val outcome = when {
       e is AgpsInvalidFileException -> AgpsOutcome.INVALID_FILE
       e.message == "no network" -> AgpsOutcome.NO_NETWORK
       else -> AgpsOutcome.DOWNLOAD_FAILED
     }
-    AgpsFetch.failed(outcome, "LTO: ${e.message}")
+    return AgpsFetch.failed(outcome, "$label: ${e.message}")
   }
 }
 

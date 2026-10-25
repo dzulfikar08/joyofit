@@ -15,7 +15,17 @@ import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { dbHealth, useDbHealth } from '@/db/recovery';
 import { errorMessage } from '@/format';
 import { useTheme } from '@/theme';
-import { HuaweiWear } from '@/wear';
+import { HuaweiWear, hasNative } from '@/wear';
+
+/** The experimental HW_AGNSS switch, or null on a binary without it (OTA bundle on an older build) or when the status cannot be read. */
+function readAgpsLab(): boolean | null {
+  if (!hasNative('setAgpsLab')) return null;
+  try {
+    return HuaweiWear.getAgps().labAgnss === true;
+  } catch {
+    return null;
+  }
+}
 
 export default function AdvancedScreen() {
   const { t } = useTranslation('settings');
@@ -29,11 +39,14 @@ export default function AdvancedScreen() {
   const [coursesError, setCoursesError] = useState<string | null>(null);
   const [forceBle, setForceBle] = useState(() => HuaweiWear.getForceBle());
   const [bleError, setBleError] = useState<string | null>(null);
+  const [agpsLab, setAgpsLab] = useState(readAgpsLab);
+  const [agpsLabError, setAgpsLabError] = useState<string | null>(null);
 
   useNativeRefresh(
     useCallback(() => {
       setCourses(HuaweiWear.getCourses());
       setForceBle(HuaweiWear.getForceBle());
+      setAgpsLab(readAgpsLab());
     }, []),
   );
 
@@ -61,6 +74,17 @@ export default function AdvancedScreen() {
     } finally {
       setCourses(HuaweiWear.getCourses());
       setCoursesBusy(false);
+    }
+  };
+
+  const toggleAgpsLab = async (enabled: boolean) => {
+    setAgpsLabError(null);
+    try {
+      await HuaweiWear.setAgpsLab(enabled);
+    } catch (e) {
+      setAgpsLabError(errorMessage(e));
+    } finally {
+      setAgpsLab(readAgpsLab());
     }
   };
 
@@ -109,6 +133,13 @@ export default function AdvancedScreen() {
             onValueChange={(enabled) => void toggleCourses(enabled)}
           />
           {coursesError ? <Notice tone="danger">{coursesError}</Notice> : null}
+          {agpsLab !== null ? (
+            <>
+              <SwitchRow label={t('advanced.agnssLab')} value={agpsLab} onValueChange={(enabled) => void toggleAgpsLab(enabled)} />
+              <Notice tone={agpsLab ? 'danger' : 'info'}>{t('advanced.agnssLabRisk')}</Notice>
+              {agpsLabError ? <Notice tone="danger">{agpsLabError}</Notice> : null}
+            </>
+          ) : null}
           {__DEV__ ? (
             <SwitchRow
               label={t('advanced.bleLink')}

@@ -1,0 +1,12 @@
+{
+  "name": "@joyofit/agps-rtcm",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Builds and checks the HW_AGNSS satellite file (RTCM 3 ephemeris frames from BKG broadcast RINEX); shared by scripts/agps-rtcm.ts and the Worker.",
+  "main": "src/rtcm.ts",
+  "types": "src/rtcm.ts",
+  "scripts": {
+    "test": "bun test"
+  }
+}

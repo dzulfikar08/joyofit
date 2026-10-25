@@ -55,8 +55,9 @@ internal object AgpsPolicy {
   /** The watch has not been given data for a day (or ever): worth offering it again. */
   fun deliveryDue(deliveredAtMs: Long, nowMs: Long): Boolean = deliveredAtMs <= 0L || nowMs - deliveredAtMs >= DELIVER_EVERY_MS
 
-  /** When the data the watch holds stops being good; 0 when it was never delivered. */
-  fun expiresAtMs(dataTimeMs: Long): Long = if (dataTimeMs <= 0L) 0L else dataTimeMs + VALID_MS
+  /** When the data the watch holds stops being good; 0 when it was never delivered. The experimental HW_AGNSS file ([AgpsLab]) is good for hours, not days. */
+  fun expiresAtMs(dataTimeMs: Long, source: String = ""): Long =
+    if (dataTimeMs <= 0L) 0L else dataTimeMs + if (source == AgpsLab.SOURCE) AGNSS_VALID_MS else VALID_MS
 
   /** Broadcom LTO size bounds: the real file is about 115 KB; anything far outside is not that file. */
   const val LTO_MIN_BYTES = 16 * 1024
@@ -91,4 +92,103 @@ internal object AgpsPolicy {
     val count = (size + frameSize - 1) / frameSize
     return if (count > MAX_FRAMES) null else count
   }
+
+  /** Broadcast ephemeris is good for about four hours around its epoch; the file holds GPS records up to four hours old. */
+  const val AGNSS_VALID_MS = 4L * 60 * 60 * 1000
+
+  /** The server rebuilds the HW_AGNSS file every 15 minutes; a phone copy that young is reused for the watch's repeated asks. */
+  const val AGNSS_CACHE_FRESH_MS = 15L * 60 * 1000
+
+  /** A HW_AGNSS file the server built longer ago than this (its Last-Modified) is not offered. */
+  const val AGNSS_MAX_AGE_MS = 2L * 60 * 60 * 1000
+
+  /** HW_AGNSS file bounds, the same as the server's (`packages/agps-rtcm`, `validateHwAgnss`): about 7.4 to 8 KB for 120 satellites in practice. */
+  const val RTCM_MIN_BYTES = 512
+  const val RTCM_MAX_BYTES = 16 * 1024
+  const val RTCM_MIN_SATELLITES = 20
+
+  /** The four RTCM 3 ephemeris messages: GPS, GLONASS, BeiDou, Galileo I/NAV. */
+  private val RTCM_MESSAGES = setOf(1019, 1020, 1042, 1046)
+
+  /** CRC-24Q of RTCM 3 (polynomial 0x1864CFB) over `data[from until to]`. */
+  fun crc24q(data: ByteArray, from: Int = 0, to: Int = data.size): Int {
+    var crc = 0
+    for (i in from until to) {
+      crc = crc xor ((data[i].toInt() and 0xFF) shl 16)
+      repeat(8) {
+        crc = crc shl 1
+        if (crc and 0x1000000 != 0) crc = crc xor 0x1864CFB
+      }
+    }
+    return crc and 0xFFFFFF
+  }
+
+  /**
+   * Why [data] is not fit to send as the HW_AGNSS file, or null when it is: size bounds, every byte inside a frame (`D3`, reserved bits zero,
+   * CRC-24Q correct), only the four ephemeris messages, at least [RTCM_MIN_SATELLITES] frames. The server checks the same before serving.
+   */
+  fun validateRtcm(data: ByteArray): String? {
+    if (data.size < RTCM_MIN_BYTES) return "file too small (${data.size} bytes)"
+    if (data.size > RTCM_MAX_BYTES) return "file too large (${data.size} bytes)"
+    fun byte(k: Int) = if (k < data.size) data[k].toInt() and 0xFF else 0
+    var frames = 0
+    var i = 0
+    while (i < data.size) {
+      if (byte(i) != 0xD3 || byte(i + 1) and 0xFC != 0) return "not an RTCM 3 frame at byte $i"
+      val length = ((byte(i + 1) and 3) shl 8) or byte(i + 2)
+      val end = i + 3 + length
+      if (length < 2 || end + 3 > data.size) return "RTCM frame at byte $i is cut off"
+      val crc = (byte(end) shl 16) or (byte(end + 1) shl 8) or byte(end + 2)
+      if (crc24q(data, i, end) != crc) return "RTCM frame at byte $i fails its CRC"
+      val type = (byte(i + 3) shl 4) or (byte(i + 4) shr 4)
+      if (type !in RTCM_MESSAGES) return "unexpected RTCM message $type at byte $i"
+      frames++
+      i = end + 3
+    }
+    if (frames < RTCM_MIN_SATELLITES) return "only $frames satellites (at least $RTCM_MIN_SATELLITES needed)"
+    return null
+  }
+
+  /** The satellites (frames) in a file that passed [validateRtcm]. */
+  fun rtcmFrames(data: ByteArray): Int {
+    var frames = 0
+    var i = 0
+    while (i + 2 < data.size) {
+      i += 6 + (((data[i + 1].toInt() and 3) shl 8) or (data[i + 2].toInt() and 0xFF))
+      frames++
+    }
+    return frames
+  }
+
+  /** [validateRtcm], and the server's build time [builtMs] (its Last-Modified) must be known and at most [AGNSS_MAX_AGE_MS] before [nowMs]. */
+  fun validateAgnss(data: ByteArray, builtMs: Long, nowMs: Long): String? = validateRtcm(data) ?: when {
+    builtMs <= 0L -> "the server did not say when the file was built"
+    nowMs - builtMs > AGNSS_MAX_AGE_MS -> "the file was built ${(nowMs - builtMs) / 60_000} minutes ago"
+    else -> null
+  }
+}
+
+/**
+ * The experimental HW_AGNSS path (docs/agps.md, "Lab path"): RTCM 3 broadcast ephemeris built by JoyoFit's server from BKG's open data, sent only
+ * when the user turned the switch on (off by default, [AgpsStore.labAgnss]) and the watch asked for exactly that one kind. The watch does not
+ * check the data; wrong data has wedged GPS on other watches. Everything else stays declined.
+ */
+internal object AgpsLab {
+  /** The kind (last tag segment) the watch names: `higeo/v1/gnssinfo?type=0x0024/HW_AGNSS` (Fit 4 Pro), `type=0x0004` (Band 11 Pro). */
+  const val KIND = "HW_AGNSS"
+
+  /** The one file the watch pulls for it (2026-10-25 capture of Huawei Health). */
+  const val FILE = "HW_AGNSS_RTCM_33"
+
+  /** [AgpsFetch.source] and the stored delivery source of this data. */
+  const val SOURCE = "joyofit_rtcm"
+
+  /** The consult is a download version 1 to 3 asking for exactly one kind, a tag that ends in `/HW_AGNSS`. */
+  fun asksHwAgnss(consult: AgpsConsult): Boolean {
+    val entries = consult.tag.split(';').map { it.trim() }.filter { it.isNotEmpty() }
+    return consult.version in 1..3 && entries.size == 1 && entries[0].endsWith("/$KIND")
+  }
+
+  /** The stored last ask (version, tag names only) was for exactly this kind. */
+  fun askedHwAgnss(version: Int, tagNames: String): Boolean = version in 1..3 && tagNames == KIND
 }

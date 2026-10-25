@@ -337,6 +337,7 @@ function Indonesian() {
             "Saat olahraga luar ruang dimulai di jam, jam meminta GPS HP. JoyoFit membaca GPS HP selama olahraga itu dan mengirim posisi hanya ke jam lewat Bluetooth. HP tidak menyimpannya dan tidak mengunggahnya. JoyoFit menjelaskan hal ini sebelum meminta izin lokasi presisi. JoyoFit tidak meminta lokasi latar belakang.",
             "Jalur GPS yang direkam jam diunduh dari jam, disimpan di HP, dan ditampilkan sebagai rute. Rute itu keluar dari HP hanya dalam dua keadaan: diunggah bila kamu memakai sinkron cloud dengan JoyoRogo Pro, dan dibagikan bila kamu memposting olahraga dengan rute ke JoyoRogo (Share to JoyoRogo, saklar Route menyala) atau mengirimnya ke Strava. Posisi GPS HP saat olahraga sendiri tidak diunggah.",
             "Saat jam meminta data bantuan satelit (AGPS), HP mengunduh berkas publik Broadcom dari gllto.glpals.com lewat HTTPS, alamat tetap. JoyoFit tidak menambahkan lokasi atau ID apa pun, tetapi server itu melihat alamat IP-mu. JoyoFit tidak menghubungi server Huawei untuk ini; jenis data bantuan lain yang diminta jam ditolak.",
+            "Eksperimen yang mati secara bawaan (Pengaturan > Tentang & lanjutan, data satelit HW_AGNSS): bila kamu menyalakannya dan jam meminta jenis HW_AGNSS, HP mengunduh berkas data satelit dari server JoyoFit (api.fit.joyorogo.com) lewat HTTPS, alamat tetap. Server membuat berkas itu dari data siaran publik IGS/BKG dan memberi berkas yang sama ke semua orang; permintaan HP tidak membawa lokasi, ID, atau akun, tetapi server melihat alamat IP-mu.",
           ]}
         />
       </Block>
@@ -508,6 +509,7 @@ function Indonesian() {
           items={[
             "Open-Meteo: prakiraan cuaca dan pencarian kota (bagian Cuaca).",
             "Broadcom (glpals.com): data bantuan satelit (bagian Lokasi).",
+            "IGS dan BKG (Bundesamt für Kartographie und Geodäsie): data siaran satelit publik yang diambil server JoyoFit untuk eksperimen HW_AGNSS (bagian Lokasi). HP tidak menghubungi mereka.",
             "FOSSGIS e.V. (OSRM) dan Nominatim (OpenStreetMap): jalur rute dan pencarian tempat untuk Loop dari rumah (bagian Loop dari rumah).",
             "Cloudflare: tempat cloud JoyoFit dan situs ini berjalan.",
             "JoyoRogo, Google dan Apple: login dan layanan JoyoRogo (bagian Cloud dan Masuk dengan Apple).",
@@ -852,7 +854,11 @@ function English() {
           Weather). When the watch asks for satellite-assist (AGPS) data, the phone downloads
           the public Broadcom file over HTTPS from <Code>gllto.glpals.com</Code>, a fixed address. JoyoFit adds no
           location or ID, but that server sees your IP address. JoyoFit does not contact Huawei servers for this;
-          other kinds of assist data the watch may ask for are declined.
+          other kinds of assist data the watch may ask for are declined. An experiment that is off by default (Settings &gt; About &amp;
+          advanced, HW_AGNSS satellite data): if you turn it on and the watch asks for the HW_AGNSS kind, the phone downloads a satellite-data
+          file over HTTPS from JoyoFit&apos;s server (<Code>api.fit.joyorogo.com</Code>), a fixed address. The server builds that file from public
+          IGS/BKG broadcast data and gives everyone the same file; the phone&apos;s request carries no location, ID or account, but the server
+          sees your IP address.
         </p>
       </Block>
 
@@ -995,7 +1001,7 @@ function English() {
 
       <Block title="Third parties">
         <p>
-          Open-Meteo (weather), Broadcom (satellite-assist data), FOSSGIS e.V. (OSRM) and Nominatim (OpenStreetMap) (route paths and place search for Loop from home), Cloudflare (hosting of the cloud and this
+          Open-Meteo (weather), Broadcom (satellite-assist data), IGS and BKG (public broadcast satellite data fetched by JoyoFit&apos;s server for the HW_AGNSS experiment; the phone does not contact them), FOSSGIS e.V. (OSRM) and Nominatim (OpenStreetMap) (route paths and place search for Loop from home), Cloudflare (hosting of the cloud and this
           site), JoyoRogo, Google and Apple (sign-in), Apple (Apple Health write and one-time import read, and place-name geocoding on iPhone), Strava (upload destination when you connect it), the AI provider you choose, for example Anthropic for Claude or OpenAI for ChatGPT (receives the data read while you ask questions, only if you connect the AI connection), the AI provider you choose for Joyo AI with your own key (OpenRouter, OpenAI, Anthropic, Google Gemini or an address you enter; your choice and your own account, not our data processor; receives your data summary and conversation only after you enter a key and consent), Expo, Google (Firebase Cloud Messaging) and Apple (APNs) (delivery of Keluarga push notifications), RevKlik (visitor
           statistics for this site). No ads and no sale of data. Data is not used for advertising or
           ad profiling. Everything the app and this site send over the internet uses HTTPS (TLS).

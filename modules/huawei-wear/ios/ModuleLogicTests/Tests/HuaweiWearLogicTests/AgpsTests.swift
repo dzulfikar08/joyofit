@@ -419,6 +419,158 @@ final class AgpsTests: XCTestCase {
             XCTFail("unexpected error \(error)")
         }
     }
+
+    // MARK: the experimental HW_AGNSS path (port of the Kotlin AgpsTest cases)
+
+    func testCrc24qMatchesThePublishedCheckValue() {
+        XCTAssertEqual(AgpsPolicy.crc24q(Array("123456789".utf8)), 0xCDE703)
+    }
+
+    func testAFullRtcmFilePassesAndBrokenOnesAreRefusedWithTheServersWords() {
+        XCTAssertNil(AgpsPolicy.validateRtcm(rtcmFile(24)))
+        XCTAssertEqual(AgpsPolicy.rtcmFrames(rtcmFile(24)), 24)
+        XCTAssertEqual(AgpsPolicy.validateRtcm(rtcmFile(19)), "only 19 satellites (at least 20 needed)")
+        XCTAssertEqual(AgpsPolicy.validateRtcm(Bytes(repeating: 0, count: 100)), "file too small (100 bytes)")
+        XCTAssertEqual(AgpsPolicy.validateRtcm(Bytes(repeating: 0, count: 16 * 1024 + 1)), "file too large (16385 bytes)")
+        var flipped = rtcmFile(24)
+        flipped[10] ^= 1
+        XCTAssertEqual(AgpsPolicy.validateRtcm(flipped), "RTCM frame at byte 0 fails its CRC")
+        XCTAssertEqual(AgpsPolicy.validateRtcm(Bytes(rtcmFile(24).dropLast())), "RTCM frame at byte \(23 * 67) is cut off")
+        XCTAssertEqual(AgpsPolicy.validateRtcm(rtcmFile(24) + [0]), "not an RTCM 3 frame at byte \(24 * 67)")
+        XCTAssertEqual(AgpsPolicy.validateRtcm(rtcmFile(24, type: 1005)), "unexpected RTCM message 1005 at byte 0")
+    }
+
+    func testTheHwAgnssFileMustBeFreshFromTheServer() {
+        let hour = 3_600_000
+        let now = 10 * hour
+        XCTAssertNil(AgpsPolicy.validateAgnss(rtcmFile(24), builtMs: now - hour, nowMs: now))
+        XCTAssertEqual(AgpsPolicy.validateAgnss(rtcmFile(24), builtMs: now - 2 * hour - 60_000, nowMs: now), "the file was built 121 minutes ago")
+        XCTAssertEqual(AgpsPolicy.validateAgnss(rtcmFile(24), builtMs: 0, nowMs: now), "the server did not say when the file was built")
+        XCTAssertEqual(AgpsPolicy.validateAgnss(rtcmFile(10), builtMs: now, nowMs: now), "only 10 satellites (at least 20 needed)")
+        XCTAssertEqual(AgpsPolicy.expiresAtMs(dataTimeMs: now, source: AgpsLab.source), now + 4 * hour, "expires four hours after it was built")
+        XCTAssertEqual(AgpsPolicy.expiresAtMs(dataTimeMs: now, source: AgpsSources.broadcom), now + 7 * 24 * hour)
+    }
+
+    func testOnlyAConsultForExactlyOneHwAgnssKindQualifies() {
+        XCTAssertTrue(AgpsLab.asksHwAgnss(AgpsConsult(version: 3, tag: "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", urls: [])))
+        XCTAssertTrue(AgpsLab.asksHwAgnss(AgpsConsult(version: 3, tag: " higeo/v1/gnssinfo?type=0x0004/HW_AGNSS; ", urls: [])))
+        XCTAssertFalse(AgpsLab.asksHwAgnss(AgpsConsult(version: 0, tag: "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", urls: [])))
+        XCTAssertFalse(AgpsLab.asksHwAgnss(AgpsConsult(version: 4, tag: "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", urls: [])))
+        XCTAssertFalse(AgpsLab.asksHwAgnss(AgpsConsult(version: 3, tag: "a/HW_AGNSS;b/HW_PGNSS_GPS", urls: [])))
+        XCTAssertFalse(AgpsLab.asksHwAgnss(AgpsConsult(version: 3, tag: "com.huawei.higeo_dataModule_PGNSSConfig?type=HW_EEV2/HW_PGNSS_PRED;", urls: [])))
+        XCTAssertFalse(AgpsLab.asksHwAgnss(AgpsConsult(version: 3, tag: "x/HW_AGNSS_RTCM_33", urls: [])))
+        XCTAssertTrue(AgpsLab.askedHwAgnss(version: 3, tagNames: "HW_AGNSS"))
+        XCTAssertFalse(AgpsLab.askedHwAgnss(version: 3, tagNames: "HW_AGNSS,HW_PGNSS_GPS"))
+    }
+
+    func testTheSwitchIsOffByDefaultAndRemembered() {
+        let defaults = ephemeralDefaults()
+        XCTAssertFalse(AgpsStore(defaults: defaults).labAgnss)
+        AgpsStore(defaults: defaults).setLabAgnss(true)
+        XCTAssertTrue(AgpsStore(defaults: defaults).labAgnss)
+    }
+
+    private let agnss = AgpsConsult(version: 3, tag: "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", urls: [])
+
+    private final class Calls: @unchecked Sendable {
+        private let lock = NSLock()
+        private var n = 0
+        func add() { lock.locked { n += 1 } }
+        var count: Int { lock.locked { n } }
+    }
+
+    private func labSource(
+        _ cache: AgpsCache, _ store: AgpsStore, online: Bool = true, _ answer: @escaping @Sendable () throws -> AgpsDownload
+    ) -> NetworkAgpsSource {
+        NetworkAgpsSource(cache: cache, store: store, log: { _ in }, isOnline: { online }, nowMs: { 10_000_000 }, httpGet: { url, max in
+            XCTAssertEqual(url, EphemerisNet.agnssUrl)
+            XCTAssertEqual(max, AgpsPolicy.rtcmMaxBytes)
+            return try answer()
+        })
+    }
+
+    func testWithTheSwitchOffHwAgnssIsDeclinedWithoutTheNetwork() async {
+        let fetch = await labSource(MemoryCache(), AgpsStore(defaults: ephemeralDefaults())) { throw AgpsFetchError("the network must not be used") }
+            .fetch(agnss, force: false)
+        XCTAssertEqual(fetch.outcome, AgpsOutcome.unsupported)
+        XCTAssertEqual(fetch.message, "the watch asked for kinds only the watch maker's app prepares (version 3: HW_AGNSS)")
+    }
+
+    func testWithTheSwitchOnTheServersFileIsCheckedKeptAndReused() async {
+        let cache = MemoryCache()
+        let store = AgpsStore(defaults: ephemeralDefaults())
+        store.setLabAgnss(true)
+        let file = rtcmFile(24)
+        let calls = Calls()
+        let source = labSource(cache, store) {
+            calls.add()
+            return AgpsDownload(body: file, lastModifiedMs: 9_000_000)
+        }
+        let fetch = await source.fetch(agnss, force: false)
+        XCTAssertTrue(fetch.ok)
+        XCTAssertEqual(fetch.source, AgpsLab.source)
+        XCTAssertEqual(fetch.dataTimeMs, 9_000_000)
+        XCTAssertEqual(fetch.files.map(\.name), [AgpsLab.file])
+        XCTAssertEqual(fetch.files.first?.data, file)
+        XCTAssertEqual(cache.entries[EphemerisNet.agnssUrl], file)
+        // The exchange records the download; the watch's next ask is answered from the phone's copy.
+        store.recordDownloaded(nowMs: 9_500_000, dataMs: fetch.dataTimeMs, size: file.count, source: fetch.source)
+        let again = await source.fetch(agnss, force: false)
+        XCTAssertTrue(again.fromCache)
+        XCTAssertEqual(again.dataTimeMs, 9_000_000)
+        XCTAssertEqual(calls.count, 1)
+        // A Broadcom copy's record does not vouch for the cached RTCM file: it is fetched again.
+        store.recordDownloaded(nowMs: 9_600_000, dataMs: 9_600_000, size: 115_749, source: AgpsSources.broadcom)
+        let third = await source.fetch(agnss, force: false)
+        XCTAssertFalse(third.fromCache)
+        XCTAssertEqual(calls.count, 2)
+    }
+
+    func testWithTheSwitchOnABrokenStaleOrMissingFileIsNotOffered() async {
+        let store = AgpsStore(defaults: ephemeralDefaults())
+        store.setLabAgnss(true)
+        var bad = rtcmFile(24)
+        bad[30] ^= 0xFF
+        let broken = bad
+        let cache = MemoryCache()
+        let first = await labSource(cache, store) { AgpsDownload(body: broken, lastModifiedMs: 9_000_000) }.fetch(agnss, force: true)
+        XCTAssertEqual(first.outcome, AgpsOutcome.invalidFile)
+        XCTAssertEqual(first.message, "HW_AGNSS: RTCM frame at byte 0 fails its CRC")
+        XCTAssertTrue(cache.entries.isEmpty, "a bad file is never kept")
+        let fresh = rtcmFile(24)
+        let stale = await labSource(cache, store) { AgpsDownload(body: fresh, lastModifiedMs: 1_000) }.fetch(agnss, force: true)
+        XCTAssertEqual(stale.outcome, AgpsOutcome.invalidFile)
+        let down = await labSource(cache, store) { throw AgpsFetchError("HTTP 503") }.fetch(agnss, force: true)
+        XCTAssertEqual(down.outcome, AgpsOutcome.downloadFailed)
+        XCTAssertEqual(down.message, "HW_AGNSS: HTTP 503")
+        let offline = await labSource(cache, store, online: false) { throw AgpsFetchError("offline") }.fetch(agnss, force: true)
+        XCTAssertEqual(offline.outcome, AgpsOutcome.noNetwork)
+    }
+
+    func testWithTheSwitchOnOtherKindsStayDeclined() async {
+        let store = AgpsStore(defaults: ephemeralDefaults())
+        store.setLabAgnss(true)
+        let source = labSource(MemoryCache(), store) { throw AgpsFetchError("the network must not be used") }
+        let two = await source.fetch(AgpsConsult(version: 3, tag: "a/HW_AGNSS;b/HW_PGNSS_GPS", urls: []), force: false)
+        XCTAssertEqual(two.outcome, AgpsOutcome.unsupported)
+        let pred = await source.fetch(AgpsConsult(version: 3, tag: "x/HW_PGNSS_PRED;", urls: []), force: false)
+        XCTAssertEqual(pred.outcome, AgpsOutcome.unsupported)
+    }
+}
+
+/// An HW_AGNSS-shaped file for the tests: `satellites` frames of 61-byte messages of `type` (1019, GPS, by default), each `D3`, length, message
+/// and CRC-24Q, so 67 bytes per frame. The message bodies are filler; only the framing is real.
+func rtcmFile(_ satellites: Int, type: Int = 1019) -> Bytes {
+    var out = Bytes()
+    for k in 0..<satellites {
+        var message = Bytes((0..<61).map { UInt8(truncatingIfNeeded: $0 &* 7 &+ k) })
+        message[0] = UInt8(type >> 4)
+        message[1] = UInt8(((type & 0xF) << 4) | (Int(message[1]) & 0x0F))
+        let head: Bytes = [0xD3, 0, UInt8(message.count)] + message
+        let crc = AgpsPolicy.crc24q(head)
+        out += head + [UInt8(truncatingIfNeeded: crc >> 16), UInt8(truncatingIfNeeded: crc >> 8), UInt8(truncatingIfNeeded: crc)]
+    }
+    return out
 }
 
 /// A source that answers from a list: files, or the failure `outcome`; `gate` holds the answer back until it is opened (or 5 s pass).

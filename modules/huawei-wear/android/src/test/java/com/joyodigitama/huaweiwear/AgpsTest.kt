@@ -299,4 +299,146 @@ class AgpsTest {
     val fetch = source(MemoryCache(), AgpsStore(MemoryPrefs())).fetch(AgpsConsult(9, "", emptyList()), false)
     assertEquals(AgpsOutcome.UNSUPPORTED, fetch.outcome)
   }
+
+  // The experimental HW_AGNSS path
+
+  @Test
+  fun crc24qMatchesThePublishedCheckValue() {
+    assertEquals(0xCDE703, AgpsPolicy.crc24q("123456789".toByteArray()))
+  }
+
+  @Test
+  fun aFullRtcmFilePassesAndBrokenOnesAreRefusedWithTheServersWords() {
+    assertNull(AgpsPolicy.validateRtcm(rtcmFile(24)))
+    assertEquals(24, AgpsPolicy.rtcmFrames(rtcmFile(24)))
+    assertEquals("only 19 satellites (at least 20 needed)", AgpsPolicy.validateRtcm(rtcmFile(19)))
+    assertEquals("file too small (100 bytes)", AgpsPolicy.validateRtcm(ByteArray(100)))
+    assertEquals("file too large (16385 bytes)", AgpsPolicy.validateRtcm(ByteArray(16 * 1024 + 1)))
+    val flipped = rtcmFile(24).also { it[10] = (it[10].toInt() xor 1).toByte() }
+    assertEquals("RTCM frame at byte 0 fails its CRC", AgpsPolicy.validateRtcm(flipped))
+    val cut = rtcmFile(24).let { it.copyOfRange(0, it.size - 1) }
+    assertEquals("RTCM frame at byte ${23 * 67} is cut off", AgpsPolicy.validateRtcm(cut))
+    assertEquals("not an RTCM 3 frame at byte ${24 * 67}", AgpsPolicy.validateRtcm(rtcmFile(24) + byteArrayOf(0)))
+    assertEquals("unexpected RTCM message 1005 at byte 0", AgpsPolicy.validateRtcm(rtcmFile(24, type = 1005)))
+  }
+
+  @Test
+  fun theHwAgnssFileMustBeFreshFromTheServer() {
+    val hour = 3_600_000L
+    val now = 10 * hour
+    assertNull(AgpsPolicy.validateAgnss(rtcmFile(24), now - hour, now))
+    assertEquals("the file was built 121 minutes ago", AgpsPolicy.validateAgnss(rtcmFile(24), now - 2 * hour - 60_000L, now))
+    assertEquals("the server did not say when the file was built", AgpsPolicy.validateAgnss(rtcmFile(24), 0L, now))
+    assertEquals("only 10 satellites (at least 20 needed)", AgpsPolicy.validateAgnss(rtcmFile(10), now, now))
+    assertEquals("expires four hours after it was built", now + 4 * hour, AgpsPolicy.expiresAtMs(now, AgpsLab.SOURCE))
+    assertEquals(now + 7 * 24 * hour, AgpsPolicy.expiresAtMs(now, AgpsSources.BROADCOM))
+  }
+
+  @Test
+  fun onlyAConsultForExactlyOneHwAgnssKindQualifies() {
+    assertTrue(AgpsLab.asksHwAgnss(AgpsConsult(3, "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", emptyList())))
+    assertTrue(AgpsLab.asksHwAgnss(AgpsConsult(3, " higeo/v1/gnssinfo?type=0x0004/HW_AGNSS; ", emptyList())))
+    assertFalse(AgpsLab.asksHwAgnss(AgpsConsult(0, "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", emptyList())))
+    assertFalse(AgpsLab.asksHwAgnss(AgpsConsult(4, "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", emptyList())))
+    assertFalse(AgpsLab.asksHwAgnss(AgpsConsult(3, "a/HW_AGNSS;b/HW_PGNSS_GPS", emptyList())))
+    assertFalse(AgpsLab.asksHwAgnss(AgpsConsult(3, "com.huawei.higeo_dataModule_PGNSSConfig?type=HW_EEV2/HW_PGNSS_PRED;", emptyList())))
+    assertFalse(AgpsLab.asksHwAgnss(AgpsConsult(3, "x/HW_AGNSS_RTCM_33", emptyList())))
+    assertTrue(AgpsLab.askedHwAgnss(3, "HW_AGNSS"))
+    assertFalse(AgpsLab.askedHwAgnss(3, "HW_AGNSS,HW_PGNSS_GPS"))
+  }
+
+  @Test
+  fun theSwitchIsOffByDefaultAndRemembered() {
+    val prefs = MemoryPrefs()
+    assertFalse(AgpsStore(prefs).labAgnss)
+    AgpsStore(prefs).setLabAgnss(true)
+    assertTrue(AgpsStore(prefs).labAgnss)
+  }
+
+  private val agnss = AgpsConsult(3, "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", emptyList())
+
+  private fun labSource(cache: AgpsCache, store: AgpsStore, online: Boolean = true, answer: () -> AgpsDownload) =
+    NetworkAgpsSource(cache, store, log = { }, isOnline = { online }, nowMs = { 10_000_000L }, http = { url, max ->
+      assertEquals(EphemerisNet.AGNSS_URL, url)
+      assertEquals(AgpsPolicy.RTCM_MAX_BYTES, max)
+      answer()
+    })
+
+  @Test
+  fun withTheSwitchOffHwAgnssIsDeclinedWithoutTheNetwork() {
+    val fetch = labSource(MemoryCache(), AgpsStore(MemoryPrefs())) { throw AssertionError("the network must not be used") }.fetch(agnss, false)
+    assertEquals(AgpsOutcome.UNSUPPORTED, fetch.outcome)
+    assertEquals("the watch asked for kinds only the watch maker's app prepares (version 3: HW_AGNSS)", fetch.message)
+  }
+
+  @Test
+  fun withTheSwitchOnTheServersFileIsCheckedKeptAndReused() {
+    val cache = MemoryCache()
+    val store = AgpsStore(MemoryPrefs()).also { it.setLabAgnss(true) }
+    val file = rtcmFile(24)
+    var calls = 0
+    val source = labSource(cache, store) {
+      calls++
+      AgpsDownload(file, 9_000_000L)
+    }
+    val fetch = source.fetch(agnss, false)
+    assertTrue(fetch.ok)
+    assertEquals(AgpsLab.SOURCE, fetch.source)
+    assertEquals(9_000_000L, fetch.dataTimeMs)
+    assertArrayEquals(file, fetch.files[AgpsLab.FILE])
+    assertArrayEquals(file, cache.entries[EphemerisNet.AGNSS_URL])
+    // The exchange records the download; the watch's next ask is answered from the phone's copy.
+    store.recordDownloaded(9_500_000L, fetch.dataTimeMs, file.size, fetch.source)
+    val again = source.fetch(agnss, false)
+    assertTrue(again.fromCache)
+    assertEquals(9_000_000L, again.dataTimeMs)
+    assertEquals(1, calls)
+    // A Broadcom copy's record does not vouch for the cached RTCM file: it is fetched again.
+    store.recordDownloaded(9_600_000L, 9_600_000L, 115_749, AgpsSources.BROADCOM)
+    assertFalse(source.fetch(agnss, false).fromCache)
+    assertEquals(2, calls)
+  }
+
+  @Test
+  fun withTheSwitchOnABrokenStaleOrMissingFileIsNotOffered() {
+    val store = AgpsStore(MemoryPrefs()).also { it.setLabAgnss(true) }
+    val bad = rtcmFile(24).also { it[30] = (it[30].toInt() xor 0xFF).toByte() }
+    val cache = MemoryCache()
+    val broken = labSource(cache, store) { AgpsDownload(bad, 9_000_000L) }.fetch(agnss, true)
+    assertEquals(AgpsOutcome.INVALID_FILE, broken.outcome)
+    assertEquals("HW_AGNSS: RTCM frame at byte 0 fails its CRC", broken.message)
+    assertTrue("a bad file is never kept", cache.entries.isEmpty())
+    val stale = labSource(cache, store) { AgpsDownload(rtcmFile(24), 1_000L) }.fetch(agnss, true)
+    assertEquals(AgpsOutcome.INVALID_FILE, stale.outcome)
+    val down = labSource(cache, store) { throw AgpsFetchException("HTTP 503") }.fetch(agnss, true)
+    assertEquals(AgpsOutcome.DOWNLOAD_FAILED, down.outcome)
+    assertEquals("HW_AGNSS: HTTP 503", down.message)
+    val offline = labSource(cache, store, online = false) { throw AssertionError("offline") }.fetch(agnss, true)
+    assertEquals(AgpsOutcome.NO_NETWORK, offline.outcome)
+  }
+
+  @Test
+  fun withTheSwitchOnOtherKindsStayDeclined() {
+    val store = AgpsStore(MemoryPrefs()).also { it.setLabAgnss(true) }
+    val source = labSource(MemoryCache(), store) { throw AssertionError("the network must not be used") }
+    assertEquals(AgpsOutcome.UNSUPPORTED, source.fetch(AgpsConsult(3, "a/HW_AGNSS;b/HW_PGNSS_GPS", emptyList()), false).outcome)
+    assertEquals(AgpsOutcome.UNSUPPORTED, source.fetch(AgpsConsult(3, "x/HW_PGNSS_PRED;", emptyList()), false).outcome)
+  }
+}
+
+/**
+ * An HW_AGNSS-shaped file for the tests: [satellites] frames of 61-byte messages of [type] (1019, GPS, by default), each `D3`, length,
+ * message and CRC-24Q, so 67 bytes per frame. The message bodies are filler; only the framing is real.
+ */
+internal fun rtcmFile(satellites: Int, type: Int = 1019): ByteArray {
+  var out = ByteArray(0)
+  repeat(satellites) { k ->
+    val message = ByteArray(61) { (it * 7 + k).toByte() }
+    message[0] = (type shr 4).toByte()
+    message[1] = (((type and 0xF) shl 4) or (message[1].toInt() and 0x0F)).toByte()
+    val head = byteArrayOf(0xD3.toByte(), 0, message.size.toByte()) + message
+    val crc = AgpsPolicy.crc24q(head)
+    out += head + byteArrayOf((crc shr 16).toByte(), (crc shr 8).toByte(), crc.toByte())
+  }
+  return out
 }

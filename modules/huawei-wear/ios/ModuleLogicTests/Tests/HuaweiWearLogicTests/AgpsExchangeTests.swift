@@ -578,4 +578,116 @@ final class AgpsExchangeTests: XCTestCase {
         XCTAssertEqual(result, AgpsOutcome.linkLost)
         XCTAssertEqual(store.lastOutcome, AgpsOutcome.linkLost)
     }
+
+    // MARK: the experimental HW_AGNSS path (AgpsLab), ports of the Kotlin cases
+
+    /// The Fit 4 Pro's consult tag from the 2026-10-25 capture.
+    private static let hwAgnssTag = "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS"
+
+    /// The real source with the HTTP side faked: `answer` gets the URL asked for.
+    private func labSource(_ answer: @escaping @Sendable (String) throws -> AgpsDownload) -> NetworkAgpsSource {
+        NetworkAgpsSource(cache: NullAgpsCache(), store: store, log: { _ in }, isOnline: { true }, httpGet: { url, _ in try answer(url) })
+    }
+
+    private final class Urls: @unchecked Sendable {
+        private let lock = NSLock()
+        private var list: [String] = []
+        func add(_ url: String) { lock.locked { list.append(url) } }
+        var all: [String] { lock.locked { list } }
+    }
+
+    private static func nowMs() -> Int { Int(Date().timeIntervalSince1970 * 1000) }
+
+    func testWithTheLabSwitchOffAHwAgnssAskIsDeclinedWithTodaysBytesAndNoDownload() async {
+        XCTAssertFalse(store.labAgnss, "off by default")
+        _ = await start(labSource { _ in throw AgpsFetchError("the network must not be used") })
+        op1()
+        _ = await awaitMsg(0x1F, 0x02)
+        consult(3, Self.hwAgnssTag)
+        _ = await awaitMsg(0x1F, 0x03)
+        fileList()
+        _ = await awaitMsg(0x1C, 0x01)
+        let sent = watch.messages.map { "\($0.service)/\($0.command) \($0.tlv?.serialize() ?? [])" }
+        let expected = [
+            (0x1F, 0x01, AgpsMessages.operatorAnswer(code: AgpsMessages.codeOk)),
+            (0x1F, 0x02, AgpsMessages.parameterConsult()),
+            (0x1F, 0x03, AgpsMessages.fileStatus(state: AgpsMessages.stateFailed)),
+            (0x1C, 0x01, AgpsMessages.refused()),
+        ].map { "\($0.0)/\($0.1) \($0.2.serialize())" }
+        XCTAssertEqual(sent, expected)
+        XCTAssertEqual(store.lastOutcome, AgpsOutcome.unsupported)
+        XCTAssertEqual(store.lastError, "the watch asked for kinds only the watch maker's app prepares (version 3: HW_AGNSS)")
+        XCTAssertEqual(store.failures, 0)
+        XCTAssertEqual(store.cachedAtMs, 0)
+    }
+
+    func testWithTheLabSwitchOnAHwAgnssAskGetsTheServersFileOverTheFileService() async throws {
+        store.setLabAgnss(true)
+        let file = rtcmFile(110)
+        let asked = Urls()
+        let ex = await start(labSource { url in
+            asked.add(url)
+            return AgpsDownload(body: file, lastModifiedMs: Self.nowMs() - 60_000)
+        })
+
+        op1()
+        _ = await awaitMsg(0x1F, 0x02)
+        consult(3, Self.hwAgnssTag)
+        let status = await awaitMsg(0x1F, 0x03)
+        XCTAssertEqual(state(status), 3, "ready")
+        XCTAssertEqual(asked.all, [EphemerisNet.agnssUrl])
+
+        let received = await pull(AgpsLab.file, size: file.count, maxData: 2048, transferSize: 232)
+        XCTAssertEqual(received, file)
+        let list = await awaitMsg(0x1C, 0x01)
+        XCTAssertEqual(try list.tlv!.string(0x01), AgpsLab.file, "the one file the watch is offered")
+        let infoMessage = await awaitMsg(0x1C, 0x03)
+        XCTAssertEqual(try infoMessage.tlv!.int(0x02), Int32(file.count))
+        XCTAssertEqual(try infoMessage.tlv!.short(0x03), Int16(truncatingIfNeeded: Int(CRC16.checksum(file))))
+        let dataAnswer = await awaitMsg(0x1C, 0x04)
+        XCTAssertEqual(try dataAnswer.tlv!.string(0x02), EphemerisNet.addressDigest("AA:BB:CC:DD:EE:FF") + AgpsLab.file)
+
+        uploadDone(result: 0)
+        let done = await awaitMsg(0x1C, 0x06)
+        XCTAssertEqual(code(done), 100_000)
+        await eventually(timeoutMs: 5_000, "delivery recorded") { store.deliveredAtMs > 0 }
+        XCTAssertEqual(store.lastOutcome, AgpsOutcome.delivered)
+        XCTAssertEqual(store.deliveredSource, AgpsLab.source)
+        XCTAssertEqual(store.deliveredSize, file.count)
+        XCTAssertEqual(store.cachedSource, AgpsLab.source)
+        XCTAssertEqual(store.lastAskTags, "HW_AGNSS")
+        XCTAssertFalse(ex.busy)
+    }
+
+    func testWithTheLabSwitchOnAFileThatFailsTheCheckIsDeclinedAsToday() async {
+        store.setLabAgnss(true)
+        let few = rtcmFile(10)
+        _ = await start(labSource { _ in AgpsDownload(body: few, lastModifiedMs: Self.nowMs()) })
+        op1()
+        _ = await awaitMsg(0x1F, 0x02)
+        consult(3, Self.hwAgnssTag)
+        let status = await awaitMsg(0x1F, 0x03)
+        XCTAssertEqual(state(status), 4)
+        XCTAssertEqual(store.lastOutcome, AgpsOutcome.invalidFile)
+        XCTAssertEqual(store.lastError, "HW_AGNSS: only 10 satellites (at least 20 needed)")
+        fileList()
+        let list = await awaitMsg(0x1C, 0x01)
+        XCTAssertEqual(code(list), 100_001, "nothing is offered")
+    }
+
+    func testWithTheLabSwitchOnAnyOtherKindIsDeclinedWithoutADownload() async {
+        store.setLabAgnss(true)
+        _ = await start(labSource { _ in throw AgpsFetchError("the network must not be used") })
+        op1()
+        _ = await awaitMsg(0x1F, 0x02)
+        consult(3, "com.huawei.higeo_dataModule_PGNSSConfig?type=HW_EEV2/HW_PGNSS_PRED;")
+        let first = await awaitMsg(0x1F, 0x03)
+        XCTAssertEqual(state(first), 4)
+        op1()
+        _ = await awaitMsg(0x1F, 0x02, 2)
+        consult(3, "a/HW_AGNSS;b/HW_PGNSS_GPS")
+        let second = await awaitMsg(0x1F, 0x03, 2)
+        XCTAssertEqual(state(second), 4)
+        XCTAssertEqual(store.lastOutcome, AgpsOutcome.unsupported)
+    }
 }

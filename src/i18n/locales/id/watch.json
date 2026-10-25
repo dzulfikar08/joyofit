@@ -711,11 +711,13 @@
     "cancel": "Batal",
     "phoneCopy": "Salinan di HP ini",
     "details": "Jam-mu memakai data satelit supaya GPS cepat menemukan posisi. Datanya berlaku sekitar 7 hari. Kalau jam-mu meminta jenis Broadcom, JoyoFit mengunduhnya dari server publik Broadcom tanpa akun, lalu memberikannya ke jam. Jenis lain hanya disiapkan aplikasi Huawei sendiri; JoyoFit tidak pernah mengirim jam-mu sesuatu yang tidak diminta.",
+    "detailsLab": "Eksperimen yang kamu nyalakan di Pengaturan > Tentang & lanjutan: jam-mu meminta jenis HW_AGNSS, dan JoyoFit mengirim data satelit yang dibuat server JoyoFit dari data siaran publik (IGS/BKG), bukan dari Huawei. Datanya berlaku sekitar 4 jam. Jam tidak memeriksa data ini dan belum terbukti diterima jam mana pun. Catat berapa lama GPS jam menemukan posisi sebelum dan sesudahnya. Kalau GPS jam bermasalah, matikan eksperimennya; reset pabrik memulihkan jam.",
     "retryAt": "Percobaan otomatis berikutnya sekitar {{time}}.",
     "sizeValue": "{{kb}} KB",
     "status": {
       "never": "Jam-mu belum pernah mengambil data satelit dari JoyoFit.",
       "delivered": "Jam-mu sudah punya data satelit terbaru.",
+      "deliveredLab": "Jam-mu sudah menerima data satelit eksperimen dari JoyoFit (HW_AGNSS). Belum terbukti dipakai jam; catat waktu GPS menemukan posisi.",
       "expired": "Data satelit di jam-mu sudah kedaluwarsa. Ketuk Perbarui sekarang.",
       "stored": "Data sudah diunduh ke HP ini. Data dikirim ke jam-mu saat jam-mu terhubung dan memintanya.",
       "watchSilent": "Data sudah siap di HP ini, tetapi jam-mu tidak menanggapi. Data dikirim saat jam-mu memintanya.",

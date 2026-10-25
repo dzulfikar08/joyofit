@@ -1,4 +1,5 @@
-// Real records cut from BKG's BRDC00WRD_S_20262940000_01D_MN.rnx.gz (RINEX 3.05, 2026-10-21), fixed-width columns kept.
+// Real records cut from BKG's BRDC00WRD_S_20262940000_01D_MN.rnx.gz (RINEX 3.05, 2026-10-21), fixed-width columns kept. Shared with the
+// Worker tests (server/test/agps.test.ts).
 export const HEADER = `     3.05           N: GNSS NAV DATA    M: MIXED            RINEX VERSION / TYPE
                                                             END OF HEADER
 `;
@@ -35,3 +36,7 @@ export const R23 = `R23 2026 10 21 00 15 00 2.269353717566e-05 0.000000000000e+0
      2.119684277344e+04 1.412543296814e+00-1.862645149231e-09 0.000000000000e+00
      1.510000000000e+02 2.793967723846e-09 4.000000000000e+00 3.000000000000e+00
 `;
+
+/** The GPS record [G17] copied to satellites 1 to `count` (same orbit, other PRN): enough frames for the file's minimum satellite count. */
+export const gpsSet = (count: number): string =>
+  Array.from({ length: count }, (_, k) => G17.replace('G17', `G${String(k + 1).padStart(2, '0')}`)).join('');

@@ -20,9 +20,12 @@ internal class AgpsDownload(val body: ByteArray, val lastModifiedMs: Long)
  * caller, a plain GET with no credentials and no app identification.
  */
 internal object EphemerisNet {
-  /** The public Broadcom LTO file (valid for 7 days) is the only thing downloaded. */
+  /** The public Broadcom LTO file (valid for 7 days). */
   const val LTO_HOST = "https://gllto.glpals.com"
   const val LTO_PATH = "/7day/v6/latest/lto.dat"
+
+  /** JoyoFit's own server: the experimental HW_AGNSS file built from BKG's open broadcast ephemeris (server/src/agps.ts). Only with the switch on. */
+  const val AGNSS_URL = "https://api.fit.joyorogo.com/v1/agps/hw-agnss"
 
   private const val CONNECT_TIMEOUT_MS = 15_000
   private const val READ_TIMEOUT_MS = 30_000

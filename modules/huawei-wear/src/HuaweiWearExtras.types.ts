@@ -140,6 +140,8 @@ export interface AgpsStatus {
   /** An automatic retry is not allowed before this time; 0 when nothing waits. */
   retryAt: number;
   failures: number;
+  /** The experimental switch (`setAgpsLab`): JoyoFit's HW_AGNSS file is served to a watch that asks for exactly that kind. Absent on older binaries. */
+  labAgnss?: boolean;
 }
 
 /** What `refreshAgps` came to. */

@@ -483,6 +483,11 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   refreshAgps(): Promise<AgpsRefreshResult>;
   /** Cancels an update that is running (tells the watch "failed" so it does not wait). */
   cancelAgps(): Promise<void>;
+  /**
+   * Experimental, off by default: answer a watch that asks for exactly `HW_AGNSS` with JoyoFit's RTCM file (built by our server from open
+   * broadcast ephemeris) instead of declining. The watch does not check the data. Takes effect at the watch's next ask.
+   */
+  setAgpsLab(enabled: boolean): Promise<void>;
 
   /** The cycle log, estimates and switches. Predictions are an average-cycle estimate. */
   getCycle(): Promise<CycleOverview>;

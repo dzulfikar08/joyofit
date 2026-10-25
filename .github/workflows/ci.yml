@@ -48,6 +48,10 @@ jobs:
           bun install --frozen-lockfile
           bun test
           bunx tsrs --noEmit -p tsconfig.json
+      # The HW_AGNSS encoder shared by scripts/agps-rtcm.ts and the Worker; the server job type-checks it through server/src/agps.ts.
+      - name: "@joyofit/agps-rtcm"
+        working-directory: packages/agps-rtcm
+        run: bun test
 
   server:
     name: Server (tsrs, vitest)

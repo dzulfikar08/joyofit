@@ -4,6 +4,7 @@ import type { AgpsOutcome, AgpsStatus } from '@/wear';
 export type AgpsStatusKey =
   | 'never'
   | 'delivered'
+  | 'deliveredLab'
   | 'expired'
   | 'stored'
   | 'watchSilent'
@@ -64,13 +65,21 @@ const PHASE_STATUS: Record<string, AgpsStatusKey> = {
   sending: 'sending',
 };
 
+/** The native source name of the experimental HW_AGNSS file (`AgpsLab.SOURCE`). */
+export const AGPS_LAB_SOURCE = 'joyofit_rtcm';
+
+/** The experimental switch is on and the watch's last ask was exactly the `HW_AGNSS` kind (download version 1 to 3), which JoyoFit then serves. */
+export function agpsLabActive(status: AgpsStatus): boolean {
+  return status.labAgnss === true && status.lastAskVersion >= 1 && status.lastAskVersion <= 3 && status.lastAskTags === 'HW_AGNSS';
+}
+
 /**
- * The row shows only for a watch whose last ask was download version 0, the Broadcom LTO kind JoyoFit can serve. A watch that never asked, or
- * asked for a kind only the watch maker's app prepares (version 1 or higher), gets no row: JoyoFit would answer "failed" and the row could only
- * offer a button that cannot help.
+ * The row shows for a watch whose last ask JoyoFit can serve: download version 0 (the Broadcom LTO kind), or `HW_AGNSS` with the experimental
+ * switch on (`agpsLabActive`). A watch that never asked, or asked for a kind only the watch maker's app prepares, gets no row: JoyoFit would
+ * answer "failed" and the row could only offer a button that cannot help.
  */
 export function agpsVisible(status: AgpsStatus): boolean {
-  return status.lastAskAt > 0 && status.lastAskVersion === 0;
+  return status.lastAskAt > 0 && (status.lastAskVersion === 0 || agpsLabActive(status));
 }
 
 /** Turns the native status into what the row shows. `nowMs` is passed in so the result is a pure function of its inputs. */
@@ -90,7 +99,7 @@ export function agpsView(status: AgpsStatus, nowMs: number): AgpsView {
     tone = 'danger';
   } else {
     const known = OUTCOME_STATUS[status.outcome] ?? OUTCOME_STATUS.none;
-    statusKey = known.key;
+    statusKey = known.key === 'delivered' && status.deliveredSource === AGPS_LAB_SOURCE ? 'deliveredLab' : known.key;
     tone = known.tone;
   }
 

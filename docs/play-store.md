@@ -305,7 +305,8 @@ Answers to the other questions:
 
 Notes for you when answering:
 
-- Satellite-assist (AGPS): at the watch's request the phone downloads the public Broadcom LTO file from the fixed address `https://gllto.glpals.com/7day/v6/latest/lto.dat` (plain GET, no location, no ID, no app identification). That server sees the IP address. JoyoFit does not contact Huawei servers; any other assist data the watch asks for is declined. The address is fixed in the app, so this download carries no location and does not change the declarations above.
+- Satellite-assist (AGPS): at the watch's request the phone downloads the public Broadcom LTO file from the fixed address `https://gllto.glpals.com/7day/v6/latest/lto.dat` (plain GET, no location, no ID, no app identification). That server sees the IP address. JoyoFit does not contact Huawei servers; any other assist data the watch asks for is declined, except as below. The address is fixed in the app, so this download carries no location and does not change the declarations above.
+- Experimental HW_AGNSS satellite data (Settings > About & advanced, off by default): with the switch on and a watch asking for exactly `HW_AGNSS`, the phone downloads `https://api.fit.joyorogo.com/v1/agps/hw-agnss` (our Worker; plain GET, no session, no parameters, no location or ID). The Worker builds one file from BKG's public broadcast ephemeris and serves the same bytes to every caller for 15 minutes; nothing about the user is stored. Our Worker sees the IP address like every request (Cloudflare request logs, below). Nothing is collected or shared, so the declarations above do not change.
 - Cloudflare Workers logs request metadata (URL, status, IP). This is operational logging by the infrastructure provider and not declared as a separate data type.
 - If you change what the app uploads, update this table, `site/src/Privasi.tsx` and the in-app Cloud text together.
 
