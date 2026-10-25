@@ -362,6 +362,31 @@ watch never sends the start event. The watch sends no fat or carbohydrate figure
 and carbs on the live screen are JoyoFit's estimate (`SubstrateEstimator`: %HRmax to %VO2max after Swain, RER curve,
 fat share `(1 - RER) / 0.3`, 9 and 4 kcal per gram).
 
+### Workout status and the watch's workout screen (`17/03`, `18/08`; `WorkoutLink.kt`, `WatchPhase` in `LiveWorkoutPolicy.kt`, iOS twins)
+
+What a watch that sends no reverse linkage (Fit 4 Pro 6.1.0.117; the Band 9/11 the same way [INFERENCE]) gives the phone about a workout started on it:
+
+| Frame | Fields | Meaning |
+|---|---|---|
+| `17/03` request `81 00`, answer | `81{02 trainMonitorState, 03 operatorType, [04 sportType], [05 run plan date], [06 workoutType]}`; `7F 04 <code>` when there is nothing (`000186A4`, 100004, seen after a workout) | Field names from Huawei Health 17.0.8.300 `HwLinkageServiceManager.handleGetOperatorStatusTlvData`. Huawei Health reads tag 02 as "the watch is busy with a workout" (`dfj.getDeviceBusyStatus`, `MyPlanInfoAdapter`: 0 is "device is not running") |
+| `18/08 {01: 1}` / `{01: 0}`, watch to phone | answered `18/08 {7F: 100000}` (`HwActivityRecognitionManager.notifyDeviceReceiveSuccess`) | Huawei Health's activity-recognition switch (`HwGpsUtil.arKitSwitch`): 1 with the first GPS request when a workout screen opens, 0 when it closes |
+
+The `17/03` states, from JoyoFit's log of the Fit 4 Pro (`Workout link: workout status ...`, logged on change, 2026-10-22 and 25):
+
+| Answer (inside `81`) | When | `WatchPhase` |
+|---|---|---|
+| `02 01 00 03 01 00` | nothing open | idle |
+| `02 01 00 03 01 01` | the workout screen is open, GO not pressed: Outdoor walk opened at 12:07:22 (with `18/02` and `18/08 {01: 1}`), 15:35:40 and 16:09:32 | open |
+| `02 01 01 03 01 03` | after GO (12:07:43, 12:08:13; also seen in the strength probe of 2026-10-22) | running |
+| `02 01 00 03 01 00` again | 5 s after `18/08 {01: 0}` (12:07:58 / 12:08:03, 12:08:18 / 12:08:23, 15:35:53 / 15:35:54) | idle |
+
+Reading tag 03 alone, as JoyoFit did, took the GO screen for a running workout: the phone's timer started 20 to 30 s before the watch's
+(`Live workout: the watch started the workout; timer running` at 16:09:32 with only Outdoor walk opened). Operator 2 is read as a pause and 4 as
+a stop, as in `17/02`; **what the Fit 4 Pro answers while paused was not captured**: a pause that only clears tag 02 reads as "open", which
+pauses a session that ran (`LiveWorkoutPolicy.statusTarget`). A watch that sends no tag 02 is read by its operator alone. The poll runs every 2 s
+while a session waits for GO, every 5 s while one runs, every 30 s otherwise, and at once on a GPS request, on `18/08 {01: 0}` and on a
+withdrawn GPS request while live; after `18/08 {01: 0}` one idle answer ends the session (three otherwise).
+
 ### Workout started from the phone (`WatchWorkout.kt`, `WatchWorkoutModuleApi.kt`; iOS `WatchWorkoutCodec.swift`, `WatchWorkoutControl.swift`; as Huawei Health 17.0.8.300 behaves, UNVERIFIED on any watch)
 
 Huawei Health's "phone-started linkage": the phone starts a workout, the watch follows. It is the legacy workout service, not DataSync
@@ -374,7 +399,7 @@ nothing for it. Reverse linkage above (`37/02`) is the opposite direction (watch
 | start / pause / resume / stop | `17/01 81{02 operator, 03 kind, 05 workout type, 06 operation time s i32, 87{08 distance dm i32, 09 calories i32, 0A duration i32}, [0B version], 0C start time s i32, [0D run course version], [0E forbid pause]}`. Operator 1 start, 2 pause, 3 resume, 4 stop. Kind 1 = single track (2 = run plan, never sent). Integers 02/03/05/0B/0D/0E are minimal-length big-endian (`ego.e`): 140 is one byte `8c`. Tag order and lengths match Huawei's hand-built hex (`81 29 ...` for the base shape, checked by `WatchWorkoutTest`) |
 | the watch answers | `17/01` `7F 04 <i32>`: 100000 accepts; **123002** (`0001E07A`) is "the watch could not do it" with no reason in the answer (observed, below). Huawei Health uses 123002 the other way round too: its `17/02` answer when pausing, resuming or stopping its own workout failed (`fjt.y/w/u/v/p/x`) |
 | the watch reports its own pause, resume or stop | `17/02 81{02 operator, 03 kind, 05 workout type, 06 time}`; the phone answers `17/02 7F 04 <100000>` |
-| is it running | `17/03` `81 00`; the answer's `81{03 operator, 04 sport, 06 workout type}` (operator 1 or 3 = running); JoyoFit asks once 1.5 s after a start |
+| is it running | `17/03` `81 00`; the answer's `81{02 trainMonitorState, 03 operator, 04 sport, 06 workout type}`, read as a `WatchPhase` (section above): open (the GO screen) or running counts as started; JoyoFit asks once 1.5 s after a start |
 
 Sport codes: the workout type of tag 05 is in the watch's own sport space (the table in `WorkoutSportTypes.kt`, the same byte as
 `17/08` tag `14`), strength training is **140**. Huawei Health only maps 1 run, 2 walk, 3 ride, 5 indoor run, 7 indoor ride, 134 elliptical,
@@ -404,7 +429,7 @@ with the smallest body (`81 06 02 01 <op> 05 01 8C`): **all six got `7F 04 0001E
 `17/15` answered `01 04 00000007`. So the refusal is not about "no workout is running" and not about the wear state: the watch refuses `17/01` from this phone for start, pause, resume and
 stop, with a workout running or not. The most likely reading [INFERENCE]: the `17/01` channel is gated for third-party clients (Huawei Health's binding is not something a
 different app identity gets), and Huawei Health uses the same single `17/01`, so there is no other phone-to-watch route to try. `17/03` also changed on its own while the owner
-handled the watch (`..02 01 01 03 01 03`, `..02 01 00 03 01 01`), so the watch does report a pause/resume state through `17/03`; JoyoFit already reads it (`LiveWorkout`), which is how a watch-started workout is followed.
+handled the watch (`..02 01 01 03 01 03`, `..02 01 00 03 01 01`), so the watch does report its state through `17/03`; JoyoFit reads it (`LiveWorkout`), which is how a watch-started workout is followed. Read again on 2026-10-25 with tag 02: `02 01 00 03 01 01` is the workout's start (GO) screen, not a running workout ("Workout status and the watch's workout screen" above), so the first answer of this probe was the strength start screen [INFERENCE].
 No `17/02` notice, no `18/02` GPS request and no `17/11` frames arrived during the probe window.
 
 Huawei's own text also says a workout started from Huawei Health and synced to the watch is stored **only in Huawei Health**: the watch displays and supplies heart
