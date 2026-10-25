@@ -73,6 +73,23 @@ The band's number wins when it is above zero. A band without GPS reports a flat 
 
 The phone's position (`location`) is in the payload for the map; the trail is the screen's (`trail.ts`).
 
+### Metrics by source on the watch-started screen (JRG-418 inventory, Fit 4 Pro 6.1.0.117, 2026-10-25)
+
+What reached the phone during the 17:43 and 18:49 walks (`logcat_go_probe.txt`, `logcat_lab3.txt`): `19/03` heart-rate reports (about one per 6 s while the realtime heart rate is on, `07/1C`), `17/03` status answers, `18/02` and `18/08`. No `17/11` report (although `17/12` was answered 100000), no `37/03` points, no reverse linkage; the `37/02` events were HTTP-proxy and watch-face reports, `34/01` P2P frames map-kit and battery. So the watch gives heart rate and state only.
+
+| Field (`RunMetricId`) | Watch | Phone GPS | Phone step counter | Derived | On the Fit 4 Pro today |
+| --- | --- | --- | --- | --- | --- |
+| duration | `17/11` 02 (not sent) | | | phone clock from GO (`WorkoutClock`) | yes |
+| distance, pace, speed | `17/11` 08 / 07 (not sent) | `SessionTrack` | | | yes (phone GPS) |
+| avg pace | | | | duration / distance (`averagePace`) | yes |
+| hr | `19/03` | | | | yes |
+| calories | `17/11` 09 (not sent) | | | `HeartRateEnergy` from HR, weight, age, sex | yes (estimate) |
+| elevation gain, altitude | `17/11` 0A / 0C (not sent) | `SessionTrack` (smoothed, 3 m dead band) | | | yes (phone GPS; 0 m on the flat) |
+| descent, training effect, HR zone, steps | `17/11` 0B, 0D/0E, 04, 05 (not sent) | | | | no: shown under "More" only when a watch sends them |
+| cadence | `17/11` 06 (not sent) | | not wired in the watch-live path | | **no** |
+
+Not possible today, and why: **cadence, steps and stride** need the phone's step counter in the watch-live session. It runs only inside the Run recorder's native session (`ble-sensors`, with its own foreground service); the watch-live path (`huawei-wear` `LiveWorkout`, Kotlin and Swift) has no step-counter source, so a phone-side cadence is new native work on both platforms (Android `TYPE_STEP_COUNTER`, iOS `CMPedometer`), and it would count the phone's steps, not the wrist's. **HR zone, average and maximum HR** are not fields of the live grid (only the watch's zone, which the Fit 4 Pro does not send); deriving them in JS from the `19/03` readings needs the person's zone method (`docs/hr-zones.md`). The grid has four or six fields (`FieldCount`); a longer default needs pages or a scrolling grid, which the live screen does not have.
+
 ## Phone-started run (`bandLinkCore.ts`, `bandLink.ts`, `controller.ts`)
 
 "Mulai" on a GPS or treadmill run starts the band as well, when the setting "Mulai band bersama lari" is on (kv key `joyofit.record.bandStart`, default on) and a watch exists:
