@@ -178,6 +178,8 @@ function build(spec: Spec) {
     dark: spec.palette.dark,
     light: spec.palette.light,
     layers: spec.layers,
+    // The sport glyph is one layer per family and kind (most of them hidden): the poster draws it twice.
+    constraints: { maxLayers: 80 },
     meta: { tags: spec.tags, ...(spec.photo ? { needsPhoto: true } : {}) },
   });
 }

@@ -408,7 +408,7 @@ All paths, units and caps are the TypeScript of `data/*.ts`; the summary:
 
 | namespace | emitted by | main paths |
 |---|---|---|
-| `run.*` | `buildRunSubject` | `sport kind startedAt movingSec elapsedSec distanceM paceSecKm pace100Sec speedKmh hrAvg hrMax kcal elevGainM cadence power steps route splitKmh splitLabels splitFastest hrZoneSec hrZonePct hrZoneLabels hrZoneColors hrZoneTop hrSeries paceSeries altSeries strain strainPct effortLabel prLabel prTime prCount gear` |
+| `run.*` | `buildRunSubject` | `sport kind category startedAt movingSec elapsedSec distanceM paceSecKm pace100Sec speedKmh hrAvg hrMax kcal elevGainM cadence power steps jumps laps strokes swolf strokeRate poolM volumeKg sets reps exercises route splitKmh splitLabels splitFastest hrZoneSec hrZonePct hrZoneLabels hrZoneColors hrZoneTop hrSeries paceSeries altSeries strain strainPct effortLabel prLabel prTime prCount gear` (what a sport family has no use for is left out, see "Sport families") |
 | `strength.*` | `buildStrengthSubject` | `name startedAt volumeKg reps sets durationSec kcal exercises topSets[{exercise,load}] prCount prs[] muscleLabels muscleSets muscleColors avgRpe` |
 | `sleep.*` | `buildSleepSubject` | `score asleepSec deep/rem/light/awakeSec deep/rem/light/awakePct bedtime wakeTime inBedSec awakenings vsAvgSec hypno hypnoColors nap verdict` |
 | `ready.*`, `watch.*` | `buildTodaySubject` | `recovery headline headlineKey strain strainPct sleepSec sleepPct steps stepGoal stepPct rhr hrvMs signals[]` (`watch.*` repeats the numeric ones) |
@@ -421,6 +421,31 @@ privacy ends (`options.privacy.routeTrimMeters`), the data layer never pre-trims
 shows the whole route. Strava data is never in a subject (JoyoFit only uploads); no sticker draws a Strava, Apple Health or
 Health Connect mark (`docs/brand-marks.md`).
 
+### Sport families
+
+A watch workout is one of nine families (`features/workouts/sportCategory.ts`, by the watch's English sport name, then the
+summary's activity kind, then the analysed sport kind). `data/sportMetrics.ts` says which `run.*` numbers each family keeps;
+`buildRunSubject` drops the rest before any template sees it, so every card, the `run.*` ones included, hides them. Time, heart
+rate, calories, heart rate zones, strain and gear are kept for every family.
+
+| family (`run.category`) | sports | keeps besides time, HR, kcal, zones | family cards (hero, then the numbers) | opens on |
+|---|---|---|---|---|
+| `run` | running, trail, treadmill, obstacle race | distance, pace /km, climb, cadence, power, steps, route, splits, records | the `run` cards | `run.bold` |
+| `walk` | walking, hiking, orienteering | distance, pace /km, climb, cadence, steps, route, splits, records | distance (else steps, else time); time, pace, climb, steps; art: route, else climb chart, else HR chart | `walk.bold` |
+| `ride` | cycling, indoor cycling, spinning, BMX | distance, speed, climb, cadence (rpm), power, route, splits | distance (else time); time, speed, climb, power, cadence; art: route, else climb, else HR | `ride.bold` |
+| `swim` | pool and open water | distance (in metres), pace /100 m, route, laps, strokes, SWOLF, stroke rate, pool length | metres (else time); time, pace /100 m, laps, SWOLF, strokes, pool length; art: open-water route | `swim.bold` |
+| `gym` | strength, functional, core, crossfit, gymnastics | the merged strength log's volume, sets, reps, exercises | volume (else duration); duration, sets, reps, kcal, HR; art: HR zones, else HR chart; effort chip | `gym.bold` |
+| `cardio` | HIIT, jump rope, aerobics, machines (elliptical, stepper, rowing machine, air walker), boxing, martial arts, dance | jumps (a jump rope's steps) | jumps (else duration); duration, kcal, HR, max HR; art: HR zones, else HR chart; effort chip | `cardio.bold` |
+| `flow` | yoga, pilates, stretching, tai chi, meditation | nothing more | duration; kcal, HR; art: HR chart; effort chip | `flow.minimal` |
+| `court` | team and racket sports | distance covered, steps | duration; kcal, HR, max HR, steps, distance; art: HR zones, else HR chart; effort chip | `court.bold` |
+| `other` | the rest (golf, paddling, skating, diving, ...) | distance, climb, steps, route | the `run` cards | `run.bold` |
+
+A family with cards lists its kind first in `subject.kinds` (`['gym', 'run']`), so the picker shows the family's cards first
+and every `run` card after them; `subject.defaultGroup` (`DEFAULT_GROUP`) is the card the sheet opens on (`offer.ts`
+`initialGroup`). The sport glyph of every card follows the family (`blocks.ts` `sportGlyph`: the barbell lifter for gym, MDI
+`run-fast`, `yoga` and `tennis` paths for cardio, flow and court), and the receipt reads metres for a swim, rpm for a ride and
+thanks each family in its own words.
+
 ### Privacy and Pro in JoyoFit
 
 - Route: first and last 200 m trimmed by default; the sheet has the "Sembunyikan awal dan akhir rute" switch (only shown for a
@@ -430,7 +455,7 @@ Health Connect mark (`docs/brand-marks.md`).
   === 'pro'`, the same gate as Coach); free accounts always carry it.
 - Photos: `photoSize.ts` + `photo.ts` downscale the pick to 2048 px (JPEG 0.9) before it is drawn.
 
-### Catalog (75 templates, 10 kinds)
+### Catalog (117 templates, 17 kinds)
 
 Ids are `<kind>.<name>.<canvas>`; a style with both `story` and `square` is one picker entry. Transparent stickers are `free`
 canvases.
@@ -439,6 +464,7 @@ canvases.
 |---|---|
 | `run` (18) | `bold`, `poster`, `minimal`, `photo`, `glass` (story + square each); `route.sticker`, `stats.sticker`, `receipt.sticker` (transparent); `map.story`; `splits` and `zones` (story + square) |
 | `strength` (12) | `bold`, `poster`, `minimal`, `muscle`, `photo` (story + square each); `receipt.sticker`, `stats.sticker` (transparent) |
+| `walk`, `ride`, `swim`, `gym`, `cardio`, `flow`, `court` (6 each) | `bold` and `minimal` (story + square), `poster.story`, `stats.sticker` (transparent); `templates/sport.ts`, one spec per family |
 | `sleep` (6) | `ring` and `stages` (story + square), `poster.story`, `stats.sticker` |
 | `ready` (5) | `rings` and `bold` (story + square), `stats.sticker` |
 | `watch` (2) | `rings.sticker`, `tiles.sticker` (transparent watch-face stickers) |
@@ -454,8 +480,10 @@ a drawn fallback until a map image is supplied), ring (progress rings), badge (m
 
 ### Tests and goldens
 
-- `bun test ./src/` runs everything: core (the shared tests, copied with core), `data/*.test.ts` (builders),
-  `offer.test.ts`, `photoSize.test.ts`, `studio/localStore.test.ts`, `share/shareTargets.test.ts`,
+- `bun test ./src/` runs everything: core (the shared tests, copied with core), `data/*.test.ts` (builders; `sportMetrics.test.ts`
+  builds a watch workout of every family from `testing/sportWorkouts.ts` and checks the numbers it keeps, the card the sheet
+  opens on, and the text of every card it is offered), `features/workouts/sportCategory.test.ts`, `offer.test.ts`,
+  `photoSize.test.ts`, `studio/localStore.test.ts`, `share/shareTargets.test.ts`,
   `templates/templates.test.ts` (every template parses with zero issues and does not degrade; ids and titles; story safe-area
   lint; no words outside bindings and i18n keys; route privacy and no weight binding; transparent flag matches the render; every
   fixture of the kind renders in id and en, dark and light, with all text inside the canvas, at least 22 px, and 3:1 contrast on
@@ -470,7 +498,8 @@ a drawn fallback until a map image is supplied), ring (progress rings), badge (m
 - Threads goldens are per fixture slide (`testing/threadsGolden.test.ts`, `__goldens__/threads/`), not per template; the generic golden test skips kind `threads`.
 - Contact sheets: `TMPDIR=... bun scripts/stickers-sheet.ts [--mode dark|light|both] [--locale id|en] [--only <id-prefix>] [--out DIR]`
   writes every render plus `contact-sheet-{dark,light}.png` and a sheet per kind (photo templates on a dusk and a bright day
-  photo). Default out dir `/run/media/dzul/ioswork/stickers/fit`.
+  photo). Default out dir `/run/media/dzul/ioswork/stickers/fit`. The sport family sheets (`--only <family>.`, dark and light, id)
+  are kept in `docs/screenshots/share-per-sport/`.
 
 ### Native build and OTA
 

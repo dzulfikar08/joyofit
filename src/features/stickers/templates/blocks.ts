@@ -3,6 +3,7 @@
  * so a template that needs something different simply does not call them.
  */
 import type { Kit, LayerJson, StatOpts } from './dsl';
+import { FAMILY_GLYPHS } from './glyphs';
 
 /** Condition helpers for `when`. */
 export const has = (bind: string) => ({ bind, exists: true });
@@ -15,16 +16,38 @@ export const not = (cond: Record<string, unknown>) => ({ not: cond });
 /** `{ t: 'stickers:label.time' }`. */
 export const tl = (key: string, args?: Record<string, string>) => ({ t: `stickers:${key}`, ...(args ? { args } : {}) });
 
-/** The glyph of `run.kind`: five icon layers stacked in one box, exactly one passes its `when`. */
+/** Sport families drawn by their own pictogram rather than by `run.kind` (which reads `other` for all of them). */
+const FAMILY_ICONS: readonly [family: string, glyph: { icon: string } | { path: string }][] = [
+  ['gym', { icon: 'strength' }],
+  ['cardio', { path: FAMILY_GLYPHS.cardio }],
+  ['flow', { path: FAMILY_GLYPHS.flow }],
+  ['court', { path: FAMILY_GLYPHS.court }],
+];
+
+/**
+ * The glyph of a workout: the family's pictogram for a gym, cardio, flow or court session (`run.category`), else the glyph of
+ * `run.kind`. One layer per glyph stacked in one box, exactly one passes its `when`.
+ */
 export function sportGlyph(k: Kit, x: number, y: number, size: number, color: string, bind = 'run.kind'): LayerJson[] {
+  const family = bind.replace(/kind$/, 'category');
+  const families = FAMILY_ICONS.map(([name]) => name);
+  const plain = not({ bind: family, in: families });
   const kinds: [string, string][] = [
     ['run', 'run'],
     ['walk', 'walk'],
     ['ride', 'bike'],
     ['swim', 'swim'],
   ];
-  const layers = kinds.map(([kind, icon]) => k.icon({ x, y, w: size, h: size }, icon, color, { when: is(bind, kind) }));
-  layers.push(k.icon({ x, y, w: size, h: size }, 'fitness', color, { when: not({ bind, in: kinds.map(([kind]) => kind) }) }));
+  const layers = kinds.map(([kind, icon]) => k.icon({ x, y, w: size, h: size }, icon, color, { when: all(plain, is(bind, kind)) }));
+  layers.push(k.icon({ x, y, w: size, h: size }, 'fitness', color, { when: all(plain, not({ bind, in: kinds.map(([kind]) => kind) })) }));
+  for (const [name, glyph] of FAMILY_ICONS) {
+    const when = is(family, name);
+    layers.push(
+      'icon' in glyph
+        ? k.icon({ x, y, w: size, h: size }, glyph.icon, color, { when })
+        : k.shape({ x, y, w: size, h: size }, 'path', { d: glyph.path, viewBox: [24, 24], fill: color }, { when }),
+    );
+  }
   return layers;
 }
 

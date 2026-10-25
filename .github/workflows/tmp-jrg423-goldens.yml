@@ -1,0 +1,36 @@
+# Temporary (JRG-423): renders the sticker goldens and the sport family contact sheets on Linux; removed before review.
+name: tmp JRG-423 goldens
+
+on:
+  push:
+    branches: [feat/jrg-423-share-per-sport]
+
+permissions:
+  contents: read
+
+jobs:
+  goldens:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - run: UPDATE_GOLDENS=1 bun test src/features/stickers/testing/golden.test.ts
+      - run: |
+          for mode in dark light; do
+            for family in walk ride swim gym cardio flow court; do
+              TMPDIR=$RUNNER_TEMP bun scripts/stickers-sheet.ts --only "$family." --mode "$mode" --out "out/$mode"
+            done
+          done
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: goldens
+          path: |
+            src/features/stickers/testing/__goldens__
+            out/*/sheet-*.png

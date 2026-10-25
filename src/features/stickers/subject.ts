@@ -7,8 +7,10 @@
 /**
  * Template families (`Template.kind`). A subject may offer several, e.g. a run that set a record also offers `badge`. `threads` is the
  * Threads carousel: its slides are never offered by the sticker sheet (no regular subject lists the kind), only by `ThreadsSheet`.
+ * `walk` ... `court` are the sport families of a watch workout (`data/sportMetrics.ts`): they read the same `run.*` data as the
+ * `run` cards, laid out around the numbers that sport has.
  */
-export const STICKER_KINDS = ['run', 'strength', 'sleep', 'ready', 'load', 'week', 'plan', 'watch', 'badge', 'threads'] as const;
+export const STICKER_KINDS = ['run', 'walk', 'ride', 'swim', 'gym', 'cardio', 'flow', 'court', 'strength', 'sleep', 'ready', 'load', 'week', 'plan', 'watch', 'badge', 'threads'] as const;
 export type StickerKind = (typeof STICKER_KINDS)[number];
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
@@ -19,6 +21,8 @@ export interface StickerSubject {
   id: string;
   /** Template families offered for this subject, most relevant first. */
   kinds: readonly StickerKind[];
+  /** The template group (`<kind>.<name>`) the sheet opens on; without one, or when it is not offered, the first group. */
+  defaultGroup?: string;
   /** Header of the sheet ("Bagikan latihan"). */
   heading: string;
   /** Text that travels with the image in the system share sheet. */
