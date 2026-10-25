@@ -103,7 +103,8 @@ class AuthBindConsentTest {
     val run = authenticate(authType = 5, bonded = true, firstBindAllowed = false)
 
     assertEquals(ErrorCodes.BIND_CONFIRMATION, run.error?.errorCode)
-    assertEquals(FirstBind.MESSAGE, run.error?.message)
+    // A key is stored (bonded) and the watch does not know it: the lost-binding text (JRG-414).
+    assertEquals(FirstBind.LOST_MESSAGE, run.error?.message)
     // LinkParams and SecurityNegotiation only: no PinCode or HiChain request reached the watch.
     assertEquals(2, run.watch.writes.size)
   }
@@ -113,6 +114,7 @@ class AuthBindConsentTest {
     val run = authenticate(authType = 6, bonded = false, firstBindAllowed = false)
 
     assertEquals(ErrorCodes.BIND_CONFIRMATION, run.error?.errorCode)
+    assertEquals(FirstBind.MESSAGE, run.error?.message)
     assertEquals(2, run.watch.writes.size)
   }
 

@@ -1184,8 +1184,9 @@ Sources: `~/re/agps/logcat_e2e.txt` (phone logcat 11:21-14:04, line numbers belo
     14:20:08 (l. 80) is the same eviction.
   - Huawei Health's own bind on a reconnect is not new: its 08:46:25 connect had authType 6 (snoop frame 12371, tag `02 = 02`) and still ran PinCode and op 1 (frames 12372-12387),
     because it had deleted its local member after the failed first attempt.
-  - `am force-stop` and `pm suspend` do not stop it: its processes were back after a force-stop at ~14:19 (owner's note). Removing the watch in Huawei Health, disabling or
-    uninstalling it is what stops the re-bind [INFERENCE for unpair: not run with a JoyoFit bind in place yet].
+  - `am force-stop` and `pm suspend` do not stop it: its processes were back after a force-stop at ~14:19 (owner's note). `pm disable-user com.huawei.health` does: with it
+    the JoyoFit binding survived the same Bluetooth toggle and `adb install -r` (control run, `docs/watch-reference.md`). Whether unpairing the watch in Huawei Health is
+    enough is not tested, and it may reset the watch.
 - **The watch keeps more than one phone identity.** Huawei Health's identity (bound 08:45:46) and JoyoFit's identity `FEAEFFF0…` (bound before 08:37) both authenticated with
   op 2 between 11:22 and 11:47 (Huawei Health l. 46821/46987, JoyoFit authType 6 from 11:31). JoyoFit's new identity `B434305E…` (op 1 at 11:52:58) and Huawei Health's
   evicted each other at every op 1 afterwards. Which identity an op 1 evicts is not known; "a watch holds one credential" (above, 2026-10-16) is too strong.

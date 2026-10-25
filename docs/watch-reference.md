@@ -176,21 +176,23 @@ JoyoRogo sign-in, JoyoRogo Pro (hidden when the build has no cloud server), Done
     prompt and JoyoFit's key (authType 6 on every reconnect). Details and frame references: `protocol/README.md`, Observations, 2026-10-25.
 - **The watch forgets JoyoFit after the link ends** (JRG-414, same run). Each time JoyoFit's link ended (Bluetooth switched off and on, `adb install -r`), Huawei Health on the
   same phone reconnected within seconds and paired the watch again by itself (PinCode and HiChain op 1, no prompt on the watch), which removed JoyoFit's identity; the next
-  JoyoFit connect got authType 5 (`Auth: the watch does not know this identity (authType 5) although a bind key is stored locally`). Huawei Health does this as long as the
-  watch is in its device list, also when it is paused or force-stopped. JoyoFit now says so in the bind confirmation of that case ("this watch no longer knows this phone's
-  pairing", `device.bind.lostAndroid` / `lostIos`) and in the background note; Pair again restores the binding, nothing on the watch is lost.
+  JoyoFit connect got authType 5 (`Auth: the watch does not know this identity (authType 5) although a bind key is stored locally`). Huawei Health did this while it was
+  enabled, also when paused (`pm suspend`) or force-stopped. JoyoFit now says so in the bind confirmation of that case ("this watch no longer knows this phone's pairing",
+  `device.bind.lostAndroid` / `lostIos`) and in the background note. What the texts recommend is what the control run below proved: disable or uninstall Huawei Health,
+  then pair JoyoFit again (re-pairing JoyoFit kept the watch's data). Unpairing the watch in Huawei Health is only mentioned as something that may reset the watch
+  (onboarding: an unbind there "usually resets" it; experiment 1 below). The iOS text names Huawei Health only as an example: nothing was observed on an iPhone.
 - **Unbind cause, control run (2026-10-25, JRG-414).** With Huawei Health disabled (`pm disable-user com.huawei.health`; `pm suspend` alone left its device manager
   running and reconnecting), JoyoFit's binding survived both triggers: Bluetooth off for 30 s and on (14:56:38–14:57:08), then `authType 6` at 14:59:21; `adb install -r`
   of the same build while linked (15:00:46–15:01:17), then `authType 6` at 15:01:26. The positive case (Huawei Health running, re-binding within seconds) is in the
   morning's log, see the item above. So for any device test: disable Huawei Health, do not just suspend it.
 - **Device experiments still to run for JRG-414** (Fit 4 Pro; capture `adb logcat -v threadtime` with JoyoFit's frame log on):
-  2. *Unpair in Huawei Health is enough.* With Huawei Health enabled, remove the watch in Huawei Health (Devices, the watch, Unpair), note whether the watch resets, bind
+  1. *Unpair in Huawei Health is enough.* With Huawei Health enabled, remove the watch in Huawei Health (Devices, the watch, Unpair), note whether the watch resets, bind
      JoyoFit, toggle Bluetooth. Expected: no `DEVMGR_ReconnectManager start reconnect device` for the watch and authType 6.
-  3. *What the prompt's Yes does.* Pair Huawei Health once (its account goes to the watch), then bind JoyoFit with Huawei Health disabled. On the next JoyoFit connect wait
+  2. *What the prompt's Yes does.* Pair Huawei Health once (its account goes to the watch), then bind JoyoFit with Huawei Health disabled. On the next JoyoFit connect wait
      for the prompt with the link up and tap Yes; note the `1A/06` frame and what the watch shows for 60 s. A build that answers that `1A/06` with `{7F: 000186A0}`
      (Huawei Health's `mri.e`) is the second half: only with the owner's agreement, since Huawei Health calls this "reset" and the watch's own data may be erased.
-  4. *Does JoyoFit's op 1 clear the account?* After 3 without confirming, Lupakan pairing and bind again (op 1); connect twice more. A `1A/06` or a watch-ended link within
-     40 s means the account survived op 1 (as after 14:21:10 on 2026-10-25); none means op 1 replaced it (as after 11:52:58).
+  3. *Does JoyoFit's op 1 clear the account?* After experiment 2 without confirming, Lupakan pairing and bind again (op 1); connect twice more. A `1A/06` or a watch-ended
+     link within 40 s means the account survived op 1 (as after 14:21:10 on 2026-10-25); none means op 1 replaced it (as after 11:52:58).
 - **First sync** is not a step: it starts by itself once the watch is linked (from the pairing step on, `firstSyncStarts`), runs in the background as Huawei Health's does, and shows
   as one line under the progress bar on the following steps (`useFirstSync`, `FirstSyncLine`), with a retry when it fails. A run stored on the old `sync` step resumes on what now
   follows pairing.

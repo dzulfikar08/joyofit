@@ -18,11 +18,11 @@ internal object FirstBind {
    * The stop when the watch forgot a binding this phone still holds (authType 5 with a stored key). On 2026-10-25 both such losses were
    * Huawei Health on the same phone: it reconnects within seconds of JoyoFit's link ending and, finding its own identity unknown, runs
    * PinCode and HiChain operationCode 1 without any prompt on the watch (docs/watch-reference.md, JRG-414). The iOS port words it the
-   * same way; JS tells the two stops apart by [LOST_MARKER].
+   * same way, byte for byte; JS tells the two stops apart by [LOST_MARKER].
    */
   const val LOST_MESSAGE =
-    "This watch no longer knows this phone's pairing: another app or phone paired it again while JoyoFit was not connected. " +
-      "Huawei Health does that by itself while the watch is still in its device list. Pairing again replaces that pairing."
+    "This watch no longer knows this phone's pairing: another app or phone paired it again while JoyoFit was not connected " +
+      "(for example Huawei Health, which does that by itself while it is enabled). Pairing again replaces that pairing."
 
   /** The part of [LOST_MESSAGE] that `describeConnectFailure` (src/features/device/connectFailure.ts) looks for. */
   const val LOST_MARKER = "no longer knows this phone's pairing"
@@ -33,7 +33,7 @@ internal object FirstBind {
   /** The background service's note for an ERR_BIND_CONFIRMATION stop with [message]. */
   fun backgroundNote(message: String?): String =
     if (message?.contains(LOST_MARKER) == true) {
-      "Paired again by another app (usually Huawei Health). Remove the watch there, then connect from the Device tab."
+      "Paired again by another app or phone (often Huawei Health). Disable or uninstall Huawei Health, then pair from the Device tab."
     } else {
       "Not bound yet. Connect once from the Device tab."
     }

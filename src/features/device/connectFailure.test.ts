@@ -16,8 +16,8 @@ describe('describeConnectFailure', () => {
   it('tells a binding the watch forgot (another app re-paired it) from a watch that was never bound', () => {
     // Kotlin FirstBind.LOST_MESSAGE and Swift FirstBindMessage.lost (JRG-414).
     const lost =
-      "This watch no longer knows this phone's pairing: another app or phone paired it again while JoyoFit was not connected. " +
-      'Huawei Health does that by itself while the watch is still in its device list. Pairing again replaces that pairing.';
+      "This watch no longer knows this phone's pairing: another app or phone paired it again while JoyoFit was not connected " +
+      '(for example Huawei Health, which does that by itself while it is enabled). Pairing again replaces that pairing.';
     expect(describeConnectFailure(coded(BIND_CONFIRMATION, lost))).toEqual({ kind: 'bind', lost: true });
     expect(
       describeConnectFailure(coded(BIND_CONFIRMATION, "This watch has to be paired with this phone first. Pairing replaces the watch's current phone pairing.")),
