@@ -29,6 +29,8 @@ export function sampleContext(): FieldContext {
       lapMovingSec: 612,
       fixAgeSec: 1,
       fixAccuracyM: 6,
+      elevationGainM: 312,
+      altitudeM: 148,
     },
     metrics: {
       avgSpeedMps: 24.6 / 3.6,

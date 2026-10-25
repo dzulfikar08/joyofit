@@ -108,10 +108,20 @@ export interface LiveStats {
   /** Age of the last GPS fix in seconds, null when there has been none. */
   fixAgeSec: number | null;
   fixAccuracyM: number | null;
+  /** Climb so far in metres from the GPS altitude (smoothed, 3 m dead band), pauses excluded; 0 without GPS. */
+  elevationGainM: number;
+  /** Altitude of the latest fresh fix in metres, null without one. */
+  altitudeM: number | null;
 }
 
 /** Fixes worse than this (horizontal accuracy, metres) are not used. */
 export const MAX_FIX_ACCURACY_M = 35;
+/** Altitude counts only from fixes at least this good (horizontal accuracy, metres), as the watch-live GPS track does. */
+const MAX_ALT_ACCURACY_M = 30;
+/** Weight of a new altitude in the smoothed one (GPS altitude jumps by metres). */
+const ALT_ALPHA = 0.25;
+/** The smoothed altitude must move this far (metres) from the reference before a rise counts. */
+const RISE_HYSTERESIS_M = 3;
 /** Under this ground speed (m/s) a fix is the phone standing still, not movement. */
 const STILL_SPEED_MPS = 0.4;
 /** A step shorter than this (metres) from the anchor is jitter. */
@@ -157,6 +167,8 @@ export interface RecorderMeta {
   lapStartDistance: number;
   /** Steps counted by the phone's step counter, pauses excluded. Absent in a journal written before it existed. */
   phoneSteps?: number;
+  /** Live climb in metres. Absent in a journal written before it existed. */
+  elevationGainM?: number;
 }
 
 const isCycling = (sport: ManualSport) => sport === 'ride' || sport === 'indoorRide';
@@ -193,6 +205,10 @@ export class Recorder {
   private gpsDeltaM = 0;
   private lastWheelM = 0;
   private lastFixSpeed: number | null = null;
+  /** Live climb: total, smoothed altitude and the reference level of the dead band (both reset at resume). */
+  private elevationGain = 0;
+  private smoothedAlt: number | null = null;
+  private referenceAlt: number | null = null;
   /** The web game's speed for an indoor ride without a wheel sensor ("Main di web"), and when it was last reported. */
   private virtual: { speedMps: number; at: number } | null = null;
 
@@ -230,6 +246,8 @@ export class Recorder {
     // Nothing moved while paused: restart the GPS path and the wheel baseline so the pause adds no distance.
     this.anchor = null;
     this.gpsDeltaM = 0;
+    this.smoothedAlt = null;
+    this.referenceAlt = null;
     this.lastWheelM = this.tracker.wheelDistanceM;
     this.tick(nowMs);
   }
@@ -265,6 +283,7 @@ export class Recorder {
     this.lastFixSpeed = fix.speed;
     if (this.status !== 'recording' || !this.config.gps) return;
     if (fix.accuracy !== null && fix.accuracy > MAX_FIX_ACCURACY_M) return;
+    this.climb(fix);
     const prev = this.anchor;
     if (!prev) {
       this.anchor = fix;
@@ -290,6 +309,22 @@ export class Recorder {
     if (d < MIN_STEP_M) return;
     this.gpsDeltaM += d;
     this.anchor = fix;
+  }
+
+  /** Adds the rise of a recorded fix's altitude to the live climb: the same rule as the watch-live GPS track (LiveGpsTrack). */
+  private climb(fix: GpsFix): void {
+    const alt = fix.alt;
+    if (alt === null || !Number.isFinite(alt)) return;
+    if (fix.accuracy !== null && fix.accuracy > MAX_ALT_ACCURACY_M) return;
+    const smooth = this.smoothedAlt === null ? alt : this.smoothedAlt + ALT_ALPHA * (alt - this.smoothedAlt);
+    this.smoothedAlt = smooth;
+    const ref = this.referenceAlt;
+    if (ref === null || ref - smooth >= RISE_HYSTERESIS_M) {
+      this.referenceAlt = smooth;
+    } else if (smooth - ref >= RISE_HYSTERESIS_M) {
+      this.elevationGain += smooth - ref;
+      this.referenceAlt = smooth;
+    }
   }
 
   /** The speed (m/s) the web game says the rider makes; used for an indoor ride while it is fresh and no wheel sensor reports a speed. */
@@ -451,6 +486,8 @@ export class Recorder {
       lapMovingSec: this.samples.length - this.lapStartIndex,
       fixAgeSec: this.latestFix ? Math.max(0, Math.floor((nowMs - this.latestFix.ts) / 1000)) : null,
       fixAccuracyM: this.latestFix?.accuracy ?? null,
+      elevationGainM: this.elevationGain,
+      altitudeM: this.latestFix && this.latestFix.alt !== null && nowMs - this.latestFix.ts <= FIX_FRESH_MS ? this.latestFix.alt : null,
     };
   }
 
@@ -498,6 +535,7 @@ export class Recorder {
       distanceM: this.distance,
       steps: this.podSteps,
       phoneSteps: this.phoneSteps,
+      elevationGainM: this.elevationGain,
       kcalHr: this.kcalHr,
       kcalMet: this.kcalMet,
       hrSeconds: this.hrSeconds,
@@ -528,6 +566,7 @@ export class Recorder {
     r.distance = meta.distanceM;
     r.podSteps = meta.steps;
     r.phoneSteps = meta.phoneSteps ?? 0;
+    r.elevationGain = meta.elevationGainM ?? 0;
     r.kcalHr = meta.kcalHr;
     r.kcalMet = meta.kcalMet;
     r.hrSeconds = meta.hrSeconds;
