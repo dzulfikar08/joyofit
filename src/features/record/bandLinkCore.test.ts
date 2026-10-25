@@ -40,6 +40,7 @@ class FakeNative implements BandLinkNative {
 
 function make(native: FakeNative | null = new FakeNative(), enabled = true) {
   const stops: string[] = [];
+  const logs: string[] = [];
   let listener: ((bpm: number, ts: number) => void) | null = null;
   const band = new BandLink({
     native: () => native,
@@ -51,9 +52,15 @@ function make(native: FakeNative | null = new FakeNative(), enabled = true) {
         listener = null;
       };
     },
+    log: (m) => logs.push(m),
   });
-  return { band, native, stops, reading: (bpm: number) => listener?.(bpm, 1) };
+  return { band, native, stops, logs, reading: (bpm: number) => listener?.(bpm, 1) };
 }
+
+/** Lets the band link's queued native calls (all resolved promises of the fake) run. */
+const flush = async () => {
+  for (let i = 0; i < 20; i++) await Promise.resolve();
+};
 
 describe('bandSportCode', () => {
   it('uses the Huawei sport types of the sport table', () => {
@@ -113,18 +120,38 @@ describe('begin', () => {
     expect(await band.begin('run', () => {})).toBe('refused');
   });
 
-  it('a band that does not list the command, or is not connected, is unavailable', async () => {
-    for (const outcome of ['unsupported', 'not_connected'] as const) {
-      const native = new FakeNative();
-      native.startOutcome = outcome;
-      const { band } = make(native);
-      expect(await band.begin('run', () => {})).toBe('unavailable');
-    }
+  it('a band that does not list the command cannot start from the phone, and the log says why', async () => {
+    const native = new FakeNative();
+    native.startOutcome = 'unsupported';
+    native.status = { ...native.status, supported: false };
+    const { band, logs } = make(native);
+    expect(await band.begin('run', () => {})).toBe('unsupported');
+    expect(band.getSnapshot().phase).toBe('unsupported');
+    expect(logs.at(-1)).toContain(': unsupported (100000) (connected true, supported false) -> unsupported');
   });
 
-  it('a build without the native functions is unavailable', async () => {
-    const { band } = make(null);
-    expect(await band.begin('run', () => {})).toBe('unavailable');
+  it('a start the native side found no connected band for waits for the band', async () => {
+    const native = new FakeNative();
+    native.startOutcome = 'not_connected';
+    const { band, logs } = make(native);
+    expect(await band.begin('run', () => {})).toBe('connecting');
+    expect(native.calls).toEqual(['start 1']);
+    expect(logs.at(-1)).toContain(': not_connected (100000) (connected true, supported true) -> connecting');
+  });
+
+  it('a band not connected at the start is not sent anything yet and waits', async () => {
+    const native = new FakeNative();
+    native.status = { ...native.status, connected: false };
+    const { band, logs } = make(native);
+    expect(await band.begin('run', () => {})).toBe('connecting');
+    expect(native.calls).toEqual([]);
+    expect(logs.at(-1)).toContain('not sent (connected false, supported true) -> connecting');
+  });
+
+  it('a build without the native functions is nobuild', async () => {
+    const { band, logs } = make(null);
+    expect(await band.begin('run', () => {})).toBe('nobuild');
+    expect(logs.at(-1)).toContain('-> nobuild');
   });
 
   it('the setting off, or a sport without a band workout, is off and asks for nothing', async () => {
@@ -158,6 +185,116 @@ describe('begin', () => {
     reading(142);
     expect(seen).toEqual([142]);
     expect(band.getSnapshot().hr).toBe(142);
+  });
+});
+
+describe('a band not connected at the start', () => {
+  function disconnected() {
+    const native = new FakeNative();
+    native.status = { ...native.status, connected: false };
+    return make(native);
+  }
+
+  it('is started exactly once when it connects, never while the start is in flight', async () => {
+    const { band, native } = disconnected();
+    await band.begin('run', () => {});
+    expect(band.poll()).toBeNull();
+    expect(band.poll()).toBeNull();
+    expect(native!.calls).toEqual([]);
+    native!.status = { ...native!.status, connected: true };
+    expect(band.poll()).toBeNull();
+    expect(band.getSnapshot().phase).toBe('starting');
+    expect(band.poll()).toBeNull();
+    await flush();
+    expect(native!.calls).toEqual(['start 1']);
+    expect(band.getSnapshot().phase).toBe('linked');
+    band.poll();
+    band.poll();
+    expect(native!.calls).toEqual(['start 1']);
+  });
+
+  it('a start that finds the band gone again waits for the next connect, one attempt each', async () => {
+    const { band, native } = disconnected();
+    await band.begin('run', () => {});
+    native!.startOutcome = 'not_connected';
+    native!.status = { ...native!.status, connected: true };
+    band.poll();
+    await flush();
+    expect(band.getSnapshot().phase).toBe('connecting');
+    // Still reading connected: no second attempt on the same connect.
+    band.poll();
+    await flush();
+    expect(native!.calls).toEqual(['start 1']);
+    native!.status = { ...native!.status, connected: false };
+    band.poll();
+    native!.startOutcome = 'confirmed';
+    native!.status = { ...native!.status, connected: true };
+    band.poll();
+    await flush();
+    expect(native!.calls).toEqual(['start 1', 'start 1']);
+    expect(band.getSnapshot().phase).toBe('linked');
+  });
+
+  it('a band that connects but does not list the command is unsupported and not tried again', async () => {
+    const { band, native } = disconnected();
+    await band.begin('run', () => {});
+    native!.startOutcome = 'unsupported';
+    native!.status = { ...native!.status, connected: true, supported: false };
+    band.poll();
+    await flush();
+    expect(band.getSnapshot().phase).toBe('unsupported');
+    native!.status = { ...native!.status, connected: false };
+    band.poll();
+    native!.status = { ...native!.status, connected: true };
+    band.poll();
+    await flush();
+    expect(native!.calls).toEqual(['start 1']);
+  });
+
+  it('waits for the resume when the recording is paused', async () => {
+    const { band, native } = disconnected();
+    await band.begin('run', () => {});
+    await band.setPaused(true);
+    native!.status = { ...native!.status, connected: true };
+    band.poll();
+    band.poll();
+    await flush();
+    expect(native!.calls).toEqual([]);
+    expect(band.getSnapshot().phase).toBe('connecting');
+    await band.setPaused(false);
+    band.poll();
+    await flush();
+    expect(native!.calls).toEqual(['start 1']);
+    expect(band.getSnapshot().phase).toBe('linked');
+  });
+
+  it('is given up when the recording ends', async () => {
+    const { band, native } = disconnected();
+    await band.begin('run', () => {});
+    await band.end();
+    native!.status = { ...native!.status, connected: true };
+    expect(band.poll()).toBeNull();
+    await flush();
+    expect(native!.calls).toEqual([]);
+    expect(band.getSnapshot().phase).toBe('off');
+  });
+
+  it('a start already queued when the recording ends sends nothing', async () => {
+    const { band, native } = disconnected();
+    await band.begin('run', () => {});
+    const pending = band.setPaused(false);
+    native!.status = { ...native!.status, connected: true };
+    // A command is in flight: the poll waits.
+    band.poll();
+    expect(band.getSnapshot().phase).toBe('connecting');
+    await pending;
+    band.poll();
+    expect(band.getSnapshot().phase).toBe('starting');
+    // The recording ends before the queued start runs.
+    await band.end();
+    await flush();
+    expect(native!.calls).toEqual([]);
+    expect(band.getSnapshot().phase).toBe('off');
   });
 });
 

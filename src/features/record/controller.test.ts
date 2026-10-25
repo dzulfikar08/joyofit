@@ -799,7 +799,7 @@ describe('the band beside a phone run', () => {
     await controller.prepare('run', 'Lari');
     controller.start();
     await settle();
-    expect(band.getSnapshot().phase).toBe('unavailable');
+    expect(band.getSnapshot().phase).toBe('nobuild');
     expect(controller.getSnapshot().status).toBe('recording');
   });
 
