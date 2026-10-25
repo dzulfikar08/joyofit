@@ -116,7 +116,7 @@ private final class PhotoWatch: FrameSink, @unchecked Sendable {
                 let id = (try? packet.tlv?.string(0x01)) ?? ""
                 let operation = Int(packet.tlv?.byte(0x03, default: -1) ?? -1)
                 operations.append((id, (try? packet.tlv?.string(0x02)) ?? "", operation))
-                if id == "2180736265" && operation == 1 && applyStatus == 100_000 { faceCurrent = true }
+                if id == "2180736265" && operation == 1 && (applyStatus == 100_000 || applyStatus == 0) { faceCurrent = true }
                 var t = HuaweiTLV()
                 t.put(0x7f, int: applyStatus)
                 return [frame(0x27, 0x03, t)]
@@ -411,6 +411,19 @@ final class PhotoFaceControllerTests: XCTestCase {
         XCTAssertEqual(events.results.first?.ok, true)
         XCTAssertEqual(events.results.first?.message, "Photo added, but the watch answered 140004 when the photo face was applied again.")
         XCTAssertEqual(js["applyError"] as? String, "the watch answered 140004 when the photo face was applied again")
+    }
+
+    func testAnApplyAnsweredWithZeroIsASuccess() async throws {
+        // The Fit 4 Pro answered the photo face apply with 7f = 0 (2026-10-25); Huawei Health counts 0 as success.
+        let (controller, events, _) = make(tweak: { $0.applyStatus = 0 })
+        let (url, _) = png(4, 3)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let js = try await controller.add(uri: url.absoluteString)
+
+        XCTAssertTrue(js["applyError"] is NSNull)
+        XCTAssertEqual(events.results.first?.message, "Photo added.")
+        XCTAssertEqual((js["face"] as? [String: Any])?["active"] as? Bool, true)
     }
 
     func testAPhotoOfTheWrongSizeIsRefusedBeforeAnythingIsSent() async throws {

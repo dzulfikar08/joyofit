@@ -310,7 +310,7 @@ internal class PhotoFaceController(
   private suspend fun reapply(watchfaces: WatchfaceOps, face: WatchfaceEntry): String? {
     val problem = try {
       val code = watchfaces.apply(face)
-      if (code == null || code == PhotoFaceCodec.STATUS_OK) null else "the watch answered $code when the photo face was applied again"
+      if (operationAccepted(code)) null else "the watch answered $code when the photo face was applied again"
     } catch (e: CancellationException) {
       throw e
     } catch (e: WearException) {

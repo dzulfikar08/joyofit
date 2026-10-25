@@ -548,6 +548,16 @@ class WatchfaceTest {
   }
 
   @Test
+  fun anOperationAnsweredWithZeroOrNoStatusIsAccepted() {
+    // WatchFaceWearService.isSuccessErrorCode: 0 or 100000; the Fit 4 Pro answers the photo face apply with 0.
+    assertTrue(operationAccepted(0))
+    assertTrue(operationAccepted(100000))
+    assertTrue(operationAccepted(null))
+    assertFalse(operationAccepted(140004))
+    assertFalse(operationAccepted(100007))
+  }
+
+  @Test
   fun deleteSendsOperationTwoAndChecksTheFaceIsGone() = runBlocking {
     val (watch, ops, _) = setup()
 

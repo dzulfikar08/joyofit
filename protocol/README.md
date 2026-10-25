@@ -676,7 +676,7 @@ the log line `apply …: The watch now reports the requested configuration.` and
 watch answers a query for a face that is not active, which modes and widgets it reports, whether an index past the last option is
 ignored, clamped or stored, whether `7` takes `#RRGGBB`, and whether an edit on the watch produces a push (`pushed, nobody asked`).
 
-### Photo faces (as Huawei Health 17.0.8.300 behaves; upload VERIFIED on the Fit 4 Pro 2026-10-14, the re-apply that should clear the watch's "add photo" prompt UNVERIFIED)
+### Photo faces (as Huawei Health 17.0.8.300 behaves; upload and re-apply VERIFIED on the Fit 4 Pro, the watch's "add photo" prompt still OPEN)
 
 Huawei Health's older photo-album flow reads the photo list from `82{83}`; the Fit 4 Pro answers with `84{85}`, the layout of the newer photo-face flow, so that is the one JoyoFit follows.
 
@@ -695,7 +695,7 @@ the end report is `27/05` with type 4 (photos), 7, 8, 9 respectively.
 | `28/01` | watch | for each missing photo: `01` file name (`<name>.png`), `02` file type (3), `05` resource type (optional). Answered by the phone with the same tags plus `7f` 100000, or 140006 when it has no such file |
 | `28/02` to `28/07` | both | the ordinary upload of `FileUploader`, file type **3** (`background image`), under the requested name; no `05` / `06` tags, no hash of a face |
 | `27/05` | watch | `01` face id, `02` version, `03` = 4 (photos received), `04` failed count, `7f`. Acknowledged like every `27/05` (`reportAck`: `01`, `02`, `7f` 100000) |
-| `27/03` | phone | after the save has succeeded (the `27/09` answer says 0, or the type 4 report came): `01` face id, `02` version, `03` = 1, the ordinary apply, sent whether or not the photo face is the current one. Answered with `7f` |
+| `27/03` | phone | after the save has succeeded (the `27/09` answer says 0, or the type 4 report came): `01` face id, `02` version, `03` = 1, the ordinary apply, sent whether or not the photo face is the current one. VERIFIED 2026-10-25: the Fit 4 Pro answers with `7f` = **0** and makes the face current. Huawei Health reads a missing `7f` as 0 (`WatchFaceDeviceService.handleApply`) and counts 0 and 100000 as success (`WatchFaceWearService.isSuccessErrorCode`); so does JoyoFit (`operationAccepted`) |
 
 The bytes sent for a requested name are the face's `.bin` file unless the watch's resource type (tag `05`) is 1, then the PNG.
 No signature, account or Huawei-server data takes part: `27/09` and `28/xx` have no tag `08`.
@@ -747,7 +747,23 @@ fields are left out because the watch does not report the switch that decides th
 09=00`; the watch answered `08=01`, asked for the file, took the 585551-byte RGB24 `.bin` and reported `27/05` type 4 with 0 failed. It then
 listed the photo at index **0** with `0c=02` (= the position index), `0d=00`, `0e=01` (= the style index) and both colours `#00000000`, i.e.
 its own defaults. The photo shows as the face's background, but the watch keeps showing its "add photos / scan the QR code in Huawei Health"
-prompt. JoyoFit sent no `27/03` then. UNVERIFIED: that the apply after the save clears the prompt.
+prompt. JoyoFit sent no `27/03` then.
+
+**Device result (2026-10-25 18:53, Fit 4 Pro 6.1.0.117, lab build at `93aa98f`).** `27/08` before: `84`, `93` and `9f` empty (no photos, no data
+slots, no selected options). `27/09` `01=01 82{83{04=00 05="1792929176979.png"}} 06=02 07=01 09=00 0f=00 10=00`, the watch asked for and took
+the 577253-byte `.bin`, reported `27/05` type 1 then type 4 (0 failed), answered the `27/03` apply with `7f` = 0, and lists the face as
+`0x2b` (current) afterwards with the photo at index 0 (`0c=02 0d=00 0e=01`, colours `#00000000`, `18`…`1e` = 0). The photo shows, and the
+"Tambahkan foto / scan the QR code in Huawei Health" prompt **still shows**: the apply is not what clears it.
+
+**Still different from Huawei Health (untested, none known to matter).** On the Fit 4 Pro (`27/01` has `19` one-touch, `1a` Gaussian,
+`1b` aesthetic colour, no `1d`) Huawei Health's My watch faces page uses its `FuncExpansionAlbum` editor (app.js 52300-52323: a missing
+`1d` reaches the page as 0, `WatchFaceParamsResult`), whose `27/09` also carries: per photo `29` time size and the smart fields `15` / `16` /
+`17` with `1c`, and top-level `1c` (the page's `supportGaussColor`, which `WatchFaceApiImpl.getH5Params` turns from 1 into 0, so `1c` = 0);
+and `91{92{13 container, 14 option}}` for **every** widget container of the face's XML, option 0 for one the watch did not report
+(`fillWidgetSelections`, app.js 32474-32510). JoyoFit sends no `91` when the watch reports none, and cannot build it without the face XML
+(downloaded by Huawei Health from its theme server). The per-photo values the watch stored itself are Huawei Health's defaults already.
+Huawei Health sends nothing else to the watch for a photo save (no other `27/xx`, DataSync or P2P message; there is no watch gallery app in
+its code). Open too: whether the prompt is the watch's view of the phone account (`1A/05`, JRG-414) rather than of the photo list.
 
 ## Calorie intake (Huawei Health's behaviour)
 

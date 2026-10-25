@@ -294,6 +294,14 @@ public final class WatchfaceOps: @unchecked Sendable {
         try await operation(face, Watchface.WatchfaceOperation.operationActive, "apply")
     }
 
+    /// Whether a 27/03 answer's status (tag 0x7f, nil when absent) means the watch took the operation. Huawei Health reads a missing 0x7f
+    /// as 0 (`WatchFaceDeviceService.handleApply`) and counts 0 and 100000 as success (`WatchFaceWearService.isSuccessErrorCode`); the
+    /// Fit 4 Pro answers an apply of its photo face with 0 (2026-10-25).
+    public static func operationAccepted(_ code: Int?) -> Bool {
+        guard let code else { return true }
+        return code == 0 || code == Int(uploadOK)
+    }
+
     /// GB `HuaweiWatchfaceManager.deleteWatchface`, then the list again to check that it is gone.
     public func delete(_ id: String) async throws -> WatchfaceList {
         let face = try find(try await list(), id)
@@ -323,7 +331,7 @@ public final class WatchfaceOps: @unchecked Sendable {
         )
         let code = (try? Watchface.WatchfaceOperation.Response(packet: answer))?.code
         let status = code.flatMap { $0 >= 0 ? Int($0) : nil }
-        note("\(label): watch answered \(status.map(String.init) ?? "without a status")")
+        note("\(label): watch answered \(status.map(String.init) ?? "without a status") TLV \(describeTlv(answer.tlv))")
         return status
     }
 
@@ -349,7 +357,7 @@ public final class WatchfaceOps: @unchecked Sendable {
         note(
             "\(label): watch answered status=\(code.map(String.init) ?? "none") needReceive=\(needReceive.map(String.init) ?? "none") TLV \(describeTlv(answer.tlv))"
         )
-        if let code, code != 0, code != Int(uploadOK) {
+        if let code, !Self.operationAccepted(code) {
             throw WearError(.uploadRejected, describeAnnounceCode(code), statusCode: code)
         }
         return Announcement(code: code, needReceive: needReceive)

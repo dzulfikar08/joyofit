@@ -166,7 +166,7 @@ public final class PhotoFaceController: @unchecked Sendable {
     private func reapply(_ watchfaces: WatchfaceOps, _ face: WatchfaceEntry) async throws -> String? {
         let problem: String?
         do {
-            if let code = try await watchfaces.apply(face), code != PhotoFaceCodec.statusOK {
+            if let code = try await watchfaces.apply(face), !WatchfaceOps.operationAccepted(code) {
                 problem = "the watch answered \(code) when the photo face was applied again"
             } else {
                 problem = nil

@@ -359,6 +359,15 @@ final class WatchfaceOpsTests: XCTestCase {
         XCTAssertEqual(packet.tlv?.serialize(), expected)
     }
 
+    func testAnOperationAnsweredWithZeroOrNoStatusIsAccepted() {
+        // WatchFaceWearService.isSuccessErrorCode: 0 or 100000; the Fit 4 Pro answers the photo face apply with 0.
+        XCTAssertTrue(WatchfaceOps.operationAccepted(0))
+        XCTAssertTrue(WatchfaceOps.operationAccepted(100_000))
+        XCTAssertTrue(WatchfaceOps.operationAccepted(nil))
+        XCTAssertFalse(WatchfaceOps.operationAccepted(140_004))
+        XCTAssertFalse(WatchfaceOps.operationAccepted(100_007))
+    }
+
     func testDeleteSendsOperationTwoAndChecksTheFaceIsGone() async throws {
         let (_, watch, ops, _, _) = setup()
 
