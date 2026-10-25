@@ -15,7 +15,27 @@ import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { dbHealth, useDbHealth } from '@/db/recovery';
 import { errorMessage } from '@/format';
 import { useTheme } from '@/theme';
-import { HuaweiWear } from '@/wear';
+import { HuaweiWear, hasNative } from '@/wear';
+
+/** The experimental HW_AGNSS switch, or null on a binary without it (OTA bundle on an older build) or when the status cannot be read. */
+function readAgpsLab(): boolean | null {
+  if (!hasNative('setAgpsLab')) return null;
+  try {
+    return HuaweiWear.getAgps().labAgnss === true;
+  } catch {
+    return null;
+  }
+}
+
+/** The experimental HW_PGNSS_PRED switch, or null on a binary without it or when the status cannot be read. */
+function readAgpsPgnssLab(): boolean | null {
+  if (!hasNative('setAgpsPgnssLab')) return null;
+  try {
+    return HuaweiWear.getAgps().labPgnss === true;
+  } catch {
+    return null;
+  }
+}
 
 export default function AdvancedScreen() {
   const { t } = useTranslation('settings');
@@ -29,11 +49,17 @@ export default function AdvancedScreen() {
   const [coursesError, setCoursesError] = useState<string | null>(null);
   const [forceBle, setForceBle] = useState(() => HuaweiWear.getForceBle());
   const [bleError, setBleError] = useState<string | null>(null);
+  const [agpsLab, setAgpsLab] = useState(readAgpsLab);
+  const [agpsLabError, setAgpsLabError] = useState<string | null>(null);
+  const [pgnssLab, setPgnssLab] = useState(readAgpsPgnssLab);
+  const [pgnssLabError, setPgnssLabError] = useState<string | null>(null);
 
   useNativeRefresh(
     useCallback(() => {
       setCourses(HuaweiWear.getCourses());
       setForceBle(HuaweiWear.getForceBle());
+      setAgpsLab(readAgpsLab());
+      setPgnssLab(readAgpsPgnssLab());
     }, []),
   );
 
@@ -61,6 +87,28 @@ export default function AdvancedScreen() {
     } finally {
       setCourses(HuaweiWear.getCourses());
       setCoursesBusy(false);
+    }
+  };
+
+  const toggleAgpsLab = async (enabled: boolean) => {
+    setAgpsLabError(null);
+    try {
+      await HuaweiWear.setAgpsLab(enabled);
+    } catch (e) {
+      setAgpsLabError(errorMessage(e));
+    } finally {
+      setAgpsLab(readAgpsLab());
+    }
+  };
+
+  const togglePgnssLab = async (enabled: boolean) => {
+    setPgnssLabError(null);
+    try {
+      await HuaweiWear.setAgpsPgnssLab(enabled);
+    } catch (e) {
+      setPgnssLabError(errorMessage(e));
+    } finally {
+      setPgnssLab(readAgpsPgnssLab());
     }
   };
 
@@ -109,6 +157,20 @@ export default function AdvancedScreen() {
             onValueChange={(enabled) => void toggleCourses(enabled)}
           />
           {coursesError ? <Notice tone="danger">{coursesError}</Notice> : null}
+          {agpsLab !== null ? (
+            <>
+              <SwitchRow label={t('advanced.agnssLab')} value={agpsLab} onValueChange={(enabled) => void toggleAgpsLab(enabled)} />
+              <Notice tone={agpsLab ? 'danger' : 'info'}>{t('advanced.agnssLabRisk')}</Notice>
+              {agpsLabError ? <Notice tone="danger">{agpsLabError}</Notice> : null}
+            </>
+          ) : null}
+          {pgnssLab !== null ? (
+            <>
+              <SwitchRow label={t('advanced.pgnssLab')} value={pgnssLab} onValueChange={(enabled) => void togglePgnssLab(enabled)} />
+              <Notice tone={pgnssLab ? 'danger' : 'info'}>{t('advanced.pgnssLabRisk')}</Notice>
+              {pgnssLabError ? <Notice tone="danger">{pgnssLabError}</Notice> : null}
+            </>
+          ) : null}
           {__DEV__ ? (
             <SwitchRow
               label={t('advanced.bleLink')}

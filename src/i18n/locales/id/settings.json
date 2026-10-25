@@ -82,6 +82,10 @@
     "courses": "Rute lari",
     "coursesSubtitle": "Buat rute lalu kirim ke jam",
     "bleLink": "Tautan Bluetooth LE (developer)",
+    "agnssLab": "Data satelit HW_AGNSS dari JoyoFit (uji lab)",
+    "agnssLabRisk": "Mati secara bawaan. Kalau dinyalakan dan jam meminta jenis HW_AGNSS, JoyoFit mengirim data satelit yang dibuat server JoyoFit dari data siaran publik (IGS/BKG), bukan dari Huawei. HP mengambilnya dari server JoyoFit tanpa data pribadi apa pun; server melihat alamat IP. Jam tidak memeriksa data ini, dan data yang salah pernah membuat GPS jam lain macet. Reset pabrik memulihkan jam. Belum terbukti di jam mana pun: nyalakan hanya untuk uji coba.",
+    "pgnssLab": "Data satelit prediksi HW_PGNSS_PRED dari JoyoFit (uji lab)",
+    "pgnssLabRisk": "Mati secara bawaan, terpisah dari saklar di atas. Kalau dinyalakan dan jam meminta jenis HW_PGNSS_PRED, JoyoFit mengirim enam berkas prediksi orbit satelit untuk 3 hari ke depan yang dihitung server JoyoFit dari data publik, disusun seperti berkas Huawei tetapi bukan dari Huawei. HP mengambilnya (sekitar 800 KB) dari server JoyoFit tanpa data pribadi apa pun; server melihat alamat IP. Lebih berisiko daripada HW_AGNSS: prediksinya belum terverifikasi, jam menyimpannya berhari-hari tanpa memeriksanya, dan data yang salah pernah membuat GPS jam lain macet. Reset pabrik memulihkan jam. Belum terbukti di jam mana pun: nyalakan hanya untuk uji coba.",
     "details": "Rute lari: belum terverifikasi, format rute berasal dari analisis statis Huawei Health. Jam bisa saja menolaknya.",
     "detailsDev": "Rute lari: belum terverifikasi, format rute berasal dari analisis statis Huawei Health. Jam bisa saja menolaknya. Tautan Bluetooth LE: terhubung lewat Bluetooth LE GATT (layanan FE86), bukan tautan bawaan jam. Putuskan lalu hubungkan lagi agar berlaku. Langkahnya masuk ke logcat dengan tag JoyoFitBle."
   },

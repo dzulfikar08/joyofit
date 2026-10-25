@@ -163,18 +163,21 @@ class AgpsExchangeTest {
   private fun fileConsult(transferSize: Int, maxData: Int, type: Int = 1) =
     fromWatch(0x1C, 0x02, HuaweiTLV().put(0x01, "1.0").put(0x03, transferSize).put(0x04, maxData).put(0x06, type.toByte()))
 
-  /** Drives the whole pull as the watch does, returning the bytes it received. */
+  /** Drives the whole pull of one file as the watch does (after any earlier pulls in the same test), returning the bytes it received. */
   private fun pull(name: String, size: Int, maxData: Int, transferSize: Int): ByteArray {
+    val lists = watch.all(0x1C, 0x01).size
+    val consults = watch.all(0x1C, 0x02).size
+    val infos = watch.all(0x1C, 0x03).size
     fromWatch(0x1C, 0x01, HuaweiTLV().put(0x02, 1.toByte()).put(0x03, "p"))
-    await(0x1C, 0x01)
+    await(0x1C, 0x01, lists + 1)
     fileConsult(transferSize, maxData)
-    await(0x1C, 0x02)
+    await(0x1C, 0x02, consults + 1)
     fromWatch(0x1C, 0x03, HuaweiTLV().put(0x01, name))
-    await(0x1C, 0x03)
+    await(0x1C, 0x03, infos + 1)
     val received = ByteArray(size)
     var offset = 0
-    var requests = 0
-    var frames = 0
+    var requests = watch.all(0x1C, 0x04).size
+    var frames = watch.all(0x1C, 0x05).size
     while (offset < size) {
       fromWatch(0x1C, 0x04, HuaweiTLV().put(0x01, name).put(0x02, offset).put(0x03, minOf(maxData, size - offset)))
       requests++
@@ -183,8 +186,9 @@ class AgpsExchangeTest {
       val chunk = minOf(maxData, size - offset)
       val expectedFrames = (chunk + transferSize - 1) / transferSize
       waitFor("frames") { watch.all(0x1C, 0x05).size >= frames + expectedFrames }
+      val all = watch.all(0x1C, 0x05)
       for (i in 0 until expectedFrames) {
-        val payload = watch.all(0x1C, 0x05)[frames + i].payload
+        val payload = all[frames + i].payload
         assertEquals("frame index", i, payload[0].toInt() and 0xFF)
         System.arraycopy(payload, 1, received, offset + i * transferSize, payload.size - 1)
       }
@@ -539,5 +543,304 @@ class AgpsExchangeTest {
     ex.stop()
     assertEquals(AgpsOutcome.LINK_LOST, withTimeout(5_000) { outcome.await() })
     assertEquals(AgpsOutcome.LINK_LOST, store.lastOutcome)
+  }
+
+  // The experimental HW_AGNSS path (AgpsLab)
+
+  private object NoCache : AgpsCache {
+    override fun read(url: String, maxAgeMs: Long): ByteArray? = null
+    override fun write(url: String, data: ByteArray) = Unit
+    override fun delete(url: String) = Unit
+  }
+
+  /** The real source with the HTTP side faked: [answer] gets the URL asked for. */
+  private fun labSource(answer: (String) -> AgpsDownload) = NetworkAgpsSource(NoCache, store, { }, { true }, http = { url, _ -> answer(url) })
+
+  /** The Fit 4 Pro's consult tag from the 2026-10-25 capture. */
+  private val hwAgnssTag = "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS"
+
+  private fun hex(tlv: HuaweiTLV) = tlv.serialize().joinToString("") { "%02x".format(it) }
+
+  @Test
+  fun withTheLabSwitchOffAHwAgnssAskIsDeclinedWithTodaysBytesAndNoDownload() {
+    assertFalse("off by default", store.labAgnss)
+    start(labSource { throw AssertionError("the network must not be used") })
+    op1()
+    await(0x1F, 0x02)
+    consult(3, hwAgnssTag)
+    await(0x1F, 0x03)
+    fromWatch(0x1C, 0x01, HuaweiTLV().put(0x02, 1.toByte()))
+    await(0x1C, 0x01)
+    val sent = synchronized(watch.messages) { watch.messages.map { Triple(it.service, it.command, hex(it.tlv!!)) } }
+    assertEquals(
+      listOf(
+        Triple(0x1F, 0x01, hex(AgpsMessages.operatorAnswer(AgpsMessages.CODE_OK))),
+        Triple(0x1F, 0x02, hex(AgpsMessages.parameterConsult())),
+        Triple(0x1F, 0x03, hex(AgpsMessages.fileStatus(AgpsMessages.STATE_FAILED))),
+        Triple(0x1C, 0x01, hex(AgpsMessages.refused())),
+      ),
+      sent,
+    )
+    assertEquals(AgpsOutcome.UNSUPPORTED, store.lastOutcome)
+    assertEquals("the watch asked for kinds only the watch maker's app prepares (version 3: HW_AGNSS)", store.lastError)
+    assertEquals(0, store.failures)
+    assertEquals(0L, store.cachedAtMs)
+  }
+
+  @Test
+  fun withTheLabSwitchOnAHwAgnssAskGetsTheServersFileOverTheFileService() {
+    store.setLabAgnss(true)
+    val file = rtcmFile(110)
+    val asked = Collections.synchronizedList(ArrayList<String>())
+    start(labSource { url -> asked += url; AgpsDownload(file, System.currentTimeMillis() - 60_000L) })
+
+    op1()
+    await(0x1F, 0x02)
+    consult(3, hwAgnssTag)
+    assertEquals("ready", 3, await(0x1F, 0x03).tlv!!.getByte(0x01).toInt())
+    assertEquals(listOf(EphemerisNet.AGNSS_URL), asked)
+
+    assertArrayEquals(file, pull(AgpsLab.FILE, file.size, maxData = 2048, transferSize = 232))
+    assertEquals("the one file the watch is offered", AgpsLab.FILE, await(0x1C, 0x01).tlv!!.getString(0x01))
+    val info = await(0x1C, 0x03).tlv!!
+    assertEquals(file.size, info.getInteger(0x02))
+    assertEquals(CheckSums.getCRC16(file, 0x0000).toShort(), info.getShort(0x03))
+    assertEquals(EphemerisNet.addressDigest("AA:BB:CC:DD:EE:FF") + AgpsLab.FILE, await(0x1C, 0x04).tlv!!.getString(0x02))
+
+    fromWatch(0x1C, 0x06, HuaweiTLV().put(0x01, 0.toByte()))
+    assertEquals(100000, await(0x1C, 0x06).tlv!!.getInteger(0x7F))
+    waitFor("delivery recorded") { store.deliveredAtMs > 0 }
+    assertEquals(AgpsOutcome.DELIVERED, store.lastOutcome)
+    assertEquals(AgpsLab.SOURCE, store.deliveredSource)
+    assertEquals(file.size, store.deliveredSize)
+    assertEquals(AgpsLab.SOURCE, store.cachedSource)
+    assertEquals("HW_AGNSS", store.lastAskTags)
+    assertFalse(exchange!!.busy)
+  }
+
+  @Test
+  fun withTheLabSwitchOnAFileThatFailsTheCheckIsDeclinedAsToday() {
+    store.setLabAgnss(true)
+    start(labSource { AgpsDownload(rtcmFile(10), System.currentTimeMillis()) })
+    op1()
+    await(0x1F, 0x02)
+    consult(3, hwAgnssTag)
+    assertEquals(4, await(0x1F, 0x03).tlv!!.getByte(0x01).toInt())
+    assertEquals(AgpsOutcome.INVALID_FILE, store.lastOutcome)
+    assertEquals("HW_AGNSS: only 10 satellites (at least 20 needed)", store.lastError)
+    fromWatch(0x1C, 0x01, HuaweiTLV().put(0x02, 1.toByte()))
+    assertEquals("nothing is offered", 100001, await(0x1C, 0x01).tlv!!.getInteger(0x7F))
+  }
+
+  @Test
+  fun withTheLabSwitchOnAnyOtherKindIsDeclinedWithoutADownload() {
+    store.setLabAgnss(true)
+    start(labSource { throw AssertionError("the network must not be used") })
+    op1()
+    await(0x1F, 0x02)
+    consult(3, "com.huawei.higeo_dataModule_PGNSSConfig?type=HW_EEV2/HW_PGNSS_PRED;")
+    assertEquals(4, await(0x1F, 0x03).tlv!!.getByte(0x01).toInt())
+    op1()
+    await(0x1F, 0x02, 2)
+    consult(3, "a/HW_AGNSS;b/HW_PGNSS_GPS")
+    assertEquals(4, await(0x1F, 0x03, 2).tlv!!.getByte(0x01).toInt())
+    assertEquals(AgpsOutcome.UNSUPPORTED, store.lastOutcome)
+  }
+
+  @Test
+  fun withTheLabSwitchOnAFailedDownloadWaitsForTheRetryScheduleAndAnUpdateNowSkipsIt() = runBlocking {
+    store.setLabAgnss(true)
+    val calls = java.util.concurrent.atomic.AtomicInteger()
+    val ex = start(labSource { calls.incrementAndGet(); throw AgpsFetchException("HTTP 503") })
+    op1()
+    await(0x1F, 0x02)
+    consult(3, hwAgnssTag)
+    assertEquals(4, await(0x1F, 0x03).tlv!!.getByte(0x01).toInt())
+    assertEquals(AgpsOutcome.DOWNLOAD_FAILED, store.lastOutcome)
+    assertEquals("HW_AGNSS: HTTP 503", store.lastError)
+    assertEquals(1, store.failures)
+    assertEquals(1, calls.get())
+
+    // The watch asks again at once: answered "failed" from the retry wait, without another request to the server.
+    op1()
+    await(0x1F, 0x02, 2)
+    consult(3, hwAgnssTag)
+    assertEquals(4, await(0x1F, 0x03, 2).tlv!!.getByte(0x01).toInt())
+    assertEquals(1, calls.get())
+    assertEquals(1, store.failures)
+    assertTrue(store.lastError.startsWith("waiting "))
+
+    // "Perbarui sekarang" (a forced, phone-started request) ends the wait and asks the server again.
+    val outcome = scope.async { ex.probe(force = true) }
+    await(0x1F, 0x02, 3)
+    consult(3, hwAgnssTag)
+    assertEquals(4, await(0x1F, 0x03, 3).tlv!!.getByte(0x01).toInt())
+    assertEquals(AgpsOutcome.DOWNLOAD_FAILED, withTimeout(5_000) { outcome.await() })
+    assertEquals(2, calls.get())
+    assertEquals("the forced try starts the schedule over", 1, store.failures)
+  }
+
+  @Test
+  fun withTheLabSwitchOffARunningRetryWaitLeavesTheDeclineAsItWas() {
+    store.recordOutcome(System.currentTimeMillis(), AgpsOutcome.DOWNLOAD_FAILED, "earlier Broadcom failure", true)
+    assertTrue(store.retryAtMs() > System.currentTimeMillis())
+    start(labSource { throw AssertionError("the network must not be used") })
+    op1()
+    await(0x1F, 0x02)
+    consult(3, hwAgnssTag)
+    assertEquals(4, await(0x1F, 0x03).tlv!!.getByte(0x01).toInt())
+    assertEquals(AgpsOutcome.UNSUPPORTED, store.lastOutcome)
+    assertEquals("the watch asked for kinds only the watch maker's app prepares (version 3: HW_AGNSS)", store.lastError)
+  }
+
+  // The experimental HW_PGNSS_PRED path (AgpsPgnss)
+
+  /** The Fit 4 Pro's PRED consult tag (logcat of 2026-10-18, capture of 2026-10-25). */
+  private val predTag = "com.huawei.higeo_dataModule_PGNSSConfig?type=HW_EEV2/HW_PGNSS_PRED;"
+
+  /** What the phone sent so far, as (service, command, TLV hex). */
+  private fun sentSoFar() = synchronized(watch.messages) { watch.messages.map { Triple(it.service, it.command, hex(it.tlv!!)) } }
+
+  /** Today's decline of a kind: operator ok, parameter consult, state 4, and the file list refused. */
+  private val declineBytes
+    get() = listOf(
+      Triple(0x1F, 0x01, hex(AgpsMessages.operatorAnswer(AgpsMessages.CODE_OK))),
+      Triple(0x1F, 0x02, hex(AgpsMessages.parameterConsult())),
+      Triple(0x1F, 0x03, hex(AgpsMessages.fileStatus(AgpsMessages.STATE_FAILED))),
+      Triple(0x1C, 0x01, hex(AgpsMessages.refused())),
+    )
+
+  @Test
+  fun withThePgnssSwitchOffAPredAskIsDeclinedWithTodaysBytesAndNoDownload() {
+    assertFalse("off by default", store.labPgnss)
+    store.setLabAgnss(true)
+    start(labSource { throw AssertionError("the network must not be used") })
+    op1()
+    await(0x1F, 0x02)
+    consult(3, predTag)
+    await(0x1F, 0x03)
+    fromWatch(0x1C, 0x01, HuaweiTLV().put(0x02, 1.toByte()))
+    await(0x1C, 0x01)
+    assertEquals(declineBytes, sentSoFar())
+    assertEquals(AgpsOutcome.UNSUPPORTED, store.lastOutcome)
+    assertEquals("the watch asked for kinds only the watch maker's app prepares (version 3: HW_PGNSS_PRED)", store.lastError)
+    assertEquals(0, store.failures)
+    assertEquals(0L, store.cachedAtMs)
+  }
+
+  @Test
+  fun withOnlyThePgnssSwitchOnAHwAgnssAskIsStillDeclinedWithTodaysBytes() {
+    store.setLabPgnss(true)
+    start(labSource { throw AssertionError("the network must not be used") })
+    op1()
+    await(0x1F, 0x02)
+    consult(3, hwAgnssTag)
+    await(0x1F, 0x03)
+    fromWatch(0x1C, 0x01, HuaweiTLV().put(0x02, 1.toByte()))
+    await(0x1C, 0x01)
+    assertEquals(declineBytes, sentSoFar())
+    assertEquals("the watch asked for kinds only the watch maker's app prepares (version 3: HW_AGNSS)", store.lastError)
+  }
+
+  @Test
+  fun withThePgnssSwitchOnAPredAskGetsTheSixFilesOneAfterTheOtherOverTheFileService() {
+    store.setLabPgnss(true)
+    val built = System.currentTimeMillis() - 60_000L
+    val files = pgnssFiles(built)
+    val bundle = pgnssBundle(files)
+    val asked = Collections.synchronizedList(ArrayList<String>())
+    start(labSource { url -> asked += url; AgpsDownload(bundle, built) })
+
+    op1()
+    await(0x1F, 0x02)
+    consult(3, predTag)
+    assertEquals("ready", 3, await(0x1F, 0x03).tlv!!.getByte(0x01).toInt())
+    assertEquals(listOf(EphemerisNet.PGNSS_URL), asked)
+
+    // The order the Fit 4 Pro pulled them from Huawei Health: one 1C/01 ... 1C/06 round per file, every 1C/01 answered with all six names.
+    val names = listOf("HW_PGNSS_GPS", "HW_PGNSS_BDS", "HW_PGNSS_GLONASS", "HW_PGNSS_GALILEO", "HW_PGNSS_QZS", "HW_PGNSS_EXTRA")
+    for ((k, name) in names.withIndex()) {
+      val data = files.getValue(name)
+      assertArrayEquals(name, data, pull(name, data.size, maxData = 32_768, transferSize = 862))
+      assertEquals(names.joinToString(";"), await(0x1C, 0x01, k + 1).tlv!!.getString(0x01))
+      val info = await(0x1C, 0x03, k + 1).tlv!!
+      assertEquals(data.size, info.getInteger(0x02))
+      assertEquals(CheckSums.getCRC16(data, 0x0000).toShort(), info.getShort(0x03))
+      assertEquals(EphemerisNet.addressDigest("AA:BB:CC:DD:EE:FF") + name, watch.all(0x1C, 0x04).last().tlv!!.getString(0x02))
+      fromWatch(0x1C, 0x06, HuaweiTLV().put(0x01, 1.toByte()))
+      assertEquals(100000, await(0x1C, 0x06, k + 1).tlv!!.getInteger(0x7F))
+      if (k < names.size - 1) {
+        assertEquals("no delivery is recorded before the last file", 0L, store.deliveredAtMs)
+        assertTrue(exchange!!.busy)
+      }
+    }
+    waitFor("delivery recorded") { store.deliveredAtMs > 0 }
+    assertEquals(AgpsOutcome.DELIVERED, store.lastOutcome)
+    assertEquals(AgpsPgnss.SOURCE, store.deliveredSource)
+    assertEquals("all six files", 799_112, store.deliveredSize)
+    assertEquals(built, store.deliveredDataMs)
+    assertEquals(AgpsPgnss.SOURCE, store.cachedSource)
+    assertEquals("HW_PGNSS_PRED", store.lastAskTags)
+    assertEquals(1, asked.size)
+    assertFalse(exchange!!.busy)
+  }
+
+  @Test
+  fun withThePgnssSwitchOnAWrongStaleOrMisorderedBundleIsDeclinedAsToday() {
+    store.setLabPgnss(true)
+    val now = System.currentTimeMillis()
+    val files = pgnssFiles(now - 60_000L)
+    val shortGps = LinkedHashMap(files).also { it["HW_PGNSS_GPS"] = it.getValue("HW_PGNSS_GPS").copyOf(93_311) }
+    val badHeader = LinkedHashMap(files).also { it["HW_PGNSS_GPS"] = it.getValue("HW_PGNSS_GPS").copyOf().also { gps -> gps[12 * 2 + 4] = 0 } }
+    val cases = listOf(
+      AgpsDownload(pgnssBundle(shortGps), now - 60_000L) to "HW_PGNSS_PRED: HW_PGNSS_GPS is 93311 bytes (93312 expected)",
+      AgpsDownload(pgnssBundle(files, order = files.keys.reversed()), now - 60_000L) to
+        "HW_PGNSS_PRED: file 1 is \"HW_PGNSS_EXTRA\" (HW_PGNSS_GPS expected)",
+      AgpsDownload(pgnssBundle(badHeader), now - 60_000L) to "HW_PGNSS_PRED: HW_PGNSS_GPS header entry 2 points at 5888 (6136 expected)",
+      AgpsDownload(pgnssBundle(files), now - 7 * 3_600_000L) to "HW_PGNSS_PRED: the bundle was built 420 minutes ago",
+    )
+    var next = 0
+    start(labSource { cases[next].first })
+    for ((k, case) in cases.withIndex()) {
+      next = k
+      store.clearRetry()
+      op1()
+      await(0x1F, 0x02, k + 1)
+      consult(3, predTag)
+      assertEquals(case.second, 4, await(0x1F, 0x03, k + 1).tlv!!.getByte(0x01).toInt())
+      assertEquals(AgpsOutcome.INVALID_FILE, store.lastOutcome)
+      assertEquals(case.second, store.lastError)
+      fromWatch(0x1C, 0x01, HuaweiTLV().put(0x02, 1.toByte()))
+      assertEquals("nothing is offered", 100001, await(0x1C, 0x01, k + 1).tlv!!.getInteger(0x7F))
+    }
+    assertTrue(watch.all(0x1C, 0x03).isEmpty())
+    assertEquals(0L, store.deliveredAtMs)
+  }
+
+  @Test
+  fun withBothSwitchesOnTheHwAgnssAskAndThePredAskAfterItAreEachServedOnTheirOwn() {
+    store.setLabAgnss(true)
+    store.setLabPgnss(true)
+    val built = System.currentTimeMillis() - 60_000L
+    val rtcm = rtcmFile(110)
+    val bundle = pgnssBundle(pgnssFiles(built))
+    start(labSource { url -> if (url == EphemerisNet.AGNSS_URL) AgpsDownload(rtcm, built) else AgpsDownload(bundle, built) })
+
+    // Device run of 2026-10-25: HW_AGNSS first, then HW_PGNSS_PRED in its own 1F/01 exchange two seconds after the transfer closed.
+    op1()
+    await(0x1F, 0x02)
+    consult(3, hwAgnssTag)
+    assertEquals(3, await(0x1F, 0x03).tlv!!.getByte(0x01).toInt())
+    assertArrayEquals(rtcm, pull(AgpsLab.FILE, rtcm.size, maxData = 2048, transferSize = 232))
+    assertEquals(AgpsLab.FILE, await(0x1C, 0x01).tlv!!.getString(0x01))
+    fromWatch(0x1C, 0x06, HuaweiTLV().put(0x01, 1.toByte()))
+    waitFor("HW_AGNSS delivered") { store.deliveredSource == AgpsLab.SOURCE }
+
+    op1()
+    await(0x1F, 0x02, 2)
+    consult(3, predTag)
+    assertEquals(3, await(0x1F, 0x03, 2).tlv!!.getByte(0x01).toInt())
+    fromWatch(0x1C, 0x01, HuaweiTLV().put(0x02, 1.toByte()))
+    assertEquals(PgnssBundle.FILES.joinToString(";") { it.name }, await(0x1C, 0x01, 2).tlv!!.getString(0x01))
   }
 }

@@ -132,4 +132,158 @@ class LiveGpsTrackTest {
     assertFalse(m.onFix(2.5f, 80f))
     assertFalse(m.onFix(null, 5f))
   }
+
+  // The session's track: what counts and when (docs/live-run.md, "Phone GPS for the whole session").
+
+  private fun timeOf(sec: Int) = 1_000_000L + sec * 1000L
+
+  @Test
+  fun fixesWhileTheWatchPreparesShowOnTheMapButAddNoDistance() {
+    val t = SessionTrack()
+    // 30 s of walking to the start line while the watch searches for GPS.
+    for (s in 0..30) assertFalse(t.onFix(fix(s, s * 4.0), running = false, motionStarts = false))
+    assertEquals(timeOf(30), t.location?.timeMs)
+    assertEquals(0.0, t.track.distanceM, 0.001)
+    // The watch says the workout runs: the stretch begins at the newest fix, the walk before it is not in it.
+    t.startStretch(timeOf(30) + 400L)
+    for (s in 31..40) t.onFix(fix(s, s * 4.0), running = true, motionStarts = false)
+    assertEquals(40.0, t.track.distanceM, 0.5)
+  }
+
+  @Test
+  fun aStaleNewestFixDoesNotStartTheStretch() {
+    val t = SessionTrack()
+    t.onFix(fix(0, 0.0), running = false, motionStarts = false)
+    // The start comes a minute after the last fix: that position is not where the person is now.
+    t.startStretch(timeOf(60))
+    t.onFix(fix(61, 500.0), running = true, motionStarts = false)
+    t.onFix(fix(62, 506.0), running = true, motionStarts = false)
+    assertEquals(6.0, t.track.distanceM, 0.5)
+  }
+
+  @Test
+  fun movementStartsASilentWatchsWorkoutAndCountsFromThatFix() {
+    val t = SessionTrack()
+    // Standing on the GO screen never starts it; nor does moving when the watch gives a start of its own.
+    for (s in 0..5) assertFalse(t.onFix(fix(s, 0.0, speed = 0.1f), running = false, motionStarts = true))
+    for (s in 6..10) assertFalse(t.onFix(fix(s, (s - 5) * 4.0), running = false, motionStarts = false))
+    assertFalse(t.onFix(fix(11, 24.0), running = false, motionStarts = true))
+    assertFalse(t.onFix(fix(12, 28.0), running = false, motionStarts = true))
+    assertTrue(t.onFix(fix(13, 32.0), running = false, motionStarts = true))
+    assertEquals(0.0, t.track.distanceM, 0.001)
+    t.startStretch(timeOf(13))
+    for (s in 14..23) t.onFix(fix(s, 32.0 + (s - 13) * 4.0), running = true, motionStarts = false)
+    assertEquals(40.0, t.track.distanceM, 0.5)
+  }
+
+  @Test
+  fun aPauseAddsNothingAndTheResumeStartsFromWhereThePersonIs() {
+    val t = SessionTrack()
+    t.startStretch(timeOf(0))
+    for (s in 0..10) t.onFix(fix(s, s * 4.0), running = true, motionStarts = false)
+    for (s in 11..60) t.onFix(fix(s, 40.0 + (s - 10) * 4.0), running = false, motionStarts = false)
+    t.startStretch(timeOf(60))
+    for (s in 61..70) t.onFix(fix(s, 240.0 + (s - 60) * 4.0), running = true, motionStarts = false)
+    assertEquals(80.0, t.track.distanceM, 0.5)
+  }
+
+  // The phone's location updates and the feed to the watch.
+
+  private class FakeLocation {
+    var starts = 0
+    var stops = 0
+    var grant = true
+    val session = PhoneGpsSession(start = { starts++; grant }, stop = { stops++ })
+  }
+
+  @Test
+  fun theWatchWithdrawingItsRequestMidRunStopsOnlyTheFeed() {
+    val gps = FakeLocation()
+    val t = SessionTrack()
+    gps.session.watchAsks()
+    assertEquals(1, gps.starts)
+    assertTrue(gps.session.feeding)
+    t.startStretch(timeOf(0))
+    for (s in 0..80) t.onFix(fix(s, s * 4.0), running = true, motionStarts = false)
+    // 80 s in, the watch has its own fix and stops asking (Fit 4 Pro, 2026-10-25).
+    gps.session.watchWithdraws(liveSession = true)
+    assertFalse(gps.session.feeding)
+    assertTrue(gps.session.isTracking)
+    assertEquals(0, gps.stops)
+    for (s in 81..200) t.onFix(fix(s, s * 4.0), running = true, motionStarts = false)
+    assertEquals(800.0, t.track.distanceM, 1.0)
+    // Asking again restarts the feed on the same location updates.
+    gps.session.watchAsks()
+    assertTrue(gps.session.feeding)
+    assertEquals(1, gps.starts)
+  }
+
+  @Test
+  fun theEndOfTheSessionStopsTheLocationUpdatesOnce() {
+    val gps = FakeLocation()
+    gps.session.watchAsks()
+    gps.session.watchWithdraws(liveSession = true)
+    gps.session.sessionEnded()
+    gps.session.sessionEnded()
+    assertEquals(1, gps.stops)
+    assertFalse(gps.session.isTracking)
+    assertFalse(gps.session.feeding)
+    // A request after the end starts both again.
+    gps.session.watchAsks()
+    assertEquals(2, gps.starts)
+    assertTrue(gps.session.isTracking)
+    assertTrue(gps.session.feeding)
+  }
+
+  @Test
+  fun withNoLiveSessionAWithdrawnRequestStopsTheUpdates() {
+    // A phone-started run: the watch's workout is the run screen's, no live session follows it.
+    val withdrawn = FakeLocation()
+    withdrawn.session.watchAsks()
+    withdrawn.session.watchWithdraws(liveSession = false)
+    assertEquals(1, withdrawn.stops)
+    assertFalse(withdrawn.session.isTracking)
+  }
+
+  @Test
+  fun aLostLinkKeepsTheUpdatesOnlyForASessionThatEndsByItself() {
+    // The GPS-request session: its watchdog ends it once the watch is quiet, and that end stops the updates.
+    assertTrue(LiveWorkoutPolicy.endsWithoutLink(LiveWorkout.Source.GPS))
+    val gpsSession = FakeLocation()
+    gpsSession.session.watchAsks()
+    gpsSession.session.linkLost(sessionEndsWithoutLink = true)
+    assertEquals(0, gpsSession.stops)
+    assertFalse(gpsSession.session.feeding)
+    assertTrue(gpsSession.session.isTracking)
+    gpsSession.session.sessionEnded()
+    assertEquals(1, gpsSession.stops)
+
+    // A session fed by the watch's own numbers, opened by the status poll or by hand ends only on the watch's word or Finish: a lost
+    // link brings neither, so the updates stop now.
+    for (source in listOf(LiveWorkout.Source.WATCH, LiveWorkout.Source.STATUS, LiveWorkout.Source.MANUAL)) {
+      assertFalse(source.name, LiveWorkoutPolicy.endsWithoutLink(source))
+    }
+    val watchFed = FakeLocation()
+    watchFed.session.watchAsks()
+    watchFed.session.linkLost(sessionEndsWithoutLink = false)
+    assertEquals(1, watchFed.stops)
+    assertFalse(watchFed.session.isTracking)
+    // The watch's next request after a reconnect starts them again.
+    watchFed.session.watchAsks()
+    assertEquals(2, watchFed.starts)
+  }
+
+  @Test
+  fun updatesThatCouldNotStartAreTriedAgainOnTheNextRequest() {
+    val gps = FakeLocation()
+    gps.grant = false
+    gps.session.watchAsks()
+    assertFalse(gps.session.isTracking)
+    gps.session.sessionEnded()
+    assertEquals(0, gps.stops)
+    gps.grant = true
+    gps.session.watchAsks()
+    assertEquals(2, gps.starts)
+    assertTrue(gps.session.isTracking)
+  }
 }

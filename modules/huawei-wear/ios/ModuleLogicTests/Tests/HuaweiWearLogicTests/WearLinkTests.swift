@@ -280,6 +280,24 @@ final class WearLinkTests: XCTestCase {
         XCTAssertEqual(bindStop(firstBindStop(), mode: .background).code, .authFailed)
     }
 
+    func testALostBindingSaysSoInTheConfirmationAndTheBackgroundNote() {
+        // JRG-414: the watch forgot a binding stored here (Huawei Health re-bound it while JoyoFit was away).
+        let lost = WearError(
+            .authFailed, "watch does not know this phone: first bind needed", underlying: FirstBindNeededError(authType: 5, lostBinding: true)
+        )
+        let asked = bindStop(lost, mode: .interactive)
+        XCTAssertEqual(asked.code, .bindConfirmation)
+        XCTAssertEqual(asked.message, FirstBindMessage.lost)
+        XCTAssertTrue(asked.message.contains(FirstBindMessage.marker))
+        XCTAssertTrue(asked.isLostBinding, "the cause stays attached")
+        // The same words as Kotlin's FirstBind.LOST_MARKER, which connectFailure.ts matches.
+        XCTAssertEqual(FirstBindMessage.marker, "no longer knows this phone's pairing")
+        XCTAssertEqual(bindStop(firstBindStop(), mode: .interactive).message, FirstBindMessage.notBound)
+        XCTAssertFalse(FirstBindMessage.notBound.contains(FirstBindMessage.marker))
+        XCTAssertTrue(FirstBindMessage.backgroundNote(lostBinding: true).contains("Huawei Health"))
+        XCTAssertEqual(FirstBindMessage.backgroundNote(lostBinding: false), "The watch does not know this phone. Connect from the app to bind it.")
+    }
+
     func testOtherFailuresPassThroughUnchanged() {
         for failure in [
             WearError(.authFailed, "wrong token"), WearError(.timeout, "Timed out"), WearError(.connectFailed, "no"), WearError(.disconnected, "gone"),

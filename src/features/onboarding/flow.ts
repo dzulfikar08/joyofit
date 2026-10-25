@@ -10,12 +10,14 @@
  * 2. `unbind`: before pairing. The watch holds one phone pairing, so it has to be released in Huawei Health first. This is also the
  *    last point where Huawei Health can still sync once more and where its data export can be requested (the export takes days, so it is
  *    asked for now and imported whenever it arrives).
- * 3. `pair`: the existing connect list, the bind confirmation and the accept on the watch.
- * 4. `sync`: the first history pull. It comes straight after pairing because it proves the link works, and everything below
- *    (scores, exports, backups) needs data.
- * 5. `notifications`, `health`, `weather`, `background`: the optional permissions, most useful first. `background` needs
- *    the remembered watch from step 3 and is Android only.
- * 6. `account`: JoyoRogo sign-in. After the sync, so the scores it shows in the diary already exist.
+ * 3. `pair`: scanning starts on arrival (the Bluetooth prompt first), one card per watch found, "Add manually" by model when the scan
+ *    finds nothing, then a full-width "confirm on your watch" panel while the link is set up. The first history pull starts by itself
+ *    once the link is up and runs in the background (`firstSyncStarts`): the steps after this one show its progress on one line instead
+ *    of making the person wait on a step of its own, as Huawei Health does.
+ * 4. `background`: straight after pairing, while the person is still paying attention to the watch link, as Huawei Health shows its
+ *    keep-alive tips. It needs the remembered watch from step 3 and is Android only.
+ * 5. `notifications`, `health`, `weather`: the optional permissions, most useful first.
+ * 6. `account`: JoyoRogo sign-in. After pairing, so the first sync has had time to put scores in the diary.
  * 7. `pro`: after sign-in, because Pro is an account feature. Information only; never blocks.
  * 8. `cloud`: JoyoRogo Cloud for workouts. After `pro`, because what it offers depends on the account being Pro. Never blocks.
  * 9. `done`: tips.
@@ -30,11 +32,10 @@ export const STEP_IDS = [
   'phone',
   'unbind',
   'pair',
-  'sync',
+  'background',
   'notifications',
   'health',
   'weather',
-  'background',
   'account',
   'pro',
   'cloud',
@@ -64,11 +65,10 @@ const RULES: Partial<Record<StepId, StepRule>> = {
   phone: { route: 'none' },
   unbind: { route: 'watch' },
   pair: { route: 'watch' },
-  sync: { route: 'watch' },
+  background: { platforms: ['android'], route: 'watch' },
   notifications: { route: 'watch' },
   health: { route: 'watch' },
   weather: { route: 'watch' },
-  background: { platforms: ['android'], route: 'watch' },
   pro: { needsCloud: true },
   cloud: { needsCloud: true },
 };
@@ -85,7 +85,10 @@ export interface OnboardingState {
   done: StepId[];
   /** Steps left with Skip or Later. */
   skipped: StepId[];
-  /** Steps this run does not show whatever the platform says (`unbind` when a watch is already paired at the start). */
+  /**
+   * Steps this run does not show whatever the platform says: `unbind` when a watch is already paired at the start, and the permission
+   * steps a run stored in the old order already did (see `fromOldOrder`).
+   */
   without: StepId[];
 }
 
@@ -131,6 +134,18 @@ export function currentStep(state: OnboardingState, ctx: StepContext): StepId {
 export function progress(state: OnboardingState, ctx: StepContext): { index: number; total: number } {
   const steps = visibleSteps(state, ctx);
   return { index: steps.indexOf(currentStep(state, ctx)) + 1, total: steps.length };
+}
+
+/**
+ * Whether the first history pull may start: the run is open on the watch route and has reached the pairing step. The pull itself
+ * waits for the link (see `useFirstSync`); the steps before pairing never start one, also when a run reopened from Settings finds the
+ * watch already connected.
+ */
+export function firstSyncStarts(state: OnboardingState, ctx: StepContext): boolean {
+  if (state.status !== 'active' || state.route !== 'watch') return false;
+  const steps = visibleSteps(state, ctx);
+  const pair = steps.indexOf('pair');
+  return pair >= 0 && steps.indexOf(currentStep(state, ctx)) >= pair;
 }
 
 function dropStep(list: readonly StepId[], item: StepId): StepId[] {
@@ -234,8 +249,6 @@ export function footerFor(step: StepId, facts: FooterFacts): Footer {
       return linkUp
         ? { primary: label.continue, primaryDisabled: false, skip: null, back: true }
         : { primary: null, primaryDisabled: false, skip: label.later, back: true };
-    case 'sync':
-      return { primary: label.continue, primaryDisabled: facts.linkState === 'syncing', skip: label.later, back: true };
     case 'account':
       return facts.signedIn
         ? { primary: label.continue, primaryDisabled: false, skip: null, back: true }
@@ -276,6 +289,22 @@ export function resolveLaunch(options: { stored: OnboardingState | null; hasPair
 
 const STATUSES: readonly OnboardingStatus[] = ['active', 'completed', 'dismissed', 'bypassed'];
 
+/**
+ * Runs stored by a build with the old order: pair, `sync`, notifications, health, weather, background. Such a record names `sync` (as its
+ * step, or in its done or skipped lists, which every watch run past pairing has); a record of this order never does. `sync` is no step
+ * any more (the first sync runs in the background), and `background` moved up to straight after pairing, so a run caught between the two
+ * orders resumes on `background` when it has not seen it yet, and the permission steps it already did are left out of this run instead
+ * of being shown again. Skipped ones stay, so the last step still lists them. A run before pairing or past `background` is unchanged.
+ */
+const MOVED_BEHIND_BACKGROUND: readonly StepId[] = ['notifications', 'health', 'weather'];
+
+function fromOldOrder(state: OnboardingState): OnboardingState {
+  const between = state.step === 'background' || MOVED_BEHIND_BACKGROUND.includes(state.step);
+  if (!between || state.done.includes('background') || state.skipped.includes('background')) return state;
+  const passed = MOVED_BEHIND_BACKGROUND.filter((id) => state.done.includes(id) && !state.without.includes(id));
+  return { ...state, step: 'background', without: [...state.without, ...passed] };
+}
+
 function stepList(value: unknown): StepId[] {
   return Array.isArray(value) ? value.filter((v): v is StepId => STEP_IDS.includes(v as StepId)) : [];
 }
@@ -288,15 +317,18 @@ export function parseState(raw: string | null): OnboardingState | null {
     if (typeof value !== 'object' || value === null) return null;
     const record = value as Record<string, unknown>;
     if (!STATUSES.includes(record.status as OnboardingStatus)) return null;
-    if (!STEP_IDS.includes(record.step as StepId)) return null;
-    return {
+    const oldOrder = record.step === 'sync' || [record.done, record.skipped].some((list) => Array.isArray(list) && list.includes('sync'));
+    const step = record.step === 'sync' ? 'background' : record.step;
+    if (!STEP_IDS.includes(step as StepId)) return null;
+    const state: OnboardingState = {
       status: record.status as OnboardingStatus,
-      step: record.step as StepId,
+      step: step as StepId,
       route: record.route === 'none' ? 'none' : 'watch',
       done: stepList(record.done),
       skipped: stepList(record.skipped),
       without: stepList(record.without),
     };
+    return oldOrder ? fromOldOrder(state) : state;
   } catch {
     return null;
   }

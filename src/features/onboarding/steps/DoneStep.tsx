@@ -14,7 +14,7 @@ import { spacing, type Tint } from '@/theme';
 
 const HEALTH_STORE = isIos ? 'Apple Health' : 'Health Connect'; // i18n-ok: platform brand names
 
-const WHERE_IDS = ['unbind', 'pair', 'sync', 'notifications', 'health', 'weather', 'background', 'account', 'cloud'] as const;
+const WHERE_IDS = ['unbind', 'pair', 'notifications', 'health', 'weather', 'background', 'account', 'cloud'] as const;
 type WhereId = (typeof WHERE_IDS)[number];
 const isWhereId = (id: StepId): id is WhereId => (WHERE_IDS as readonly string[]).includes(id);
 

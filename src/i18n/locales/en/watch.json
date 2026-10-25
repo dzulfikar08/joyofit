@@ -143,6 +143,8 @@
       "title": "Pair this watch with this phone?",
       "messageIos": "This watch is not paired with this iPhone yet. A watch keeps one phone pairing, so continuing replaces the pairing with your other phone or app (Huawei Health, or JoyoFit on another phone), which will have to pair again. You will then confirm on the watch.",
       "messageAndroid": "This watch is not paired with this phone yet. A watch keeps one phone pairing, so continuing replaces the pairing with your other phone or app (Huawei Health, or JoyoFit on another phone), which will have to pair again. You will then confirm on the watch.",
+      "lostAndroid": "JoyoFit was paired with this watch, but the watch no longer knows this phone: another app or phone paired it again while JoyoFit was not connected. Often that is Huawei Health: while it is enabled, it reconnects to the watch and pairs it again by itself, even when you are not using it. Disable or uninstall Huawei Health first (Settings, Apps, Huawei Health, Disable or Uninstall), then continue and confirm on the watch. Unpairing the watch in Huawei Health instead may reset the watch.",
+      "lostIos": "JoyoFit was paired with this watch, but the watch no longer knows this iPhone: another app or phone paired it again while JoyoFit was not connected, for example Huawei Health. Stop that app or phone from connecting to the watch first, then continue and confirm on the watch.",
       "continue": "Continue"
     },
     "sync": {
@@ -714,11 +716,15 @@
     "cancel": "Cancel",
     "phoneCopy": "Copy on this phone",
     "details": "Your watch uses satellite data to find its GPS position quickly. The data is good for about 7 days. If your watch asks for the Broadcom kind, JoyoFit downloads it from Broadcom's public server, with no account, and gives it to the watch. Other kinds are prepared only by Huawei's own app; JoyoFit never sends the watch anything it did not ask for.",
+    "detailsLab": "An experiment you turned on in Settings > About & advanced: your watch asks for the HW_AGNSS kind, and JoyoFit sends satellite data that JoyoFit's server builds from public broadcast data (IGS/BKG), not from Huawei. It is good for about 4 hours. The watch does not check this data and no watch has been shown to accept it. Note how long the watch's GPS takes to find its position before and after. If the watch's GPS misbehaves, turn the experiment off; a factory reset recovers the watch.",
+    "detailsPgnss": "An experiment you turned on in Settings > About & advanced: your watch asks for the HW_PGNSS_PRED kind, and JoyoFit sends six files of predicted satellite orbits for 3 days that JoyoFit's server computes from public data, not from Huawei. The watch does not check this data and no watch has been shown to accept it. Note how long the watch's GPS takes to find its position before and after. If the watch's GPS misbehaves, turn the experiment off; a factory reset recovers the watch.",
     "retryAt": "Next automatic try around {{time}}.",
     "sizeValue": "{{kb}} KB",
     "status": {
       "never": "Your watch has not taken satellite data from JoyoFit yet.",
       "delivered": "Your watch has the latest satellite data.",
+      "deliveredLab": "Your watch took JoyoFit's experimental satellite data (HW_AGNSS). Whether the watch uses it is unproven; note how long GPS takes to find its position.",
+      "deliveredPgnss": "Your watch took JoyoFit's experimental predicted satellite data (HW_PGNSS_PRED, 3 days). Whether the watch uses it is unproven; note how long GPS takes to find its position.",
       "expired": "The satellite data on your watch has expired. Tap Update now.",
       "stored": "The data is downloaded to this phone. It goes to your watch when the watch connects and asks for it.",
       "watchSilent": "The data is ready on this phone, but your watch did not respond. It will be sent when your watch asks.",

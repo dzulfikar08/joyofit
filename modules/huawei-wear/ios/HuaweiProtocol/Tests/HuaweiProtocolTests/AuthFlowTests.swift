@@ -391,6 +391,7 @@ final class AuthFlowTests: XCTestCase {
             XCTAssertEqual(e.message, "watch does not know this phone: first bind needed")
             XCTAssertTrue(e.isFirstBindNeeded)
             XCTAssertEqual((e.underlying as? FirstBindNeededError)?.authType, 5)
+            XCTAssertTrue(e.isLostBinding, "a stored key the watch forgot: something else bound the watch (JRG-414)")
         }
         XCTAssertEqual(rig.watch.labels, ["01/01", "01/33"], "no PinCode, no HiChain: the watch is untouched")
         XCTAssertEqual(rig.identity.authKey, stale)
@@ -408,6 +409,7 @@ final class AuthFlowTests: XCTestCase {
             XCTAssertEqual(e.code, .authFailed)
             XCTAssertEqual(e.message, "watch does not know this phone: first bind needed")
             XCTAssertTrue(e.isFirstBindNeeded)
+            XCTAssertFalse(e.isLostBinding, "nothing was stored here, so nothing was lost")
         }
         XCTAssertEqual(rig.watch.labels, ["01/01", "01/33"])
         XCTAssertTrue(rig.identity.isFirstConnection)

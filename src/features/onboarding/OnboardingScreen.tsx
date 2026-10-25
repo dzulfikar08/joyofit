@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { FadeIn } from '@/components/motion';
-import { currentStep, footerFor, progress, type StepId } from '@/features/onboarding/flow';
+import { currentStep, firstSyncStarts, footerFor, progress, type StepId } from '@/features/onboarding/flow';
+import { FirstSyncLine } from '@/features/onboarding/FirstSyncLine';
 import { StepProgress } from '@/features/onboarding/StepProgress';
 import { CloudStep } from '@/features/onboarding/steps/CloudStep';
 import { AccountStep } from '@/features/onboarding/steps/AccountStep';
@@ -15,9 +16,9 @@ import { PairStep } from '@/features/onboarding/steps/PairStep';
 import { PhoneStep } from '@/features/onboarding/steps/PhoneStep';
 import { BackgroundStep, HealthStep, NotificationsStep, WeatherStep } from '@/features/onboarding/steps/PermissionSteps';
 import { ProStep } from '@/features/onboarding/steps/ProStep';
-import { SyncStep } from '@/features/onboarding/steps/SyncStep';
 import { UnbindStep } from '@/features/onboarding/steps/UnbindStep';
 import { WelcomeStep } from '@/features/onboarding/steps/WelcomeStep';
+import { useFirstSync } from '@/features/onboarding/useFirstSync';
 import { useCloud } from '@/state/CloudProvider';
 import { useOnboarding } from '@/state/OnboardingProvider';
 import { useWatch } from '@/state/WatchProvider';
@@ -28,7 +29,6 @@ const BODIES: Record<StepId, () => ReactElement> = {
   phone: () => <PhoneStep />,
   unbind: () => <UnbindStep />,
   pair: () => <PairStep />,
-  sync: () => <SyncStep />,
   notifications: () => <NotificationsStep />,
   health: () => <HealthStep />,
   weather: () => <WeatherStep />,
@@ -42,6 +42,7 @@ const BODIES: Record<StepId, () => ReactElement> = {
 /**
  * The first-run setup guide: one step at a time, a progress bar on top, and Back, Later and Continue underneath. What each step shows
  * is the same section Settings or the Watch tab shows; this screen only sequences them (see `flow.ts` for the order and the rules).
+ * It also owns the first history pull, which runs in the background from pairing on and shows as one line under the progress bar.
  */
 export function OnboardingScreen() {
   const { t } = useTranslation('common');
@@ -54,6 +55,7 @@ export function OnboardingScreen() {
   const { state, ctx } = guide;
   // Scrolled content ends in a hard edge under the progress bar; a hairline there says it continues above.
   const [scrolledStep, setScrolledStep] = useState<StepId | null>(null);
+  const firstSync = useFirstSync(state ? firstSyncStarts(state, ctx) : false);
 
   // Finished or left: go to Today. A run opened from Settings arrives here already active.
   const status = state?.status;
@@ -73,6 +75,7 @@ export function OnboardingScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top + spacing.sm }]}>
       <View style={[styles.progress, scrolled && { borderBottomColor: colors.hairline, borderBottomWidth: StyleSheet.hairlineWidth }]}>
         <StepProgress index={index} total={total} />
+        <FirstSyncLine sync={firstSync} />
       </View>
       <ScrollView
         key={step}

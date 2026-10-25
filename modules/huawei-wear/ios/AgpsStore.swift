@@ -30,6 +30,9 @@ public final class AgpsStore: @unchecked Sendable {
         static let attemptAt = "attempt_at"
         static let failures = "failures"
         static let failureAt = "failure_at"
+        static let labAgnss = "lab_agnss"
+        static let labPgnss = "lab_pgnss"
+        static let pgnssBuilt = "pgnss_built"
     }
 
     private static let maxTagsChars = 120
@@ -75,6 +78,28 @@ public final class AgpsStore: @unchecked Sendable {
     public var lastFailureMs: Int { int(Key.failureAt) }
 
     public func retryAtMs() -> Int { AgpsPolicy.retryAtMs(lastFailureMs: lastFailureMs, failures: failures) }
+
+    /// The experimental switch (`AgpsLab`): serve JoyoFit's HW_AGNSS file to a watch that asks for exactly that kind. Off by default.
+    public var labAgnss: Bool { defaults.bool(forKey: Key.labAgnss) }
+
+    public func setLabAgnss(_ enabled: Bool) {
+        lock.locked { defaults.set(enabled, forKey: Key.labAgnss) }
+    }
+
+    /// The second experimental switch (`AgpsPgnss`): serve JoyoFit's six HW_PGNSS_* files to a watch that asks for `HW_PGNSS_PRED`. Off by default.
+    public var labPgnss: Bool { defaults.bool(forKey: Key.labPgnss) }
+
+    public func setLabPgnss(_ enabled: Bool) {
+        lock.locked { defaults.set(enabled, forKey: Key.labPgnss) }
+    }
+
+    /// The server's build time (Last-Modified) of the PGNSS bundle on the phone; 0 when none. Kept apart from `cachedDataMs`, which the watch's
+    /// HW_AGNSS ask two seconds earlier overwrites, so the 800 KB copy is not fetched again for every PRED ask.
+    public var pgnssBuiltMs: Int { int(Key.pgnssBuilt) }
+
+    public func recordPgnssBuilt(_ builtMs: Int) {
+        lock.locked { defaults.set(builtMs, forKey: Key.pgnssBuilt) }
+    }
 
     /// The watch asked (its op 1) but has not yet said what kind of data it wants.
     public func touchAsk(nowMs: Int) {

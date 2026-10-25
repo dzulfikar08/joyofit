@@ -82,6 +82,10 @@
     "courses": "Running courses",
     "coursesSubtitle": "Build a course and send it to the watch",
     "bleLink": "Bluetooth LE link (developer)",
+    "agnssLab": "JoyoFit HW_AGNSS satellite data (lab test)",
+    "agnssLabRisk": "Off by default. When on and the watch asks for the HW_AGNSS kind, JoyoFit sends satellite data that JoyoFit's server builds from public broadcast data (IGS/BKG), not from Huawei. The phone fetches it from JoyoFit's server with no personal data; the server sees the IP address. The watch does not check this data, and wrong data has wedged the GPS of other watches. A factory reset recovers the watch. Unproven on any watch: turn it on only to test.",
+    "pgnssLab": "JoyoFit HW_PGNSS_PRED predicted satellite data (lab test)",
+    "pgnssLabRisk": "Off by default, separate from the switch above. When on and the watch asks for the HW_PGNSS_PRED kind, JoyoFit sends six files of predicted satellite orbits for the next 3 days that JoyoFit's server computes from public data, laid out like Huawei's own files but not from Huawei. The phone fetches them (about 800 KB) from JoyoFit's server with no personal data; the server sees the IP address. Riskier than HW_AGNSS: the predictions are unverified, the watch keeps them for days and does not check them, and wrong data has wedged the GPS of other watches. A factory reset recovers the watch. Unproven on any watch: turn it on only to test.",
     "details": "Running courses: unverified, the course format comes from static analysis of Huawei Health. The watch may refuse it.",
     "detailsDev": "Running courses: unverified, the course format comes from static analysis of Huawei Health. The watch may refuse it. Bluetooth LE link: connect over Bluetooth LE GATT (service FE86) instead of the watch's own link. Disconnect and connect again to apply. Steps go to logcat tag JoyoFitBle."
   },

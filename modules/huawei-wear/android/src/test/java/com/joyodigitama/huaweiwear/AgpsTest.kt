@@ -299,4 +299,430 @@ class AgpsTest {
     val fetch = source(MemoryCache(), AgpsStore(MemoryPrefs())).fetch(AgpsConsult(9, "", emptyList()), false)
     assertEquals(AgpsOutcome.UNSUPPORTED, fetch.outcome)
   }
+
+  // The experimental HW_AGNSS path
+
+  @Test
+  fun crc24qMatchesThePublishedCheckValue() {
+    assertEquals(0xCDE703, AgpsPolicy.crc24q("123456789".toByteArray()))
+  }
+
+  @Test
+  fun aFullRtcmFilePassesAndBrokenOnesAreRefusedWithTheServersWords() {
+    assertNull(AgpsPolicy.validateRtcm(rtcmFile(24)))
+    assertEquals(24, AgpsPolicy.rtcmFrames(rtcmFile(24)))
+    assertEquals("only 19 satellites (at least 20 needed)", AgpsPolicy.validateRtcm(rtcmFile(19)))
+    assertEquals("file too small (100 bytes)", AgpsPolicy.validateRtcm(ByteArray(100)))
+    assertEquals("file too large (16385 bytes)", AgpsPolicy.validateRtcm(ByteArray(16 * 1024 + 1)))
+    val flipped = rtcmFile(24).also { it[10] = (it[10].toInt() xor 1).toByte() }
+    assertEquals("RTCM frame at byte 0 fails its CRC", AgpsPolicy.validateRtcm(flipped))
+    val cut = rtcmFile(24).let { it.copyOfRange(0, it.size - 1) }
+    assertEquals("RTCM frame at byte ${23 * 67} is cut off", AgpsPolicy.validateRtcm(cut))
+    assertEquals("not an RTCM 3 frame at byte ${24 * 67}", AgpsPolicy.validateRtcm(rtcmFile(24) + byteArrayOf(0)))
+    assertEquals("unexpected RTCM message 1005 at byte 0", AgpsPolicy.validateRtcm(rtcmFile(24, type = 1005)))
+  }
+
+  @Test
+  fun theHwAgnssFileMustBeFreshFromTheServer() {
+    val hour = 3_600_000L
+    val now = 10 * hour
+    assertNull(AgpsPolicy.validateAgnss(rtcmFile(24), now - hour, now))
+    assertEquals("the file was built 121 minutes ago", AgpsPolicy.validateAgnss(rtcmFile(24), now - 2 * hour - 60_000L, now))
+    assertEquals("the server did not say when the file was built", AgpsPolicy.validateAgnss(rtcmFile(24), 0L, now))
+    assertEquals("only 10 satellites (at least 20 needed)", AgpsPolicy.validateAgnss(rtcmFile(10), now, now))
+    assertEquals("expires four hours after it was built", now + 4 * hour, AgpsPolicy.expiresAtMs(now, AgpsLab.SOURCE))
+    assertEquals(now + 7 * 24 * hour, AgpsPolicy.expiresAtMs(now, AgpsSources.BROADCOM))
+  }
+
+  /** The HW_AGNSS switch alone serves exactly the HW_AGNSS kind for [consult]. */
+  private fun asksHwAgnss(consult: AgpsConsult) = AgpsLab.servedKinds(consult, agnssOn = true, pgnssOn = false) == listOf(AgpsLab.KIND)
+
+  @Test
+  fun onlyAConsultForExactlyOneHwAgnssKindQualifies() {
+    assertTrue(asksHwAgnss(AgpsConsult(3, "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", emptyList())))
+    assertTrue(asksHwAgnss(AgpsConsult(3, " higeo/v1/gnssinfo?type=0x0004/HW_AGNSS; ", emptyList())))
+    assertFalse(asksHwAgnss(AgpsConsult(0, "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", emptyList())))
+    assertFalse(asksHwAgnss(AgpsConsult(4, "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", emptyList())))
+    assertFalse(asksHwAgnss(AgpsConsult(3, "a/HW_AGNSS;b/HW_PGNSS_GPS", emptyList())))
+    assertFalse(asksHwAgnss(AgpsConsult(3, "com.huawei.higeo_dataModule_PGNSSConfig?type=HW_EEV2/HW_PGNSS_PRED;", emptyList())))
+    assertFalse(asksHwAgnss(AgpsConsult(3, "x/HW_AGNSS_RTCM_33", emptyList())))
+    assertTrue(AgpsLab.askedHwAgnss(3, "HW_AGNSS"))
+    assertFalse(AgpsLab.askedHwAgnss(3, "HW_AGNSS,HW_PGNSS_GPS"))
+  }
+
+  @Test
+  fun theRetryScheduleCoversBroadcomAndHwAgnssWithTheSwitchOnOnly() {
+    val agnss = AgpsConsult(3, "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", emptyList())
+    assertTrue(AgpsLab.downloads(AgpsConsult.DEFAULT, agnssOn = false, pgnssOn = false))
+    assertTrue(AgpsLab.downloads(agnss, agnssOn = true, pgnssOn = false))
+    assertFalse("switch off: declined, the retry wait does not apply", AgpsLab.downloads(agnss, agnssOn = false, pgnssOn = true))
+    assertFalse(AgpsLab.downloads(AgpsConsult(3, "x/HW_PGNSS_PRED;", emptyList()), agnssOn = true, pgnssOn = false))
+  }
+
+  @Test
+  fun theSwitchIsOffByDefaultAndRemembered() {
+    val prefs = MemoryPrefs()
+    assertFalse(AgpsStore(prefs).labAgnss)
+    AgpsStore(prefs).setLabAgnss(true)
+    assertTrue(AgpsStore(prefs).labAgnss)
+  }
+
+  private val agnss = AgpsConsult(3, "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", emptyList())
+
+  private fun labSource(cache: AgpsCache, store: AgpsStore, online: Boolean = true, answer: () -> AgpsDownload) =
+    NetworkAgpsSource(cache, store, log = { }, isOnline = { online }, nowMs = { 10_000_000L }, http = { url, max ->
+      assertEquals(EphemerisNet.AGNSS_URL, url)
+      assertEquals(AgpsPolicy.RTCM_MAX_BYTES, max)
+      answer()
+    })
+
+  @Test
+  fun withTheSwitchOffHwAgnssIsDeclinedWithoutTheNetwork() {
+    val fetch = labSource(MemoryCache(), AgpsStore(MemoryPrefs())) { throw AssertionError("the network must not be used") }.fetch(agnss, false)
+    assertEquals(AgpsOutcome.UNSUPPORTED, fetch.outcome)
+    assertEquals("the watch asked for kinds only the watch maker's app prepares (version 3: HW_AGNSS)", fetch.message)
+  }
+
+  @Test
+  fun withTheSwitchOnTheServersFileIsCheckedKeptAndReused() {
+    val cache = MemoryCache()
+    val store = AgpsStore(MemoryPrefs()).also { it.setLabAgnss(true) }
+    val file = rtcmFile(24)
+    var calls = 0
+    val source = labSource(cache, store) {
+      calls++
+      AgpsDownload(file, 9_000_000L)
+    }
+    val fetch = source.fetch(agnss, false)
+    assertTrue(fetch.ok)
+    assertEquals(AgpsLab.SOURCE, fetch.source)
+    assertEquals(9_000_000L, fetch.dataTimeMs)
+    assertArrayEquals(file, fetch.files[AgpsLab.FILE])
+    assertArrayEquals(file, cache.entries[EphemerisNet.AGNSS_URL])
+    // The exchange records the download; the watch's next ask is answered from the phone's copy.
+    store.recordDownloaded(9_500_000L, fetch.dataTimeMs, file.size, fetch.source)
+    val again = source.fetch(agnss, false)
+    assertTrue(again.fromCache)
+    assertEquals(9_000_000L, again.dataTimeMs)
+    assertEquals(1, calls)
+    // A Broadcom copy's record does not vouch for the cached RTCM file: it is fetched again.
+    store.recordDownloaded(9_600_000L, 9_600_000L, 115_749, AgpsSources.BROADCOM)
+    assertFalse(source.fetch(agnss, false).fromCache)
+    assertEquals(2, calls)
+  }
+
+  @Test
+  fun withTheSwitchOnABrokenStaleOrMissingFileIsNotOffered() {
+    val store = AgpsStore(MemoryPrefs()).also { it.setLabAgnss(true) }
+    val bad = rtcmFile(24).also { it[30] = (it[30].toInt() xor 0xFF).toByte() }
+    val cache = MemoryCache()
+    val broken = labSource(cache, store) { AgpsDownload(bad, 9_000_000L) }.fetch(agnss, true)
+    assertEquals(AgpsOutcome.INVALID_FILE, broken.outcome)
+    assertEquals("HW_AGNSS: RTCM frame at byte 0 fails its CRC", broken.message)
+    assertTrue("a bad file is never kept", cache.entries.isEmpty())
+    val stale = labSource(cache, store) { AgpsDownload(rtcmFile(24), 1_000L) }.fetch(agnss, true)
+    assertEquals(AgpsOutcome.INVALID_FILE, stale.outcome)
+    val down = labSource(cache, store) { throw AgpsFetchException("HTTP 503") }.fetch(agnss, true)
+    assertEquals(AgpsOutcome.DOWNLOAD_FAILED, down.outcome)
+    assertEquals("HW_AGNSS: HTTP 503", down.message)
+    val offline = labSource(cache, store, online = false) { throw AssertionError("offline") }.fetch(agnss, true)
+    assertEquals(AgpsOutcome.NO_NETWORK, offline.outcome)
+  }
+
+  @Test
+  fun withTheSwitchOnOtherKindsStayDeclined() {
+    val store = AgpsStore(MemoryPrefs()).also { it.setLabAgnss(true) }
+    val source = labSource(MemoryCache(), store) { throw AssertionError("the network must not be used") }
+    assertEquals(AgpsOutcome.UNSUPPORTED, source.fetch(AgpsConsult(3, "a/HW_AGNSS;b/HW_PGNSS_GPS", emptyList()), false).outcome)
+    assertEquals(AgpsOutcome.UNSUPPORTED, source.fetch(AgpsConsult(3, "x/HW_PGNSS_PRED;", emptyList()), false).outcome)
+  }
+
+  // The experimental HW_PGNSS_PRED path
+
+  private val pred = AgpsConsult(3, "com.huawei.higeo_dataModule_PGNSSConfig?type=HW_EEV2/HW_PGNSS_PRED;", emptyList())
+
+  /** 2026-10-25 01:47 UTC (08:47 WIB, the Huawei Health capture), the build time of the test bundles. */
+  private val built = 1_792_892_820_000L
+
+  @Test
+  fun theBundleLayoutHasTheExactSizesOfHuaweiHealthsFiles() {
+    assertEquals(
+      listOf("HW_PGNSS_GPS", "HW_PGNSS_BDS", "HW_PGNSS_GLONASS", "HW_PGNSS_GALILEO", "HW_PGNSS_QZS", "HW_PGNSS_EXTRA"),
+      PgnssBundle.FILES.map { it.name },
+    )
+    assertEquals(listOf(93_312, 209_808, 361_584, 99_648, 28_512, 6_248), PgnssBundle.FILES.map { it.size })
+    assertEquals(799_230, PgnssBundle.BUNDLE_BYTES)
+    assertEquals("HH's gpsTime = unixSeconds - 315964782", 1_792_892_820L - 315_964_782L, PgnssBundle.gpsSeconds(built))
+  }
+
+  @Test
+  fun aGoodBundlePassesAndSplitsIntoTheSixFilesInPullOrder() {
+    val files = pgnssFiles(built)
+    val bundle = pgnssBundle(files)
+    assertEquals(PgnssBundle.BUNDLE_BYTES, bundle.size)
+    assertNull(PgnssBundle.validate(bundle, built, built + 60_000L))
+    assertNull("six hours old is still good", PgnssBundle.validate(bundle, built, built + 6 * 3_600_000L))
+    val split = PgnssBundle.files(bundle)
+    assertEquals(files.keys.toList(), split.keys.toList())
+    for ((name, data) in files) assertArrayEquals(name, data, split[name])
+  }
+
+  @Test
+  fun aBundleWithAWrongContainerIsRefused() {
+    val files = pgnssFiles(built)
+    fun check(bundle: ByteArray) = PgnssBundle.validate(bundle, built, built)
+    assertEquals("not a PGNSS bundle (unexpected header)", check(byteArrayOf(1, 2, 3)))
+    assertEquals("not a PGNSS bundle (unexpected header)", check(pgnssBundle(files).also { it[0] = 'X'.code.toByte() }))
+    assertEquals("bundle version 2 is not known", check(pgnssBundle(files, version = 2)))
+    assertEquals("the bundle has 5 files (6 expected)", check(pgnssBundle(files, count = 5)))
+    val swapped = listOf("HW_PGNSS_BDS", "HW_PGNSS_GPS", "HW_PGNSS_GLONASS", "HW_PGNSS_GALILEO", "HW_PGNSS_QZS", "HW_PGNSS_EXTRA")
+    assertEquals("file 1 is \"HW_PGNSS_BDS\" (HW_PGNSS_GPS expected)", check(pgnssBundle(files, order = swapped)))
+    val short = LinkedHashMap(files).also { it["HW_PGNSS_QZS"] = it["HW_PGNSS_QZS"]!!.copyOfRange(0, 28_511) }
+    assertEquals("HW_PGNSS_QZS is 28511 bytes (28512 expected)", check(pgnssBundle(short)))
+    assertEquals("1 bytes after the last file", check(pgnssBundle(files) + byteArrayOf(0)))
+    val cut = pgnssBundle(files).let { it.copyOfRange(0, it.size - 10) }
+    assertEquals("the bundle is cut off in HW_PGNSS_EXTRA", check(cut))
+  }
+
+  @Test
+  fun aBundleWithABadHeaderOrTooManySatellitesIsRefused() {
+    fun withFile(name: String, change: (ByteArray) -> Unit): String? {
+      val files = pgnssFiles(built)
+      change(files[name]!!)
+      return PgnssBundle.validate(pgnssBundle(files), built, built)
+    }
+    assertEquals("HW_PGNSS_GPS header entry 3 points at 0 (8700 expected)", withFile("HW_PGNSS_GPS") { putU32(it, 12 * 3 + 4, 0) })
+    assertEquals("HW_PGNSS_BDS header entry 0 has size 5801 (5800 expected)", withFile("HW_PGNSS_BDS") { putU32(it, 8, 5801) })
+    assertEquals("HW_PGNSS_GALILEO slot 5 is not 7200 s after the one before", withFile("HW_PGNSS_GALILEO") { putU32(it, 12 * 5, 1) })
+    assertEquals("HW_PGNSS_QZS header entry 36 is not empty", withFile("HW_PGNSS_QZS") { putU32(it, 12 * 36, 1) })
+    assertEquals("HW_PGNSS_GPS block 0 lists 33 satellites (at most 32)", withFile("HW_PGNSS_GPS") { it[1008] = 33 })
+    // GLONASS: 8 sub-blocks of 1252 bytes per header entry, each with its own count.
+    assertEquals("HW_PGNSS_GLONASS block 9 lists 25 satellites (at most 24)", withFile("HW_PGNSS_GLONASS") { it[1008 + 9 * 1252] = 25 })
+    assertEquals("HW_PGNSS_GLONASS header entry 1 points at 2260 (11024 expected)", withFile("HW_PGNSS_GLONASS") { putU32(it, 12 + 4, 1008L + 1252L) })
+    assertNull("EXTRA has no header to check", withFile("HW_PGNSS_EXTRA") { it.fill(0x7F) })
+  }
+
+  @Test
+  fun aStaleUndatedOrMistimedBundleIsRefused() {
+    val bundle = pgnssBundle(pgnssFiles(built))
+    assertEquals("the bundle was built 361 minutes ago", PgnssBundle.validate(bundle, built, built + 6 * 3_600_000L + 60_000L))
+    assertEquals("the server did not say when the bundle was built", PgnssBundle.validate(bundle, 0L, built))
+    // Slots made for a build five hours earlier than the server says: the first slot is too far from the build time.
+    val early = pgnssBundle(pgnssFiles(built - 5 * 3_600_000L))
+    assertTrue(PgnssBundle.validate(early, built, built)!!.startsWith("HW_PGNSS_GPS starts -"))
+  }
+
+  @Test
+  fun onlyAPredConsultQualifiesAndOnlyWithItsOwnSwitch() {
+    assertEquals(listOf(AgpsPgnss.KIND), AgpsLab.servedKinds(pred, agnssOn = false, pgnssOn = true))
+    assertEquals(emptyList<String>(), AgpsLab.servedKinds(pred, agnssOn = true, pgnssOn = false))
+    assertEquals(emptyList<String>(), AgpsLab.servedKinds(AgpsConsult(0, pred.tag, emptyList()), agnssOn = true, pgnssOn = true))
+    assertEquals(emptyList<String>(), AgpsLab.servedKinds(AgpsConsult(4, pred.tag, emptyList()), agnssOn = true, pgnssOn = true))
+    val seven = AgpsConsult(3, "com.huawei.higeo_dataModule_PGNSSConfig?type=HW_EEV2_SEVEN/HW_PGNSS_PRED;", emptyList())
+    assertEquals("the seven-day variant is gzipped and longer: not served", emptyList<String>(), AgpsLab.servedKinds(seven, true, true))
+    assertEquals(emptyList<String>(), AgpsLab.servedKinds(AgpsConsult(3, "x/HW_PGNSS_PRED_X", emptyList()), true, true))
+    assertEquals(emptyList<String>(), AgpsLab.servedKinds(AgpsConsult(3, "x/HW_PGNSS_PRED;y/HW_PGNSS_GPS", emptyList()), true, true))
+    assertEquals(listOf(AgpsLab.KIND), AgpsLab.servedKinds(agnss, agnssOn = true, pgnssOn = true))
+    assertTrue(AgpsPgnss.askedPred(3, "HW_PGNSS_PRED"))
+    assertFalse(AgpsPgnss.askedPred(0, "HW_PGNSS_PRED"))
+    assertFalse(AgpsPgnss.askedPred(3, "HW_AGNSS,HW_PGNSS_PRED"))
+    assertTrue(AgpsLab.downloads(pred, agnssOn = false, pgnssOn = true))
+    assertFalse(AgpsLab.downloads(pred, agnssOn = true, pgnssOn = false))
+  }
+
+  @Test
+  fun aConsultNamingBothKindsServesWhatIsSwitchedOnAndOnlyWithThePredSwitch() {
+    val both = AgpsConsult(3, "a/HW_AGNSS;${pred.tag}", emptyList())
+    assertEquals(listOf(AgpsLab.KIND, AgpsPgnss.KIND), AgpsLab.servedKinds(both, agnssOn = true, pgnssOn = true))
+    assertEquals(listOf(AgpsPgnss.KIND), AgpsLab.servedKinds(both, agnssOn = false, pgnssOn = true))
+    assertEquals("PRED switch off: declined as before", emptyList<String>(), AgpsLab.servedKinds(both, agnssOn = true, pgnssOn = false))
+  }
+
+  @Test
+  fun thePgnssSwitchIsOffByDefaultSeparateAndRemembered() {
+    val prefs = MemoryPrefs()
+    assertFalse(AgpsStore(prefs).labPgnss)
+    AgpsStore(prefs).setLabAgnss(true)
+    assertFalse("the HW_AGNSS switch does not turn it on", AgpsStore(prefs).labPgnss)
+    AgpsStore(prefs).setLabPgnss(true)
+    assertTrue(AgpsStore(prefs).labPgnss)
+    AgpsStore(prefs).recordPgnssBuilt(42L)
+    assertEquals(42L, AgpsStore(prefs).pgnssBuiltMs)
+  }
+
+  @Test
+  fun pgnssDataIsShownValidForTheThreeDaysItCovers() {
+    assertEquals(built + 72 * 3_600_000L, AgpsPolicy.expiresAtMs(built, AgpsPgnss.SOURCE))
+  }
+
+  private fun pgnssSource(cache: AgpsCache, store: AgpsStore, now: Long = built + 60_000L, online: Boolean = true, answer: () -> AgpsDownload) =
+    NetworkAgpsSource(cache, store, log = { }, isOnline = { online }, nowMs = { now }, http = { url, max ->
+      assertEquals(EphemerisNet.PGNSS_URL, url)
+      assertEquals(PgnssBundle.BUNDLE_BYTES, max)
+      answer()
+    })
+
+  @Test
+  fun withThePgnssSwitchOffPredIsDeclinedWithoutTheNetworkAsToday() {
+    val store = AgpsStore(MemoryPrefs()).also { it.setLabAgnss(true) }
+    val fetch = pgnssSource(MemoryCache(), store) { throw AssertionError("the network must not be used") }.fetch(pred, false)
+    assertEquals(AgpsOutcome.UNSUPPORTED, fetch.outcome)
+    assertEquals("the watch asked for kinds only the watch maker's app prepares (version 3: HW_PGNSS_PRED)", fetch.message)
+  }
+
+  @Test
+  fun withThePgnssSwitchOnTheBundleIsCheckedSplitKeptAndReused() {
+    val cache = MemoryCache()
+    val store = AgpsStore(MemoryPrefs()).also { it.setLabPgnss(true) }
+    val files = pgnssFiles(built)
+    val bundle = pgnssBundle(files)
+    var calls = 0
+    val source = pgnssSource(cache, store) {
+      calls++
+      AgpsDownload(bundle, built)
+    }
+    val fetch = source.fetch(pred, false)
+    assertTrue(fetch.message, fetch.ok)
+    assertFalse(fetch.fromCache)
+    assertEquals(AgpsPgnss.SOURCE, fetch.source)
+    assertEquals(built, fetch.dataTimeMs)
+    assertEquals(files.keys.toList(), fetch.files.keys.toList())
+    assertArrayEquals(files["HW_PGNSS_GLONASS"], fetch.files["HW_PGNSS_GLONASS"])
+    assertArrayEquals(bundle, cache.entries[EphemerisNet.PGNSS_URL])
+    assertEquals(built, store.pgnssBuiltMs)
+    // The watch's next ask is answered from the phone's copy, even after an HW_AGNSS download changed the general copy record.
+    store.recordDownloaded(built + 1_000L, built, 7_000, AgpsLab.SOURCE)
+    val again = source.fetch(pred, false)
+    assertTrue(again.fromCache)
+    assertEquals(built, again.dataTimeMs)
+    assertEquals(1, calls)
+    // A forced update goes to the server.
+    assertFalse(source.fetch(pred, true).fromCache)
+    assertEquals(2, calls)
+  }
+
+  @Test
+  fun withThePgnssSwitchOnABrokenStaleOrMissingBundleIsNotOffered() {
+    val store = AgpsStore(MemoryPrefs()).also { it.setLabPgnss(true) }
+    val cache = MemoryCache()
+    val files = pgnssFiles(built)
+    val wrong = pgnssBundle(LinkedHashMap(files).also { it["HW_PGNSS_EXTRA"] = ByteArray(6_000) })
+    val broken = pgnssSource(cache, store) { AgpsDownload(wrong, built) }.fetch(pred, true)
+    assertEquals(AgpsOutcome.INVALID_FILE, broken.outcome)
+    assertEquals("HW_PGNSS_PRED: HW_PGNSS_EXTRA is 6000 bytes (6248 expected)", broken.message)
+    assertTrue("a bad bundle is never kept", cache.entries.isEmpty())
+    assertEquals(0L, store.pgnssBuiltMs)
+    val stale = pgnssSource(cache, store, now = built + 7 * 3_600_000L) { AgpsDownload(pgnssBundle(files), built) }.fetch(pred, true)
+    assertEquals(AgpsOutcome.INVALID_FILE, stale.outcome)
+    assertEquals("HW_PGNSS_PRED: the bundle was built 420 minutes ago", stale.message)
+    // A phone copy that got too old is dropped and fetched again.
+    cache.entries[EphemerisNet.PGNSS_URL] = pgnssBundle(files)
+    store.recordPgnssBuilt(built)
+    val down = pgnssSource(cache, store, now = built + 7 * 3_600_000L) { throw AgpsFetchException("HTTP 503") }.fetch(pred, false)
+    assertEquals(AgpsOutcome.DOWNLOAD_FAILED, down.outcome)
+    assertEquals("HW_PGNSS_PRED: HTTP 503", down.message)
+    assertTrue(cache.entries.isEmpty())
+    val offline = pgnssSource(cache, store, online = false) { throw AssertionError("offline") }.fetch(pred, true)
+    assertEquals(AgpsOutcome.NO_NETWORK, offline.outcome)
+  }
+
+  @Test
+  fun aConsultNamingBothKindsWithBothSwitchesOnGetsTheSevenFilesOrNothing() {
+    val store = AgpsStore(MemoryPrefs()).also {
+      it.setLabAgnss(true)
+      it.setLabPgnss(true)
+    }
+    val rtcm = rtcmFile(24)
+    val bundle = pgnssBundle(pgnssFiles(built))
+    var agnssUp = true
+    val source = NetworkAgpsSource(MemoryCache(), store, log = { }, isOnline = { true }, nowMs = { built + 60_000L }, http = { url, _ ->
+      when (url) {
+        EphemerisNet.AGNSS_URL -> if (agnssUp) AgpsDownload(rtcm, built) else throw AgpsFetchException("HTTP 503")
+        else -> AgpsDownload(bundle, built)
+      }
+    })
+    val both = AgpsConsult(3, "a/HW_AGNSS;${pred.tag}", emptyList())
+    val fetch = source.fetch(both, true)
+    assertEquals(listOf(AgpsLab.FILE) + PgnssBundle.FILES.map { it.name }, fetch.files.keys.toList())
+    assertEquals(AgpsPgnss.SOURCE, fetch.source)
+    agnssUp = false
+    val half = source.fetch(both, true)
+    assertFalse("every kind offered or none", half.ok)
+    assertEquals("HW_AGNSS: HTTP 503", half.message)
+  }
+}
+
+/**
+ * An HW_AGNSS-shaped file for the tests: [satellites] frames of 61-byte messages of [type] (1019, GPS, by default), each `D3`, length,
+ * message and CRC-24Q, so 67 bytes per frame. The message bodies are filler; only the framing is real.
+ */
+internal fun rtcmFile(satellites: Int, type: Int = 1019): ByteArray {
+  var out = ByteArray(0)
+  repeat(satellites) { k ->
+    val message = ByteArray(61) { (it * 7 + k).toByte() }
+    message[0] = (type shr 4).toByte()
+    message[1] = (((type and 0xF) shl 4) or (message[1].toInt() and 0x0F)).toByte()
+    val head = byteArrayOf(0xD3.toByte(), 0, message.size.toByte()) + message
+    val crc = AgpsPolicy.crc24q(head)
+    out += head + byteArrayOf((crc shr 16).toByte(), (crc shr 8).toByte(), crc.toByte())
+  }
+  return out
+}
+
+private fun putU32(data: ByteArray, at: Int, value: Long) {
+  for (k in 0 until 4) data[at + k] = (value shr (8 * k)).toByte()
+}
+
+/**
+ * The six PGNSS files for the tests, at their exact sizes: each ephemeris file with the header of a server build at [builtMs] (36 slots 7200 s
+ * apart from the next two-hour boundary, BeiDou +14 s, GLONASS +18 + 3600 s; packed offsets; the other 48 entries zero) and every (sub-)block
+ * listing its full capacity of satellites; the record bytes are filler.
+ */
+internal fun pgnssFiles(builtMs: Long): LinkedHashMap<String, ByteArray> {
+  val base = PgnssBundle.gpsSeconds(builtMs) / 7200 * 7200
+  val out = LinkedHashMap<String, ByteArray>()
+  for (spec in PgnssBundle.FILES) {
+    val file = ByteArray(spec.size) { (it * 7 + spec.name.length).toByte() }
+    if (spec.blockBytes > 0) {
+      file.fill(0, 0, PgnssBundle.HEADER_BYTES)
+      val first = when (spec.name) {
+        "HW_PGNSS_BDS" -> base + 7214
+        "HW_PGNSS_GLONASS" -> base + 18 + 3600
+        else -> base + 7200
+      }
+      for (i in 0 until PgnssBundle.SLOTS) {
+        putU32(file, 12 * i, first + 7200L * i)
+        putU32(file, 12 * i + 4, PgnssBundle.HEADER_BYTES + i.toLong() * spec.blockBytes)
+        putU32(file, 12 * i + 8, spec.blockBytes.toLong())
+      }
+      var block = PgnssBundle.HEADER_BYTES
+      while (block < spec.size) {
+        file[block] = spec.capacity.toByte()
+        block += spec.subBlockBytes
+      }
+    }
+    out[spec.name] = file
+  }
+  return out
+}
+
+/** [files] as the server's bundle: `JFPG`, [version], [count], then name, u32 LE size and bytes per file in [order]. */
+internal fun pgnssBundle(
+  files: Map<String, ByteArray>,
+  order: List<String> = files.keys.toList(),
+  version: Int = 1,
+  count: Int = order.size,
+): ByteArray {
+  val out = java.io.ByteArrayOutputStream()
+  out.write("JFPG".toByteArray(Charsets.US_ASCII))
+  out.write(version)
+  out.write(count)
+  for (name in order) {
+    val data = files.getValue(name)
+    out.write(name.length)
+    out.write(name.toByteArray(Charsets.US_ASCII))
+    for (k in 0 until 4) out.write(data.size shr (8 * k))
+    out.write(data)
+  }
+  return out.toByteArray()
 }

@@ -58,8 +58,16 @@ public enum AgpsPolicy {
         deliveredAtMs <= 0 || nowMs - deliveredAtMs >= deliverEveryMs
     }
 
-    /// When the data the watch holds stops being good; 0 when it was never delivered.
-    public static func expiresAtMs(dataTimeMs: Int) -> Int { dataTimeMs <= 0 ? 0 : dataTimeMs + validMs }
+    /// When the data the watch holds stops being good; 0 when it was never delivered. The experimental HW_AGNSS file (`AgpsLab`) is good for hours,
+    /// the experimental HW_PGNSS_PRED files (`AgpsPgnss`) for the three days they cover, the Broadcom file for seven days.
+    public static func expiresAtMs(dataTimeMs: Int, source: String = "") -> Int {
+        if dataTimeMs <= 0 { return 0 }
+        switch source {
+        case AgpsLab.source: return dataTimeMs + agnssValidMs
+        case AgpsPgnss.source: return dataTimeMs + PgnssBundle.validMs
+        default: return dataTimeMs + validMs
+        }
+    }
 
     /// Broadcom LTO size bounds: the real file is about 115 KB; anything far outside is not that file.
     public static let ltoMinBytes = 16 * 1024
@@ -96,6 +104,125 @@ public enum AgpsPolicy {
         if size <= 0 || frameSize <= 0 { return nil }
         let count = (size + frameSize - 1) / frameSize
         return count > maxFrames ? nil : count
+    }
+
+    /// Broadcast ephemeris is good for about four hours around its epoch; the file holds GPS records up to four hours old.
+    public static let agnssValidMs = 4 * 60 * 60 * 1000
+
+    /// The server rebuilds the HW_AGNSS file every 15 minutes; a phone copy that young is reused for the watch's repeated asks.
+    public static let agnssCacheFreshMs = 15 * 60 * 1000
+
+    /// A HW_AGNSS file the server built longer ago than this (its Last-Modified) is not offered.
+    public static let agnssMaxAgeMs = 2 * 60 * 60 * 1000
+
+    /// HW_AGNSS file bounds, the same as the server's (`packages/agps-rtcm`, `validateHwAgnss`): about 7.4 to 8 KB for 120 satellites in practice.
+    public static let rtcmMinBytes = 512
+    public static let rtcmMaxBytes = 16 * 1024
+    public static let rtcmMinSatellites = 20
+
+    /// The four RTCM 3 ephemeris messages: GPS, GLONASS, BeiDou, Galileo I/NAV.
+    private static let rtcmMessages: Set<Int> = [1019, 1020, 1042, 1046]
+
+    /// CRC-24Q of RTCM 3 (polynomial 0x1864CFB) over `data[range]`.
+    public static func crc24q(_ data: Bytes, _ range: Range<Int>? = nil) -> Int {
+        var crc = 0
+        for i in range ?? 0..<data.count {
+            crc ^= Int(data[i]) << 16
+            for _ in 0..<8 {
+                crc <<= 1
+                if crc & 0x1000000 != 0 { crc ^= 0x1864CFB }
+            }
+        }
+        return crc & 0xFFFFFF
+    }
+
+    /// Why `data` is not fit to send as the HW_AGNSS file, or nil when it is: size bounds, every byte inside a frame (`D3`, reserved bits zero,
+    /// CRC-24Q correct), only the four ephemeris messages, at least `rtcmMinSatellites` frames. The server checks the same before serving.
+    public static func validateRtcm(_ data: Bytes) -> String? {
+        if data.count < rtcmMinBytes { return "file too small (\(data.count) bytes)" }
+        if data.count > rtcmMaxBytes { return "file too large (\(data.count) bytes)" }
+        func byte(_ k: Int) -> Int { k < data.count ? Int(data[k]) : 0 }
+        var frames = 0
+        var i = 0
+        while i < data.count {
+            if byte(i) != 0xD3 || byte(i + 1) & 0xFC != 0 { return "not an RTCM 3 frame at byte \(i)" }
+            let length = ((byte(i + 1) & 3) << 8) | byte(i + 2)
+            let end = i + 3 + length
+            if length < 2 || end + 3 > data.count { return "RTCM frame at byte \(i) is cut off" }
+            let crc = (byte(end) << 16) | (byte(end + 1) << 8) | byte(end + 2)
+            if crc24q(data, i..<end) != crc { return "RTCM frame at byte \(i) fails its CRC" }
+            let type = (byte(i + 3) << 4) | (byte(i + 4) >> 4)
+            if !rtcmMessages.contains(type) { return "unexpected RTCM message \(type) at byte \(i)" }
+            frames += 1
+            i = end + 3
+        }
+        if frames < rtcmMinSatellites { return "only \(frames) satellites (at least \(rtcmMinSatellites) needed)" }
+        return nil
+    }
+
+    /// The satellites (frames) in a file that passed `validateRtcm`.
+    public static func rtcmFrames(_ data: Bytes) -> Int {
+        var frames = 0
+        var i = 0
+        while i + 2 < data.count {
+            i += 6 + ((Int(data[i + 1]) & 3) << 8 | Int(data[i + 2]))
+            frames += 1
+        }
+        return frames
+    }
+
+    /// `validateRtcm`, and the server's build time `builtMs` (its Last-Modified) must be known and at most `agnssMaxAgeMs` before `nowMs`.
+    public static func validateAgnss(_ data: Bytes, builtMs: Int, nowMs: Int) -> String? {
+        if let problem = validateRtcm(data) { return problem }
+        if builtMs <= 0 { return "the server did not say when the file was built" }
+        if nowMs - builtMs > agnssMaxAgeMs { return "the file was built \((nowMs - builtMs) / 60_000) minutes ago" }
+        return nil
+    }
+}
+
+/// The experimental HW_AGNSS path (docs/agps.md, "Lab path"): RTCM 3 broadcast ephemeris built by JoyoFit's server from BKG's open data, sent only
+/// when the user turned the switch on (off by default, `AgpsStore.labAgnss`) and the watch asked for exactly that one kind. The watch does not
+/// check the data; wrong data has wedged GPS on other watches. Everything else stays declined.
+public enum AgpsLab {
+    /// The kind (last tag segment) the watch names: `higeo/v1/gnssinfo?type=0x0024/HW_AGNSS` (Fit 4 Pro), `type=0x0004` (Band 11 Pro).
+    public static let kind = "HW_AGNSS"
+
+    /// The one file the watch pulls for it (2026-10-25 capture of Huawei Health).
+    public static let file = "HW_AGNSS_RTCM_33"
+
+    /// `AgpsFetch.source` and the stored delivery source of this data.
+    public static let source = "joyofit_rtcm"
+
+    /// The stored last ask (version, tag names only) was for exactly this kind.
+    public static func askedHwAgnss(version: Int, tagNames: String) -> Bool { (1...3).contains(version) && tagNames == kind }
+
+    /// The experimental kinds JoyoFit serves for `consult`, in the order the consult names them; empty means "decline as always". Versions 1 to 3
+    /// only. A consult of exactly one tag: `HW_AGNSS` with `agnssOn`, or `HW_PGNSS_PRED` (`AgpsPgnss.isPredEntry`) with `pgnssOn`. A consult of
+    /// exactly the two tags `HW_AGNSS` and `HW_PGNSS_PRED` (never seen: the Fit 4 Pro asks them in separate exchanges) is served only with `pgnssOn`,
+    /// with the files of the kinds whose switch is on; with the PRED switch off it stays declined exactly as before that switch existed. Any other
+    /// tag list is declined.
+    public static func servedKinds(_ consult: AgpsConsult, agnssOn: Bool, pgnssOn: Bool) -> [String] {
+        if !(1...3).contains(consult.version) { return [] }
+        let entries = consult.tag.split(separator: ";", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let kinds: [String?] = entries.map { entry in
+            if entry.hasSuffix("/\(kind)") { return kind }
+            if AgpsPgnss.isPredEntry(entry) { return AgpsPgnss.kind }
+            return nil
+        }
+        if kinds.count == 1 && kinds[0] == kind { return agnssOn ? [kind] : [] }
+        if kinds.count == 1 && kinds[0] == AgpsPgnss.kind { return pgnssOn ? [AgpsPgnss.kind] : [] }
+        if kinds.count == 2 && pgnssOn && Set(kinds.compactMap { $0 }) == [kind, AgpsPgnss.kind] && !kinds.contains(nil) {
+            return kinds.compactMap { $0 }.filter { $0 == AgpsPgnss.kind || agnssOn }
+        }
+        return []
+    }
+
+    /// The consult leads to a download: version 0 (Broadcom), or an experimental kind whose switch is on (`servedKinds`). These asks share the retry
+    /// schedule (`AgpsPolicy.retryAtMs`); every other kind is declined without touching the network.
+    public static func downloads(_ consult: AgpsConsult, agnssOn: Bool, pgnssOn: Bool) -> Bool {
+        consult.version == 0 || !servedKinds(consult, agnssOn: agnssOn, pgnssOn: pgnssOn).isEmpty
     }
 }
 

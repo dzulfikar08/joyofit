@@ -1,5 +1,5 @@
 import { supportRank } from '@/features/device/modelSupport';
-import type { BondedDevice } from '@/wear';
+import type { BondedDevice, DeviceInfo } from '@/wear';
 
 /** Tested watches first, then experimental, unknown and unsupported, each by name. */
 export function sortBonded(devices: BondedDevice[]): BondedDevice[] {
@@ -66,4 +66,28 @@ export function listBonded({ bonded, discovered, active, remembered }: BondedLis
     );
   }
   return sortBonded(Array.from(map.values()));
+}
+
+/**
+ * The rows a watch list shows: the watch in use first (added from the link when the list does not hold it yet, e.g. right after a
+ * connect from another screen), then the ones JoyoFit can talk to best. The Watch tab's list and the setup guide's scan cards share it.
+ */
+export function withActiveWatch(
+  devices: readonly BondedDevice[],
+  activeAddress: string | null,
+  device: Pick<DeviceInfo, 'name' | 'model' | 'support'> | null,
+): BondedDevice[] {
+  const list = [...devices];
+  if (activeAddress && !list.some((d) => d.address === activeAddress)) {
+    list.unshift({
+      address: activeAddress,
+      name: device?.name || activeAddress,
+      model: device?.model ?? null,
+      support: device?.support ?? 'tested',
+      reason: null,
+    });
+  }
+  return list.sort(
+    (a, b) => Number(b.address === activeAddress) - Number(a.address === activeAddress) || supportRank(a.support) - supportRank(b.support),
+  );
 }

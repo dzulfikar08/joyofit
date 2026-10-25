@@ -1,7 +1,20 @@
 import { describe, expect, test } from 'bun:test';
 
-import { buildHwAgnss, crc24q, encode1019, frame, MAX_AGE_S, parseRinexNav, secondsOfWeek, selectCurrent } from './agps-rtcm';
-import { C13, E10, G17, HEADER, R23 } from './agps-rtcm.fixture';
+import {
+  bkgBrdcUrl,
+  bkgBrdcUrls,
+  buildHwAgnss,
+  crc24q,
+  encode1019,
+  frame,
+  HW_AGNSS_MAX_BYTES,
+  MAX_AGE_S,
+  parseRinexNav,
+  secondsOfWeek,
+  selectCurrent,
+  validateHwAgnss,
+} from '../src/rtcm';
+import { C13, E10, G17, gpsSet, HEADER, R23 } from './fixture';
 
 // A reader of RTCM 3 frames written from the data field tables (DF numbers in the comments), separate from the encoder.
 function bitsAt(buf: Uint8Array, start: number, len: number): number {
@@ -160,5 +173,60 @@ describe('the file', () => {
     expect(built.counts.G).toBe(0);
     expect(built.skipped).toBe(1);
     expect(() => encode1019(bad[0])).toThrow(RangeError);
+  });
+});
+
+describe('reading only what can still be used', () => {
+  test('records older than the cut-off are skipped before their numbers are read', () => {
+    const all = parseRinexNav(HEADER + G17 + E10 + C13 + R23);
+    const recent = parseRinexNav(HEADER + G17 + E10 + C13 + R23, Date.UTC(2026, 9, 21, 0, 0, 0));
+    expect(all.map((r) => r.sys + r.prn)).toEqual(['G17', 'E10', 'C13', 'R23']);
+    expect(recent.map((r) => r.sys + r.prn)).toEqual(['G17', 'C13', 'R23']); // E10 is from 23:50 the day before
+    expect(recent[0].v).toEqual(all[0].v);
+  });
+});
+
+describe('BKG files', () => {
+  test('the merged daily file is named by year and day of year (UTC)', () => {
+    expect(bkgBrdcUrl(Date.UTC(2026, 9, 25, 3, 0, 0))).toBe(
+      'https://igs.bkg.bund.de/root_ftp/IGS/BRDC/2026/298/BRDC00WRD_S_20262980000_01D_MN.rnx.gz',
+    );
+    expect(bkgBrdcUrl(Date.UTC(2027, 0, 1, 0, 0, 0))).toContain('/2027/001/BRDC00WRD_S_20270010000_01D_MN');
+  });
+
+  test("yesterday's file is read too while today's is younger than the oldest usable record", () => {
+    expect(bkgBrdcUrls(Date.UTC(2026, 9, 25, 2, 0, 0)).map((u) => u.split('/')[7])).toEqual(['298', '297']);
+    expect(bkgBrdcUrls(Date.UTC(2026, 9, 25, 4, 1, 0)).map((u) => u.split('/')[7])).toEqual(['298']);
+  });
+});
+
+describe('validation before the file is served', () => {
+  const good = () => buildHwAgnss(parseRinexNav(HEADER + gpsSet(24) + E10 + C13 + R_AT_0200), NOW).bytes;
+
+  test('a full build passes', () => {
+    expect(validateHwAgnss(good())).toBeNull();
+  });
+
+  test('too few satellites, a bad CRC, a cut-off frame or a foreign message are refused', () => {
+    const few = buildHwAgnss(parseRinexNav(HEADER + gpsSet(19)), NOW).bytes;
+    expect(validateHwAgnss(few)).toBe('only 19 satellites (at least 20 needed)');
+
+    const flipped = good();
+    flipped[10] ^= 1;
+    expect(validateHwAgnss(flipped)).toBe('RTCM frame at byte 0 fails its CRC');
+
+    const cut = good().subarray(0, good().length - 1);
+    expect(validateHwAgnss(cut)).toMatch(/is cut off$/);
+
+    const tail = new Uint8Array([...good(), 0x00]);
+    expect(validateHwAgnss(tail)).toMatch(/^not an RTCM 3 frame at byte \d+$/);
+
+    const stationFrame = frame(Uint8Array.from([0x3e, 0xd0, 0, 0, 0])); // message 1005, a station position
+    expect(validateHwAgnss(new Uint8Array([...good(), ...stationFrame]))).toMatch(/^unexpected RTCM message 1005 at byte \d+$/);
+  });
+
+  test('size bounds', () => {
+    expect(validateHwAgnss(new Uint8Array(100))).toBe('file too small (100 bytes)');
+    expect(validateHwAgnss(new Uint8Array(HW_AGNSS_MAX_BYTES + 1))).toBe(`file too large (${HW_AGNSS_MAX_BYTES + 1} bytes)`);
   });
 });

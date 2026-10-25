@@ -8,6 +8,7 @@ import {
   chooseNoWatch,
   currentStep,
   dismiss,
+  firstSyncStarts,
   footerFor,
   navigationLocked,
   openSteps,
@@ -34,16 +35,15 @@ function walkTo(target: StepId, ctx: StepContext, state = startState({ hasPaired
 }
 
 describe('platform filtering', () => {
-  test('Android runs every step in the planned order', () => {
+  test('Android runs every step in the planned order, keep-alive straight after pairing', () => {
     expect(visibleSteps(startState({ hasPairedWatch: false }), ANDROID)).toEqual([
       'welcome',
       'unbind',
       'pair',
-      'sync',
+      'background',
       'notifications',
       'health',
       'weather',
-      'background',
       'account',
       'pro',
       'cloud',
@@ -55,7 +55,7 @@ describe('platform filtering', () => {
     const steps = visibleSteps(startState({ hasPairedWatch: false }), IOS);
     expect(steps).not.toContain('background');
     expect(steps).toContain('notifications');
-    expect(steps).toHaveLength(11);
+    expect(steps).toHaveLength(10);
   });
 
   test('a build without the cloud server hides the Pro and cloud steps', () => {
@@ -67,8 +67,8 @@ describe('platform filtering', () => {
 
   test('progress counts only the visible steps', () => {
     const state = walkTo('account', IOS);
-    expect(progress(state, IOS)).toEqual({ index: 8, total: 11 });
-    expect(progress(walkTo('account', ANDROID), ANDROID)).toEqual({ index: 9, total: 12 });
+    expect(progress(state, IOS)).toEqual({ index: 7, total: 10 });
+    expect(progress(walkTo('account', ANDROID), ANDROID)).toEqual({ index: 8, total: 11 });
   });
 
   test('walking forward on iOS never lands on a hidden step', () => {
@@ -99,7 +99,7 @@ describe('the no-watch route', () => {
   });
 
   test('every watch-only step is hidden, and the watch route never shows the phone step', () => {
-    const hidden: StepId[] = ['unbind', 'pair', 'sync', 'notifications', 'health', 'weather', 'background'];
+    const hidden: StepId[] = ['unbind', 'pair', 'notifications', 'health', 'weather', 'background'];
     for (const id of hidden) expect(visibleSteps(none(ANDROID), ANDROID)).not.toContain(id);
     expect(visibleSteps(startState({ hasPairedWatch: false }), ANDROID)).not.toContain('phone');
   });
@@ -223,14 +223,103 @@ describe('the pairing step', () => {
   });
 
   test('no other step is ever locked', () => {
-    expect(navigationLocked('sync', 'connecting')).toBe(false);
+    expect(navigationLocked('background', 'connecting')).toBe(false);
     expect(navigationLocked('unbind', 'connecting')).toBe(false);
+  });
+
+  test('Continue after pairing lands on the keep-alive step on Android and on notifications on iOS', () => {
+    expect(advance(walkTo('pair', ANDROID), ANDROID).step).toBe('background');
+    expect(currentStep(advance(walkTo('pair', IOS), IOS), IOS)).toBe('notifications');
+  });
+});
+
+describe('the first sync', () => {
+  test('is not a step: it starts in the background from the pairing step on', () => {
+    expect(visibleSteps(startState({ hasPairedWatch: false }), ANDROID) as string[]).not.toContain('sync');
+    expect(firstSyncStarts(walkTo('unbind', ANDROID), ANDROID)).toBe(false);
+    for (const step of ['pair', 'background', 'notifications', 'account', 'done'] as const) {
+      expect(firstSyncStarts(walkTo(step, ANDROID), ANDROID)).toBe(true);
+    }
+  });
+
+  test('a run reopened from Settings with a connected watch does not sync on the welcome step', () => {
+    expect(firstSyncStarts(startState({ hasPairedWatch: true }), ANDROID)).toBe(false);
+    expect(firstSyncStarts(advance(startState({ hasPairedWatch: true }), ANDROID), ANDROID)).toBe(true);
+  });
+
+  test('the phone-only route and a closed run never start it', () => {
+    const none = chooseNoWatch(startState({ hasPairedWatch: false }), ANDROID);
+    expect(firstSyncStarts(none, ANDROID)).toBe(false);
+    expect(firstSyncStarts(advance(walkTo('done', ANDROID), ANDROID), ANDROID)).toBe(false);
+    expect(firstSyncStarts(dismiss(walkTo('pair', ANDROID)), ANDROID)).toBe(false);
+  });
+
+  test('a run stored on the old sync step resumes on what now follows pairing', () => {
+    const raw = JSON.stringify({ status: 'active', step: 'sync', route: 'watch', done: ['welcome', 'unbind', 'pair'], skipped: ['sync'] });
+    const restored = parseState(raw) as OnboardingState;
+    expect(restored.step).toBe('background');
+    expect(restored.skipped).toEqual([]);
+    expect(currentStep(restored, ANDROID)).toBe('background');
+    expect(currentStep(restored, IOS)).toBe('notifications');
+  });
+});
+
+describe('a run stored in the old order (pair, sync, notifications, health, weather, background)', () => {
+  const PAST_PAIR: StepId[] = ['welcome', 'unbind', 'pair'];
+  const old = (step: string, done: string[], skipped: string[] = []) =>
+    parseState(JSON.stringify({ status: 'active', step, route: 'watch', done, skipped })) as OnboardingState;
+  /** The steps Continue shows from here to the end. */
+  const rest = (state: OnboardingState, ctx: StepContext) => {
+    const seen: StepId[] = [];
+    for (let s = state; s.status === 'active'; s = advance(s, ctx)) seen.push(currentStep(s, ctx));
+    return seen;
+  };
+
+  test('on health after doing notifications: background first, then health, notifications is not shown again', () => {
+    const state = old('health', [...PAST_PAIR, 'sync', 'notifications']);
+    expect(rest(state, ANDROID)).toEqual(['background', 'health', 'weather', 'account', 'pro', 'cloud', 'done']);
+    expect(rest(state, IOS)).toEqual(['health', 'weather', 'account', 'pro', 'cloud', 'done']);
+  });
+
+  test('on the old background step after the permissions: background, then on to the account', () => {
+    const state = old('background', [...PAST_PAIR, 'sync', 'notifications', 'health', 'weather']);
+    expect(rest(state, ANDROID)).toEqual(['background', 'account', 'pro', 'cloud', 'done']);
+  });
+
+  test('a skipped permission step is shown again and still listed as open', () => {
+    const state = old('weather', [...PAST_PAIR, 'sync', 'health'], ['notifications']);
+    expect(rest(state, ANDROID)).toEqual(['background', 'notifications', 'weather', 'account', 'pro', 'cloud', 'done']);
+    expect(openSteps(skip(state, ANDROID), ANDROID)).toEqual(['background', 'notifications']);
+  });
+
+  test('on notifications with nothing done there yet: background, then every permission step', () => {
+    expect(rest(old('notifications', [...PAST_PAIR, 'sync']), ANDROID).slice(0, 5)).toEqual([
+      'background',
+      'notifications',
+      'health',
+      'weather',
+      'account',
+    ]);
+  });
+
+  test('a run past background, or still before pairing, is unchanged', () => {
+    const past = old('account', [...PAST_PAIR, 'sync', 'notifications', 'health', 'weather', 'background']);
+    expect(past.step).toBe('account');
+    expect(past.without).toEqual([]);
+    expect(old('pair', ['welcome', 'unbind']).step).toBe('pair');
+  });
+
+  test('a run of this order is never treated as an old one', () => {
+    const state = advance(walkTo('notifications', ANDROID), ANDROID);
+    const restored = parseState(serializeState(state)) as OnboardingState;
+    expect(restored).toEqual(state);
+    expect(currentStep(restored, ANDROID)).toBe('health');
   });
 });
 
 describe('resume', () => {
   test('an active stored run opens where it was left', () => {
-    const stored = walkTo('sync', ANDROID);
+    const stored = walkTo('background', ANDROID);
     const decision = resolveLaunch({ stored, hasPairedWatch: false });
     expect(decision.show).toEqual(stored);
     expect(decision.persist).toBeNull();
@@ -243,15 +332,15 @@ describe('resume', () => {
     expect(currentStep(restored as OnboardingState, IOS)).toBe('weather');
   });
 
-  test('a stored step that is hidden on this build moves forward to the next visible one', () => {
-    const stored: OnboardingState = { ...startState({ hasPairedWatch: false }), step: 'background' };
-    expect(currentStep(stored, IOS)).toBe('account');
-    expect(currentStep(stored, ANDROID)).toBe('background');
-  });
-
   test('a hidden last step falls back to the final visible step', () => {
     const stored: OnboardingState = { ...startState({ hasPairedWatch: false }), step: 'pro' };
     expect(currentStep(stored, { platform: 'ios', cloudConfigured: false })).toBe('done');
+  });
+
+  test('a stored step that is hidden on this build moves forward to the next visible one', () => {
+    const stored: OnboardingState = { ...startState({ hasPairedWatch: false }), step: 'background' };
+    expect(currentStep(stored, IOS)).toBe('notifications');
+    expect(currentStep(stored, ANDROID)).toBe('background');
   });
 
   test('corrupt or foreign storage reads as nothing, which starts fresh', () => {
@@ -296,7 +385,7 @@ describe('launch decision', () => {
   });
 
   test('a paired watch does not cancel a run that is already in progress (the pairing step itself pairs it)', () => {
-    const stored = walkTo('sync', ANDROID);
+    const stored = walkTo('background', ANDROID);
     expect(resolveLaunch({ stored, hasPairedWatch: true }).show).toEqual(stored);
   });
 });
@@ -311,10 +400,10 @@ describe('reopening from Settings', () => {
   });
 
   test('the left-out step stays out through a stored round trip, so progress does not shift after pairing', () => {
-    const state = walkTo('sync', ANDROID, startState({ hasPairedWatch: true }));
+    const state = walkTo('background', ANDROID, startState({ hasPairedWatch: true }));
     const restored = parseState(serializeState(state)) as OnboardingState;
     expect(progress(restored, ANDROID)).toEqual(progress(state, ANDROID));
-    expect(progress(restored, ANDROID).total).toBe(11);
+    expect(progress(restored, ANDROID).total).toBe(10);
   });
 });
 
@@ -338,11 +427,6 @@ describe('footer buttons', () => {
   test('pairing offers Continue only once the watch is linked, Nanti until then', () => {
     expect(footerFor('pair', idle)).toMatchObject({ primary: null, skip: 'Nanti', back: true });
     expect(footerFor('pair', { linkState: 'connected', signedIn: false })).toMatchObject({ primary: 'Lanjut', skip: null });
-  });
-
-  test('the sync step cannot be continued while it runs but can be left', () => {
-    expect(footerFor('sync', { linkState: 'syncing', signedIn: false })).toMatchObject({ primaryDisabled: true, skip: 'Nanti' });
-    expect(footerFor('sync', { linkState: 'connected', signedIn: false }).primaryDisabled).toBe(false);
   });
 
   test('the account step continues only when signed in, otherwise Later', () => {

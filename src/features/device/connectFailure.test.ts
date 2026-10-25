@@ -10,7 +10,20 @@ function coded(code: string, message = 'native detail'): Error {
 
 describe('describeConnectFailure', () => {
   it('turns the bind stop into a question, not an error', () => {
-    expect(describeConnectFailure(coded(BIND_CONFIRMATION))).toEqual({ kind: 'bind' });
+    expect(describeConnectFailure(coded(BIND_CONFIRMATION))).toEqual({ kind: 'bind', lost: false });
+  });
+
+  it('tells a binding the watch forgot (another app re-paired it) from a watch that was never bound', () => {
+    // Kotlin FirstBind.LOST_MESSAGE and Swift FirstBindMessage.lost (JRG-414).
+    const lost =
+      "This watch no longer knows this phone's pairing: another app or phone paired it again while JoyoFit was not connected " +
+      '(for example Huawei Health, which does that by itself while it is enabled). Pairing again replaces that pairing.';
+    expect(describeConnectFailure(coded(BIND_CONFIRMATION, lost))).toEqual({ kind: 'bind', lost: true });
+    expect(
+      describeConnectFailure(coded(BIND_CONFIRMATION, "This watch has to be paired with this phone first. Pairing replaces the watch's current phone pairing.")),
+    ).toEqual({ kind: 'bind', lost: false });
+    // The words alone on another code are not a bind stop.
+    expect(describeConnectFailure(coded('ERR_AUTH_FAILED', lost)).kind).toBe('unreachable');
   });
 
   it('explains every way a busy or unreachable watch fails with the same hint', () => {

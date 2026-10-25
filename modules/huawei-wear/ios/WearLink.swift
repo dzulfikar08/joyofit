@@ -36,7 +36,7 @@ func bindStop(_ failure: WearError, mode: ConnectMode) -> WearError {
     guard mode == .interactive, failure.isFirstBindNeeded else { return failure }
     return WearError(
         .bindConfirmation,
-        "This watch has to be paired with this phone first. Pairing replaces the watch's current phone pairing (another phone or app).",
+        failure.isLostBinding ? FirstBindMessage.lost : FirstBindMessage.notBound,
         underlying: failure.underlying
     )
 }

@@ -1,17 +1,19 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { isIos } from '@/components/IosUnavailable';
 import { Divider, Section } from '@/components/Screen';
-import { EmptyState, LoadingState, Notice } from '@/components/States';
+import { EmptyState, Notice } from '@/components/States';
+import { BluetoothPermissionPrompt } from '@/features/device/BluetoothPermissionPrompt';
+import { withActiveWatch } from '@/features/device/bondedList';
 import { BondedRow } from '@/features/device/BondedRow';
 import { noWatchFoundHint, noWatchFoundScanHint } from '@/features/device/connectFailure';
-import { supportRank } from '@/features/device/modelSupport';
 import type { BluetoothPermission } from '@/features/device/useBluetoothPermission';
 import type { BondedDevices } from '@/features/device/useBondedDevices';
+import { useWatchRowActions } from '@/features/device/useWatchRowActions';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing } from '@/theme';
 
@@ -24,12 +26,13 @@ interface AvailableWatchesSectionProps {
 }
 
 /**
- * The list of watches with the Bluetooth permission step, the scan and the connect, forget and disconnect buttons. The Watch tab and
- * the setup guide both show it, each owning the permission and device hooks (the tab feeds them to pull-to-refresh).
+ * The Watch tab's list of watches with the Bluetooth permission step, the scan and the connect, forget and disconnect buttons. The tab owns
+ * the permission and device hooks (it feeds them to pull-to-refresh); the setup guide's scan cards share the same hooks and helpers.
  */
 export function AvailableWatchesSection({ permission, bonded }: AvailableWatchesSectionProps) {
   const { t } = useTranslation('watch');
   const watch = useWatch();
+  const actions = useWatchRowActions(bonded);
   const granted = permission.status === 'granted';
   // Measured row heights, so the list shows exactly VISIBLE_BONDED rows before it scrolls.
   const [rowHeights, setRowHeights] = useState<Record<string, number>>({});
@@ -40,23 +43,10 @@ export function AvailableWatchesSection({ permission, bonded }: AvailableWatches
     bonded.loaded && !bonded.loading && !bonded.error && !linked && bonded.devices.length > 0 && bonded.devices.every((d) => d.nearby === false);
 
   // The watch in use first, then the ones this app can talk to best.
-  const devices = useMemo(() => {
-    const list = [...bonded.devices];
-    if (watch.activeAddress && !list.some((d) => d.address === watch.activeAddress)) {
-      list.unshift({
-        address: watch.activeAddress,
-        name: watch.device?.name || watch.activeAddress,
-        model: watch.device?.model ?? null,
-        support: watch.device?.support ?? 'tested',
-        reason: null,
-      });
-    }
-    return list.sort(
-      (a, b) =>
-        Number(b.address === watch.activeAddress) - Number(a.address === watch.activeAddress) ||
-        supportRank(a.support) - supportRank(b.support),
-    );
-  }, [bonded.devices, watch.activeAddress, watch.device]);
+  const devices = useMemo(
+    () => withActiveWatch(bonded.devices, watch.activeAddress, watch.device),
+    [bonded.devices, watch.activeAddress, watch.device],
+  );
 
   const showEmpty = devices.length === 0 && !bonded.loading && !bonded.error;
   const listMaxHeight = useMemo(() => {
@@ -80,17 +70,8 @@ export function AvailableWatchesSection({ permission, bonded }: AvailableWatches
           </AppText>
         ) : null
       }>
-      {permission.status === 'checking' ? (
-        <LoadingState label={t('device.list.checkingPermission')} />
-      ) : !granted ? (
-        <>
-          <Notice tone="danger">{t('device.list.permissionNeeded')}</Notice>
-          {permission.status === 'blocked' ? (
-            <Button label={t('device.list.openSettings')} icon="settings" onPress={() => void Linking.openSettings()} />
-          ) : (
-            <Button label={t('device.list.continue')} variant="primary" icon="bluetooth" onPress={() => void permission.request()} />
-          )}
-        </>
+      {!granted ? (
+        <BluetoothPermissionPrompt permission={permission} />
       ) : (
         <>
           {bonded.error ? <Notice tone="danger">{t('device.list.readError', { error: bonded.error })}</Notice> : null}
@@ -144,14 +125,9 @@ export function AvailableWatchesSection({ permission, bonded }: AvailableWatches
                       device={d}
                       linkState={watch.linkState}
                       activeAddress={watch.activeAddress}
-                      onConnect={(address) => {
-                        void bonded.stopScan();
-                        void watch.switchTo(address);
-                      }}
-                      onDisconnect={() => void watch.disconnect()}
-                      onForget={(address) => {
-                        void watch.forget(address).then(() => void bonded.reload());
-                      }}
+                      onConnect={actions.connect}
+                      onDisconnect={actions.disconnect}
+                      onForget={actions.forget}
                     />
                   </View>
                 ))}

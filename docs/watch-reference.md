@@ -151,15 +151,52 @@ reopened from **Settings → Setup guide**, and is never shown on its own to som
 `device` row from an earlier sync: a `bypassed` record is written once). Progress is one JSON record in the `expo-sqlite/kv-store` key `joyofit.onboarding`. Back and a skip
 exist on every step except while the watch is connecting; Continue on the pairing step waits until the watch is linked. There is no event tracking in the app, so the guide sends none.
 
-Order, with the rules in `flow.ts` (pure, tested in `flow.test.ts`): Welcome, Huawei Health, Pair, First sync, Notifications, Apple Health / Health Connect, Weather, Background
-(Android only), JoyoRogo sign-in, JoyoRogo Pro (hidden when the build has no cloud server), Done.
+Order, with the rules in `flow.ts` (pure, tested in `flow.test.ts`): Welcome, Huawei Health, Pair, Background (Android only), Notifications, Apple Health / Health Connect, Weather,
+JoyoRogo sign-in, JoyoRogo Pro (hidden when the build has no cloud server), Done. Pairing follows Huawei Health 17.0.8's own flow (captured 2026-10-25).
 
 - **Huawei Health first**: the watch accepts one app, so it is released before pairing. It is also the last point to let Huawei Health sync once more and to request the data export
   (which takes up to 7 days), so the step carries the real import sections behind a button and the ZIP can be imported when it arrives. A watch reset is only mentioned as a last resort
   under the pairing step, because it wipes the watch's stored data.
-- **Pair** is the Watch tab's list and bind confirmation (`AvailableWatchesSection`, `BindConfirmDialog`), not a copy; nothing asks for Bluetooth before the pre-prompt "Continue".
-- **First sync** comes right after pairing: it proves the link, and the scores, exports and backups below all need data. The native sync reports no percentage, so the step shows that it
-  is running and then what came in.
+- **Pair** has no text pre-prompt: arriving asks for Bluetooth and starts the scan at once (iOS: the list refresh) under a radar, and each watch found is one large card with one
+  Connect button (`steps/PairStep.tsx`, `pair/`, logic in `pairing.ts`). It shares the Watch tab's hooks and pieces, not a copy: `useBluetoothPermission`, `useBondedDevices`,
+  `withActiveWatch`, `useWatchRowActions`, `BluetoothPermissionPrompt` and `BindConfirmDialog`. **Add manually** lists every model of the catalogue (`watchCatalogue.ts`, the names
+  of `WatchModels.kt`) by family with a search box; picking one explains that kind of watch's pairing mode and moves its scan cards to the top, marked. While the link is
+  connecting, authenticating or initializing a full-width panel shows the watch with the tick to tap, the seconds waited and, after 30 s, what to check. No product photos ship, so
+  the cards draw a watch glyph. Devices that are no Huawei or Honor watch (no model in the table and unsupported) get no card; the Watch tab still lists them. The linked
+  watch's card offers **Lupakan pairing** (the Watch tab's confirm), the way out of a stuck link without leaving the guide.
+- **A watch Huawei Health paired again** (device run 2026-10-25, Fit 4 Pro 6.1.0.117): JoyoFit's stored keys still authenticate, the session starts, and 10 to 15 s later the
+  watch shows its own "reset to pair with this phone?" prompt and drops the link (a later answer on the old keys is `7F 000186A4`, frames stop decrypting). **Yes** there starts
+  a first-time pairing JoyoFit does not drive (the watch then says "pair failed"), **Back** keeps Huawei Health's binding, and every reconnect brings the prompt back. What
+  works: stop JoyoFit, reset the watch from its own menu (Settings, System, Reset) or unpair it in Huawei Health, **Lupakan pairing** in JoyoFit, then pair: Android's
+  pairing dialog, then `firstConnection=true`, the bind confirmation (`ERR_BIND_CONFIRMATION`, "Pasangkan jam ini dengan HP ini?"), then the accept on the watch. The
+  confirmation is asked after the link closed, so the watch shows "pair failed" once before the accept; asking first would avoid that (not changed yet).
+  - **Why the prompt comes (JRG-414).** It is the watch's account check, not a key problem: after `01/37` the phone sends its account in `1A/05`; the watch keeps the account of the
+    app that paired it last with one (Huawei Health sends its Huawei user id, JoyoFit sends none), answers "different account", shows the prompt, and reports the tap in
+    `1A/06` (`01 = 00` Yes, `01 = 01` Back). Huawei Health confirms a Yes with `1A/06 {7F: 000186A0}` and pairs again; JoyoFit answers nothing, so the watch keeps both the
+    prompt and JoyoFit's key (authType 6 on every reconnect). Details and frame references: `protocol/README.md`, Observations, 2026-10-25.
+- **The watch forgets JoyoFit after the link ends** (JRG-414, same run). Each time JoyoFit's link ended (Bluetooth switched off and on, `adb install -r`), Huawei Health on the
+  same phone reconnected within seconds and paired the watch again by itself (PinCode and HiChain op 1, no prompt on the watch), which removed JoyoFit's identity; the next
+  JoyoFit connect got authType 5 (`Auth: the watch does not know this identity (authType 5) although a bind key is stored locally`). Huawei Health did this while it was
+  enabled, also when paused (`pm suspend`) or force-stopped. JoyoFit now says so in the bind confirmation of that case ("this watch no longer knows this phone's pairing",
+  `device.bind.lostAndroid` / `lostIos`) and in the background note. What the texts recommend is what the control run below proved: disable or uninstall Huawei Health,
+  then pair JoyoFit again (re-pairing JoyoFit kept the watch's data). Unpairing the watch in Huawei Health is only mentioned as something that may reset the watch
+  (onboarding: an unbind there "usually resets" it; experiment 1 below). The iOS text names Huawei Health only as an example: nothing was observed on an iPhone.
+- **Unbind cause, control run (2026-10-25, JRG-414).** With Huawei Health disabled (`pm disable-user com.huawei.health`; `pm suspend` alone left its device manager
+  running and reconnecting), JoyoFit's binding survived both triggers: Bluetooth off for 30 s and on (14:56:38–14:57:08), then `authType 6` at 14:59:21; `adb install -r`
+  of the same build while linked (15:00:46–15:01:17), then `authType 6` at 15:01:26. The positive case (Huawei Health running, re-binding within seconds) is in the
+  morning's log, see the item above. So for any device test: disable Huawei Health, do not just suspend it.
+- **Device experiments still to run for JRG-414** (Fit 4 Pro; capture `adb logcat -v threadtime` with JoyoFit's frame log on):
+  1. *Unpair in Huawei Health is enough.* With Huawei Health enabled, remove the watch in Huawei Health (Devices, the watch, Unpair), note whether the watch resets, bind
+     JoyoFit, toggle Bluetooth. Expected: no `DEVMGR_ReconnectManager start reconnect device` for the watch and authType 6.
+  2. *What the prompt's Yes does.* Pair Huawei Health once (its account goes to the watch), then bind JoyoFit with Huawei Health disabled. On the next JoyoFit connect wait
+     for the prompt with the link up and tap Yes; note the `1A/06` frame and what the watch shows for 60 s. A build that answers that `1A/06` with `{7F: 000186A0}`
+     (Huawei Health's `mri.e`) is the second half: only with the owner's agreement, since Huawei Health calls this "reset" and the watch's own data may be erased.
+  3. *Does JoyoFit's op 1 clear the account?* After experiment 2 without confirming, Lupakan pairing and bind again (op 1); connect twice more. A `1A/06` or a watch-ended
+     link within 40 s means the account survived op 1 (as after 14:21:10 on 2026-10-25); none means op 1 replaced it (as after 11:52:58).
+- **First sync** is not a step: it starts by itself once the watch is linked (from the pairing step on, `firstSyncStarts`), runs in the background as Huawei Health's does, and shows
+  as one line under the progress bar on the following steps (`useFirstSync`, `FirstSyncLine`), with a retry when it fails. A run stored on the old `sync` step resumes on what now
+  follows pairing.
+- **Background** comes straight after pairing, while the person is still paying attention to the watch link, where Huawei Health shows its keep-alive tips.
 - **JoyoRogo Pro** (`pro.ts`): the price and the AI scan limits are read from `GET https://api.joyorogo.com/api/config` (`founderPriceIdr`, `founderYearlyPriceIdr`, `founderDailyCap`,
   `freeDailyScans`, `promo`), never written in the app. By store: iOS only says Pro is available in JoyoRogo, with no price and no link
   ([App Store Review Guideline 3.1.1](https://developer.apple.com/app-store/review/guidelines/#in-app-purchase)); a Google Play build shows no price and links to the JoyoRogo app's Play
