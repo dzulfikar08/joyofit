@@ -14,6 +14,7 @@
 
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>. */
+// Modified for watch-fit (AGPL-3.0-or-later): added length guards against empty TLV byte arrays in Control.Response and safe null defaults.
 package nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets;
 
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiPacket;

@@ -16,10 +16,12 @@ class WatchNotificationListener : NotificationListenerService() {
 
   override fun onNotificationPosted(sbn: StatusBarNotification) {
     val runtime = WearRuntime.get(this)
-    // Call notifications (VoIP) ring the watch as calls and are never forwarded as ordinary notifications.
-    if (runtime.voipCalls.onPosted(sbn)) return
-    if (runtime.mediaControl.onNotificationPosted(sbn)) return
-    runtime.forwarder.onPosted(sbn)
+    dispatchNotificationPosted(
+      sbn = sbn,
+      isVoipCall = runtime.voipCalls::onPosted,
+      onMedia = runtime.mediaControl::onNotificationPosted,
+      onForward = runtime.forwarder::onPosted,
+    )
   }
 
   override fun onNotificationRemoved(sbn: StatusBarNotification) {
@@ -28,4 +30,17 @@ class WatchNotificationListener : NotificationListenerService() {
     runtime.mediaControl.onNotificationRemoved(sbn)
     runtime.forwarder.onRemoved(sbn)
   }
+}
+
+internal fun dispatchNotificationPosted(
+  sbn: StatusBarNotification,
+  isVoipCall: (StatusBarNotification) -> Boolean,
+  onMedia: (StatusBarNotification) -> Unit,
+  onForward: (StatusBarNotification) -> Unit,
+) {
+  // Call notifications (VoIP) ring the watch as calls and are never forwarded as ordinary notifications.
+  if (isVoipCall(sbn)) return
+  // Record active media session token if present, but never drop or intercept the notification.
+  onMedia(sbn)
+  onForward(sbn)
 }

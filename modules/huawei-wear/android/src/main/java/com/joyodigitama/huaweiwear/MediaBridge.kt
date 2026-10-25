@@ -114,7 +114,7 @@ internal class AndroidMediaBridge(
 
   override fun setVolume(rawVolume: Byte): Boolean {
     val audio = appContext.getSystemService(AudioManager::class.java) ?: return false
-    val minVol = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) audio.getStreamMinVolume(AudioManager.STREAM_MUSIC) else 0
+    val minVol = audio.getStreamMinVolume(AudioManager.STREAM_MUSIC)
     val maxVol = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
     val target = MediaControlCodec.validWatchVolume(rawVolume, minVol, maxVol)
     if (target == null) {

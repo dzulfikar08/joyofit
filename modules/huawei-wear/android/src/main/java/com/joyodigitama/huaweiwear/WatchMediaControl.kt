@@ -44,23 +44,14 @@ internal class WatchMediaControl(
   private var debounceJob: Job? = null
   private var lastSent: MediaTrackInfo? = null
   @Volatile private var watchRequested = false
+  @Volatile private var listenersAttached = false
 
-  private fun log(commandId: Int, message: String) =
-    events.log(LogDirection.INFO, MusicControl.id.toInt(), commandId, null, message)
+  private fun log(cmd: Int, msg: String) = events.log(LogDirection.INFO, MusicControl.id.toInt(), cmd, null, msg)
+  private fun error(cmd: Int, msg: String) = events.log(LogDirection.ERROR, MusicControl.id.toInt(), cmd, null, msg)
 
-  private fun error(commandId: Int, message: String) =
-    events.log(LogDirection.ERROR, MusicControl.id.toInt(), commandId, null, message)
-
-  fun onNotificationPosted(sbn: StatusBarNotification): Boolean =
-    (bridge as? AndroidMediaBridge)?.onNotificationPosted(sbn) ?: false
-
-  fun onNotificationRemoved(sbn: StatusBarNotification) {
-    (bridge as? AndroidMediaBridge)?.onNotificationRemoved(sbn)
-  }
-
-  fun onNotificationListenerReady() {
-    (bridge as? AndroidMediaBridge)?.onNotificationListenerReady()
-  }
+  fun onNotificationPosted(sbn: StatusBarNotification) { (bridge as? AndroidMediaBridge)?.onNotificationPosted(sbn) }
+  fun onNotificationRemoved(sbn: StatusBarNotification) { (bridge as? AndroidMediaBridge)?.onNotificationRemoved(sbn) }
+  fun onNotificationListenerReady() { (bridge as? AndroidMediaBridge)?.onNotificationListenerReady() }
 
   @Synchronized
   fun onLinkState(state: LinkState) {
@@ -70,23 +61,11 @@ internal class WatchMediaControl(
         if (session === attached) return
         detach()
         attached = session
-        subscriptions += session.subscribe(
-          MusicControl.id,
-          MusicControl.MusicStatusResponse.id,
-          "music status",
-        ) { onStatusRequest(it, session) }
-        subscriptions += session.subscribe(
-          MusicControl.id,
-          MusicControl.MusicInfo.id,
-          "music info",
-        ) { onMusicInfoAck(it) }
-        subscriptions += session.subscribe(
-          MusicControl.id,
-          MusicControl.Control.id,
-          "music control",
-        ) { onControlCommand(it, session) }
-        bridge.attachListeners { schedulePush() }
+        subscriptions += session.subscribe(MusicControl.id, MusicControl.MusicStatusResponse.id, "music status") { onStatusRequest(it, session) }
+        subscriptions += session.subscribe(MusicControl.id, MusicControl.MusicInfo.id, "music info") { onMusicInfoAck(it) }
+        subscriptions += session.subscribe(MusicControl.id, MusicControl.Control.id, "music control") { onControlCommand(it, session) }
         if (supportsMusicControl()) {
+          ensureBridgeListeners()
           schedulePush()
         }
       }
@@ -105,7 +84,17 @@ internal class WatchMediaControl(
       debounceJob = null
       lastSent = null
     }
-    bridge.detachListeners()
+    if (listenersAttached) {
+      bridge.detachListeners()
+      listenersAttached = false
+    }
+  }
+
+  private fun ensureBridgeListeners() {
+    if (!listenersAttached) {
+      listenersAttached = true
+      bridge.attachListeners { schedulePush() }
+    }
   }
 
   private fun supportsMusicControl(): Boolean =
@@ -136,6 +125,7 @@ internal class WatchMediaControl(
       return
     }
     watchRequested = true
+    ensureBridgeListeners()
     scope.launch {
       sendStatusAck(session, MusicControl.MusicStatusResponse.id, "MusicStatusAck")
       sendMusicInfo(session, force = true)
@@ -151,13 +141,14 @@ internal class WatchMediaControl(
       return
     }
     watchRequested = true
+    ensureBridgeListeners()
     scope.launch {
       var handled = false
       var ok = true
       if (resp.buttonPresent) {
+        handled = true
         val btn = resp.button ?: MusicControl.Control.Response.Button.Unknown
         if (btn != MusicControl.Control.Response.Button.Unknown) {
-          handled = true
           log(MusicControl.Control.id.toInt(), "Music control: button $btn")
           try {
             if (!bridge.onButton(btn)) ok = false
@@ -235,7 +226,7 @@ internal class WatchMediaControl(
         info.maxVolume,
         info.currentVolume,
       )
-      session.send(req, "MusicInfo")
+      session.send(req, "MusicInfo", logFrames = false)
     } catch (e: CancellationException) {
       throw e
     } catch (e: Exception) {

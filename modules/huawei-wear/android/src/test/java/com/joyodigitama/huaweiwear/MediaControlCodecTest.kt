@@ -46,4 +46,19 @@ class MediaControlCodecTest {
     assertEquals(3.toByte(), MediaControlCodec.mapPlaybackState(null, true))
     assertEquals(0.toByte(), MediaControlCodec.mapPlaybackState(null, false))
   }
+
+  @Test
+  fun sanitizeTextDoesNotSplitSurrogatePairsAtBoundary() {
+    val base119 = "A".repeat(119)
+    val inputWithEmoji = base119 + "🎵"
+    val sanitized = MediaControlCodec.sanitizeText(inputWithEmoji, maxChars = 120)
+    assertEquals(119, sanitized.length)
+    assertEquals(base119, sanitized)
+
+    val base118 = "A".repeat(118)
+    val fitWithEmoji = base118 + "🎵"
+    val sanitizedFit = MediaControlCodec.sanitizeText(fitWithEmoji, maxChars = 120)
+    assertEquals(120, sanitizedFit.length)
+    assertEquals(fitWithEmoji, sanitizedFit)
+  }
 }

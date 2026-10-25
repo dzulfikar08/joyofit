@@ -108,14 +108,8 @@ class WatchMediaControlTest {
       return true
     }
 
-    override fun attachListeners(onChange: () -> Unit) {
-      attachedCallback = onChange
-    }
-
-    override fun detachListeners() {
-      attachedCallback = null
-      detachedCount++
-    }
+    override fun attachListeners(onChange: () -> Unit) { attachedCallback = onChange }
+    override fun detachListeners() { attachedCallback = null; detachedCount++ }
   }
 
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -133,14 +127,7 @@ class WatchMediaControlTest {
     session = HuaweiSession(watch, events).also { it.params.setSecretKey(ByteArray(16)) }
     watch.session = session
     bridge = FakeMediaBridge()
-    control = WatchMediaControl(
-      bridge = bridge,
-      sessionProvider = { session },
-      events = events,
-      scope = scope,
-      settleDelayMs = 10L,
-      debounceMs = 15L,
-    )
+    control = WatchMediaControl(bridge, { session }, events, scope, settleDelayMs = 10L, debounceMs = 15L)
   }
 
   @After
@@ -246,11 +233,15 @@ class WatchMediaControlTest {
     assertEquals(0, watch.all(0x25, 0x03)[1].tlv.getInteger(0x7F))
     assertEquals(12.toByte(), watch.all(0x25, 0x02)[1].tlv.getByte(0x05))
 
-    // 3. Exit screen (tag 0x01 = 100) and unknown button (0xFF) -> ignored without ack spam
+    // 3. Exit screen (tag 0x01 = 100) -> ignored without ack
     session.onData(frame(0x25, 0x03, HuaweiTLV().put(0x01, 100.toByte())))
-    session.onData(frame(0x25, 0x03, HuaweiTLV().put(0x01, 0xFF.toByte())))
-    delay(50)
+    delay(30)
     assertEquals(2, watch.all(0x25, 0x03).size)
+
+    // 4. Unknown button (tag 0x01 = 99) -> matches GB: acks successValue without crashing
+    session.onData(frame(0x25, 0x03, HuaweiTLV().put(0x01, 99.toByte())))
+    awaitMessages(0x25, 0x03, 3)
+    assertEquals(MusicControl.successValue, watch.all(0x25, 0x03)[2].tlv.getInteger(0x7F))
   }
 
   @Test
@@ -288,5 +279,17 @@ class WatchMediaControlTest {
     control.onLinkState(LinkState.CONNECTED)
     awaitMessages(0x25, 0x02, 2)
     assertEquals(2, watch.all(0x25, 0x02).size)
+  }
+
+  @Test
+  fun listenersAttachOnlyWhenSupportedOrOnFirstWatchRequest() = runBlocking {
+    control.onLinkState(LinkState.CONNECTED)
+    assertNull(bridge.attachedCallback)
+    assertTrue(watch.all(0x25, 0x02).isEmpty())
+
+    session.onData(frame(0x25, 0x01, HuaweiTLV().put(0x7F, MusicControl.successValue)))
+    awaitMessages(0x25, 0x01, 1)
+    awaitMessages(0x25, 0x02, 1)
+    assertTrue(bridge.attachedCallback != null)
   }
 }

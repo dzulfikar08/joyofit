@@ -29,7 +29,10 @@ internal object MediaControlCodec {
         if (!Character.isISOControl(ch)) append(ch)
       }
     }.trim()
-    return if (cleaned.length <= maxChars) cleaned else cleaned.substring(0, maxChars)
+    if (cleaned.length <= maxChars) return cleaned
+    var cutLen = maxChars
+    if (Character.isHighSurrogate(cleaned[cutLen - 1])) cutLen--
+    return cleaned.substring(0, cutLen).trimEnd()
   }
 
   /** GB SetMusicRequest.convertMusicState: maps Android PlaybackState to Huawei 0x25/0x02 tag 0x03. */
