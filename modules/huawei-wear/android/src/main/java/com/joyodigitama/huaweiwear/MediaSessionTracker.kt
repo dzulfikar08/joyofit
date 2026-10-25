@@ -14,12 +14,23 @@ import android.os.Build
 import android.os.Handler
 import android.service.notification.StatusBarNotification
 
+/**
+ * The session the watch's music control drives: a playing one first, else the first in the system's order. Sessions of JoyoFit itself
+ * never count: the app is not a music player, and a session of its own (none today: the metronome click has no MediaSession) must not
+ * take the watch's buttons from the music app.
+ */
+internal fun <T> pickMediaSession(sessions: List<T>, ownPackage: String, packageOf: (T) -> String?, isPlaying: (T) -> Boolean): T? {
+  val foreign = sessions.filter { packageOf(it) != ownPackage }
+  return foreign.firstOrNull(isPlaying) ?: foreign.firstOrNull()
+}
+
 internal class MediaSessionTracker(
   private val appContext: Context,
   private val mainHandler: Handler,
   private val onChanged: () -> Unit,
 ) {
   private val lock = Any()
+  private val ownPackage: String = appContext.packageName
   @Volatile private var active = false
   private var lastToken: MediaSession.Token? = null
   private var lastPackage: String? = null
@@ -34,7 +45,7 @@ internal class MediaSessionTracker(
   }
 
   private val activeSessionsListener = MediaSessionManager.OnActiveSessionsChangedListener { controllers ->
-    bindControllers(controllers.orEmpty())
+    bindControllers(foreign(controllers.orEmpty()))
     onChanged()
   }
 
@@ -60,6 +71,7 @@ internal class MediaSessionTracker(
   }
 
   fun onNotificationPosted(sbn: StatusBarNotification): Boolean {
+    if (sbn.packageName == ownPackage) return false
     val notification = sbn.notification ?: return false
     val token = extractMediaToken(notification) ?: return false
     synchronized(lock) {
@@ -100,10 +112,9 @@ internal class MediaSessionTracker(
     val manager = appContext.getSystemService(MediaSessionManager::class.java)
     if (manager != null) {
       val component = ComponentName(appContext, WatchNotificationListener::class.java)
-      val list = runCatching { manager.getActiveSessions(component) }.getOrNull()
-      if (!list.isNullOrEmpty()) {
-        return list.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING } ?: list[0]
-      }
+      val list = runCatching { manager.getActiveSessions(component) }.getOrNull().orEmpty()
+      val picked = pickMediaSession(list, ownPackage, { it.packageName }, { it.playbackState?.state == PlaybackState.STATE_PLAYING })
+      if (picked != null) return picked
     }
     val token = synchronized(lock) { lastToken }
     if (token != null) {
@@ -111,7 +122,9 @@ internal class MediaSessionTracker(
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && manager != null) {
       val keyToken = runCatching { manager.mediaKeyEventSession }.getOrNull()
-      if (keyToken != null) runCatching { return MediaController(appContext, keyToken) }
+      if (keyToken != null) {
+        runCatching { MediaController(appContext, keyToken) }.getOrNull()?.takeIf { it.packageName != ownPackage }?.let { return it }
+      }
     }
     return null
   }
@@ -138,7 +151,7 @@ internal class MediaSessionTracker(
     val list = ArrayList<MediaController>()
     if (manager != null) {
       val component = ComponentName(appContext, WatchNotificationListener::class.java)
-      runCatching { list.addAll(manager.getActiveSessions(component)) }
+      runCatching { list.addAll(foreign(manager.getActiveSessions(component))) }
     }
     if (list.isEmpty()) {
       val token = synchronized(lock) { lastToken }
@@ -158,6 +171,8 @@ internal class MediaSessionTracker(
     }
     watchedControllers = bound
   }
+
+  private fun foreign(controllers: List<MediaController>): List<MediaController> = controllers.filter { it.packageName != ownPackage }
 
   private fun unbindControllers() {
     for (controller in watchedControllers) {

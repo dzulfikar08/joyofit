@@ -260,15 +260,6 @@
       ],
       "expo-font",
       [
-        "expo-audio",
-        {
-          "microphonePermission": false,
-          "recordAudioAndroid": false,
-          "enableBackgroundPlayback": false,
-          "enableBackgroundRecording": false
-        }
-      ],
-      [
         "expo-screen-orientation",
         {
           "initialOrientation": "PORTRAIT"

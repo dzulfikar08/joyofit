@@ -151,11 +151,11 @@ jobs:
       - run: bun install --frozen-lockfile
       # android/ is generated (gitignored); the module tests need the Gradle project.
       - run: bunx expo prebuild -p android --no-install
-      - run: ./gradlew :huawei-wear:testDebugUnitTest :ble-sensors:testDebugUnitTest :replay-encoder:testDebugUnitTest
+      - run: ./gradlew :huawei-wear:testDebugUnitTest :ble-sensors:testDebugUnitTest :replay-encoder:testDebugUnitTest :metronome-click:testDebugUnitTest
         working-directory: android
       # NewApi only (modules/newapi-lint.gradle): a call newer than minSdk 29 outside a Build.VERSION.SDK_INT check
       # compiles and then throws NoSuchMethodError on an older phone. Findings print to the log.
-      - run: ./gradlew :huawei-wear:lintDebug :ble-sensors:lintDebug :replay-encoder:lintDebug
+      - run: ./gradlew :huawei-wear:lintDebug :ble-sensors:lintDebug :replay-encoder:lintDebug :metronome-click:lintDebug
         working-directory: android
 
   swift-protocol:
@@ -245,4 +245,8 @@ jobs:
       # The replay encoder's pure logic (config, frame timing, fit rectangles); the AVFoundation and ImageIO files cannot build on Linux.
       - name: Encoder logic tests (replay-encoder)
         working-directory: modules/replay-encoder/ios/EncoderLogicTests
+        run: swift test
+      # The metronome click's synthesized samples and WAV header; the AVFoundation player cannot build on Linux.
+      - name: Click logic tests (metronome-click)
+        working-directory: modules/metronome-click/ios/ClickLogicTests
         run: swift test

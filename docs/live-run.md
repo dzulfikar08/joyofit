@@ -95,14 +95,17 @@ what a beat does: **Vibration** (default), **Sound** or **Both**. Tempo and mode
 
 - **Timing.** JS timers on a fixed grid (`nextBeatAt`): a late timer does not shift the next beat; a suspension longer than a beat
   restarts the grid instead of firing a burst.
-- **Sound.** `expo-audio` plays `assets/sounds/metronome-click.wav` (35 ms PCM, written by `scripts/metronome-click.ts`) from two
-  preloaded players taking turns; a beat only starts a player that is loaded and rewound, so it is never late, at worst silent
-  (while the players load after the first switch-on). The session mixes with other audio (`mixWithOthers`: no audio focus on
-  Android, `.mixWithOthers` on iOS): music keeps playing at full volume and the click goes to the connected Bluetooth headset. It
-  plays with the ringer on silent. Nothing touches the audio session in Vibration mode.
+- **Sound.** `modules/metronome-click` (Kotlin + Swift twins) synthesizes a 35 ms tick (`ClickSound.kt` / `ClickSound.swift`, same
+  samples, checked by `ClickSoundTest` and `ClickLogicTests`) and plays it as media audio. Android: `SoundPool`, `USAGE_MEDIA` /
+  `CONTENT_TYPE_SONIFICATION`, no audio focus and **no MediaSession**, so music keeps playing at full volume and earbud buttons and
+  the watch's music control (`MediaSessionTracker`, which also skips JoyoFit's own sessions) stay with the music app. iOS:
+  `AVAudioPlayer` in a `.playback` + `.mixWithOthers` session (a mixable session never becomes Now Playing), deactivated with
+  `.notifyOthersOnDeactivation`. The click goes to the connected Bluetooth headset, also with the ringer on silent. The sound is
+  loaded (and the iOS session active) only while the metronome runs in Sound or Both; `start`, `click` and `stop` run in call order
+  on one native thread, so a quick off after on cannot leave it loaded. A click while the sound still loads is skipped, never late.
+  The next beat is booked before the vibration and the click, so a failing one skips a beat and never stops the metronome.
 - **Screen off.** Android: the recording's foreground service keeps JS running (Run recorder); the band-started live screen holds
-  the screen on while the metronome runs. expo-audio's own media-playback service is not declared (`enableBackgroundPlayback:
-  false`). iOS: `audio` in `UIBackgroundModes` (a background app is muted without it); the session is active only while clicking.
+  the screen on while the metronome runs. iOS: `audio` in `UIBackgroundModes` (a background app is muted without it).
 
 ## OTA or store build
 
@@ -114,7 +117,7 @@ what a beat does: **Vibration** (default), **Sound** or **Both**. Tempo and mode
 | Sport tag read with validation | no | `WorkoutLink.pollStatus`, `WorkoutSportTypes.pick` |
 | Phone GPS for the whole session (track goes on after `18/02 {01: 0}`, preparing fixes not counted), iOS phone track | no | `PhoneGpsSession`, `SessionTrack`, `WorkoutLink`, `LiveWorkout.onLocation` (Kotlin and Swift); the JS payload contract is unchanged |
 | Phone-started run: start, pause, resume, stop, band heart rate, the setting | yes, on a binary that already has `startWatchWorkout` (the strength logger's functions); `setLiveHeartRate` is the fallback | `setWorkoutHeartRate` (heart rate in the background); a binary without `startWatchWorkout` shows `unavailable` |
-| Metronome sound mode (Sound / Both) | no: `expo-audio` is a new native module (the fingerprint changes, so an OTA never reaches an older binary) | `expo-audio`, iOS `audio` background mode |
+| Metronome sound mode (Sound / Both) | no: `modules/metronome-click` is a new native module (the fingerprint changes, so an OTA never reaches an older binary) | `MetronomeClick` (Kotlin, Swift), iOS `audio` background mode |
 
 ## Unverifiable without a Band 11
 

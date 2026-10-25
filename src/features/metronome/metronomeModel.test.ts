@@ -17,6 +17,7 @@ import {
   type SettingsStore,
   stepBpm,
   vibrates,
+  wantsClickSound,
 } from './metronomeModel';
 
 function memoryStore(initial: Record<string, string> = {}): SettingsStore & { kv: Map<string, string> } {
@@ -82,6 +83,12 @@ describe('mode', () => {
     expect([vibrates('vibration'), clicks('vibration')]).toEqual([true, false]);
     expect([vibrates('sound'), clicks('sound')]).toEqual([false, true]);
     expect([vibrates('both'), clicks('both')]).toEqual([true, true]);
+  });
+  test('the click sound is loaded only while the metronome runs in a mode with a click', () => {
+    expect(wantsClickSound({ enabled: true, mode: 'sound' })).toBe(true);
+    expect(wantsClickSound({ enabled: true, mode: 'both' })).toBe(true);
+    expect(wantsClickSound({ enabled: true, mode: 'vibration' })).toBe(false);
+    expect(wantsClickSound({ enabled: false, mode: 'sound' })).toBe(false);
   });
 });
 

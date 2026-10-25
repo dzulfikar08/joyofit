@@ -51,6 +51,11 @@ export function clicks(mode: MetronomeMode): boolean {
   return mode !== 'vibration';
 }
 
+/** Whether the click sound should be loaded (and on iOS the audio session active): only while the metronome runs in a mode with a click. */
+export function wantsClickSound(state: { enabled: boolean; mode: MetronomeMode }): boolean {
+  return state.enabled && clicks(state.mode);
+}
+
 /** The kept settings. The on/off state is not one of them: the metronome is always off after the app starts. */
 export interface MetronomeSettings {
   bpm: number;
