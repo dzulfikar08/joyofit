@@ -259,6 +259,14 @@ final class LiveWorkoutTests: XCTestCase {
         XCTAssertNil(WorkoutLinkWire.parseGpsParams(nil))
     }
 
+    func testTheGpsFieldBitmapIsReadWhole() throws {
+        // Fit 4 Pro 18/01 answer, 2026-10-25 18:49:49: 81{02 01DF, 03 01, 05 01}.
+        let tlv = try HuaweiTLV(parsing: hex("81 0a  02 02 01df  03 01 01  05 01 01"))
+        XCTAssertEqual(WorkoutLinkWire.gpsBitmap(tlv), 0x1DF)
+        let p = try XCTUnwrap(WorkoutLinkWire.parseGpsParams(tlv))
+        XCTAssertTrue(p.speed && p.distance && p.altitude && p.latLon && p.direction && p.precision)
+    }
+
     func testDistanceBetweenFixes() {
         let a = WorkoutLinkWire.Fix(latitude: -6.9147, longitude: 107.6098, timeMs: 0)
         let b = WorkoutLinkWire.Fix(latitude: -6.9147, longitude: 107.6198, timeMs: 0)

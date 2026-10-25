@@ -127,6 +127,10 @@ public enum WorkoutSportTypes {
 
     public static func name(_ type: Int) -> String { sport(type)?.name ?? "Workout (type \(type & 0xFF))" }
 
+    /// The first of `candidates` that is a code of the table: a status answer carries the sport in more than one tag, and only a known code is
+    /// believed (WorkoutSportTypes.kt `pick`).
+    public static func pick(_ candidates: Int?...) -> Int? { candidates.first { $0.map { sport($0) != nil } ?? false } ?? nil }
+
     /// GB `ActivityKind` constant name, `unknownKind` for types GB does not know.
     public static func kind(_ type: Int) -> String { sport(type)?.kind ?? unknownKind }
 

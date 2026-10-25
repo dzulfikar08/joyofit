@@ -78,6 +78,9 @@ internal class LiveWorkout(
      */
     var phoneTrack = SessionTrack()
 
+    /** The session ran (or was paused) at some point; one that never got past the GO screen is not a workout that just ended. */
+    var everRan = false
+
     /** The watch asked for the phone's GPS during this session: an outdoor sport, whatever sport tag it did or did not send. */
     var gpsRequested = false
   }
@@ -100,6 +103,49 @@ internal class LiveWorkout(
 
   /** A `17/11` report was received on this link: the watch tells its own start, so movement is no signal to wait for. */
   private var reportsSeen = false
+
+  /** When the watch last said its workout screen closed (`18/08 {01: 0}`); 0 while it is open or never said. */
+  private var screenClosedAtMs = 0L
+
+  /** When the watch last said its workout screen opened (`18/08 {01: 1}`): a GPS request after that is no straggler of an ended session. */
+  private var screenOpenedAtMs = 0L
+
+  /** How often [WorkoutLink] asks the status now: fast while a session waits for GO, so the phone's clock starts with the watch's. */
+  fun pollEveryMs(): Long = LiveWorkoutPolicy.pollEveryMs(synchronized(lock) { session?.status })
+
+  /**
+   * The watch's `18/08` (Huawei Health's activity-recognition switch, `HwGpsUtil.arKitSwitch`): `{01: 1}` comes with the first GPS
+   * request when a workout screen opens, `{01: 0}` when it closes (Fit 4 Pro, 2026-10-25: 5 s before `17/03` said idle, each time). A
+   * close makes the next "no workout" answer end the session at once ([LiveWorkoutPolicy.idleVerdict]). A watch that never answers the
+   * status poll gives no other sign of its finish, so the screen asks the person at once (`endSuspected`) instead of after two minutes of
+   * GPS silence; not ended outright, because whether a band sends the close on a pause too is not known. An open right after a
+   * session ended (the person left the GO screen and came back) opens a new session at once, also when the GPS request that came with
+   * it, a few ms earlier, was still taken for a straggler ([LiveWorkoutPolicy.gpsReopens]). Returns true when the status should be asked now.
+   */
+  fun workoutScreen(open: Boolean): Boolean {
+    if (mirrorBlocked()) return false
+    var suspect = false
+    var reopen = false
+    val live = synchronized(lock) {
+      val now = System.currentTimeMillis()
+      screenClosedAtMs = if (open) 0L else now
+      if (open) screenOpenedAtMs = now
+      val s = session?.takeIf { it.status != Status.ENDED }
+      if (!open && s != null && s.source == Source.GPS && lastStatusAtMs == 0L && !reportsSeen && !s.endSuspected) {
+        s.endSuspected = true
+        suspect = true
+      }
+      // Only after a session ended: the open comes with a GPS request, which opens the first session itself.
+      reopen = open && s == null && session != null
+      s != null
+    }
+    if (suspect) {
+      log("Live workout: the watch closed its workout screen and does not answer the status poll; asking the user")
+      publish(force = true)
+    }
+    if (reopen) return gpsPing()
+    return live && !open
+  }
 
   /**
    * Called once each time a session ends, outside [lock]: the phone's location updates for it stop ([WorkoutLink],
@@ -299,34 +345,41 @@ internal class LiveWorkout(
   }
 
   /**
-   * The watch's answer to the status poll (`17/03`): the watch says when the workout really runs (after its GPS search and
-   * countdown), so this is what starts the phone's timer for a session opened by a GPS request, and what starts one for
-   * a running workout nothing else announced (indoor ones included). It follows pause and resume, and ends a session once
-   * the watch is idle ([LiveWorkoutPolicy.idleVerdict]).
+   * The watch's answer to the status poll (`17/03`, [WatchPhase]): the watch says when the workout really runs (after GO and its
+   * countdown), so this is what starts the phone's timer for a session opened by a GPS request, and what starts one for a running
+   * workout nothing else announced (indoor ones included). An open workout screen ([WatchPhase.OPEN], the GO screen) is not a start.
+   * It follows pause and resume, and ends a session once the watch is idle ([LiveWorkoutPolicy.idleVerdict]; at once after the watch
+   * closed its workout screen, [workoutScreen], which is how the Fit 4 Pro finishes: `18/08 {01: 0}`, then tag 02 back to 0).
    */
-  fun watchStatus(running: Boolean, paused: Boolean, workoutType: Int?) {
+  fun watchStatus(phase: WatchPhase, workoutType: Int?) {
     if (mirrorBlocked()) return
     var created = false
     var ended = false
     var changed = false
     var note: String? = null
+    val running = phase == WatchPhase.RUNNING || phase == WatchPhase.PAUSED
     synchronized(lock) {
       val now = System.currentTimeMillis()
       lastStatusAtMs = now
-      idleAnswers = if (running) 0 else idleAnswers + 1
+      idleAnswers = if (phase == WatchPhase.IDLE) idleAnswers + 1 else 0
       val s = session?.takeIf { it.status != Status.ENDED }
       when {
         running && s == null -> {
-          session = newSession(workoutType, if (paused) Status.PAUSED else Status.RUNNING, Source.STATUS).also { it.confirmed = true }
+          session = newSession(workoutType, if (phase == WatchPhase.PAUSED) Status.PAUSED else Status.RUNNING, Source.STATUS).also { it.confirmed = true }
           created = true
         }
-        running && s != null -> {
+        phase != WatchPhase.IDLE && s != null -> {
           if (workoutType != null && s.sportType == null) s.sportType = workoutType
           if (s.source != Source.WATCH) {
-            s.confirmed = true
-            val want = if (paused) Status.PAUSED else Status.RUNNING
-            if (s.status != want) {
-              note = if (paused) "the watch paused the workout" else if (s.status == Status.PAUSED) "the watch resumed the workout" else "the watch started the workout; timer running"
+            if (running) s.confirmed = true
+            val want = LiveWorkoutPolicy.statusTarget(s.status, phase)
+            if (want != null && s.status != want) {
+              note = when {
+                phase == WatchPhase.OPEN -> "the watch stopped counting (paused, or back on its start screen); timer paused"
+                want == Status.PAUSED -> "the watch paused the workout"
+                s.status == Status.PAUSED -> "the watch resumed the workout"
+                else -> "the watch started the workout (GO); timer running"
+              }
               setStatus(s, want, now)
               changed = true
             } else if (s.endSuspected) {
@@ -335,8 +388,9 @@ internal class LiveWorkout(
             }
           }
         }
-        !running && s != null && (s.source == Source.STATUS || s.source == Source.GPS) -> {
-          when (LiveWorkoutPolicy.idleVerdict(s.status == Status.PREPARING, s.confirmed, idleAnswers, now - s.lastGpsAtMs)) {
+        phase == WatchPhase.IDLE && s != null && (s.source == Source.STATUS || s.source == Source.GPS) -> {
+          val screenClosed = screenClosedAtMs != 0L && now - screenClosedAtMs <= LiveWorkoutPolicy.SCREEN_CLOSED_MS
+          when (LiveWorkoutPolicy.idleVerdict(s.status == Status.PREPARING, s.confirmed, idleAnswers, now - s.lastGpsAtMs, screenClosed)) {
             LiveWorkoutPolicy.Verdict.END -> ended = true
             LiveWorkoutPolicy.Verdict.SUSPECT -> if (!s.endSuspected) {
               s.endSuspected = true
@@ -347,7 +401,7 @@ internal class LiveWorkout(
           }
         }
         // A watch-fed session normally ends on the watch's stop frame; with the frames silent and the poll idle, a lost stop does not leave it running.
-        !running && s != null && s.source == Source.WATCH ->
+        phase == WatchPhase.IDLE && s != null && s.source == Source.WATCH ->
           ended = LiveWorkoutPolicy.watchFedEnds(s.status == Status.PREPARING, idleAnswers, now - s.updatedAtMs)
       }
     }
@@ -367,8 +421,8 @@ internal class LiveWorkout(
    * The watch asked for the phone's GPS (the request repeats about every 20 s). It asks from the moment its workout screen
    * starts looking for a fix, which is before the workout runs, so this opens a session that is only preparing (the timer
    * waits); [watchStatus] or the watch's own numbers start it. A watch that never answered the status poll gives nothing
-   * else to wait for, so its session runs from the first request. Returns true while the status should be asked now (the
-   * session was just opened, or still prepares).
+   * else to wait for, so its session starts when the person moves ([onLocation], [MotionStart]). Returns true while the status
+   * should be asked now (the session was just opened, or still prepares).
    */
   fun gpsPing(): Boolean {
     if (mirrorBlocked()) return false
@@ -388,9 +442,10 @@ internal class LiveWorkout(
           changed = true
         }
       } else {
-        // A straggling request right after a workout ended does not open a second one.
+        // A straggling request right after a workout ended does not open a second one; a session that never got past its GO
+        // screen, or a workout screen the watch opened again since, is no straggler ([LiveWorkoutPolicy.gpsReopens]).
         val endedAt = last?.endedAtMs
-        if (endedAt != null && now - endedAt < LiveWorkoutPolicy.RESTART_GUARD_MS) return false
+        if (endedAt != null && !LiveWorkoutPolicy.gpsReopens(now - endedAt, last.everRan, screenOpenedAtMs > endedAt)) return false
         // Always preparing: the watch asks for GPS from its pre-start (GO) screen on, so the request says nothing about the
         // workout running. The status poll, a `17/11` report or a start event starts the clock; a watch that gives none of
         // those starts it by movement ([onLocation]).
@@ -500,6 +555,7 @@ internal class LiveWorkout(
       // The phone's own GPS follows the session whoever feeds the numbers.
       fresh.phoneTrack = current.phoneTrack
       fresh.gpsRequested = current.gpsRequested
+      fresh.everRan = fresh.everRan || current.everRan
       fresh.lastGpsAtMs = current.lastGpsAtMs
       // Opened running from a session that only prepared: the running stretch begins now, as with [setStatus].
       if (current.status == Status.PREPARING && status == Status.RUNNING) fresh.phoneTrack.startStretch(fresh.updatedAtMs)
@@ -545,6 +601,7 @@ internal class LiveWorkout(
       s.clock.seconds(now)?.let { s.metrics = s.metrics.copy(durationSec = it) }
     }
     s.status = status
+    if (status == Status.RUNNING || status == Status.PAUSED) s.everRan = true
     s.updatedAtMs = now
     s.endSuspected = false
     if (status == Status.ENDED) s.endedAtMs = now
@@ -556,6 +613,7 @@ internal class LiveWorkout(
     val maxHr = SubstrateEstimator.maxHeartRate(age)
     val now = System.currentTimeMillis()
     val s = Session(id ?: now, workoutType, status, LiveMetrics(), SubstrateEstimator(maxHr), maxHr, now, source)
+    s.everRan = status == Status.RUNNING || status == Status.PAUSED
     // A phone-side session counts its own time, from the moment the workout is really running (not while it only prepares).
     if (source != Source.WATCH && status != Status.PREPARING) {
       s.clock.start(now)

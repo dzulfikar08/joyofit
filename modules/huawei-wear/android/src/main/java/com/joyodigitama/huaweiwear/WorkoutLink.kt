@@ -7,10 +7,14 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.os.Build
+import android.os.Bundle
 import android.os.Looper
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiPacket
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiTLV
 
@@ -84,6 +88,7 @@ internal class WorkoutLink(
           gpsParams = null
           subscriptions += session.subscribe(GPS_SERVICE.toByte(), GPS_STATUS.toByte(), "phone GPS request") { onGpsStatus(it) }
           subscriptions += session.subscribe(WORKOUT_SERVICE.toByte(), REPORT_DATA.toByte(), "workout realtime report") { onReport(it) }
+          subscriptions += session.subscribe(GPS_SERVICE.toByte(), WORKOUT_SCREEN.toByte(), "workout screen") { onWorkoutScreen(it) }
         }
         log(
           "Workout link: watch lists 18/01=${DeviceCaps.supports(GPS_SERVICE, 1)} 18/02=${DeviceCaps.supports(GPS_SERVICE, GPS_STATUS)} " +
@@ -110,11 +115,14 @@ internal class WorkoutLink(
     }
   }
 
-  // Workout status poll (17/03, Huawei Health): the only signal an indoor workout
-  // gives. Request `81 00`; the answer's 81 holds 02 trainMonitorState, 03 operatorType (1 start, 2 pause, 3 resume,
-  // 4 stop), 04 sportType, 06 workoutType.
+  // Workout status poll (17/03, Huawei Health): the only signal an indoor workout gives, and the one that tells GO from the
+  // GO screen. Request `81 00`; the answer's 81 holds 02 trainMonitorState, 03 operatorType, 04 sportType, 06 workoutType
+  // ([WatchPhase]).
 
   private var statusPoll: kotlinx.coroutines.Job? = null
+
+  /** Wakes the poll out of its wait ([pollSoon]): the next answer is wanted now, and the period may have changed. */
+  private val pollWake = Channel<Unit>(Channel.CONFLATED)
   private var lastStatusLog: String? = null
 
   /** The watch has answered the poll with a workout state at least once on this link. */
@@ -137,14 +145,19 @@ internal class WorkoutLink(
           log("Workout link: no workout status from the watch; indoor workouts need Start on the phone")
           return@launch
         }
-        // A stop on the watch reaches the phone within a few answers: poll faster while a workout is followed.
-        kotlinx.coroutines.delay(if (live.isLive) LiveWorkoutPolicy.LIVE_POLL_MS else LiveWorkoutPolicy.IDLE_POLL_MS)
+        // Fast while a session waits for GO (the phone's clock starts with the watch's), then every few seconds while one is
+        // followed; a GPS request or the watch's workout screen closing wakes it at once.
+        withTimeoutOrNull(live.pollEveryMs()) { pollWake.receive() }
       }
     }
   }
 
-  /** Asks the status now, outside the poll's rhythm (a GPS request opened a session that waits for the answer). */
+  /** Asks the status now, outside the poll's rhythm (a GPS request opened a session that waits for GO, the watch closed its workout). */
   private fun pollSoon() {
+    if (statusPoll?.isActive == true) {
+      pollWake.trySend(Unit)
+      return
+    }
     val handle = link.handle() ?: return
     scope.launch { pollStatus(handle.session) }
   }
@@ -169,29 +182,53 @@ internal class WorkoutLink(
     if (tlv == null || !tlv.contains(0x81)) {
       // A watch that already answered with a workout state and now sends none has no workout to report.
       if (!statusAnswered) return false
-      live.watchStatus(running = false, paused = false, workoutType = null)
+      live.watchStatus(WatchPhase.IDLE, workoutType = null)
       return true
     }
     statusAnswered = true
     val body = tlv.getObject(0x81)
     fun int(tag: Int) = body.getBytes(tag, null)?.let { LiveWorkoutWire.unsigned(it)?.toInt() }
-    val operator = int(0x03)
     // The sport is in tag 06 ("workout type") or 04 ("sport type"); only a code of the sport table is believed (a small enum
     // in one of them must not turn into "Running"). UNVERIFIED on a Band 11: the status line above shows both tags.
     val workoutType = WorkoutSportTypes.pick(int(0x06), int(0x04))
-    when (operator) {
-      1, 3 -> live.watchStatus(running = true, paused = false, workoutType = workoutType)
-      2 -> live.watchStatus(running = true, paused = true, workoutType = workoutType)
-      else -> live.watchStatus(running = false, paused = false, workoutType = workoutType)
-    }
+    live.watchStatus(WatchPhase.of(trainMonitorState = int(0x02), operator = int(0x03)), workoutType)
     return true
+  }
+
+  /**
+   * `18/08 {01: 1 | 0}`: the watch's workout screen opened or closed (Huawei Health's activity-recognition switch; it answers
+   * `18/08 7F 04 <100000>`, `HwActivityRecognitionManager.notifyDeviceReceiveSuccess`). A close asks the status now, so a finish on
+   * the watch ends the phone's session within seconds ([LiveWorkout.workoutScreen]).
+   */
+  private fun onWorkoutScreen(packet: HuaweiPacket) {
+    val open = packet.getTlv()?.getBytes(0x01, null)?.firstOrNull()?.toInt() == 1
+    log("Workout link: the watch's workout screen ${if (open) "opened" else "closed"} (18/08)")
+    scope.launch {
+      val handle = link.handle() ?: return@launch
+      try {
+        handle.session.send(RawPacket(handle.session.params, GPS_SERVICE, WORKOUT_SCREEN, HuaweiTLV().put(0x7F, OK)), "workout screen OK")
+      } catch (e: CancellationException) {
+        throw e
+      } catch (e: Exception) {
+        log("Workout link: workout screen answer not sent: ${e.message}")
+      }
+      if (live.workoutScreen(open)) pollSoon()
+    }
   }
 
   // Phone GPS
 
+  private var lastGpsRequestLog: String? = null
+
   private fun onGpsStatus(packet: HuaweiPacket) {
     val tlv = packet.getTlv() ?: return
     val enable = tlv.getBytes(0x01, null)?.firstOrNull()?.toInt() == 1
+    // The whole request when it changes: no watch was seen to name the sport anywhere on the link yet, a band might do it here.
+    val text = tlv.toString()
+    if (text != lastGpsRequestLog) {
+      lastGpsRequestLog = text
+      log("Workout link: phone GPS request $text")
+    }
     scope.launch {
       val handle = link.handle() ?: return@launch
       try {
@@ -213,7 +250,11 @@ internal class WorkoutLink(
         synchronized(lock) { lastLocation = null }
         val following = live.isLive
         phoneGps.watchWithdraws(following)
-        if (following) log("Workout link: the watch stopped asking for the phone's GPS; feed stopped, the workout's track goes on")
+        if (following) {
+          log("Workout link: the watch stopped asking for the phone's GPS; feed stopped, the workout's track goes on")
+          // A band without GPS of its own withdraws only when its workout ends: the status tells at once.
+          pollSoon()
+        }
       }
     }
   }
@@ -223,9 +264,10 @@ internal class WorkoutLink(
     val handle = link.handle() ?: return null
     return try {
       val answer = handle.session.request(RawPacket(handle.session.params, GPS_SERVICE, 0x01, HuaweiTLV().put(0x81)), REQUEST_MS, "GpsParameters")
-      val sub = answer.getTlv()?.getObject(0x81) ?: return null
-      val bitmap = sub.getBytes(0x02, null)?.firstOrNull()?.toInt()?.and(0xFF) ?: return null
-      log("Workout link: watch takes GPS fields bitmap 0x%02x".format(bitmap))
+      val tlv = answer.getTlv()
+      val sub = tlv?.getObject(0x81) ?: return null
+      val bitmap = gpsBitmap(sub.getBytes(0x02, null)) ?: return null
+      log("Workout link: watch takes GPS fields bitmap 0x%x (answer %s)".format(bitmap, tlv))
       GpsParams(bitmap).also { gpsParams = it }
     } catch (e: CancellationException) {
       throw e
@@ -238,7 +280,13 @@ internal class WorkoutLink(
   private fun hasFineLocation() =
     appContext.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
-  /** Starts the phone's location updates ([PhoneGpsSession]); every fix goes to the live session, and to the watch while it asks. */
+  /**
+   * Starts the phone's location updates ([PhoneGpsSession]); every fix goes to the live session, and to the watch while it asks.
+   * Android 12 and newer: the fused provider at high accuracy, as the Run recorder (`ble-sensors` `WorkoutLocation.kt`), which gives a
+   * first position within seconds and GNSS accuracy as satellites lock. The raw GPS provider used before gave the live screen nothing
+   * for minutes after a cold start, and nothing under a roof ("Waiting for the phone's GPS position", 2026-10-25 report on a Xiaomi),
+   * while the recorder had a position at once. Older versions and devices without it: the GPS provider.
+   */
   @SuppressLint("MissingPermission")
   private fun startLocation(): Boolean {
     if (!hasFineLocation()) {
@@ -246,34 +294,61 @@ internal class WorkoutLink(
       return false
     }
     val manager = appContext.getSystemService(LocationManager::class.java) ?: return false
-    val l = LocationListener { location ->
-      live.onLocation(
-        TrackFix(
-          timeMs = location.time,
-          lat = location.latitude,
-          lon = location.longitude,
-          altitudeM = if (location.hasAltitude()) location.altitude else null,
-          accuracyM = if (location.hasAccuracy()) location.accuracy else null,
-          speedMps = if (location.hasSpeed()) location.speed else null,
-          bearingDeg = if (location.hasBearing()) location.bearing else null,
-        ),
-      )
-      // The `18/03` feed needs the fields the watch takes (`18/01`); without them yet, the fix is the track's only.
-      val params = gpsParams
-      if (phoneGps.feeding && params != null) scope.launch { sendLocation(location, params) }
+    val fused = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && LocationManager.FUSED_PROVIDER in manager.allProviders
+    // An object, not a lambda: before Android 11 the other callbacks are abstract, and a provider change would crash a lambda.
+    val l = object : LocationListener {
+      override fun onLocationChanged(location: Location) = onPhoneFix(location)
+
+      override fun onProviderEnabled(provider: String) {}
+
+      override fun onProviderDisabled(provider: String) {}
+
+      @Deprecated("Never called on Android 12 and newer")
+      override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
     }
+    fixesLogged = 0
     synchronized(lock) {
       listener = l
       lastLocation = null
     }
     return try {
-      manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, l, Looper.getMainLooper())
-      log("Workout link: phone GPS started for the workout")
+      if (fused) {
+        val request = android.location.LocationRequest.Builder(1000L).setQuality(android.location.LocationRequest.QUALITY_HIGH_ACCURACY).build()
+        manager.requestLocationUpdates(LocationManager.FUSED_PROVIDER, request, appContext.mainExecutor, l)
+      } else {
+        manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, l, Looper.getMainLooper())
+      }
+      log("Workout link: phone GPS started for the workout (${if (fused) "fused" else "gps"} provider)")
       true
     } catch (e: Exception) {
       synchronized(lock) { listener = null }
       log("Workout link: phone GPS not started: ${e.message}")
       false
+    }
+  }
+
+  private var fixesLogged = 0
+
+  private fun onPhoneFix(location: Location) {
+    val accuracy = if (location.hasAccuracy()) location.accuracy else null
+    // The first fixes say how soon a position came and how good it was.
+    if (fixesLogged++ < 3) log("Workout link: phone fix ${fixesLogged}, accuracy ${accuracy?.let { "%.0f m".format(it) } ?: "unknown"}")
+    live.onLocation(
+      TrackFix(
+        timeMs = location.time,
+        lat = location.latitude,
+        lon = location.longitude,
+        altitudeM = if (location.hasAltitude()) location.altitude else null,
+        accuracyM = accuracy,
+        speedMps = if (location.hasSpeed()) location.speed else null,
+        bearingDeg = if (location.hasBearing()) location.bearing else null,
+      ),
+    )
+    // The `18/03` feed needs the fields the watch takes (`18/01`); without them yet, the fix is the track's only. A rough Wi-Fi or
+    // cell position (worse than the track's own limit) is the map's, not the watch's: the band would count its jumps as distance.
+    val params = gpsParams
+    if (phoneGps.feeding && params != null && (accuracy == null || accuracy <= TrackAccumulator.MAX_ACCURACY_M)) {
+      scope.launch { sendLocation(location, params) }
     }
   }
 
@@ -344,6 +419,15 @@ internal class WorkoutLink(
     const val GPS_SERVICE = 0x18
     const val GPS_STATUS = 0x02
     const val GPS_DATA = 0x03
+    /** `18/08`: the watch's workout screen opened or closed (Huawei Health's activity-recognition switch). */
+    const val WORKOUT_SCREEN = 0x08
+
+    /**
+     * The `18/01` field bitmap, all of its bytes big-endian (Huawei Health `GpsParameter.getGpsInfoBitmap`, an int). The Fit 4 Pro sends
+     * two, `01 DF` (2026-10-25): reading only the first byte, as GB's `getByte` does, gave 0x01 (speed only), so the watch never got the
+     * latitude, longitude, altitude, distance, bearing or accuracy it asks for.
+     */
+    fun gpsBitmap(bytes: ByteArray?): Int? = LiveWorkoutWire.unsigned(bytes)?.toInt()
     const val WORKOUT_SERVICE = 0x17
     const val REPORT_DATA = 0x11
     const val REPORT_OPEN = 0x12

@@ -563,7 +563,11 @@
         "sensorsNoneA11y": "No sensors connect automatically yet. Open the sensor list.",
         "steps": "Steps",
         "stepsOnA11y": "Steps and cadence from the phone are on. Tap for an explanation.",
-        "stepsOffA11y": "Steps and cadence from the phone are not on yet. Tap to turn them on."
+        "stepsOffA11y": "Steps and cadence from the phone are not on yet. Tap to turn them on.",
+        "band": "Band",
+        "bandConnectedA11y": "The band is connected. Open the Watch tab.",
+        "bandConnectingA11y": "The band is connecting. Open the Watch tab.",
+        "bandDisconnectedA11y": "The band isn't connected. Open the Watch tab to connect it."
       },
       "map": {
         "searching": "Finding where you are. The map appears once the GPS has a signal.",
@@ -693,7 +697,9 @@
       "starting": "Starting on the band…",
       "linked": "Band linked",
       "refused": "The band didn't start the workout. Recording on the phone only.",
-      "unavailable": "The band isn't connected. Recording on the phone only.",
+      "connecting": "The band isn't connected. Recording on the phone; the band starts as soon as it connects.",
+      "unsupported": "This band can't start a workout from the phone. Recording on the phone; the band's heart rate is still used.",
+      "nobuild": "This app version can't start the band. Recording on the phone only.",
       "ended": "The band stopped its workout. The phone recording is paused.",
       "setting": "Start the band with the run",
       "settingHint": "The band starts, pauses and stops with the run and sends its heart rate to the phone. If it refuses, the phone keeps recording alone."

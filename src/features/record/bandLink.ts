@@ -37,7 +37,7 @@ export function useBandStartEnabled(): boolean {
 }
 
 /** A watch exists in this person's life (the link is on one now, or one was remembered): a phone with none never hears about a band. */
-function hasWatch(): boolean {
+export function hasWatch(): boolean {
   try {
     return (HuaweiWear.getDevice()?.address ?? HuaweiWear.getBackgroundStatus().address ?? null) !== null;
   } catch {

@@ -91,29 +91,34 @@ public enum WatchWorkoutWire {
         return LiveWorkoutWire.signedWhenFour(tlv.bytes(0x7F, default: nil))
     }
 
-    /// What `17/03` or `17/02` says about the watch's workout. `operator`: 1 start, 2 pause, 3 resume, 4 stop.
+    /// What `17/03` or `17/02` says about the watch's workout. `operatorType`: 1 start, 2 pause, 3 resume, 4 stop. `trainMonitorState` (`17/03`
+    /// tag 02): non-zero while the watch counts a workout; 0 with operator 1 is its GO screen (`WatchPhase`).
     public struct WatchOperator: Equatable, Sendable {
         public let operatorType: Int?
         public let sportType: Int?
         public let workoutType: Int?
-        public var running: Bool { operatorType == WatchWorkoutWire.opStart || operatorType == WatchWorkoutWire.opResume }
+        public let trainMonitorState: Int?
+        public var phase: WatchPhase { WatchPhase.of(trainMonitorState: trainMonitorState, operator: operatorType) }
+        public var running: Bool { phase == .running }
     }
 
     private static func int(_ body: HuaweiTLV, _ tag: Int) -> Int? {
         LiveWorkoutWire.unsigned(body.bytes(tag, default: nil)).map(LiveWorkoutWire.toInt)
     }
 
-    /// `17/03` answer: `81{02 state, 03 operator, 04 sport, 06 workout type}`.
+    /// `17/03` answer: `81{02 trainMonitorState, 03 operator, 04 sport, 06 workout type}`.
     public static func parseStatus(_ tlv: HuaweiTLV?) -> WatchOperator? {
         guard let tlv, tlv.contains(0x81), let body = try? tlv.object(0x81) else { return nil }
-        return WatchOperator(operatorType: int(body, 0x03), sportType: int(body, 0x04), workoutType: int(body, 0x06) ?? int(body, 0x04))
+        return WatchOperator(
+            operatorType: int(body, 0x03), sportType: int(body, 0x04), workoutType: int(body, 0x06) ?? int(body, 0x04), trainMonitorState: int(body, 0x02)
+        )
     }
 
     /// `17/02` notice: `81{02 operator, 03 sport, 05 workout type}`.
     public static func parseNotice(_ tlv: HuaweiTLV?) -> WatchOperator? {
         guard let tlv else { return nil }
         let body = tlv.contains(0x81) ? ((try? tlv.object(0x81)) ?? tlv) : tlv
-        return WatchOperator(operatorType: int(body, 0x02), sportType: int(body, 0x03), workoutType: int(body, 0x05))
+        return WatchOperator(operatorType: int(body, 0x02), sportType: int(body, 0x03), workoutType: int(body, 0x05), trainMonitorState: nil)
     }
 
     /// The answer to a `17/02` notice: `7F 04 <100000>`.
