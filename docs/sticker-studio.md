@@ -444,7 +444,9 @@ A family with cards lists its kind first in `subject.kinds` (`['gym', 'run']`), 
 and every `run` card after them; `subject.defaultGroup` (`DEFAULT_GROUP`) is the card the sheet opens on (`offer.ts`
 `initialGroup`). The sport glyph of every card follows the family (`blocks.ts` `sportGlyph`: the barbell lifter for gym, MDI
 `run-fast`, `yoga` and `tennis` paths for cardio, flow and court), and the receipt reads metres for a swim, rpm for a ride and
-thanks each family in its own words.
+thanks each family in its own words. `docs/screenshots/share-per-sport/` keeps the family contact sheets (Linux renders of
+`stickers-sheet.ts`) and the audit behind the families: `audit-before.png` (the cards the sheet offered a watch workout of
+every family before, `run.bold` first) and `audit-after.png` (the family's opening card, `run.bold` and the receipt now).
 
 ### Privacy and Pro in JoyoFit
 
