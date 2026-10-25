@@ -188,7 +188,8 @@ Branch `lab/jrg-426-offline-map` (draft PR, not to be merged) adds what the spik
 - **The map.** `tools/offline-maps/build-map.sh` (README next to it): Geofabrik extract → `osmium extract -b <box>` → HDataResearch's converter
   (MIT, pinned `c736a1a`) with zooms 10/12/14/16, labels Indonesian (language id `0x20`) then English, the region name in the header, header
   version = build time `YYMMDDHH`, tiles with the default political region. The lab map is **Malang (lab)**, box `112.50,-8.05,112.72,-7.88` (Kota
-  Malang and Kecamatan Dau, where the owner runs), from the Java extract of 2026-10-25: `2000000000000003573.bin` (size: see "Results"). Not committed
+  Malang and Kecamatan Dau, where the owner runs), from the Geofabrik Java extract of 2026-10-24T20:20Z: `2000000000000003573.bin`, **9,616,061
+  bytes** (9.2 MiB; the handshake announces 10 MB, so the parse wait is 80 s), header version `26102522`, SHA-256 `3DD25836…C1E99E`; built in 34 s. Not committed
   (over 5 MB); the README has the one command that rebuilds it.
 - **The map id.** The watch takes the id from the file name only. Huawei's 2,275 known ids (HDataResearch `docs/filenames.md`) are all below
   2^60 and look random; JoyoFit uses **2,000,000,000,000,000,000 + the BPS region code** (3573 = Kota Malang): above 2^60, so it can never

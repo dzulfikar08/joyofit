@@ -39,7 +39,7 @@ The lab map is not committed (above the 5 MB limit for files in this repository)
 
 | Map | Id | Box (W,S,E,N) | Size | Notes |
 |---|---|---|---|---|
-| Malang (lab) | `2000000000000003573` | `112.50,-8.05,112.72,-7.88` | see docs/offline-maps.md | Java extract of 2026-10-25 |
+| Malang (lab) | `2000000000000003573` | `112.50,-8.05,112.72,-7.88` | 9.2 MiB (9,616,061 bytes) | Java extract of 2026-10-24T20:20Z; 34 s to build |
 | Andorra (control) | `446513991765216720` | `1.40,42.42,1.79,42.66` | 3.1 MB | `--region europe/andorra`; an id Huawei issued, to tell "id refused" from "file refused" |
 
 ## Licence
