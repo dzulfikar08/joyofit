@@ -335,6 +335,39 @@ final class WatchfaceOpsTests: XCTestCase {
         XCTAssertTrue(e?.message.contains("did not make") == true)
     }
 
+    func testApplySendsOperationOneForTheListedFaceEvenWhenItIsCurrentAndListsNothing() async throws {
+        let (_, watch, ops, _, _) = setup()
+        let listed = try await ops.list()
+        let current = try XCTUnwrap(listed.faces.first { $0.isCurrent })
+        let listsBefore = watch.all(0x27, 0x02).count
+
+        let code = try await ops.apply(current)
+
+        XCTAssertEqual(code, 100_000)
+        let op = try XCTUnwrap(watch.all(0x27, 0x03).first?.tlv)
+        XCTAssertEqual(watch.all(0x27, 0x03).count, 1)
+        XCTAssertEqual(try op.string(0x01), "1000")
+        XCTAssertEqual(try op.string(0x02), "1.0.0")
+        XCTAssertEqual(try op.byte(0x03), 1)
+        XCTAssertEqual(watch.all(0x27, 0x02).count, listsBefore)
+    }
+
+    func testTheApplyAfterAPhotoSaveIsHuaweiHealthsOperateCommand() throws {
+        // OperateWatchFaceService.buildOperateCommandUtil("2180736265", "2.4.11", -1, 1): 01 id, 02 version, 03 = 1, no instance tag.
+        let packet = Watchface.WatchfaceOperation.request(id: "2180736265", version: "2.4.11", operation: Watchface.WatchfaceOperation.operationActive)
+        let expected: Bytes = [0x01, 0x0a] + Bytes("2180736265".utf8) + [0x02, 0x06] + Bytes("2.4.11".utf8) + [0x03, 0x01, 0x01]
+        XCTAssertEqual(packet.tlv?.serialize(), expected)
+    }
+
+    func testAnOperationAnsweredWithZeroOrNoStatusIsAccepted() {
+        // WatchFaceWearService.isSuccessErrorCode: 0 or 100000; the Fit 4 Pro answers the photo face apply with 0.
+        XCTAssertTrue(WatchfaceOps.operationAccepted(0))
+        XCTAssertTrue(WatchfaceOps.operationAccepted(100_000))
+        XCTAssertTrue(WatchfaceOps.operationAccepted(nil))
+        XCTAssertFalse(WatchfaceOps.operationAccepted(140_004))
+        XCTAssertFalse(WatchfaceOps.operationAccepted(100_007))
+    }
+
     func testDeleteSendsOperationTwoAndChecksTheFaceIsGone() async throws {
         let (_, watch, ops, _, _) = setup()
 
