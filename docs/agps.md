@@ -457,6 +457,13 @@ first bind of the reset watch (no Huawei Health involved, it was suspended). On 
 `firstConnection=true` while a bind key was stored) although the Bluetooth bond still worked (RFCOMM connected); Back on the prompt did not bring the binding back.
 Lanjut on the bind confirmation and the accept on the watch re-bound it at 12:13:45 with nothing lost: the watch then asked only `HW_PGNSS_PRED`, so it still held the
 HW_AGNSS file, i.e. an unbind, not a reset. Watch for it to recur; the phone Bluetooth was switched off and on for the fix-time test just before (12:08:24).
+It recurred after `adb install -r` of lab APK 2 force-stopped JoyoFit mid-session (13:15:57; next connect 13:20:46 with `authType 5`). Tracked as JRG-414.
+
+HW_PGNSS_PRED lab runs:
+
+| Date, time | Day of 3 | Bundle | Watch asked | Outcome | TTFF before | TTFF after | Warning cleared | Notes / logcat |
+|---|---|---|---|---|---|---|---|---|
+| 2026-10-25 13:58 WIB, lab APK 1480680 (tag `v1.1-lab.2`), Worker version `7723e494` | 1 (built 05:58:42 UTC, first slot 05:59:42 UTC) | 799 230 B, GPS 31 / Galileo 28 / GLONASS 21 satellites per slot, BeiDou and QZSS empty | on reconnect after a re-bind: `HW_AGNSS` (13:58:27, served 7 839 B), then `HW_PGNSS_PRED` 4 s later (13:58:31), then `HW_PRECSION_ION` (13:58:54, declined state 4): the same three kinds in the same order as to Huawei Health | **all six files accepted**: download 7.4 s, state 3 acked `100000`, one `1C/01` (six names offered) per file, every `1C/06` result 1 with every byte sent: GPS 93 312 (crc16 `0d38`), BDS 209 808 (`48b1`), GLONASS 361 584 (`ccd5`), GALILEO 99 648 (`8650`), QZS 28 512 (`fbed`), EXTRA 6 248 (`4a58`); 22.5 s from consult to the last close | n/a (the watch also held the 13:58 HW_AGNSS file) | pending | pending | log summary on the owner's machine (`~/re/agps/e2e/pgnss_exchange.log`). Accepting the files does not prove the receiver uses them: the test is a fix with the HW_AGNSS switch off once the RTCM file is older than its 4 h, and the watch's own Satellite updates screen |
 
 ## iOS
 

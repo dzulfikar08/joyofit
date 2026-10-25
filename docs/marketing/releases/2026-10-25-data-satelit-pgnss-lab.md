@@ -5,7 +5,7 @@ shipped: 2026-10-25
 available: code
 tier: free
 post: skip (eksperimen untuk uji lab di jam pemilik, belum terbukti di jam mana pun)
-atur:
+atur: JRG-413
 ---
 
 **Apa:** Saklar eksperimen kedua di Pengaturan > Tentang & lanjutan > Eksperimental, terpisah dari saklar HW_AGNSS dan mati secara bawaan. Kalau dinyalakan dan jam meminta data satelit jenis HW_PGNSS_PRED (yang diminta Watch Fit 4 Pro saat pembaruan satelit dimulai dari jam), JoyoFit mengirim enam berkas prediksi orbit satelit untuk 3 hari ke depan, disusun seperti berkas Huawei Health tetapi dihitung server JoyoFit dari data publik, bukan dari Huawei. Baris "Data satelit" di tab Jam muncul untuk jam yang meminta jenis itu selama saklar menyala, dengan teks uji lab.
