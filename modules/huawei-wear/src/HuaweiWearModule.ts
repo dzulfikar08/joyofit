@@ -447,11 +447,13 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   /**
    * Puts the picture at `uri` (`file://` or `content://`) on the photo face. The picture must be a PNG of exactly the watch's
    * screen size (`PhotoFace.width` x `height`): the crop screen produces it. Emits `onUploadProgress` while the watch pulls
-   * the data and `onUploadResult` at the end. Rejects with ERR_INVALID_ARGUMENT for a wrong size or a full face,
-   * ERR_UPLOAD_REJECTED with the watch's status code when it refuses.
+   * the data. Once the watch has the photo, the photo face is applied again (it becomes the face on the watch's screen), as
+   * Huawei Health does after every save, and `onUploadResult` ends it; a refused apply only changes that event's message.
+   * Rejects with ERR_INVALID_ARGUMENT for a wrong size or a full face, ERR_UPLOAD_REJECTED with the watch's status code when
+   * it refuses the photo list.
    */
   addPhoto(uri: string): Promise<PhotoFace>;
-  /** Removes the photo with this name (`PhotoFacePhoto.name`) from the face. */
+  /** Removes the photo with this name (`PhotoFacePhoto.name`) from the face, then applies the face again like `addPhoto`. */
   deletePhoto(name: string): Promise<PhotoFace>;
   /** Makes the photo face the face on the watch's screen. */
   setPhotoFaceActive(): Promise<PhotoFace>;

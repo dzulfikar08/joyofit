@@ -521,6 +521,33 @@ class WatchfaceTest {
   }
 
   @Test
+  fun applySendsOperationOneForTheListedFaceEvenWhenItIsCurrentAndListsNothing() = runBlocking {
+    val (watch, ops, _) = setup()
+    val current = ops.list().faces.single { it.isCurrent }
+    val listsBefore = watch.all(0x27, 0x02).size
+
+    val code = ops.apply(current)
+
+    assertEquals(100000, code)
+    val op = watch.all(0x27, 0x03).single().tlv!!
+    assertEquals("1000", op.getString(0x01))
+    assertEquals("1.0.0", op.getString(0x02))
+    assertEquals(1, op.getByte(0x03).toInt())
+    assertEquals(listsBefore, watch.all(0x27, 0x02).size)
+  }
+
+  @Test
+  fun theApplyAfterAPhotoSaveIsHuaweiHealthsOperateCommand() {
+    // OperateWatchFaceService.buildOperateCommandUtil("2180736265", "2.4.11", -1, 1): 01 id, 02 version, 03 = 1, no instance tag.
+    val packet = watchfaceOperationPacket(HuaweiSession(object : FrameSink {
+      override suspend fun write(frames: List<ByteArray>) = Unit
+    }, RecordingEvents()).params, "2180736265", "2.4.11", 1)
+    val expected = byteArrayOf(0x01, 0x0a) + "2180736265".toByteArray() + byteArrayOf(0x02, 0x06) + "2.4.11".toByteArray() +
+      byteArrayOf(0x03, 0x01, 0x01)
+    assertArrayEquals(expected, packet.getTlv().serialize())
+  }
+
+  @Test
   fun deleteSendsOperationTwoAndChecksTheFaceIsGone() = runBlocking {
     val (watch, ops, _) = setup()
 

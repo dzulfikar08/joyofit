@@ -106,6 +106,7 @@ public final class PhotoFaceController: @unchecked Sendable {
                 } catch {
                     events.error("Photo face: the local copy of \(name) could not be kept: \(error)")
                 }
+                let applyProblem = try await self.reapply(watchfaces, before.face)
                 let after = try await self.state(watchfaces, photos)
                 let failed = result.failedNum ?? 0
                 let listed = after.info.photos.contains { $0.name == name }
@@ -114,6 +115,8 @@ public final class PhotoFaceController: @unchecked Sendable {
                     message = "The watch took the photo but does not list it."
                 } else if failed > 0 {
                     message = "The watch reported \(failed) photo(s) it could not take."
+                } else if let applyProblem {
+                    message = "Photo added, but \(applyProblem)."
                 } else {
                     message = "Photo added."
                 }
@@ -135,6 +138,7 @@ public final class PhotoFaceController: @unchecked Sendable {
             let names = before.info.photos.map(\.name).filter { $0 != name }
             _ = try await photos.save(before.info, names: names, files: [:])
             self.store.delete(name)
+            _ = try await self.reapply(watchfaces, before.face)
             let after = try await self.state(watchfaces, photos)
             if after.info.photos.contains(where: { $0.name == name }) {
                 throw WearError(.uploadRejected, "The watch still lists the photo after it was removed.")
@@ -151,6 +155,25 @@ public final class PhotoFaceController: @unchecked Sendable {
             if !face.isCurrent { _ = try await watchfaces.setActive(face.id) }
             return try await self.state(watchfaces, photos).toJS(self.store)
         }
+    }
+
+    /// 27/03 operation 1 for the photo face after a save, as Huawei Health's Apply does (protocol/README.md, "Photo faces"): the face is
+    /// applied again, current or not, so the watch rebuilds it from the new list (the expectation is that this drops its "add photo"
+    /// prompt; UNVERIFIED). The photos are saved already, so a refusal is reported, not thrown. Nil when the watch took it.
+    private func reapply(_ watchfaces: WatchfaceOps, _ face: WatchfaceEntry) async throws -> String? {
+        let problem: String?
+        do {
+            if let code = try await watchfaces.apply(face), code != PhotoFaceCodec.statusOK {
+                problem = "the watch answered \(code) when the photo face was applied again"
+            } else {
+                problem = nil
+            }
+        } catch let e as WearError {
+            if e.code == .disconnected { throw e }
+            problem = "applying the photo face again failed: \(e.message)"
+        }
+        if let problem { events.error("Photo face: \(problem)") }
+        return problem
     }
 
     private func state(_ watchfaces: WatchfaceOps, _ photos: PhotoFaceOps) async throws -> PhotoFaceState {
