@@ -302,6 +302,10 @@ export function WatchProvider({ children }: { children: ReactNode }) {
       try {
         applySummary(await pull(), device.address);
       } catch (e) {
+        // ERR_BUSY: the native side is already syncing (the pull it starts on every connect, or a background one). That sync delivers its
+        // summary through `onSyncComplete` like this one would, so it is not a failure to show: the setup guide's first sync and a
+        // pull-to-refresh during a background sync both met it and put "A sync is already running" on screen (device run 2026-10-25).
+        if (errorCode(e) === 'ERR_BUSY') return;
         // The native writer (Kotlin, its own SQLite) can be the one that meets a damaged file; the repair starts for it too.
         reportDatabaseError(e);
         setError(errorMessage(e));

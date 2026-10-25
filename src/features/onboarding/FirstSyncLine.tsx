@@ -25,7 +25,9 @@ export function FirstSyncLine({ sync }: { sync: FirstSync }) {
     sync.status === 'running'
       ? t('firstSync.running')
       : sync.status === 'failed'
-        ? t('firstSync.failed', { error: sync.error ?? '' })
+        ? sync.error
+          ? t('firstSync.failed', { error: sync.error })
+          : t('firstSync.failedNoReason')
         : summary
           ? t('firstSync.doneCounts', { workouts: fmtInt(summary.workouts), sleep: fmtInt(summary.sleep), samples: fmtInt(summary.samples) })
           : t('firstSync.done');

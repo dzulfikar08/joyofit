@@ -35,13 +35,25 @@ export interface ScanCard {
 }
 
 /**
- * One card per listed watch. With a model picked under "Add manually", the watches of that model come first and are marked, the rest
- * stay below (a codename or an unexpected name must not hide the right watch).
+ * A Bluetooth device that is no Huawei or Honor watch at all (earbuds, speakers, other brands' watches): the native model table found no
+ * model for its name and marks it unsupported. A Huawei or Honor model JoyoFit cannot pair keeps its model name, so it still gets a card
+ * that says why.
+ */
+export function isNotAWatch(device: BondedDevice): boolean {
+  return device.support === 'unsupported' && device.model === null;
+}
+
+/**
+ * One card per listed watch; devices that are no Huawei or Honor watch get none (the guide is about pairing a watch, like Huawei Health's
+ * own scan, while the Watch tab still lists every bonded device). With a model picked under "Add manually", the watches of that model
+ * come first and are marked, the rest stay below (a codename or an unexpected name must not hide the right watch).
  */
 export function scanCards(devices: readonly BondedDevice[], pickedModel: string | null): ScanCard[] {
-  const cards = devices.map((device) => {
-    const model = catalogueModelOf(device);
-    return { device, model, picked: pickedModel !== null && model === pickedModel };
-  });
+  const cards = devices
+    .filter((device) => !isNotAWatch(device))
+    .map((device) => {
+      const model = catalogueModelOf(device);
+      return { device, model, picked: pickedModel !== null && model === pickedModel };
+    });
   return pickedModel === null ? cards : [...cards.filter((c) => c.picked), ...cards.filter((c) => !c.picked)];
 }

@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { FadeIn } from '@/components/motion';
 import { Card } from '@/components/Screen';
 import { supportLabel } from '@/features/device/modelSupport';
@@ -15,6 +17,11 @@ interface WatchScanCardProps {
   card: ScanCard;
   action: CardAction;
   onConnect: (address: string) => void;
+  /**
+   * Forgets the pairing (the Watch tab's "Lupakan pairing"), offered on the linked watch's card: a link to a watch that was reset or
+   * re-paired elsewhere can look connected while the watch refuses everything, and the guide must offer the way out itself.
+   */
+  onForget: (address: string) => void;
   /** Stagger of the entrance, in list order. */
   delay: number;
 }
@@ -23,9 +30,10 @@ interface WatchScanCardProps {
  * One watch the scan found, large, as Huawei Health lists them: its picture, the model (with the unit suffix, so two of the same model
  * can be told apart), how far JoyoFit gets with it, and the one Connect button. A card of the model picked under "Add manually" is marked.
  */
-export function WatchScanCard({ card, action, onConnect, delay }: WatchScanCardProps) {
-  const { t } = useTranslation(['onboarding', 'watch']);
+export function WatchScanCard({ card, action, onConnect, onForget, delay }: WatchScanCardProps) {
+  const { t } = useTranslation(['onboarding', 'watch', 'common']);
   const colors = useColors();
+  const [confirmingForget, setConfirmingForget] = useState(false);
   const { device, model, picked } = card;
   const title = watchListName({ name: device.name, model }) || t('watch:device.bonded.unnamed');
   const label =
@@ -68,7 +76,21 @@ export function WatchScanCard({ card, action, onConnect, delay }: WatchScanCardP
           disabled={action !== 'connect' && action !== 'switch'}
           onPress={() => onConnect(device.address)}
         />
+        {action === 'linked' ? (
+          <Button label={t('watch:device.bonded.forgetPairing')} variant="destructive" onPress={() => setConfirmingForget(true)} />
+        ) : null}
       </Card>
+      <ConfirmDialog
+        visible={confirmingForget}
+        title={t('watch:device.bonded.forgetTitle')}
+        message={t(Platform.OS === 'ios' ? 'watch:device.bonded.forgetMessageIos' : 'watch:device.bonded.forgetMessage')}
+        confirmLabel={t('watch:device.bonded.forget')}
+        onConfirm={() => {
+          setConfirmingForget(false);
+          onForget(device.address);
+        }}
+        onCancel={() => setConfirmingForget(false)}
+      />
     </FadeIn>
   );
 }

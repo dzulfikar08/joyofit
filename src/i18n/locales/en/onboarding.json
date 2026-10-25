@@ -103,7 +103,8 @@
     "running": "Reading the history from your watch in the background. You can carry on.",
     "done": "History from the watch is in.",
     "doneCounts": "History from the watch is in. Workouts: {{workouts}} · Sleep segments: {{sleep}} · Activity samples: {{samples}}.",
-    "failed": "The first sync stopped: {{error}}. Sync later from More, Watch, or pull down on Today."
+    "failed": "The first sync stopped: {{error}}. Sync later from More, Watch, or pull down on Today.",
+    "failedNoReason": "The first sync stopped. Sync later from More, Watch, or pull down on Today."
   },
   "notifications": {
     "title": "Notifications on the watch",

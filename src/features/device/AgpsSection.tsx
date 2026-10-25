@@ -52,7 +52,7 @@ export function AgpsSection() {
     return () => clearInterval(timer);
   }, [supported, active, refresh]);
 
-  if (!supported || status === null || !agpsVisible(status)) return null;
+  if (!supported || status === null || !agpsVisible(status, now)) return null;
 
   const view = agpsView(status, now);
 

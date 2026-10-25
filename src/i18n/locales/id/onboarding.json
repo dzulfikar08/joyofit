@@ -101,7 +101,8 @@
     "running": "Membaca riwayat dari jam kamu di latar belakang. Kamu bisa lanjut.",
     "done": "Riwayat dari jam sudah masuk.",
     "doneCounts": "Riwayat dari jam sudah masuk. Latihan: {{workouts}} · Segmen tidur: {{sleep}} · Sampel aktivitas: {{samples}}.",
-    "failed": "Sinkron pertama berhenti: {{error}}. Sinkron nanti dari Lainnya, Jam, atau tarik ke bawah di Hari ini."
+    "failed": "Sinkron pertama berhenti: {{error}}. Sinkron nanti dari Lainnya, Jam, atau tarik ke bawah di Hari ini.",
+    "failedNoReason": "Sinkron pertama berhenti. Sinkron nanti dari Lainnya, Jam, atau tarik ke bawah di Hari ini."
   },
   "notifications": {
     "title": "Notifikasi di jam",

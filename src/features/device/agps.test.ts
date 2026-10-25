@@ -108,23 +108,48 @@ describe('agpsView', () => {
   });
 
   test('the row shows only for a watch whose last ask was the Broadcom kind (version 0)', () => {
-    expect(agpsVisible({ ...BLANK })).toBe(false);
-    expect(agpsVisible({ ...BLANK, lastAskAt: NOW, lastAskVersion: -1 })).toBe(false);
-    expect(agpsVisible({ ...BLANK, lastAskAt: NOW, lastAskVersion: 0 })).toBe(true);
-    expect(agpsVisible({ ...BLANK, lastAskAt: 0, lastAskVersion: 0 })).toBe(false);
-    expect(agpsVisible({ ...BLANK, lastAskAt: NOW, lastAskVersion: 1 })).toBe(false);
-    expect(agpsVisible({ ...BLANK, lastAskAt: NOW, lastAskVersion: 3, outcome: 'unsupported' })).toBe(false);
+    expect(agpsVisible({ ...BLANK }, NOW)).toBe(false);
+    expect(agpsVisible({ ...BLANK, lastAskAt: NOW, lastAskVersion: -1 }, NOW)).toBe(false);
+    expect(agpsVisible({ ...BLANK, lastAskAt: NOW, lastAskVersion: 0 }, NOW)).toBe(true);
+    expect(agpsVisible({ ...BLANK, lastAskAt: 0, lastAskVersion: 0 }, NOW)).toBe(false);
+    expect(agpsVisible({ ...BLANK, lastAskAt: NOW, lastAskVersion: 1 }, NOW)).toBe(false);
+    expect(agpsVisible({ ...BLANK, lastAskAt: NOW, lastAskVersion: 3, outcome: 'unsupported' }, NOW)).toBe(false);
   });
 
   test('with the experimental switch on the row also shows for a watch whose last ask was exactly HW_AGNSS', () => {
     const asked = { ...BLANK, lastAskAt: NOW, lastAskVersion: 3, lastAskTags: 'HW_AGNSS' };
-    expect(agpsVisible(asked)).toBe(false);
-    expect(agpsVisible({ ...asked, labAgnss: false })).toBe(false);
-    expect(agpsVisible({ ...asked, labAgnss: true })).toBe(true);
+    expect(agpsVisible(asked, NOW)).toBe(false);
+    expect(agpsVisible({ ...asked, labAgnss: false }, NOW)).toBe(false);
+    expect(agpsVisible({ ...asked, labAgnss: true }, NOW)).toBe(true);
     expect(agpsLabActive({ ...asked, labAgnss: true })).toBe(true);
-    expect(agpsVisible({ ...asked, labAgnss: true, lastAskTags: 'HW_PGNSS_PRED' })).toBe(false);
-    expect(agpsVisible({ ...asked, labAgnss: true, lastAskTags: 'HW_AGNSS,HW_PGNSS_GPS' })).toBe(false);
-    expect(agpsVisible({ ...asked, labAgnss: true, lastAskAt: 0 })).toBe(false);
+    expect(agpsVisible({ ...asked, labAgnss: true, lastAskTags: 'HW_PGNSS_PRED' }, NOW)).toBe(false);
+    expect(agpsVisible({ ...asked, labAgnss: true, lastAskTags: 'HW_AGNSS,HW_PGNSS_GPS' }, NOW)).toBe(false);
+    expect(agpsVisible({ ...asked, labAgnss: true, lastAskAt: 0 }, NOW)).toBe(false);
+  });
+
+  test('a valid lab delivery keeps the row when the watch then asks PRED and is declined (Fit 4 Pro, 2026-10-25)', () => {
+    // The watch took the HW_AGNSS file, then asked HW_PGNSS_PRED two seconds later, which JoyoFit declines.
+    const afterPred: AgpsStatus = {
+      ...BLANK,
+      labAgnss: true,
+      deliveredAt: NOW - 2000,
+      deliveredSize: 6666,
+      deliveredSource: AGPS_LAB_SOURCE,
+      expiresAt: NOW + 4 * HOUR,
+      lastAskAt: NOW,
+      lastAskVersion: 3,
+      lastAskTags: 'HW_PGNSS_PRED',
+      outcome: 'unsupported',
+    };
+    expect(agpsVisible(afterPred, NOW)).toBe(true);
+    const view = agpsView(afterPred, NOW);
+    expect(view.statusKey).toBe('deliveredLab');
+    expect(view.tone).toBe('ok');
+    // Gone once the file expired, once the switch is off, or for a file that did not come from the lab path.
+    expect(agpsVisible({ ...afterPred, expiresAt: NOW - 1 }, NOW)).toBe(false);
+    expect(agpsVisible({ ...afterPred, labAgnss: false }, NOW)).toBe(false);
+    expect(agpsVisible({ ...afterPred, deliveredSource: 'broadcom_lto' }, NOW)).toBe(false);
+    expect(agpsView({ ...afterPred, labAgnss: false }, NOW).statusKey).toBe('unsupported');
   });
 
   test('a delivery of the experimental file says so, and it expires in hours like the native expiry says', () => {

@@ -62,6 +62,14 @@ describe('scanCards', () => {
     const cards = scanCards([device(FIT, 'Mystery-1')], 'Huawei Band 9');
     expect(cards[0]).toMatchObject({ model: null, picked: false });
   });
+
+  test('a device that is no Huawei or Honor watch gets no card; an unsupported Huawei model still does', () => {
+    // The device run of 2026-10-25 listed AirPods, a speaker and another brand's watch as "not supported" cards in the guide.
+    const airpods = device('AA:00:00:00:00:03', "Dzulfikar's AirPods Pro", { support: 'unsupported', reason: 'Not a Huawei or Honor watch' });
+    const honor5 = device('AA:00:00:00:00:04', 'HONOR Watch 5-ABC', { model: 'Honor Watch 5', support: 'unsupported', reason: 'cannot pair yet' });
+    const cards = scanCards([airpods, device(FIT, 'Seiya-B29F', { support: 'tested' }), honor5], null);
+    expect(cards.map((c) => c.device.address)).toEqual([FIT, 'AA:00:00:00:00:04']);
+  });
 });
 
 describe('firstSyncStatus', () => {

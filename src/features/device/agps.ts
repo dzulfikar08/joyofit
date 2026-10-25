@@ -73,13 +73,25 @@ export function agpsLabActive(status: AgpsStatus): boolean {
   return status.labAgnss === true && status.lastAskVersion >= 1 && status.lastAskVersion <= 3 && status.lastAskTags === 'HW_AGNSS';
 }
 
+/** The switch is on and the watch holds a JoyoFit HW_AGNSS file: the row stays while it is valid, whatever the watch asked next. */
+function labDelivered(status: AgpsStatus, nowMs: number): boolean {
+  return (
+    status.labAgnss === true &&
+    status.deliveredSource === AGPS_LAB_SOURCE &&
+    status.deliveredAt > 0 &&
+    (status.expiresAt === 0 || nowMs < status.expiresAt)
+  );
+}
+
 /**
  * The row shows for a watch whose last ask JoyoFit can serve: download version 0 (the Broadcom LTO kind), or `HW_AGNSS` with the experimental
- * switch on (`agpsLabActive`). A watch that never asked, or asked for a kind only the watch maker's app prepares, gets no row: JoyoFit would
- * answer "failed" and the row could only offer a button that cannot help.
+ * switch on (`agpsLabActive`). It also stays while a JoyoFit HW_AGNSS file delivered with the switch on is still valid: the Fit 4 Pro asks
+ * `HW_AGNSS` and then `HW_PGNSS_PRED` two seconds later (device run of 2026-10-25), so "the last ask" alone would hide the row right after a
+ * delivery. A watch that never asked, or asked only for a kind the watch maker's app prepares, gets no row: JoyoFit would answer "failed" and
+ * the row could only offer a button that cannot help.
  */
-export function agpsVisible(status: AgpsStatus): boolean {
-  return status.lastAskAt > 0 && (status.lastAskVersion === 0 || agpsLabActive(status));
+export function agpsVisible(status: AgpsStatus, nowMs: number): boolean {
+  return status.lastAskAt > 0 && (status.lastAskVersion === 0 || agpsLabActive(status) || labDelivered(status, nowMs));
 }
 
 /** Turns the native status into what the row shows. `nowMs` is passed in so the result is a pure function of its inputs. */
@@ -97,6 +109,10 @@ export function agpsView(status: AgpsStatus, nowMs: number): AgpsView {
   } else if (expired && (status.outcome === 'delivered' || status.outcome === 'none')) {
     statusKey = 'expired';
     tone = 'danger';
+  } else if (status.outcome === 'unsupported' && labDelivered(status, nowMs)) {
+    // The decline of the kind asked after the lab file (HW_PGNSS_PRED) is expected; what the watch holds is still the delivered lab file.
+    statusKey = 'deliveredLab';
+    tone = 'ok';
   } else {
     const known = OUTCOME_STATUS[status.outcome] ?? OUTCOME_STATUS.none;
     statusKey = known.key === 'delivered' && status.deliveredSource === AGPS_LAB_SOURCE ? 'deliveredLab' : known.key;

@@ -127,6 +127,7 @@ function Scan({ bonded, settingUp, linked }: { bonded: BondedDevices; settingUp:
           card={card}
           action={cardAction(card.device, watch.linkState, watch.activeAddress)}
           onConnect={actions.connect}
+          onForget={actions.forget}
           delay={Math.min(index, 5) * 40}
         />
       ))}
