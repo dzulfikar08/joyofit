@@ -288,6 +288,8 @@ public enum WorkoutLinkWire {
     public static let gpsParameters: UInt8 = 0x01
     public static let gpsStatus: UInt8 = 0x02
     public static let gpsData: UInt8 = 0x03
+    /// `18/08`: the watch's workout screen opened or closed (Huawei Health's activity-recognition switch).
+    public static let workoutScreen: UInt8 = 0x08
     public static let workoutService: UInt8 = 0x17
     public static let status: UInt8 = 0x03
     public static let reportData: UInt8 = 0x11
@@ -362,6 +364,14 @@ public enum WorkoutLinkWire {
         var tlv = HuaweiTLV()
         tlv.put(0x7F, int: ok)
         return HuaweiPacket(serviceId: gpsService, commandId: gpsStatus, tlv: tlv)
+    }
+
+    /// `18/08 {7F: 100000}`: the answer to the watch's workout screen opening or closing (Huawei Health
+    /// `HwActivityRecognitionManager.notifyDeviceReceiveSuccess`).
+    public static func workoutScreenAnswer() -> HuaweiPacket {
+        var tlv = HuaweiTLV()
+        tlv.put(0x7F, int: ok)
+        return HuaweiPacket(serviceId: gpsService, commandId: workoutScreen, tlv: tlv)
     }
 
     /// `18/01 {81}`: which GPS fields the watch wants.

@@ -127,9 +127,24 @@ class WatchWorkoutTest {
     assertTrue(running.running)
     val paused = WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 06  02 01 01  03 01 02")))!!
     assertFalse(paused.running)
+    assertEquals(WatchPhase.PAUSED, paused.phase)
     val stopped = WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 03  03 01 04")))!!
     assertFalse(stopped.running)
+    assertEquals(WatchPhase.IDLE, stopped.phase)
     assertNull(WatchWorkoutWire.parseStatus(HuaweiTLV()))
+  }
+
+  @Test
+  fun theGoScreenIsOpenNotRunning() {
+    // Fit 4 Pro, 2026-10-25: Outdoor walk opened, GO not pressed (16:09:32, 12:07:22), then after GO (12:07:43).
+    val goScreen = WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 06  02 01 00  03 01 01")))!!
+    assertEquals(0, goScreen.trainMonitorState)
+    assertEquals(1, goScreen.operator)
+    assertEquals(WatchPhase.OPEN, goScreen.phase)
+    assertFalse(goScreen.running)
+    val afterGo = WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 06  02 01 01  03 01 03")))!!
+    assertEquals(WatchPhase.RUNNING, afterGo.phase)
+    assertTrue(afterGo.running)
   }
 
   @Test

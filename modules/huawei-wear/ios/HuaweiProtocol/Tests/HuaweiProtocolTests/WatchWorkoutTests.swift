@@ -70,11 +70,43 @@ final class WatchWorkoutTests: XCTestCase {
         XCTAssertEqual(running.operatorType, 1)
         XCTAssertEqual(running.workoutType, 140)
         XCTAssertTrue(running.running)
+        XCTAssertEqual(running.trainMonitorState, 1)
+        XCTAssertEqual(running.phase, .running)
         let paused = try XCTUnwrap(WatchWorkoutWire.parseStatus(try HuaweiTLV(parsing: hex("81 06  02 01 01  03 01 02"))))
         XCTAssertFalse(paused.running)
+        XCTAssertEqual(paused.phase, .paused)
         let stopped = try XCTUnwrap(WatchWorkoutWire.parseStatus(try HuaweiTLV(parsing: hex("81 03  03 01 04"))))
         XCTAssertFalse(stopped.running)
+        XCTAssertEqual(stopped.phase, .idle)
         XCTAssertNil(WatchWorkoutWire.parseStatus(HuaweiTLV()))
+    }
+
+    func testTheGoScreenIsOpenNotRunning() throws {
+        // Fit 4 Pro, 2026-10-25: Outdoor walk opened, GO not pressed (16:09:32, 12:07:22), then after GO (12:07:43).
+        let goScreen = try XCTUnwrap(WatchWorkoutWire.parseStatus(try HuaweiTLV(parsing: hex("81 06  02 01 00  03 01 01"))))
+        XCTAssertEqual(goScreen.trainMonitorState, 0)
+        XCTAssertEqual(goScreen.operatorType, 1)
+        XCTAssertEqual(goScreen.phase, .open)
+        XCTAssertFalse(goScreen.running)
+        let afterGo = try XCTUnwrap(WatchWorkoutWire.parseStatus(try HuaweiTLV(parsing: hex("81 06  02 01 01  03 01 03"))))
+        XCTAssertEqual(afterGo.phase, .running)
+        XCTAssertTrue(afterGo.running)
+    }
+
+    func testStatusPhasesAsTheFit4ProAnswered() {
+        // 2026-10-25 12:07, outdoor walk on a Fit 4 Pro 6.1.0.117 (`Workout link: workout status {tag: 81 - Value: ...}`).
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 0, operator: 0), .idle) // 020100030100: nothing open
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 0, operator: 1), .open) // 020100030101: GO screen, 12:07:22 with the GPS request
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 1, operator: 3), .running) // 020101030103: after GO, 12:07:43
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 1, operator: 1), .running)
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 1, operator: 2), .paused)
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 0, operator: 2), .paused)
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 1, operator: 4), .idle)
+        // A watch that sends no tag 02: its operator alone, as before.
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: nil, operator: 1), .running)
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: nil, operator: 3), .running)
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: nil, operator: 2), .paused)
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: nil, operator: nil), .idle)
     }
 
     func testNoticeFromTheWatchCarriesOperatorAndWorkoutType() throws {
