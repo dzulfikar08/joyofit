@@ -304,10 +304,11 @@ settings > Location Services > Satellite updates), and that outdoor workouts get
 - Pending: the consult (version and tag names) after the user starts the update on the watch. (Answered 2026-10-18: `HW_PGNSS_PRED`, see "Observed on
   the watch's own ask"; with Huawei Health the watch also asks `HW_AGNSS`, capture of 2026-10-25.)
 
-HW_AGNSS lab runs (see "Lab test"; no run yet):
+HW_AGNSS lab runs (see "Lab test"):
 
 | Date, time | File age | Watch asked | Outcome | TTFF before (3 runs) | TTFF after (3 runs) | Warning cleared | Notes / logcat |
 |---|---|---|---|---|---|---|---|
+| 2026-10-25 11:53 WIB, lab APK 1480579 (tag `v1.1-lab.1`), Worker version `6a5f797d` | fresh build, downloaded in 1.5 s (6 666 B, 97 satellites) | `higeo/v1/gnssinfo?type=0x0024/HW_AGNSS` 17 s after the first bind of a factory-reset watch, then `HW_PGNSS_PRED` 2 s after the transfer (declined, state 4) | **transfer accepted**: state 3 acked `100000`, `1C/01` type 1 one file, `1C/02` protocol 1.0.0 / transfer size 862, `1C/03` crc16 `bf54`, 8 frames, `1C/06` result 1 after 6 666 of 6 666 bytes | not measured (the reset wiped the watch's data; the baseline needs a run after this file expires, switch off) | pending | pending | logcat of the run kept on the owner's machine (`~/re/agps/e2e/agnss_exchange.log`); the Data satelit row was hidden after the PRED decline (fixed in `08ce40b`: the row keeps a valid lab delivery) |
 
 ## iOS
 

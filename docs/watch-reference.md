@@ -162,7 +162,14 @@ JoyoRogo sign-in, JoyoRogo Pro (hidden when the build has no cloud server), Done
   `withActiveWatch`, `useWatchRowActions`, `BluetoothPermissionPrompt` and `BindConfirmDialog`. **Add manually** lists every model of the catalogue (`watchCatalogue.ts`, the names
   of `WatchModels.kt`) by family with a search box; picking one explains that kind of watch's pairing mode and moves its scan cards to the top, marked. While the link is
   connecting, authenticating or initializing a full-width panel shows the watch with the tick to tap, the seconds waited and, after 30 s, what to check. No product photos ship, so
-  the cards draw a watch glyph.
+  the cards draw a watch glyph. Devices that are no Huawei or Honor watch (no model in the table and unsupported) get no card; the Watch tab still lists them. The linked
+  watch's card offers **Lupakan pairing** (the Watch tab's confirm), the way out of a stuck link without leaving the guide.
+- **A watch Huawei Health paired again** (device run 2026-10-25, Fit 4 Pro 6.1.0.117): JoyoFit's stored keys still authenticate, the session starts, and 10 to 15 s later the
+  watch shows its own "reset to pair with this phone?" prompt and drops the link (a later answer on the old keys is `7F 000186A4`, frames stop decrypting). **Yes** there starts
+  a first-time pairing JoyoFit does not drive (the watch then says "pair failed"), **Back** keeps Huawei Health's binding, and every reconnect brings the prompt back. What
+  works: stop JoyoFit, reset the watch from its own menu (Settings, System, Reset) or unpair it in Huawei Health, **Lupakan pairing** in JoyoFit, then pair: Android's
+  pairing dialog, then `firstConnection=true`, the bind confirmation (`ERR_BIND_CONFIRMATION`, "Pasangkan jam ini dengan HP ini?"), then the accept on the watch. The
+  confirmation is asked after the link closed, so the watch shows "pair failed" once before the accept; asking first would avoid that (not changed yet).
 - **First sync** is not a step: it starts by itself once the watch is linked (from the pairing step on, `firstSyncStarts`), runs in the background as Huawei Health's does, and shows
   as one line under the progress bar on the following steps (`useFirstSync`, `FirstSyncLine`), with a retry when it fails. A run stored on the old `sync` step resumes on what now
   follows pairing.
