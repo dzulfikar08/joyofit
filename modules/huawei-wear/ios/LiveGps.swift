@@ -189,8 +189,9 @@ public struct SessionTrack: Sendable {
 ///  - the watch's `18/02 {01: 1}` starts both; its `{01: 0}` stops only the feed. A watch with a GPS of its own withdraws its request once it
 ///    has a fix (Fit 4 Pro: 80 s into a walk, 2026-10-25) and sends no figures of its own, so the phone's track stays the only source of distance
 ///    and pace (docs/live-run.md);
-///  - the updates stop when the live session ends (`sessionEnded`: Finish, the watch's stop, the status poll, the watchdog), or when the request
-///    is withdrawn or the link lost with no live session to follow (a phone-started run, whose screen owns the watch's workout);
+///  - the updates stop when the live session ends (`sessionEnded`: Finish, the watch's stop, the status poll, the watchdog); when the request is
+///    withdrawn with no live session to follow (a phone-started run, whose screen owns the watch's workout); and when the link is lost, unless
+///    the session ends by itself without it (`linkLost`);
 ///  - a request after that starts both again.
 /// `start` returns false when the updates cannot run (no permission): the watch's next request tries again. `feeding` has a lock of its own,
 /// so a fix delivered on the main thread never waits for a start or a stop.
@@ -229,8 +230,10 @@ public final class PhoneGpsSession: @unchecked Sendable {
         }
     }
 
-    /// The link to the watch is gone: nothing to feed; the updates go on while `liveSession`, until it ends.
-    public func linkLost(liveSession: Bool) { watchWithdraws(liveSession: liveSession) }
+    /// The link to the watch is gone: nothing to feed. The updates go on only while `sessionEndsWithoutLink`: a live session that ends by itself
+    /// when the watch goes quiet (`LiveWorkout.endsWithoutLink`, the GPS-request session and its watchdog). Any other session would only end on
+    /// Finish, so the updates stop now, and the watch's next request after a reconnect starts them again.
+    public func linkLost(sessionEndsWithoutLink: Bool) { watchWithdraws(liveSession: sessionEndsWithoutLink) }
 
     /// The live session ended: everything stops.
     public func sessionEnded() {

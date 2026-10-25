@@ -94,7 +94,7 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
         }
         poll?.cancel()
         lock.locked { lastFix = nil }
-        phoneGps.linkLost(liveSession: live.isLive)
+        phoneGps.linkLost(sessionEndsWithoutLink: live.endsWithoutLink)
     }
 
     // MARK: workout status poll (17/03, Huawei Health)

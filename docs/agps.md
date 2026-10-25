@@ -209,7 +209,8 @@ Huawei watch's GNSS chip takes exactly this file.
 
 **Where the file is built: the Worker** (`GET https://api.fit.joyorogo.com/v1/agps/hw-agnss`, `server/src/agps.ts`). The Worker fetches today's BKG file (and
 yesterday's in the first 4 h of the UTC day, when today's is short or missing), reads only records of the last 4 h, builds the file, checks it, and keeps it in
-the Cache API for 15 minutes; every phone gets the same bytes. Cost measured in Bun on 2026-10-25 03:00 UTC data (157 KB compressed, 989 KB text, 996 records):
+the Cache API for 15 minutes; every phone gets the same bytes. A failed build answers 503 with `Retry-After: 60` and is remembered for 60 s, so callers in that
+minute do not each fetch BKG again. Cost measured in Bun on 2026-10-25 03:00 UTC data (157 KB compressed, 989 KB text, 996 records):
 gunzip 2 ms, parse 6 ms, build 3.5 ms; a full day's file is about 8 times larger, and records older than 4 h are skipped before their numbers are read. That fits
 the Workers paid plan's CPU limit easily; the free plan's 10 ms would be tight [INFERENCE: not measured on Workers]. Building on the phone was rejected: every
 phone would download 0.2 to 1.5 MB instead of 8 KB, BKG would see every user's IP address, and the encoder would need Kotlin and Swift copies.
@@ -222,8 +223,10 @@ The phone side: with the switch on (`setAgpsLab`, stored as `lab_agnss` in the `
 `/HW_AGNSS` (versions 1 to 3), `NetworkAgpsSource` fetches the file (phone copy reused for 15 minutes), the exchange answers `1F/03` state 3 and serves
 `HW_AGNSS_RTCM_33` over the existing `1C` sender with every existing safety rule (bounds, timeouts, CRC16 file info, stored name `sha256(address) + name`).
 Logs: `AGPS: consult answer ... (HW_AGNSS)`, `HW_AGNSS: downloaded N bytes, S satellites`, then the usual file-list, file-info, data and upload-done lines.
-Delivery source `joyofit_rtcm`; the row's validity is 4 h from the build time; the status line says the data is experimental. Switch off, any other tag, two
-tags, or no valid file: exactly today's decline (state 4).
+Delivery source `joyofit_rtcm`; the row's validity is 4 h from the build time; the status line says the data is experimental. A failed or invalid download
+counts into the same retry schedule as the Broadcom file (1 min, 5 min, 15 min, 1 h, then every 6 h; reset by a success or "Perbarui sekarang"), and the watch's
+repeated asks inside the wait are declined without a request to the server (`AgpsLab.downloads`). Switch off, any other tag, two tags, or no valid file:
+exactly today's decline (state 4); with the switch off a running retry wait does not touch that decline.
 
 ```sh
 bun scripts/agps-rtcm.ts --out /tmp/HW_AGNSS_RTCM_33                 # fetches today's BKG file (and yesterday's after midnight UTC), checks it like the Worker
@@ -259,7 +262,7 @@ and after, warning cleared or not, logcat excerpt. The release entry stays `Jang
 | Validity shown | 7 days from the server's `Last-Modified` |
 | Phone copy reused for | 6 h (`AgpsPolicy.CACHE_FRESH_MS`) |
 | Offered to the watch again after | 24 h (`DELIVER_EVERY_MS`) |
-| Download retry after failures | 1 min, 5 min, 15 min, 1 h, then every 6 h; reset by a success or by "Perbarui sekarang" |
+| Download retry after failures | 1 min, 5 min, 15 min, 1 h, then every 6 h; reset by a success or by "Perbarui sekarang"; Broadcom and, with the switch on, HW_AGNSS |
 | HW_AGNSS file (experimental) accepted | 512 B to 16 KiB, CRC-24Q of every frame, messages 1019/1020/1042/1046 only, at least 20 satellites, built at most 2 h ago |
 | HW_AGNSS validity shown | 4 h from the build time (`AGNSS_VALID_MS`) |
 | HW_AGNSS phone copy reused for | 15 min (`AGNSS_CACHE_FRESH_MS`); the Worker caches its build 15 min as well |

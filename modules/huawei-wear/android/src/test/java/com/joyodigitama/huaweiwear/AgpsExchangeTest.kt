@@ -642,4 +642,50 @@ class AgpsExchangeTest {
     assertEquals(4, await(0x1F, 0x03, 2).tlv!!.getByte(0x01).toInt())
     assertEquals(AgpsOutcome.UNSUPPORTED, store.lastOutcome)
   }
+
+  @Test
+  fun withTheLabSwitchOnAFailedDownloadWaitsForTheRetryScheduleAndAnUpdateNowSkipsIt() = runBlocking {
+    store.setLabAgnss(true)
+    val calls = java.util.concurrent.atomic.AtomicInteger()
+    val ex = start(labSource { calls.incrementAndGet(); throw AgpsFetchException("HTTP 503") })
+    op1()
+    await(0x1F, 0x02)
+    consult(3, hwAgnssTag)
+    assertEquals(4, await(0x1F, 0x03).tlv!!.getByte(0x01).toInt())
+    assertEquals(AgpsOutcome.DOWNLOAD_FAILED, store.lastOutcome)
+    assertEquals("HW_AGNSS: HTTP 503", store.lastError)
+    assertEquals(1, store.failures)
+    assertEquals(1, calls.get())
+
+    // The watch asks again at once: answered "failed" from the retry wait, without another request to the server.
+    op1()
+    await(0x1F, 0x02, 2)
+    consult(3, hwAgnssTag)
+    assertEquals(4, await(0x1F, 0x03, 2).tlv!!.getByte(0x01).toInt())
+    assertEquals(1, calls.get())
+    assertEquals(1, store.failures)
+    assertTrue(store.lastError.startsWith("waiting "))
+
+    // "Perbarui sekarang" (a forced, phone-started request) ends the wait and asks the server again.
+    val outcome = scope.async { ex.probe(force = true) }
+    await(0x1F, 0x02, 3)
+    consult(3, hwAgnssTag)
+    assertEquals(4, await(0x1F, 0x03, 3).tlv!!.getByte(0x01).toInt())
+    assertEquals(AgpsOutcome.DOWNLOAD_FAILED, withTimeout(5_000) { outcome.await() })
+    assertEquals(2, calls.get())
+    assertEquals("the forced try starts the schedule over", 1, store.failures)
+  }
+
+  @Test
+  fun withTheLabSwitchOffARunningRetryWaitLeavesTheDeclineAsItWas() {
+    store.recordOutcome(System.currentTimeMillis(), AgpsOutcome.DOWNLOAD_FAILED, "earlier Broadcom failure", true)
+    assertTrue(store.retryAtMs() > System.currentTimeMillis())
+    start(labSource { throw AssertionError("the network must not be used") })
+    op1()
+    await(0x1F, 0x02)
+    consult(3, hwAgnssTag)
+    assertEquals(4, await(0x1F, 0x03).tlv!!.getByte(0x01).toInt())
+    assertEquals(AgpsOutcome.UNSUPPORTED, store.lastOutcome)
+    assertEquals("the watch asked for kinds only the watch maker's app prepares (version 3: HW_AGNSS)", store.lastError)
+  }
 }

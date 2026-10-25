@@ -442,8 +442,10 @@ final class LiveWorkoutTests: XCTestCase {
         let link: WorkoutLink
     }
 
-    private func makeLink(statusFirstMs: Int = 20, statusEveryMs: Int = 40, gpsBitmap: Int = 0xD7, poll: @escaping @Sendable () -> Bytes? = { nil }) -> LinkRig {
-        let r = make()
+    private func makeLink(
+        statusFirstMs: Int = 20, statusEveryMs: Int = 40, gpsBitmap: Int = 0xD7, watchdogEveryMs: Int = 10_000, poll: @escaping @Sendable () -> Bytes? = { nil }
+    ) -> LinkRig {
+        let r = make(watchdogEveryMs: watchdogEveryMs)
         let gps = FakeGps()
         let link = WorkoutLink(link: r.rig.source, events: r.events, live: r.live, gps: gps, statusFirstMs: statusFirstMs, statusEveryMs: statusEveryMs, nowMs: { r.counter.now })
         r.rig.watch.responder = { sent in
@@ -614,23 +616,44 @@ final class LiveWorkoutTests: XCTestCase {
         await eventually("flat report") { l.r.live.snapshot()?["heartRate"] as? Int == 160 }
     }
 
-    func testALinkLossKeepsTheWorkoutsTrackAndTheNextSessionSubscribesAgain() async {
+    func testALinkLossKeepsTheTrackOfAGpsSessionUntilItsWatchdogEndsIt() async {
+        let l = makeLink(watchdogEveryMs: 20)
+        await l.link.linkConnected(l.r.rig.source.current!)
+        l.r.rig.session.onData(gpsRequest(true))
+        await eventually { l.gps.started == 1 }
+        XCTAssertTrue(l.r.live.endsWithoutLink)
+        // The workout goes on without the link: its track runs until the session ends, which the watchdog does once the watch stays quiet.
+        l.link.linkDisconnected()
+        XCTAssertEqual(l.gps.stopped, 0)
+        l.r.counter.advance(LiveWorkout.gpsSilenceMs + LiveWorkout.statusStaleMs)
+        await eventually("watchdog end") { l.r.live.snapshot()?["status"] as? String == "ended" }
+        await eventually("gps stopped") { l.gps.stopped == 1 }
+    }
+
+    func testALinkLossStopsTheGpsOfASessionThatCannotEndWithoutTheWatchAndTheNextSessionSubscribesAgain() async {
         let l = makeLink()
         await l.link.linkConnected(l.r.rig.source.current!)
         l.r.rig.session.onData(gpsRequest(true))
         await eventually { l.gps.started == 1 }
-        // The workout goes on without the link: its track runs until the workout ends.
+        // The watch's own numbers take the session over: it now ends only on the watch's stop (or Finish), which a lost link never brings.
+        var report = HuaweiTLV()
+        report.put(0x02, bytes: hex("003C"))
+        report.put(0x11, bytes: hex("01"))
+        l.r.rig.session.onData(frame(0x17, 0x11, report))
+        await eventually("watch-fed") { l.r.live.snapshot()?["source"] as? String == "watch" }
+        XCTAssertFalse(l.r.live.endsWithoutLink)
         l.link.linkDisconnected()
-        XCTAssertEqual(l.gps.stopped, 0)
-        l.r.live.finish()
         XCTAssertEqual(l.gps.stopped, 1)
-        // The same session announced again is not subscribed twice; a request on it is still handled once.
+        XCTAssertEqual(l.r.live.snapshot()?["status"] as? String, "running")
+        // The same session announced again is not subscribed twice; the watch's next request starts the GPS again, answered once.
         await l.link.linkConnected(l.r.rig.source.current!)
         await l.link.linkConnected(l.r.rig.source.current!)
         l.r.rig.session.onData(gpsRequest(true))
         await eventually { l.gps.started == 2 }
         let answers = l.r.rig.watch.sent.filter { $0.service == 0x18 && $0.command == 0x02 }.count
         XCTAssertEqual(answers, 2)
+        l.r.live.finish()
+        XCTAssertEqual(l.gps.stopped, 2)
         l.link.linkDisconnected()
     }
 

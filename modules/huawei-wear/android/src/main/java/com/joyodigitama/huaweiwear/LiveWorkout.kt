@@ -130,6 +130,14 @@ internal class LiveWorkout(
   /** True from a workout's start until it ends: the link must not be taken away from it. */
   val isLive: Boolean get() = synchronized(lock) { session?.status.let { it != null && it != Status.ENDED } }
 
+  /**
+   * True while the live session ends by itself once the watch is gone ([LiveWorkoutPolicy.endsWithoutLink]: the GPS-request session
+   * and its watchdog), so it may keep the phone's GPS through a lost link. Any other session ends only on what the watch says, or
+   * Finish; a lost link brings neither, so the phone's GPS must not wait for it ([PhoneGpsSession.linkLost]).
+   */
+  val endsWithoutLink: Boolean
+    get() = synchronized(lock) { session?.let { it.status != Status.ENDED && LiveWorkoutPolicy.endsWithoutLink(it.source) } ?: false }
+
   /** The user closed the finished workout on the phone. */
   fun dismiss() {
     synchronized(lock) {

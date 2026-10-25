@@ -25,6 +25,12 @@ export const HW_AGNSS_CACHE_SECONDS = 900;
 /** The Cache API key of the built file; versioned so a change of the encoder can drop old copies. */
 export const HW_AGNSS_CACHE_KEY = "https://api.fit.joyorogo.com/v1/agps/hw-agnss?build=1";
 
+/** A failed build is remembered this long, so callers in that minute get the 503 without each one fetching BKG again. */
+export const HW_AGNSS_FAILURE_SECONDS = 60;
+
+/** The Cache API key of that memory: a 200 marker (the Cache API keeps successful answers), turned into the 503 on the way out. */
+export const HW_AGNSS_FAILURE_KEY = "https://api.fit.joyorogo.com/v1/agps/hw-agnss?failed=1";
+
 /** BKG's compressed daily file is under 1 MB; anything far larger is not that file. */
 const MAX_GZ_BYTES = 8 * 1024 * 1024;
 /** A full day unpacks to about 8 MB. */
@@ -84,17 +90,27 @@ export async function buildFromBkg(nowMs: number): Promise<{ built: Built } | { 
   return { built };
 }
 
-/** `GET /v1/agps/hw-agnss`: the `HW_AGNSS_RTCM_33` bytes, `Last-Modified` = when they were built; 503 when no valid file can be built now. */
+/**
+ * `GET /v1/agps/hw-agnss`: the `HW_AGNSS_RTCM_33` bytes, `Last-Modified` = when they were built; 503 (with `Retry-After`) when no valid file can
+ * be built now, remembered for [HW_AGNSS_FAILURE_SECONDS].
+ */
 agps.get("/hw-agnss", async (c) => {
   const cache = caches.default;
   const hit = await cache.match(HW_AGNSS_CACHE_KEY);
   if (hit) return hit;
+  const unavailable = () => {
+    c.header("cache-control", "no-store");
+    c.header("retry-after", String(HW_AGNSS_FAILURE_SECONDS));
+    return c.json({ error: "agps_unavailable" }, 503);
+  };
+  if (await cache.match(HW_AGNSS_FAILURE_KEY)) return unavailable();
   const nowMs = Date.now();
   const result = await buildFromBkg(nowMs);
   if ("problem" in result) {
     console.error(JSON.stringify({ event: "agps_build_failed", problem: result.problem }));
-    c.header("cache-control", "no-store");
-    return c.json({ error: "agps_unavailable" }, 503);
+    const marker = new Response(null, { headers: { "cache-control": `public, max-age=${HW_AGNSS_FAILURE_SECONDS}` } });
+    c.executionCtx.waitUntil(cache.put(HW_AGNSS_FAILURE_KEY, marker));
+    return unavailable();
   }
   const { bytes, counts, skipped } = result.built;
   console.log(JSON.stringify({ event: "agps_built", bytes: bytes.length, counts, skipped }));

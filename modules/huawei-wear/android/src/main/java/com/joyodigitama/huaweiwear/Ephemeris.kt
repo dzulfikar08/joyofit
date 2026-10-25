@@ -467,8 +467,9 @@ internal class AgpsExchange(
     forceNext = false
     if (force) store.clearRetry()
     val waitUntil = store.retryAtMs()
-    // The last download failed a moment ago; the watch asks every few seconds, so it is not hammered with retries.
-    val waiting = !force && consult.version == 0 && nowMs() < waitUntil
+    // The last download failed a moment ago; the watch asks every few seconds, so it is not hammered with retries. Only for asks that download
+    // (Broadcom, or HW_AGNSS with the switch on): a declined kind keeps its own answer.
+    val waiting = !force && AgpsLab.downloads(consult, store.labAgnss) && nowMs() < waitUntil
     val result = if (waiting) {
       AgpsFetch.failed(AgpsOutcome.DOWNLOAD_FAILED, "waiting ${(waitUntil - nowMs()) / 1000} s before trying the download again")
     } else {

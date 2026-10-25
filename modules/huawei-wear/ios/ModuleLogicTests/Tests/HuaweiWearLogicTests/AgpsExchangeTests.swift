@@ -690,4 +690,56 @@ final class AgpsExchangeTests: XCTestCase {
         XCTAssertEqual(state(second), 4)
         XCTAssertEqual(store.lastOutcome, AgpsOutcome.unsupported)
     }
+
+    func testWithTheLabSwitchOnAFailedDownloadWaitsForTheRetryScheduleAndAnUpdateNowSkipsIt() async {
+        store.setLabAgnss(true)
+        let asked = Urls()
+        let ex = await start(labSource { url in
+            asked.add(url)
+            throw AgpsFetchError("HTTP 503")
+        })
+        op1()
+        _ = await awaitMsg(0x1F, 0x02)
+        consult(3, Self.hwAgnssTag)
+        let first = await awaitMsg(0x1F, 0x03)
+        XCTAssertEqual(state(first), 4)
+        XCTAssertEqual(store.lastOutcome, AgpsOutcome.downloadFailed)
+        XCTAssertEqual(store.lastError, "HW_AGNSS: HTTP 503")
+        XCTAssertEqual(store.failures, 1)
+        XCTAssertEqual(asked.all.count, 1)
+
+        // The watch asks again at once: answered "failed" from the retry wait, without another request to the server.
+        op1()
+        _ = await awaitMsg(0x1F, 0x02, 2)
+        consult(3, Self.hwAgnssTag)
+        let second = await awaitMsg(0x1F, 0x03, 2)
+        XCTAssertEqual(state(second), 4)
+        XCTAssertEqual(asked.all.count, 1)
+        XCTAssertEqual(store.failures, 1)
+        XCTAssertTrue(store.lastError.hasPrefix("waiting "))
+
+        // "Perbarui sekarang" (a forced, phone-started request) ends the wait and asks the server again.
+        let outcome = Task { await ex.probe(force: true) }
+        _ = await awaitMsg(0x1F, 0x02, 3)
+        consult(3, Self.hwAgnssTag)
+        let third = await awaitMsg(0x1F, 0x03, 3)
+        XCTAssertEqual(state(third), 4)
+        let result = await outcome.value
+        XCTAssertEqual(result, AgpsOutcome.downloadFailed)
+        XCTAssertEqual(asked.all.count, 2)
+        XCTAssertEqual(store.failures, 1, "the forced try starts the schedule over")
+    }
+
+    func testWithTheLabSwitchOffARunningRetryWaitLeavesTheDeclineAsItWas() async {
+        store.recordOutcome(nowMs: Self.nowMs(), outcome: AgpsOutcome.downloadFailed, error: "earlier Broadcom failure", countsAsFailure: true)
+        XCTAssertGreaterThan(store.retryAtMs(), Self.nowMs())
+        _ = await start(labSource { _ in throw AgpsFetchError("the network must not be used") })
+        op1()
+        _ = await awaitMsg(0x1F, 0x02)
+        consult(3, Self.hwAgnssTag)
+        let status = await awaitMsg(0x1F, 0x03)
+        XCTAssertEqual(state(status), 4)
+        XCTAssertEqual(store.lastOutcome, AgpsOutcome.unsupported)
+        XCTAssertEqual(store.lastError, "the watch asked for kinds only the watch maker's app prepares (version 3: HW_AGNSS)")
+    }
 }

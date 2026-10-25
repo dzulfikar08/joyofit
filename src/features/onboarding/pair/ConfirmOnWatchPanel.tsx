@@ -54,22 +54,28 @@ export function ConfirmOnWatchPanel({ name, linkState, onCancel }: ConfirmOnWatc
         <AppText variant="caption" muted style={styles.centered}>
           {isIos ? t('pair.keepAwakeIos') : t('pair.keepAwake')}
         </AppText>
-        <View style={[styles.status, { backgroundColor: colors.muted }]} accessibilityLiveRegion="polite">
-          <AppText variant="label">{linkLabel(linkState)}</AppText>
+        <View style={[styles.status, { backgroundColor: colors.muted }]}>
+          {/* Only the link state is announced as it changes; the seconds would be read out every second. */}
+          <AppText variant="label" accessibilityLiveRegion="polite">
+            {linkLabel(linkState)}
+          </AppText>
           <AppText variant="label" muted style={styles.tabular}>
             {t('pair.confirm.elapsed', { seconds: fmtInt(seconds) })}
           </AppText>
         </View>
+        {/* Present from the start (empty) so the help is announced when it appears; inside the hero its empty slot costs one small gap. */}
+        <View accessibilityLiveRegion="polite" style={styles.helpSlot}>
+          {seconds >= CONFIRM_HELP_AFTER_S ? (
+            <FadeIn style={styles.help}>
+              <AppText variant="heading">{t('pair.confirm.helpTitle')}</AppText>
+              <Bullet label="1">{t('pair.confirm.helpAwake')}</Bullet>
+              <Bullet label="2">{t('pair.confirm.helpNear')}</Bullet>
+              <Bullet label="3">{t('pair.confirm.helpUnpaired')}</Bullet>
+              {isIos ? <Bullet label="4">{t('pair.confirm.helpIos')}</Bullet> : null}
+            </FadeIn>
+          ) : null}
+        </View>
       </View>
-      {seconds >= CONFIRM_HELP_AFTER_S ? (
-        <FadeIn style={styles.help}>
-          <AppText variant="heading">{t('pair.confirm.helpTitle')}</AppText>
-          <Bullet label="1">{t('pair.confirm.helpAwake')}</Bullet>
-          <Bullet label="2">{t('pair.confirm.helpNear')}</Bullet>
-          <Bullet label="3">{t('pair.confirm.helpUnpaired')}</Bullet>
-          {isIos ? <Bullet label="4">{t('pair.confirm.helpIos')}</Bullet> : null}
-        </FadeIn>
-      ) : null}
       {linkState === 'connecting' ? <Button label={t('common:actions.cancel')} variant="ghost" onPress={onCancel} /> : null}
     </Card>
   );
@@ -106,6 +112,7 @@ const styles = StyleSheet.create({
   centered: { textAlign: 'center' },
   status: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.pill, marginTop: spacing.xs },
   tabular: { fontVariant: ['tabular-nums'] },
-  help: { gap: spacing.sm },
+  helpSlot: { alignSelf: 'stretch' },
+  help: { gap: spacing.sm, marginTop: spacing.md },
   tick: { width: 40, height: 40, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', borderWidth: 3 },
 });

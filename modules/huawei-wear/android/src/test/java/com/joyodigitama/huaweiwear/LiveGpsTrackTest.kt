@@ -236,21 +236,41 @@ class LiveGpsTrackTest {
   }
 
   @Test
-  fun withNoLiveSessionAWithdrawnRequestOrALostLinkStopsTheUpdates() {
+  fun withNoLiveSessionAWithdrawnRequestStopsTheUpdates() {
     // A phone-started run: the watch's workout is the run screen's, no live session follows it.
     val withdrawn = FakeLocation()
     withdrawn.session.watchAsks()
     withdrawn.session.watchWithdraws(liveSession = false)
     assertEquals(1, withdrawn.stops)
     assertFalse(withdrawn.session.isTracking)
+  }
 
-    val lost = FakeLocation()
-    lost.session.watchAsks()
-    lost.session.linkLost(liveSession = true)
-    assertEquals(0, lost.stops)
-    assertFalse(lost.session.feeding)
-    lost.session.linkLost(liveSession = false)
-    assertEquals(1, lost.stops)
+  @Test
+  fun aLostLinkKeepsTheUpdatesOnlyForASessionThatEndsByItself() {
+    // The GPS-request session: its watchdog ends it once the watch is quiet, and that end stops the updates.
+    assertTrue(LiveWorkoutPolicy.endsWithoutLink(LiveWorkout.Source.GPS))
+    val gpsSession = FakeLocation()
+    gpsSession.session.watchAsks()
+    gpsSession.session.linkLost(sessionEndsWithoutLink = true)
+    assertEquals(0, gpsSession.stops)
+    assertFalse(gpsSession.session.feeding)
+    assertTrue(gpsSession.session.isTracking)
+    gpsSession.session.sessionEnded()
+    assertEquals(1, gpsSession.stops)
+
+    // A session fed by the watch's own numbers, opened by the status poll or by hand ends only on the watch's word or Finish: a lost
+    // link brings neither, so the updates stop now.
+    for (source in listOf(LiveWorkout.Source.WATCH, LiveWorkout.Source.STATUS, LiveWorkout.Source.MANUAL)) {
+      assertFalse(source.name, LiveWorkoutPolicy.endsWithoutLink(source))
+    }
+    val watchFed = FakeLocation()
+    watchFed.session.watchAsks()
+    watchFed.session.linkLost(sessionEndsWithoutLink = false)
+    assertEquals(1, watchFed.stops)
+    assertFalse(watchFed.session.isTracking)
+    // The watch's next request after a reconnect starts them again.
+    watchFed.session.watchAsks()
+    assertEquals(2, watchFed.starts)
   }
 
   @Test

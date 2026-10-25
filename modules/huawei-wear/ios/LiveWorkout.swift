@@ -130,6 +130,15 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
     /// True from a workout's start until it ends.
     public var isLive: Bool { lock.locked { session.map { $0.status != .ended } ?? false } }
 
+    /// Whether a live session of `source` ends by itself once the watch is gone (LiveWorkoutPolicy.kt `endsWithoutLink`): only the GPS-request
+    /// session has the watchdog for that (`gpsSilenceMs` without a request and `statusStaleMs` without a status answer); the others end on the
+    /// watch's word or Finish. Decides whether the phone's GPS survives a lost link.
+    public static func endsWithoutLink(_ source: Source) -> Bool { source == .gps }
+
+    /// True while the live session ends by itself once the watch is gone, so it may keep the phone's GPS through a lost link
+    /// (`PhoneGpsSession.linkLost`).
+    public var endsWithoutLink: Bool { lock.locked { session.map { $0.status != .ended && Self.endsWithoutLink($0.source) } ?? false } }
+
     /// The user closed the finished workout on the phone.
     public func dismiss() {
         lock.locked {

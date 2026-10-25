@@ -198,6 +198,10 @@ public enum AgpsLab {
 
     /// The stored last ask (version, tag names only) was for exactly this kind.
     public static func askedHwAgnss(version: Int, tagNames: String) -> Bool { (1...3).contains(version) && tagNames == kind }
+
+    /// The consult leads to a download: version 0 (Broadcom), or exactly HW_AGNSS with the switch `labOn`. These asks share the retry schedule
+    /// (`AgpsPolicy.retryAtMs`); every other kind is declined without touching the network.
+    public static func downloads(_ consult: AgpsConsult, labOn: Bool) -> Bool { consult.version == 0 || (labOn && asksHwAgnss(consult)) }
 }
 
 /// What the watch said in its answer to the phone's parameter question (1F/02).

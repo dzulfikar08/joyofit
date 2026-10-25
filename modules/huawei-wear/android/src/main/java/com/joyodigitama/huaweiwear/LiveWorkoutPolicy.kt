@@ -120,4 +120,11 @@ internal object LiveWorkoutPolicy {
    */
   fun watchFedEnds(preparing: Boolean, idleAnswers: Int, msSinceFrame: Long): Boolean =
     idleAnswers >= IDLE_ANSWERS_TO_END && msSinceFrame > (if (preparing) GIVE_UP_MS else FRAMES_STALE_MS)
+
+  /**
+   * Whether a live session of [source] ends by itself once the watch is gone (link lost: no status answers, no frames, no GPS
+   * requests). Only the GPS-request session has a watchdog for that ([silenceVerdict]: asks the user after [GPS_SILENCE_MS], ends
+   * after [GIVE_UP_MS]); the others end on the watch's word or Finish. Decides whether the phone's GPS survives a lost link.
+   */
+  fun endsWithoutLink(source: LiveWorkout.Source): Boolean = source == LiveWorkout.Source.GPS
 }

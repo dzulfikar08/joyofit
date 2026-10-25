@@ -191,4 +191,10 @@ internal object AgpsLab {
 
   /** The stored last ask (version, tag names only) was for exactly this kind. */
   fun askedHwAgnss(version: Int, tagNames: String): Boolean = version in 1..3 && tagNames == KIND
+
+  /**
+   * The consult leads to a download: version 0 (Broadcom), or exactly HW_AGNSS with the switch [labOn]. These asks share the retry schedule
+   * ([AgpsPolicy.retryAtMs]); every other kind is declined without touching the network.
+   */
+  fun downloads(consult: AgpsConsult, labOn: Boolean): Boolean = consult.version == 0 || (labOn && asksHwAgnss(consult))
 }

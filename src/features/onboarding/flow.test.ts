@@ -264,6 +264,59 @@ describe('the first sync', () => {
   });
 });
 
+describe('a run stored in the old order (pair, sync, notifications, health, weather, background)', () => {
+  const PAST_PAIR: StepId[] = ['welcome', 'unbind', 'pair'];
+  const old = (step: string, done: string[], skipped: string[] = []) =>
+    parseState(JSON.stringify({ status: 'active', step, route: 'watch', done, skipped })) as OnboardingState;
+  /** The steps Continue shows from here to the end. */
+  const rest = (state: OnboardingState, ctx: StepContext) => {
+    const seen: StepId[] = [];
+    for (let s = state; s.status === 'active'; s = advance(s, ctx)) seen.push(currentStep(s, ctx));
+    return seen;
+  };
+
+  test('on health after doing notifications: background first, then health, notifications is not shown again', () => {
+    const state = old('health', [...PAST_PAIR, 'sync', 'notifications']);
+    expect(rest(state, ANDROID)).toEqual(['background', 'health', 'weather', 'account', 'pro', 'cloud', 'done']);
+    expect(rest(state, IOS)).toEqual(['health', 'weather', 'account', 'pro', 'cloud', 'done']);
+  });
+
+  test('on the old background step after the permissions: background, then on to the account', () => {
+    const state = old('background', [...PAST_PAIR, 'sync', 'notifications', 'health', 'weather']);
+    expect(rest(state, ANDROID)).toEqual(['background', 'account', 'pro', 'cloud', 'done']);
+  });
+
+  test('a skipped permission step is shown again and still listed as open', () => {
+    const state = old('weather', [...PAST_PAIR, 'sync', 'health'], ['notifications']);
+    expect(rest(state, ANDROID)).toEqual(['background', 'notifications', 'weather', 'account', 'pro', 'cloud', 'done']);
+    expect(openSteps(skip(state, ANDROID), ANDROID)).toEqual(['background', 'notifications']);
+  });
+
+  test('on notifications with nothing done there yet: background, then every permission step', () => {
+    expect(rest(old('notifications', [...PAST_PAIR, 'sync']), ANDROID).slice(0, 5)).toEqual([
+      'background',
+      'notifications',
+      'health',
+      'weather',
+      'account',
+    ]);
+  });
+
+  test('a run past background, or still before pairing, is unchanged', () => {
+    const past = old('account', [...PAST_PAIR, 'sync', 'notifications', 'health', 'weather', 'background']);
+    expect(past.step).toBe('account');
+    expect(past.without).toEqual([]);
+    expect(old('pair', ['welcome', 'unbind']).step).toBe('pair');
+  });
+
+  test('a run of this order is never treated as an old one', () => {
+    const state = advance(walkTo('notifications', ANDROID), ANDROID);
+    const restored = parseState(serializeState(state)) as OnboardingState;
+    expect(restored).toEqual(state);
+    expect(currentStep(restored, ANDROID)).toBe('health');
+  });
+});
+
 describe('resume', () => {
   test('an active stored run opens where it was left', () => {
     const stored = walkTo('background', ANDROID);

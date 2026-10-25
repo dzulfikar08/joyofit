@@ -104,7 +104,7 @@ internal class WorkoutLink(
         statusPoll?.cancel()
         statusPoll = null
         synchronized(lock) { lastLocation = null }
-        phoneGps.linkLost(live.isLive)
+        phoneGps.linkLost(sessionEndsWithoutLink = live.endsWithoutLink)
       }
       else -> Unit
     }

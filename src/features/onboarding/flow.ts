@@ -85,7 +85,10 @@ export interface OnboardingState {
   done: StepId[];
   /** Steps left with Skip or Later. */
   skipped: StepId[];
-  /** Steps this run does not show whatever the platform says (`unbind` when a watch is already paired at the start). */
+  /**
+   * Steps this run does not show whatever the platform says: `unbind` when a watch is already paired at the start, and the permission
+   * steps a run stored in the old order already did (see `fromOldOrder`).
+   */
   without: StepId[];
 }
 
@@ -287,10 +290,20 @@ export function resolveLaunch(options: { stored: OnboardingState | null; hasPair
 const STATUSES: readonly OnboardingStatus[] = ['active', 'completed', 'dismissed', 'bypassed'];
 
 /**
- * Steps an older build stored that are no longer steps, and where such a run resumes. `sync` was the first-sync step after pairing;
- * the sync now runs in the background, so the run resumes on what follows pairing (`background`, or the next visible step on iOS).
+ * Runs stored by a build with the old order: pair, `sync`, notifications, health, weather, background. Such a record names `sync` (as its
+ * step, or in its done or skipped lists, which every watch run past pairing has); a record of this order never does. `sync` is no step
+ * any more (the first sync runs in the background), and `background` moved up to straight after pairing, so a run caught between the two
+ * orders resumes on `background` when it has not seen it yet, and the permission steps it already did are left out of this run instead
+ * of being shown again. Skipped ones stay, so the last step still lists them. A run before pairing or past `background` is unchanged.
  */
-const RETIRED_STEPS: Readonly<Record<string, StepId>> = { sync: 'background' };
+const MOVED_BEHIND_BACKGROUND: readonly StepId[] = ['notifications', 'health', 'weather'];
+
+function fromOldOrder(state: OnboardingState): OnboardingState {
+  const between = state.step === 'background' || MOVED_BEHIND_BACKGROUND.includes(state.step);
+  if (!between || state.done.includes('background') || state.skipped.includes('background')) return state;
+  const passed = MOVED_BEHIND_BACKGROUND.filter((id) => state.done.includes(id) && !state.without.includes(id));
+  return { ...state, step: 'background', without: [...state.without, ...passed] };
+}
 
 function stepList(value: unknown): StepId[] {
   return Array.isArray(value) ? value.filter((v): v is StepId => STEP_IDS.includes(v as StepId)) : [];
@@ -304,9 +317,10 @@ export function parseState(raw: string | null): OnboardingState | null {
     if (typeof value !== 'object' || value === null) return null;
     const record = value as Record<string, unknown>;
     if (!STATUSES.includes(record.status as OnboardingStatus)) return null;
-    const step = typeof record.step === 'string' ? (RETIRED_STEPS[record.step] ?? record.step) : null;
+    const oldOrder = record.step === 'sync' || [record.done, record.skipped].some((list) => Array.isArray(list) && list.includes('sync'));
+    const step = record.step === 'sync' ? 'background' : record.step;
     if (!STEP_IDS.includes(step as StepId)) return null;
-    return {
+    const state: OnboardingState = {
       status: record.status as OnboardingStatus,
       step: step as StepId,
       route: record.route === 'none' ? 'none' : 'watch',
@@ -314,6 +328,7 @@ export function parseState(raw: string | null): OnboardingState | null {
       skipped: stepList(record.skipped),
       without: stepList(record.without),
     };
+    return oldOrder ? fromOldOrder(state) : state;
   } catch {
     return null;
   }

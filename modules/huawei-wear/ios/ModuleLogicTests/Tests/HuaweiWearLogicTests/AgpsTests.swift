@@ -463,6 +463,14 @@ final class AgpsTests: XCTestCase {
         XCTAssertFalse(AgpsLab.askedHwAgnss(version: 3, tagNames: "HW_AGNSS,HW_PGNSS_GPS"))
     }
 
+    func testTheRetryScheduleCoversBroadcomAndHwAgnssWithTheSwitchOnOnly() {
+        let agnss = AgpsConsult(version: 3, tag: "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", urls: [])
+        XCTAssertTrue(AgpsLab.downloads(.default, labOn: false))
+        XCTAssertTrue(AgpsLab.downloads(agnss, labOn: true))
+        XCTAssertFalse(AgpsLab.downloads(agnss, labOn: false), "switch off: declined, the retry wait does not apply")
+        XCTAssertFalse(AgpsLab.downloads(AgpsConsult(version: 3, tag: "x/HW_PGNSS_PRED;", urls: []), labOn: true))
+    }
+
     func testTheSwitchIsOffByDefaultAndRemembered() {
         let defaults = ephemeralDefaults()
         XCTAssertFalse(AgpsStore(defaults: defaults).labAgnss)

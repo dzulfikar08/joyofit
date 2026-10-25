@@ -348,6 +348,15 @@ class AgpsTest {
   }
 
   @Test
+  fun theRetryScheduleCoversBroadcomAndHwAgnssWithTheSwitchOnOnly() {
+    val agnss = AgpsConsult(3, "higeo/v1/gnssinfo?type=0x0024/HW_AGNSS", emptyList())
+    assertTrue(AgpsLab.downloads(AgpsConsult.DEFAULT, labOn = false))
+    assertTrue(AgpsLab.downloads(agnss, labOn = true))
+    assertFalse("switch off: declined, the retry wait does not apply", AgpsLab.downloads(agnss, labOn = false))
+    assertFalse(AgpsLab.downloads(AgpsConsult(3, "x/HW_PGNSS_PRED;", emptyList()), labOn = true))
+  }
+
+  @Test
   fun theSwitchIsOffByDefaultAndRemembered() {
     val prefs = MemoryPrefs()
     assertFalse(AgpsStore(prefs).labAgnss)

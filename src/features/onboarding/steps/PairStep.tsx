@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -82,8 +82,11 @@ function Scan({ bonded, settingUp, linked }: { bonded: BondedDevices; settingUp:
   useEffect(() => {
     if (autoStarted.current || linked) return;
     autoStarted.current = true;
-    void (isIos ? refresh() : startScan()).finally(() => setFirstLookPending(false));
-  }, [linked, refresh, startScan]);
+    // Below Android 12 a scan needs the location permission JoyoFit does not ask for (`startScan` says so in red); the first look is
+    // then the paired list only, and Scan again still tries and explains.
+    const firstLook = isIos ? refresh() : Number(Platform.Version) < 31 ? reload() : startScan();
+    void firstLook.finally(() => setFirstLookPending(false));
+  }, [linked, refresh, reload, startScan]);
 
   const cards = useMemo(
     () => scanCards(withActiveWatch(bonded.devices, watch.activeAddress, watch.device), picked),

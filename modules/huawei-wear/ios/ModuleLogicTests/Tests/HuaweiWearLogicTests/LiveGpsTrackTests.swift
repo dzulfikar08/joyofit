@@ -164,11 +164,14 @@ final class LiveGpsTrackTests: XCTestCase {
 
         let lost = FakeLocation()
         lost.session.watchAsks()
-        lost.session.linkLost(liveSession: true)
+        lost.session.linkLost(sessionEndsWithoutLink: true)
         XCTAssertEqual(lost.stops, 0)
         XCTAssertFalse(lost.session.feeding)
-        lost.session.linkLost(liveSession: false)
+        lost.session.linkLost(sessionEndsWithoutLink: false)
         XCTAssertEqual(lost.stops, 1)
+        // Only the GPS-request session ends by itself once the watch is gone (its watchdog).
+        XCTAssertTrue(LiveWorkout.endsWithoutLink(.gps))
+        for source in [LiveWorkout.Source.watch, .status, .manual] { XCTAssertFalse(LiveWorkout.endsWithoutLink(source), source.rawValue) }
     }
 
     func testUpdatesThatCouldNotStartAreTriedAgainOnTheNextRequest() {

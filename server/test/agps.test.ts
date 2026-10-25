@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { bkgBrdcUrl, buildHwAgnss, parseRinexNav, validateHwAgnss } from "../../packages/agps-rtcm/src/rtcm";
 import { C13, E10, gpsSet, HEADER, R23 } from "../../packages/agps-rtcm/test/fixture";
-import { HW_AGNSS_CACHE_KEY } from "../src/agps";
+import { HW_AGNSS_CACHE_KEY, HW_AGNSS_FAILURE_KEY } from "../src/agps";
 import { call } from "./helpers";
 
 // Ten minutes after the fixture's GPS epoch (2026-10-21 01:59:44); the GLONASS record is moved to 02:00 so it is fresh too.
@@ -22,6 +22,7 @@ let bkgCalls: string[] = [];
 
 beforeEach(async () => {
   await caches.default.delete(HW_AGNSS_CACHE_KEY);
+  await caches.default.delete(HW_AGNSS_FAILURE_KEY);
   files = {};
   bkgCalls = [];
   vi.spyOn(Date, "now").mockReturnValue(NOW);
@@ -71,13 +72,25 @@ describe("GET /v1/agps/hw-agnss", () => {
     expect(validateHwAgnss(new Uint8Array(await res.arrayBuffer()))).toBeNull();
   });
 
-  it("answers 503, uncached, when the build has too few satellites", async () => {
+  it("answers 503 when the build has too few satellites, and remembers the failure for a minute instead of asking BKG again", async () => {
     files[TODAY] = HEADER + gpsSet(19);
     const res = await call("/v1/agps/hw-agnss");
     expect(res.status).toBe(503);
     expect(res.headers.get("cache-control")).toBe("no-store");
+    expect(res.headers.get("retry-after")).toBe("60");
     expect(await res.json()).toEqual({ error: "agps_unavailable" });
+    expect(bkgCalls).toHaveLength(2);
+    expect((await caches.default.match(HW_AGNSS_FAILURE_KEY))?.headers.get("cache-control")).toBe("public, max-age=60");
+
+    // BKG is fine again, but within the minute the next caller gets the remembered 503 and BKG is not asked.
     files[TODAY] = FULL;
+    const again = await call("/v1/agps/hw-agnss");
+    expect(again.status).toBe(503);
+    expect(again.headers.get("retry-after")).toBe("60");
+    expect(bkgCalls).toHaveLength(2);
+
+    // Once the memory has expired (removed here), the next caller builds and gets the file.
+    await caches.default.delete(HW_AGNSS_FAILURE_KEY);
     expect((await call("/v1/agps/hw-agnss")).status).toBe(200);
     expect(bkgCalls).toHaveLength(4);
   });
