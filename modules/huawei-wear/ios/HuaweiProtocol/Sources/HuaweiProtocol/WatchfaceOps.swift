@@ -29,9 +29,14 @@ public struct WatchfaceScreen: Equatable, Sendable {
     /// Huawei Health `isSupportDialUnite`: capability bit 2 (value 4).
     public var supportsDialUnite: Bool { supportCapability >= 0 && supportCapability & Self.capabilityDialUnite != 0 }
 
+    /// Tag 0x1a, Huawei Health `supportGaussianColor`; -1 when absent.
+    public let gaussianColour: Int
+    /// Tag 0x1b, Huawei Health `supportAestheticAlbumColor` (1 = a photo's time colour is picked from the photo); -1 when absent.
+    public let aestheticAlbumColour: Int
+
     public init(
         maxVersion: String, width: Int, height: Int, supportFileType: Int, sort: Int, otherVersions: String,
-        supportCapability: Int = -1, supportSync: Int = -1, mode: Int = -1
+        supportCapability: Int = -1, supportSync: Int = -1, mode: Int = -1, gaussianColour: Int = -1, aestheticAlbumColour: Int = -1
     ) {
         self.maxVersion = maxVersion
         self.width = width
@@ -42,6 +47,8 @@ public struct WatchfaceScreen: Equatable, Sendable {
         self.supportCapability = supportCapability
         self.supportSync = supportSync
         self.mode = mode
+        self.gaussianColour = gaussianColour
+        self.aestheticAlbumColour = aestheticAlbumColour
     }
 }
 
@@ -231,7 +238,8 @@ public final class WatchfaceOps: @unchecked Sendable {
         )
         let screen = WatchfaceScreen(
             maxVersion: p.maxVersion, width: Int(p.width), height: Int(p.height), supportFileType: Int(p.supportFileType), sort: Int(p.sort),
-            otherVersions: p.otherWatchfaceVersions, supportCapability: Int(p.supportCapability), supportSync: Int(p.supportSync), mode: Int(p.mode)
+            otherVersions: p.otherWatchfaceVersions, supportCapability: Int(p.supportCapability), supportSync: Int(p.supportSync), mode: Int(p.mode),
+            gaussianColour: Int(p.gaussianColor), aestheticAlbumColour: Int(p.aestheticAlbumColor)
         )
         if p.supportCapability >= 0 {
             note("WatchfaceParams capability: watch face signature=\(screen.supportsSignature) (bit 8), dial unite=\(screen.supportsDialUnite) (bit 4)")

@@ -51,6 +51,7 @@ struct PhotoFaceState {
     let width: Int
     let height: Int
     let updatedAtMs: Int64
+    let screen: WatchfaceScreen
 }
 
 public final class PhotoFaceController: @unchecked Sendable {
@@ -100,7 +101,10 @@ public final class PhotoFaceController: @unchecked Sendable {
                 name = Self.freshName(before.info.photos.map(\.name))
                 events.info("Photo face: adding \(name) (\(before.width)x\(before.height), \(png.count) byte png, \(bin.count) byte \(format.name) bin)")
                 let names = before.info.photos.map(\.name) + [name]
-                let result = try await photos.save(before.info, names: names, files: [name: PhotoFiles(png: png, bin: bin)], progress: progress)
+                let fields = self.saveFields(before, [name: pixels])
+                let result = try await photos.save(
+                    before.info, names: names, files: [name: PhotoFiles(png: png, bin: bin)], fields: fields, progress: progress
+                )
                 do {
                     try self.store.save(name, png)
                 } catch {
@@ -136,7 +140,7 @@ public final class PhotoFaceController: @unchecked Sendable {
                 throw WearError(.invalidArgument, "The photo face has no photo named '\(name)'")
             }
             let names = before.info.photos.map(\.name).filter { $0 != name }
-            _ = try await photos.save(before.info, names: names, files: [:])
+            _ = try await photos.save(before.info, names: names, files: [:], fields: self.saveFields(before, [:]))
             self.store.delete(name)
             // An emptied face that was not on the screen stays off it: applying it would put the watch's "add photo" page up.
             var applyProblem: String?
@@ -160,9 +164,9 @@ public final class PhotoFaceController: @unchecked Sendable {
     }
 
     /// 27/03 operation 1 for the photo face after a save, as Huawei Health's Apply does (protocol/README.md, "Photo faces"): the face is
-    /// applied again, current or not, so the watch rebuilds it from the new list (the expectation is that this drops its "add photo"
-    /// prompt; UNVERIFIED). After a delete it is skipped when the face is emptied and was not the current one. The photos are saved
-    /// already, so a refusal is reported (log, `applyError` of the result), not thrown. Nil when the watch took it.
+    /// applied again, current or not, so the watch shows it with the new list. After a delete it is skipped when the face is emptied and was
+    /// not the current one. The photos are saved already, so a refusal is reported (log, `applyError` of the result), not thrown. Nil when
+    /// the watch took it.
     private func reapply(_ watchfaces: WatchfaceOps, _ face: WatchfaceEntry) async throws -> String? {
         let problem: String?
         do {
@@ -179,6 +183,30 @@ public final class PhotoFaceController: @unchecked Sendable {
         return problem
     }
 
+    /// The values Huawei Health writes into 27/09 besides the watch's own (`PhotoFaceCodec.saveTlv`): the face's new-photo values
+    /// (`PhotoFaceCodec.faceConfig`), the Gaussian switch from 27/01 tag 0x1a and, when 27/01 tag 0x1b is 1, a time colour for each photo in
+    /// `newPixels` chosen for the time area of the face's selected position (`PhotoTimeColour`). Photos already on the watch keep the colour it
+    /// reports; with tag 0x1b not 1 a new photo gets `#00000000`, as from Huawei Health.
+    private func saveFields(_ state: PhotoFaceState, _ newPixels: [String: [UInt32]]) -> PhotoSaveFields {
+        let config = PhotoFaceCodec.faceConfig(state.face.id)
+        var colours = [String: String]()
+        if state.screen.aestheticAlbumColour == 1 {
+            let rect = config.positionRects[config.timePosition]
+            for (name, pixels) in newPixels {
+                if let r = rect, let picked = PhotoTimeColour.pick(pixels, width: state.width, height: state.height, left: r[0], top: r[1], right: r[2], bottom: r[3]) {
+                    colours[name] = PhotoFaceCodec.smartColour(picked)
+                }
+                let none = rect == nil ? "no time area known for face \(state.face.id)" : "the time area is outside the photo"
+                events.info("Photo face: time colour of \(name): \(colours[name] ?? "none (\(none))")")
+            }
+        }
+        let gauss = PhotoFaceCodec.gaussSwitch(state.screen.gaussianColour)
+        events.info(
+            "Photo face: save fields: position=\(config.timePosition) style=\(config.timeStyle) font=\(config.font) top=\(config.positionIndex)/\(config.styleIndex) gauss=\(gauss)"
+        )
+        return PhotoSaveFields(config: config, gaussSwitch: gauss, timeColours: colours)
+    }
+
     private func state(_ watchfaces: WatchfaceOps, _ photos: PhotoFaceOps) async throws -> PhotoFaceState {
         let list = try await watchfaces.list()
         guard let face = list.faces.first(where: { $0.isPhoto }) else { throw Self.noPhotoFace() }
@@ -187,7 +215,7 @@ public final class PhotoFaceController: @unchecked Sendable {
         }
         let info = try await photos.readInfo()
         store.keepOnly(info.photos.map(\.name))
-        return PhotoFaceState(face: face, info: info, width: screen.width, height: screen.height, updatedAtMs: list.updatedAtMs)
+        return PhotoFaceState(face: face, info: info, width: screen.width, height: screen.height, updatedAtMs: list.updatedAtMs, screen: screen)
     }
 
     static func noPhotoFace() -> WearError {

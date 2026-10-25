@@ -3,12 +3,13 @@
 //    lists photos under 82{83} and the watch does not use it)
 //  - 28/01 (the watch asks for a file): the device request and its report
 //  - the .bin image: run-length coded pixels
-// No signature or account data is part of any of these. Kotlin-only logic, verified against the byte examples of the Kotlin PhotoFaceTest (the
-// `.bin` vectors there are reference outputs generated outside the repository for the same pixels).
+// No signature or account data is part of any of these. The values a new photo gets come from a table of known faces
+// (`PhotoFaceCodec.knownFaceConfigs`). Verified against the byte examples of the Kotlin PhotoFaceTest (the `.bin` vectors there are reference
+// outputs generated outside the repository for the same pixels).
 import Foundation
 
 /// One photo of the face, as the watch lists it in 27/08 (`84{85{...}}`). The settings are the watch's own; JoyoFit has no editor for them and
-/// only sends them back unchanged so a save does not reset them. Nil = the watch did not report it.
+/// sends them back so a save does not reset them. Nil = the watch did not report it.
 public struct PhotoSlot: Equatable, Sendable {
     /// Tag 0x06: position in the face's list; the watch counts from 0.
     public var index: Int
@@ -26,10 +27,14 @@ public struct PhotoSlot: Equatable, Sendable {
     public var backgroundColour: String?
     /// Tag 0x29, the same tag both ways.
     public var timeSize: Int?
+    /// Tags 0x18 / 0x19 / 0x1a: smart time style, font and position (written as 0x15 / 0x16 / 0x17).
+    public var smartTime: Int?
+    public var smartFont: Int?
+    public var smartPosition: Int?
 
     public init(
         index: Int, name: String, portPosition: Int? = nil, portraitMode: Int? = nil, timeStyle: Int? = nil, timeColour: String? = nil,
-        backgroundColour: String? = nil, timeSize: Int? = nil
+        backgroundColour: String? = nil, timeSize: Int? = nil, smartTime: Int? = nil, smartFont: Int? = nil, smartPosition: Int? = nil
     ) {
         self.index = index
         self.name = name
@@ -39,6 +44,52 @@ public struct PhotoSlot: Equatable, Sendable {
         self.timeColour = timeColour
         self.backgroundColour = backgroundColour
         self.timeSize = timeSize
+        self.smartTime = smartTime
+        self.smartFont = smartFont
+        self.smartPosition = smartPosition
+    }
+}
+
+/// The values Huawei Health's My watch faces page gives a photo it adds, which it takes from the face's `watch_face_config.xml` (`<config>`),
+/// with the page's fallbacks when the face is unknown (app.js module 221: `RN` 1, `jY` 2, `m$` 1). JoyoFit does not fetch that file: the faces
+/// whose values are known are in `PhotoFaceCodec.knownFaceConfigs` (protocol/README.md, "Photo faces"). Port of PhotoFaceConfig.
+public struct PhotoFaceConfig: Equatable, Sendable {
+    /// `timeStylePostions selected_index`: a new photo's time position (`0a` and smart `17`).
+    public var timePosition: Int
+    /// `timeStyles selected_index`: a new photo's time style (`0c` and smart `15`).
+    public var timeStyle: Int
+    /// `fontStyles selected_index`: a new photo's smart font (`16`).
+    public var font: Int
+    /// `positions` / `styles selected_index`: the top-level `06` / `07`.
+    public var positionIndex: Int
+    public var styleIndex: Int
+    /// `timeStylePostions/position position_rect` (left, top, right, bottom) by index: where the time is drawn, the area the time colour is chosen for.
+    public var positionRects: [Int: [Int]]
+
+    public init(
+        timePosition: Int = 1, timeStyle: Int = 2, font: Int = 1, positionIndex: Int = 1, styleIndex: Int = 2, positionRects: [Int: [Int]] = [:]
+    ) {
+        self.timePosition = timePosition
+        self.timeStyle = timeStyle
+        self.font = font
+        self.positionIndex = positionIndex
+        self.styleIndex = styleIndex
+        self.positionRects = positionRects
+    }
+}
+
+/// What `PhotoFaceCodec.saveTlv` needs besides the watch's 27/08 answer.
+public struct PhotoSaveFields: Equatable, Sendable {
+    public var config: PhotoFaceConfig
+    /// `PhotoFaceCodec.gaussSwitch` of the watch's 27/01; -1 leaves the smart fields out.
+    public var gaussSwitch: Int
+    /// Time colours picked from the phone's copy of a photo (`PhotoFaceCodec.smartColour`), by name.
+    public var timeColours: [String: String]
+
+    public init(config: PhotoFaceConfig = PhotoFaceConfig(), gaussSwitch: Int = -1, timeColours: [String: String] = [:]) {
+        self.config = config
+        self.gaussSwitch = gaussSwitch
+        self.timeColours = timeColours
     }
 }
 
@@ -66,11 +117,13 @@ public struct PhotoFaceInfo: Equatable, Sendable {
     public var dataSlots: [(container: Int, option: Int)]
     /// Tag 0x1f `{20{21 option}}` (written as 0x1d `{1e{1f}}`); Huawei Health only reads and writes it with exactly two entries.
     public var selectedOptions: [Int]
+    /// Tag 0x17. Huawei Health reads it and never writes it: there is no carousel setting in 27/09.
+    public var carouselMode: Int?
 
     public init(
         maxPhotos: Int, intellectColour: Bool = false, backgroundType: Int = 0, positionIndex: Int? = nil, styleIndex: Int? = nil, dataIndex: Int? = nil,
         imageOption: Int = 0, portraitMode: Int? = nil, photos: [PhotoSlot] = [], wristSwitch: Int? = nil, styleApplyAll: Int? = nil,
-        dataSlots: [(container: Int, option: Int)] = [], selectedOptions: [Int] = []
+        dataSlots: [(container: Int, option: Int)] = [], selectedOptions: [Int] = [], carouselMode: Int? = nil
     ) {
         self.maxPhotos = maxPhotos
         self.intellectColour = intellectColour
@@ -85,6 +138,7 @@ public struct PhotoFaceInfo: Equatable, Sendable {
         self.styleApplyAll = styleApplyAll
         self.dataSlots = dataSlots
         self.selectedOptions = selectedOptions
+        self.carouselMode = carouselMode
     }
 
     public static func == (a: PhotoFaceInfo, b: PhotoFaceInfo) -> Bool {
@@ -92,6 +146,7 @@ public struct PhotoFaceInfo: Equatable, Sendable {
             && a.positionIndex == b.positionIndex && a.styleIndex == b.styleIndex && a.dataIndex == b.dataIndex && a.imageOption == b.imageOption
             && a.portraitMode == b.portraitMode && a.photos == b.photos && a.wristSwitch == b.wristSwitch && a.styleApplyAll == b.styleApplyAll
             && a.dataSlots.map { [$0.container, $0.option] } == b.dataSlots.map { [$0.container, $0.option] } && a.selectedOptions == b.selectedOptions
+            && a.carouselMode == b.carouselMode
     }
 }
 
@@ -143,7 +198,8 @@ public enum PhotoFaceCodec {
                 guard let name = try optString(entry, 0x07), !name.isEmpty else { continue }
                 photos.append(PhotoSlot(
                     index: Int(entry.asInteger(0x06, default: Int32(photos.count))), name: name, portPosition: opt(entry, 0x0c), portraitMode: opt(entry, 0x0d),
-                    timeStyle: opt(entry, 0x0e), timeColour: try optString(entry, 0x0f), backgroundColour: try optString(entry, 0x10), timeSize: opt(entry, 0x29)
+                    timeStyle: opt(entry, 0x0e), timeColour: try optString(entry, 0x0f), backgroundColour: try optString(entry, 0x10), timeSize: opt(entry, 0x29),
+                    smartTime: opt(entry, 0x18), smartFont: opt(entry, 0x19), smartPosition: opt(entry, 0x1a)
                 ))
             }
         }
@@ -163,43 +219,71 @@ public enum PhotoFaceCodec {
             maxPhotos: Int(tlv.asInteger(0x01, default: 0)), intellectColour: tlv.asInteger(0x02, default: 0) == 1, backgroundType: Int(tlv.asInteger(0x03, default: 0)),
             positionIndex: opt(tlv, 0x08), styleIndex: opt(tlv, 0x09), dataIndex: opt(tlv, 0x0a), imageOption: Int(tlv.asInteger(0x0b, default: 0)),
             portraitMode: opt(tlv, 0x0d), photos: photos, wristSwitch: opt(tlv, 0x11), styleApplyAll: opt(tlv, 0x12), dataSlots: dataSlots,
-            selectedOptions: selected.count == 2 && selected.allSatisfy({ $0 != nil }) ? selected.map { $0! } : []
+            selectedOptions: selected.count == 2 && selected.allSatisfy({ $0 != nil }) ? selected.map { $0! } : [], carouselMode: opt(tlv, 0x17)
         )
     }
 
-    /// The 27/09 TLV (`makeNewPhotoInfoCommand`): `01` count, `82{83{04 index, 05 name, 0a, 0b, 0c, 0d, 0e, 29}}` for `names` in order, then
-    /// `06`, `07`, `09`, `0f`, `10`, `91{92{13, 14}}` and `9d{9e{1f}}` echoed from `info`. A photo the watch already lists keeps its settings; a new
-    /// one is sent with name and index only and the watch fills in its defaults. Indexes count from 0, as the watch reports them. The
-    /// smart-colour / Gaussian fields (`15`...`1c`) are left out: the watch does not report the switch that decides them.
-    public static func saveTlv(_ info: PhotoFaceInfo, _ names: [String]) -> HuaweiTLV {
+    /// A photo's time colour when nothing else is known: Huawei Health's `Dp`.
+    public static let noColour = "#00000000"
+
+    /// The time colour Huawei Health sends for a photo whose colour comes from the picture (when the watch's 27/01 tag 0x1b
+    /// `supportAestheticAlbumColor` is 1): `#01` (the page's `xv` marker) and an RGB, e.g. `#01ffe7d8`. JoyoFit's RGB comes from `PhotoTimeColour`.
+    public static func smartColour(_ picked: UInt32) -> String {
+        let hex = String(picked & 0xFF_FFFF, radix: 16)
+        return "#01" + String(repeating: "0", count: 6 - hex.count) + hex
+    }
+
+    /// The Gaussian switch Huawei Health writes (`isUseGaussColor`): the page gets the watch's 27/01 tag 0x1a with 1 turned into 0
+    /// (`WatchFaceApiImpl.getH5Params`), -1 when the watch did not send the tag.
+    public static func gaussSwitch(_ paramsTag1a: Int) -> Int { paramsTag1a == 1 ? 0 : paramsTag1a }
+
+    /// The 27/09 TLV as Huawei Health's `makeNewPhotoInfoCommand` writes the album its My watch faces page hands over (capture 2026-10-25, Fit 4
+    /// Pro: the "add photo" prompt on the watch went away after it). `01` count, then for `names` in order (index from 0) `82{83{04 index, 05 name,
+    /// 0a time position, 0b portrait 0, 0c time style, 0d time colour, 0e background colour, 29 time size, [15 smart time, 16 smart font, 17 smart
+    /// position, 1c Gaussian switch]}}` (the bracket only when the switch is not -1), then `06`, `07`, `09`, `0f`, `10`, `91{92{13, 14}}` (only
+    /// when the watch reported data slots), `1c` Gaussian switch and `9d{9e{1f}...}` (the watch's two selected options, or 0 and 0). A photo the
+    /// watch lists keeps the values it reported; anything missing or 0 comes from the face config like a new photo. A photo without a colour in
+    /// `fields.timeColours` keeps the watch's colour, else `noColour`.
+    public static func saveTlv(_ info: PhotoFaceInfo, _ names: [String], _ fields: PhotoSaveFields = PhotoSaveFields()) -> HuaweiTLV {
+        let config = fields.config
+        let gauss = fields.gaussSwitch
         var known = [String: PhotoSlot]()
         for slot in info.photos { known[slot.name] = slot } // Kotlin `associateBy`: the last of a repeated name wins
         func byte(_ v: Int) -> UInt8 { UInt8(truncatingIfNeeded: v) }
+        func orElse(_ v: Int?, _ fallback: Int) -> Int { if let v, v > 0 { return v } else { return fallback } }
         var tlv = HuaweiTLV()
         tlv.put(0x01, byte: byte(names.count))
         if !names.isEmpty {
             var list = HuaweiTLV()
             for (i, name) in names.enumerated() {
+                let slot = known[name]
+                let position = orElse(slot?.portPosition, config.timePosition)
+                let timeStyle = orElse(slot?.timeStyle, config.timeStyle)
                 var entry = HuaweiTLV()
                 entry.put(0x04, byte: byte(i))
                 entry.put(0x05, string: name)
-                if let slot = known[name] {
-                    if let v = slot.portPosition { entry.put(0x0a, byte: byte(v)) }
-                    if let v = slot.portraitMode { entry.put(0x0b, byte: byte(v)) }
-                    if let v = slot.timeStyle { entry.put(0x0c, byte: byte(v)) }
-                    if let v = slot.timeColour { entry.put(0x0d, string: v) }
-                    if let v = slot.backgroundColour { entry.put(0x0e, string: v) }
-                    if let v = slot.timeSize { entry.put(0x29, byte: byte(v)) }
+                entry.put(0x0a, byte: byte(position))
+                entry.put(0x0b, byte: 0)
+                entry.put(0x0c, byte: byte(timeStyle))
+                let watchColour = slot?.timeColour.flatMap { $0.isEmpty ? nil : $0 }
+                entry.put(0x0d, string: fields.timeColours[name] ?? watchColour ?? noColour)
+                entry.put(0x0e, string: slot?.backgroundColour.flatMap { $0.isEmpty ? nil : $0 } ?? noColour)
+                entry.put(0x29, byte: byte(slot?.timeSize ?? 0))
+                if gauss != -1 {
+                    entry.put(0x15, byte: byte(orElse(slot?.smartTime, timeStyle)))
+                    entry.put(0x16, byte: byte(orElse(slot?.smartFont, config.font)))
+                    entry.put(0x17, byte: byte(orElse(slot?.smartPosition, position)))
+                    entry.put(0x1c, byte: byte(gauss))
                 }
                 list.put(0x83, tlv: entry)
             }
             tlv.put(0x82, tlv: list)
         }
-        if let v = info.positionIndex { tlv.put(0x06, byte: byte(v)) }
-        if let v = info.styleIndex { tlv.put(0x07, byte: byte(v)) }
-        if let v = info.dataIndex { tlv.put(0x09, byte: byte(v)) }
-        if let v = info.wristSwitch { tlv.put(0x0f, byte: byte(v)) }
-        if let v = info.styleApplyAll { tlv.put(0x10, byte: byte(v)) }
+        tlv.put(0x06, byte: byte(config.positionIndex))
+        tlv.put(0x07, byte: byte(config.styleIndex))
+        tlv.put(0x09, byte: byte(info.dataIndex ?? 0))
+        tlv.put(0x0f, byte: byte(info.wristSwitch ?? 0))
+        tlv.put(0x10, byte: byte(info.styleApplyAll ?? 0))
         if !info.dataSlots.isEmpty {
             var slots = HuaweiTLV()
             for (container, option) in info.dataSlots {
@@ -210,17 +294,31 @@ public enum PhotoFaceCodec {
             }
             tlv.put(0x91, tlv: slots)
         }
-        if !info.selectedOptions.isEmpty {
-            var options = HuaweiTLV()
-            for option in info.selectedOptions {
-                var o = HuaweiTLV()
-                o.put(0x1f, byte: byte(option))
-                options.put(0x9e, tlv: o)
-            }
-            tlv.put(0x9d, tlv: options)
+        tlv.put(0x1c, byte: byte(gauss))
+        var options = HuaweiTLV()
+        for option in info.selectedOptions.isEmpty ? [0, 0] : info.selectedOptions {
+            var o = HuaweiTLV()
+            o.put(0x1f, byte: byte(option))
+            options.put(0x9e, tlv: o)
         }
+        tlv.put(0x9d, tlv: options)
         return tlv
     }
+
+    /// The new-photo values of the photo faces whose `watch_face_config.xml` was read during research (2026-10-25, protocol/README.md, "Photo
+    /// faces"), by face id. 2180736265 is the Watch Fit 4 Pro's photo face (version 2.4.11).
+    public static let knownFaceConfigs: [String: PhotoFaceConfig] = [
+        "2180736265": PhotoFaceConfig(
+            timePosition: 1, timeStyle: 2, font: 1, positionIndex: 1, styleIndex: 2,
+            positionRects: [
+                1: [68, 18, 406, 182], 2: [68, 288, 406, 432], 3: [10, 108, 276, 399], 4: [236, 108, 456, 399], 5: [68, 108, 406, 399],
+                6: [10, 10, 194, 230], 7: [214, 10, 398, 230], 8: [10, 250, 194, 470], 9: [214, 250, 398, 470],
+            ]
+        ),
+    ]
+
+    /// `knownFaceConfigs` for `faceId`, else the page's fallbacks (position 1, style 2, font 1, no time area).
+    public static func faceConfig(_ faceId: String) -> PhotoFaceConfig { knownFaceConfigs[faceId] ?? PhotoFaceConfig() }
 
     public static func parseSaveStatus(_ tlv: HuaweiTLV) -> PhotoSaveStatus {
         PhotoSaveStatus(code: Int(tlv.asInteger(0x7f, default: -1)), transferNum: Int(tlv.asInteger(0x08, default: 0)))

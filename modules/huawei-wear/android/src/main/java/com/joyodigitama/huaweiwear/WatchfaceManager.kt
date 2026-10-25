@@ -33,6 +33,10 @@ internal class WatchfaceScreen(
   val supportSync: Int = -1,
   /** Tag 0x18 (0 = GT mode, 1 = AP mode), -1 when absent. */
   val mode: Int = -1,
+  /** Tag 0x1a, Huawei Health `supportGaussianColor`; -1 when absent. */
+  val gaussianColour: Int = -1,
+  /** Tag 0x1b, Huawei Health `supportAestheticAlbumColor` (1 = a photo's time colour is picked from the photo); -1 when absent. */
+  val aestheticAlbumColour: Int = -1,
 ) {
   /** Huawei Health `isSupportWatchfaceSignature`: capability bit 3 (value 8). */
   val supportsSignature: Boolean get() = supportCapability >= 0 && (supportCapability and CAPABILITY_SIGNATURE) != 0
@@ -227,7 +231,7 @@ internal class WatchfaceOps(
     )
     val screen = WatchfaceScreen(
       p.maxVersion, p.width, p.height, p.supportFileType.toInt(), p.sort.toInt(), p.otherWatchfaceVersions,
-      p.supportCapability, p.supportSync, p.mode,
+      p.supportCapability, p.supportSync, p.mode, p.gaussianColor, p.aestheticAlbumColor,
     )
     if (p.supportCapability >= 0) {
       log("WatchfaceParams capability: watch face signature=${screen.supportsSignature} (bit 8), dial unite=${screen.supportsDialUnite} (bit 4)")

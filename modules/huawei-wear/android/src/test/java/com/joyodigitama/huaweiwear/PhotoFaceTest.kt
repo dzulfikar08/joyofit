@@ -164,27 +164,76 @@ class PhotoFaceTest {
     assertEquals("0100" + "0200" + "0300" + "0400" + "0c00" + "0d00" + "0900", hex(PhotoFace.InfoRequest(params, false, true, false).getTlv().serialize()))
   }
 
+  /** The Fit 4 Pro photo face's new-photo values, as in [PhotoFaceCodec.KNOWN_FACE_CONFIGS]: position 1, time style 2, font 1. */
+  private val fitConfig = PhotoFaceCodec.faceConfig("2180736265")
+
   @Test
-  fun saveKeepsTheWatchSettingsAndNumbersFromZero() {
-    val info = PhotoFaceCodec.parseInfo(HuaweiTLV().parse(capturedInfo))
-    val request = PhotoFace.SaveRequest(params, PhotoFaceCodec.saveTlv(info, listOf("1791994229644.png", "new.png")))
+  fun saveIsByteForByteWhatHuaweiHealthSentForItsFirstPhoto() {
+    // Huawei Health 17.0.8.300, Fit 4 Pro, 2026-10-25 21:10:47 (after which the watch's "add photo" prompt went away): the watch's 27/08
+    // answer before, and the album the page handed to makeNewPhotoInfoCommand:
+    // {"backgroundList":[{"backgroundIndex":0,"backgroundName":"20261025211044440.png","smartTimeIndex":2,"timeColor":"#01ffe7d8",
+    // "backgroundColor":"#00000000","smartPosIndex":1,"portraitMode":0,"smartFontIndex":1,"timeStyleIndex":2,"portPositionIndex":1}],
+    // "dataList":[],"isUseGaussColor":0,"positionIndex":1,"styleApplyAll":0,"styleIndex":2,"valueTypeIndex":0,"wristSwitch":0,
+    // "optionSelectedList":[0,0]}
+    val before = "01011402010103010284000801020901010A01000B010111010012010093001701009F00".chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+    val info = PhotoFaceCodec.parseInfo(HuaweiTLV().parse(before))
+    val fields = PhotoSaveFields(fitConfig, PhotoFaceCodec.gaussSwitch(1), mapOf("20261025211044440.png" to PhotoFaceCodec.smartColour(0xFFFFE7D8.toInt())))
+    val request = PhotoFace.SaveRequest(params, PhotoFaceCodec.saveTlv(info, listOf("20261025211044440.png"), fields))
     assertEquals(0x09.toByte(), request.commandId)
-    // The known photo goes back with its 0c/0d/0e/0f/10 as 0a/0b/0c/0d/0e; the new one has index and name only.
-    // Then 06/07/09 from 08/09/0a, 0f/10 from 11/12, 91{92{13,14}} from 93{94{15,16}}, 9d{9e{1f}} from 9f{a0{21}}.
     assertEquals(
-      "010102824583350401000511313739313939343232393634342e706e670a01020b01000c01010d092330303030303030300e09233030303030303030" +
-        "830c04010105076e65772e706e67" + "060102070101090100" + "0f0100100100" +
-        "9130" + "9206130100140100".repeat(6) + "9d0a" + "9e031f0100".repeat(2),
+      "010101824a8348040100051532303236313032353231313034343434302e706e670a01010b01000c01020d092330316666653764380e09233030303030303030" +
+        "2901001501021601011701011c0100" + "0601010701020901000f0100100100" + "1c0100" + "9d0a9e031f01009e031f0100",
       hex(request.getTlv().serialize()),
     )
   }
 
   @Test
-  fun savingNoPhotosSendsACountOfZeroAndNoList() {
+  fun aPhotoOnTheWatchKeepsItsValuesAndMissingOnesComeFromTheConfig() {
     val info = PhotoFaceCodec.parseInfo(HuaweiTLV().parse(capturedInfo))
-    val tlv = PhotoFaceCodec.saveTlv(info, emptyList())
-    assertEquals(0, tlv.getAsInteger(0x01, -1))
-    assertFalse(tlv.contains(0x82))
+    val fields = PhotoSaveFields(fitConfig, 0, mapOf("new.png" to "#01123456"))
+    // The listed photo: 0a/0c from the watch's 0c/0e (2, 1), its colours, smart time / position from its style and position because the
+    // watch reports 18/1a as 0; the new photo: the config's position 1, style 2, font 1 and its picked colour. Then 06/07 from the
+    // config, the watch's 09/0f/10, its six data slots, 1c and the watch's two selected options.
+    assertEquals(
+      "01010282810283440401000511313739313939343232393634342e706e670a01020b01000c01010d092330303030303030300e09233030303030303030" +
+        "2901001501011601011701021c0100" +
+        "833a04010105076e65772e706e670a01010b01000c01020d092330313132333435360e092330303030303030302901001501021601011701011c0100" +
+        "0601010701020901000f0100100100" + "9130" + "9206130100140100".repeat(6) + "1c0100" + "9d0a" + "9e031f0100".repeat(2),
+      hex(PhotoFaceCodec.saveTlv(info, listOf("1791994229644.png", "new.png"), fields).serialize()),
+    )
+  }
+
+  @Test
+  fun withoutTheGaussianTagThereAreNoSmartFieldsAndTheSwitchIsMinusOne() {
+    val info = PhotoFaceCodec.parseInfo(HuaweiTLV().parse(capturedInfo))
+    val tlv = PhotoFaceCodec.saveTlv(info, emptyList(), PhotoSaveFields(fitConfig, PhotoFaceCodec.gaussSwitch(-1)))
+    assertEquals(
+      "010100" + "0601010701020901000f0100100100" + "9130" + "9206130100140100".repeat(6) + "1c01ff" + "9d0a" + "9e031f0100".repeat(2),
+      hex(tlv.serialize()),
+    )
+    val one = PhotoFaceCodec.saveTlv(info, listOf("a.png"), PhotoSaveFields(fitConfig, -1)).getObject(0x82).getObject(0x83)
+    assertFalse(one.contains(0x15))
+    assertFalse(one.contains(0x1c))
+  }
+
+  @Test
+  fun theSmartColourIsHuaweiHealthsMarkerAndTheRgb() {
+    assertEquals("#01ffe7d8", PhotoFaceCodec.smartColour(0xFFFFE7D8.toInt()))
+    assertEquals("#01000000", PhotoFaceCodec.smartColour(0xFF000000.toInt()))
+    assertEquals(0, PhotoFaceCodec.gaussSwitch(1))
+    assertEquals(0, PhotoFaceCodec.gaussSwitch(0))
+    assertEquals(-1, PhotoFaceCodec.gaussSwitch(-1))
+  }
+
+  @Test
+  fun theKnownFaceHasItsValuesAndAnUnknownOneHuaweiHealthsFallbacks() {
+    val fit = PhotoFaceCodec.faceConfig("2180736265")
+    assertEquals(listOf(1, 2, 1, 1, 2), listOf(fit.timePosition, fit.timeStyle, fit.font, fit.positionIndex, fit.styleIndex))
+    assertArrayEquals(intArrayOf(68, 18, 406, 182), fit.positionRects[1])
+    assertEquals((1..9).toSet(), fit.positionRects.keys)
+    val unknown = PhotoFaceCodec.faceConfig("123")
+    assertEquals(listOf(1, 2, 1, 1, 2), listOf(unknown.timePosition, unknown.timeStyle, unknown.font, unknown.positionIndex, unknown.styleIndex))
+    assertTrue(unknown.positionRects.isEmpty())
   }
 
   @Test
@@ -467,8 +516,9 @@ class PhotoFaceTest {
     val sent = watch.all(0x27, 0x09).single().tlv!!
     assertEquals(1, sent.getByte(0x01).toInt())
     assertEquals("a.png", sent.getObject(0x82).getObjects(0x83).single().getString(0x05))
+    // Huawei Health writes 06 / 07 from the face config (fallbacks 1 / 2 here), not the watch's 08 / 09.
     assertEquals(1, sent.getByte(0x06).toInt())
-    assertFalse(sent.contains(0x07))
+    assertEquals(2, sent.getByte(0x07).toInt())
     assertTrue("no file traffic", watch.all(0x28, 0x01).isEmpty() && watch.all(0x28, 0x02).isEmpty())
   }
 
