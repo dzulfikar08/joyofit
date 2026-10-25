@@ -142,7 +142,8 @@ class LiveWorkoutPolicyTest {
     assertEquals(WatchPhase.IDLE, WatchPhase.of(trainMonitorState = 0, operator = 0)) // 020100030100 17:45:40, after the finish
     // Not seen, read safely: a pause in the 17/02 numbering, an answer without an operator.
     assertEquals(WatchPhase.PAUSED, WatchPhase.of(trainMonitorState = 1, operator = 2))
-    assertEquals(WatchPhase.RUNNING, WatchPhase.of(trainMonitorState = 1, operator = 1))
+    assertEquals(WatchPhase.OPEN, WatchPhase.of(trainMonitorState = 1, operator = 1))
+    assertEquals(WatchPhase.IDLE, WatchPhase.of(trainMonitorState = 1, operator = 0))
     assertEquals(WatchPhase.IDLE, WatchPhase.of(trainMonitorState = 0, operator = null))
     // A watch that sends no tag 02: the 17/02 operators, as before.
     assertEquals(WatchPhase.RUNNING, WatchPhase.of(trainMonitorState = null, operator = 1))
@@ -187,6 +188,21 @@ class LiveWorkoutPolicyTest {
     // Without the close, one idle answer is not enough.
     assertEquals(Verdict.KEEP, LiveWorkoutPolicy.idleVerdict(preparing = false, confirmed = true, idleAnswers = 1, msSinceGps = 5_000L))
     assertEquals(Verdict.END, LiveWorkoutPolicy.idleVerdict(preparing = false, confirmed = true, idleAnswers = 3, msSinceGps = 5_000L))
+  }
+
+  @Test
+  fun leavingTheGoScreenAndComingBackIsNoStraggler() {
+    // open -> close (18/08 {01: 0}) -> one idle answer ends the preparing session -> open again 20 s later: a new session, so GO is
+    // seen at the 2 s poll and not only at the 30 s idle one.
+    val closed = LiveWorkoutPolicy.idleVerdict(preparing = true, confirmed = false, idleAnswers = 1, msSinceGps = 1_000L, screenClosed = true)
+    assertEquals(Verdict.END, closed)
+    assertTrue(LiveWorkoutPolicy.gpsReopens(msSinceEnd = 20_000L, endedRan = false, screenReopened = false))
+    // Then the status sequence of the new session: GO screen, GO.
+    assertEquals(listOf(LiveWorkout.Status.PREPARING, LiveWorkout.Status.RUNNING), follow(WatchPhase.OPEN, WatchPhase.RUNNING))
+    // A workout that ran and just ended: a late request is a straggler, unless the watch opened its workout screen again.
+    assertFalse(LiveWorkoutPolicy.gpsReopens(msSinceEnd = 20_000L, endedRan = true, screenReopened = false))
+    assertTrue(LiveWorkoutPolicy.gpsReopens(msSinceEnd = 20_000L, endedRan = true, screenReopened = true))
+    assertTrue(LiveWorkoutPolicy.gpsReopens(msSinceEnd = LiveWorkoutPolicy.RESTART_GUARD_MS, endedRan = true, screenReopened = false))
   }
 
   @Test

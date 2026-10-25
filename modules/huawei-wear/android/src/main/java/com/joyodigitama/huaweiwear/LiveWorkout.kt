@@ -78,6 +78,9 @@ internal class LiveWorkout(
      */
     var phoneTrack = SessionTrack()
 
+    /** The session ran (or was paused) at some point; one that never got past the GO screen is not a workout that just ended. */
+    var everRan = false
+
     /** The watch asked for the phone's GPS during this session: an outdoor sport, whatever sport tag it did or did not send. */
     var gpsRequested = false
   }
@@ -104,6 +107,9 @@ internal class LiveWorkout(
   /** When the watch last said its workout screen closed (`18/08 {01: 0}`); 0 while it is open or never said. */
   private var screenClosedAtMs = 0L
 
+  /** When the watch last said its workout screen opened (`18/08 {01: 1}`): a GPS request after that is no straggler of an ended session. */
+  private var screenOpenedAtMs = 0L
+
   /** How often [WorkoutLink] asks the status now: fast while a session waits for GO, so the phone's clock starts with the watch's. */
   fun pollEveryMs(): Long = LiveWorkoutPolicy.pollEveryMs(synchronized(lock) { session?.status })
 
@@ -112,25 +118,32 @@ internal class LiveWorkout(
    * request when a workout screen opens, `{01: 0}` when it closes (Fit 4 Pro, 2026-10-25: 5 s before `17/03` said idle, each time). A
    * close makes the next "no workout" answer end the session at once ([LiveWorkoutPolicy.idleVerdict]). A watch that never answers the
    * status poll gives no other sign of its finish, so the screen asks the person at once (`endSuspected`) instead of after two minutes of
-   * GPS silence; not ended outright, because whether a band sends the close on a pause too is not known. Returns true when the status
-   * should be asked now.
+   * GPS silence; not ended outright, because whether a band sends the close on a pause too is not known. An open right after a
+   * session ended (the person left the GO screen and came back) opens a new session at once, also when the GPS request that came with
+   * it, a few ms earlier, was still taken for a straggler ([LiveWorkoutPolicy.gpsReopens]). Returns true when the status should be asked now.
    */
   fun workoutScreen(open: Boolean): Boolean {
     if (mirrorBlocked()) return false
     var suspect = false
+    var reopen = false
     val live = synchronized(lock) {
-      screenClosedAtMs = if (open) 0L else System.currentTimeMillis()
+      val now = System.currentTimeMillis()
+      screenClosedAtMs = if (open) 0L else now
+      if (open) screenOpenedAtMs = now
       val s = session?.takeIf { it.status != Status.ENDED }
       if (!open && s != null && s.source == Source.GPS && lastStatusAtMs == 0L && !reportsSeen && !s.endSuspected) {
         s.endSuspected = true
         suspect = true
       }
+      // Only after a session ended: the open comes with a GPS request, which opens the first session itself.
+      reopen = open && s == null && session != null
       s != null
     }
     if (suspect) {
       log("Live workout: the watch closed its workout screen and does not answer the status poll; asking the user")
       publish(force = true)
     }
+    if (reopen) return gpsPing()
     return live && !open
   }
 
@@ -429,9 +442,10 @@ internal class LiveWorkout(
           changed = true
         }
       } else {
-        // A straggling request right after a workout ended does not open a second one.
+        // A straggling request right after a workout ended does not open a second one; a session that never got past its GO
+        // screen, or a workout screen the watch opened again since, is no straggler ([LiveWorkoutPolicy.gpsReopens]).
         val endedAt = last?.endedAtMs
-        if (endedAt != null && now - endedAt < LiveWorkoutPolicy.RESTART_GUARD_MS) return false
+        if (endedAt != null && !LiveWorkoutPolicy.gpsReopens(now - endedAt, last.everRan, screenOpenedAtMs > endedAt)) return false
         // Always preparing: the watch asks for GPS from its pre-start (GO) screen on, so the request says nothing about the
         // workout running. The status poll, a `17/11` report or a start event starts the clock; a watch that gives none of
         // those starts it by movement ([onLocation]).
@@ -541,6 +555,7 @@ internal class LiveWorkout(
       // The phone's own GPS follows the session whoever feeds the numbers.
       fresh.phoneTrack = current.phoneTrack
       fresh.gpsRequested = current.gpsRequested
+      fresh.everRan = fresh.everRan || current.everRan
       fresh.lastGpsAtMs = current.lastGpsAtMs
       // Opened running from a session that only prepared: the running stretch begins now, as with [setStatus].
       if (current.status == Status.PREPARING && status == Status.RUNNING) fresh.phoneTrack.startStretch(fresh.updatedAtMs)
@@ -586,6 +601,7 @@ internal class LiveWorkout(
       s.clock.seconds(now)?.let { s.metrics = s.metrics.copy(durationSec = it) }
     }
     s.status = status
+    if (status == Status.RUNNING || status == Status.PAUSED) s.everRan = true
     s.updatedAtMs = now
     s.endSuspected = false
     if (status == Status.ENDED) s.endedAtMs = now
@@ -597,6 +613,7 @@ internal class LiveWorkout(
     val maxHr = SubstrateEstimator.maxHeartRate(age)
     val now = System.currentTimeMillis()
     val s = Session(id ?: now, workoutType, status, LiveMetrics(), SubstrateEstimator(maxHr), maxHr, now, source)
+    s.everRan = status == Status.RUNNING || status == Status.PAUSED
     // A phone-side session counts its own time, from the moment the workout is really running (not while it only prepares).
     if (source != Source.WATCH && status != Status.PREPARING) {
       s.clock.start(now)

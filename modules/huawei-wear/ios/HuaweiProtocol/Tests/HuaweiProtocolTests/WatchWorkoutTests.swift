@@ -66,8 +66,8 @@ final class WatchWorkoutTests: XCTestCase {
     }
 
     func testStatusAnswerSaysWhetherTheWatchRunsAWorkout() throws {
-        let running = try XCTUnwrap(WatchWorkoutWire.parseStatus(try HuaweiTLV(parsing: hex("81 0c  02 01 01  03 01 01  04 01 01  06 01 8c"))))
-        XCTAssertEqual(running.operatorType, 1)
+        let running = try XCTUnwrap(WatchWorkoutWire.parseStatus(try HuaweiTLV(parsing: hex("81 0c  02 01 01  03 01 03  04 01 01  06 01 8c"))))
+        XCTAssertEqual(running.operatorType, 3)
         XCTAssertEqual(running.workoutType, 140)
         XCTAssertTrue(running.running)
         XCTAssertEqual(running.trainMonitorState, 1)

@@ -873,6 +873,61 @@ final class LiveWorkoutTests: XCTestCase {
         XCTAssertFalse(r.live.workoutScreen(open: false))
     }
 
+    func testLeavingTheGoScreenAndComingBackOpensANewSessionWhoseClockStartsAtGo() {
+        let r = make()
+        // The workout screen opens (GPS request, then 18/08 {01: 1}); the person leaves it without GO.
+        XCTAssertTrue(r.live.gpsPing())
+        XCTAssertFalse(r.live.workoutScreen(open: true), "the open of a live session asks nothing")
+        let first = r.live.snapshot()?["id"] as? Double
+        r.counter.advance(5_000)
+        XCTAssertTrue(r.live.workoutScreen(open: false))
+        r.live.watchStatus(phase: .idle, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "ended")
+        // Back 20 s later: the GPS request opens a new session at once (the ended one never ran), and the open finds it live.
+        r.counter.advance(20_000)
+        XCTAssertTrue(r.live.gpsPing())
+        XCTAssertFalse(r.live.workoutScreen(open: true))
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "preparing")
+        XCTAssertNotEqual(r.live.snapshot()?["id"] as? Double, first)
+        XCTAssertTrue(r.live.snapshot()?["durationSec"] is NSNull)
+        // GO screen, then GO: the clock starts at GO.
+        r.live.watchStatus(phase: .open, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "preparing")
+        r.counter.advance(3_000)
+        r.live.watchStatus(phase: .running, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "running")
+        XCTAssertEqual(r.live.snapshot()?["durationSec"] as? Int, 0)
+        r.counter.advance(7_000)
+        r.live.onHeartRate(100)
+        XCTAssertEqual(r.live.snapshot()?["durationSec"] as? Int, 7)
+    }
+
+    func testAWorkoutThatRanAndEndedBlocksAStragglerUnlessTheScreenOpensAgain() {
+        let r = make()
+        r.live.gpsPing()
+        r.live.watchStatus(phase: .running, workoutType: nil)
+        XCTAssertTrue(r.live.workoutScreen(open: false))
+        r.live.watchStatus(phase: .idle, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "ended")
+        let ended = r.live.snapshot()?["id"] as? Double
+        // A late GPS request of the workout that ran: a straggler, nothing opens.
+        r.counter.advance(10_000)
+        XCTAssertFalse(r.live.gpsPing())
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "ended")
+        XCTAssertEqual(r.live.snapshot()?["id"] as? Double, ended)
+        // The watch opens its workout screen again (its GPS request came a few ms earlier and was taken for a straggler): a new session.
+        r.counter.advance(1_000)
+        XCTAssertTrue(r.live.workoutScreen(open: true), "the new session waits for GO: ask the status")
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "preparing")
+        XCTAssertNotEqual(r.live.snapshot()?["id"] as? Double, ended)
+        // Its next GPS requests follow that session.
+        let reopened = r.live.snapshot()?["id"] as? Double
+        XCTAssertTrue(r.live.gpsPing())
+        XCTAssertEqual(r.live.snapshot()?["id"] as? Double, reopened)
+        r.live.watchStatus(phase: .running, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["durationSec"] as? Int, 0)
+    }
+
     private func workoutScreen(_ open: Bool) -> Bytes {
         var t = HuaweiTLV()
         t.put(0x01, byte: open ? 1 : 0)

@@ -121,8 +121,8 @@ class WatchWorkoutTest {
 
   @Test
   fun statusAnswerSaysWhetherTheWatchRunsAWorkout() {
-    val running = WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 0c  02 01 01  03 01 01  04 01 01  06 01 8c")))!!
-    assertEquals(1, running.operator)
+    val running = WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 0c  02 01 01  03 01 03  04 01 01  06 01 8c")))!!
+    assertEquals(3, running.operator)
     assertEquals(140, running.workoutType)
     assertTrue(running.running)
     val paused = WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 06  02 01 01  03 01 02")))!!

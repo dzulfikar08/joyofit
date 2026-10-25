@@ -121,7 +121,8 @@ final class LiveWorkoutPolicyTests: XCTestCase {
         XCTAssertEqual(WatchPhase.of(trainMonitorState: 0, operator: 0), .idle) // 020100030100 17:45:40, after the finish
         // Not seen, read safely: a pause in the 17/02 numbering, an answer without an operator.
         XCTAssertEqual(WatchPhase.of(trainMonitorState: 1, operator: 2), .paused)
-        XCTAssertEqual(WatchPhase.of(trainMonitorState: 1, operator: 1), .running)
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 1, operator: 1), .open)
+        XCTAssertEqual(WatchPhase.of(trainMonitorState: 1, operator: 0), .idle)
         XCTAssertEqual(WatchPhase.of(trainMonitorState: 0, operator: nil), .idle)
         // A watch that sends no tag 02: the 17/02 operators, as before.
         XCTAssertEqual(WatchPhase.of(trainMonitorState: nil, operator: 1), .running)
@@ -159,6 +160,19 @@ final class LiveWorkoutPolicyTests: XCTestCase {
         // Without the close, one idle answer is not enough.
         XCTAssertEqual(P.idleVerdict(preparing: false, confirmed: true, idleAnswers: 1, msSinceGps: 5_000), .keep)
         XCTAssertEqual(P.idleVerdict(preparing: false, confirmed: true, idleAnswers: 3, msSinceGps: 5_000), .end)
+    }
+
+    func testLeavingTheGoScreenAndComingBackIsNoStraggler() {
+        // open -> close (18/08 {01: 0}) -> one idle answer ends the preparing session -> open again 20 s later: a new session, so GO is seen at
+        // the 2 s poll and not only at the 30 s idle one.
+        XCTAssertEqual(P.idleVerdict(preparing: true, confirmed: false, idleAnswers: 1, msSinceGps: 1_000, screenClosed: true), .end)
+        XCTAssertTrue(P.gpsReopens(msSinceEnd: 20_000, endedRan: false, screenReopened: false))
+        // Then the status sequence of the new session: GO screen, GO.
+        XCTAssertEqual(follow(.open, .running), [.preparing, .running])
+        // A workout that ran and just ended: a late request is a straggler, unless the watch opened its workout screen again.
+        XCTAssertFalse(P.gpsReopens(msSinceEnd: 20_000, endedRan: true, screenReopened: false))
+        XCTAssertTrue(P.gpsReopens(msSinceEnd: 20_000, endedRan: true, screenReopened: true))
+        XCTAssertTrue(P.gpsReopens(msSinceEnd: P.restartGuardMs, endedRan: true, screenReopened: false))
     }
 
     func testTheStatusIsAskedFastWhileWaitingForGo() {

@@ -67,8 +67,10 @@ internal enum class WatchPhase {
         2 -> PAUSED
         else -> IDLE
       }
-      trainMonitorState != 0 -> if (operator == 2 || operator == 4) PAUSED else RUNNING
+      // Tag 02 set with operator 0 or 1 (not seen): read like tag 02 = 0, idle and the GO screen.
       operator == null || operator == 0 -> IDLE
+      operator == 1 -> OPEN
+      trainMonitorState != 0 -> if (operator == 2 || operator == 4) PAUSED else RUNNING
       else -> OPEN
     }
   }
@@ -150,6 +152,15 @@ internal object LiveWorkoutPolicy {
       else -> Verdict.SUSPECT
     }
   }
+
+  /**
+   * Whether a GPS request [msSinceEnd] after a session ended opens a new one. Within [RESTART_GUARD_MS] it is taken for a straggler of
+   * the workout that ended, unless that session never ran ([endedRan] false: the person left the GO screen, the close ended it, and
+   * came back) or the watch said its workout screen opened again since ([screenReopened], `18/08 {01: 1}`). Without this the next GO
+   * would be seen only at the 30 s idle poll.
+   */
+  fun gpsReopens(msSinceEnd: Long, endedRan: Boolean, screenReopened: Boolean): Boolean =
+    msSinceEnd >= RESTART_GUARD_MS || !endedRan || screenReopened
 
   /**
    * The GPS requests of a GPS-started session stopped, for [msSinceGps]. While the status poll answers it decides; with no

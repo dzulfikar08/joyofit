@@ -66,8 +66,10 @@ public enum WatchPhase: Sendable, Equatable {
             default: return .idle
             }
         }
-        if trainMonitorState != 0 { return op == 2 || op == 4 ? .paused : .running }
+        // Tag 02 set with operator 0 or 1 (not seen): read like tag 02 = 0, idle and the GO screen.
         if op == nil || op == 0 { return .idle }
+        if op == 1 { return .open }
+        if trainMonitorState != 0 { return op == 2 || op == 4 ? .paused : .running }
         return .open
     }
 }
@@ -135,6 +137,14 @@ public enum LiveWorkoutPolicy {
         if preparing { return msSinceGps > preparingSilenceMs ? .end : .keep }
         if confirmed { return .end }
         return msSinceGps > gpsSilenceMs ? .end : .suspect
+    }
+
+    /// Whether a GPS request `msSinceEnd` after a session ended opens a new one. Within `restartGuardMs` it is taken for a straggler of the
+    /// workout that ended, unless that session never ran (`endedRan` false: the person left the GO screen, the close ended it, and came back) or
+    /// the watch said its workout screen opened again since (`screenReopened`, `18/08 {01: 1}`). Without this the next GO would be seen only at
+    /// the 30 s idle poll.
+    public static func gpsReopens(msSinceEnd: Int64, endedRan: Bool, screenReopened: Bool) -> Bool {
+        msSinceEnd >= restartGuardMs || !endedRan || screenReopened
     }
 
     /// The GPS requests of a GPS-started session stopped, for `msSinceGps`. While the status poll answers it decides; with no answers the
