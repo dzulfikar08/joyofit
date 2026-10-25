@@ -735,7 +735,9 @@ field for a new photo too (time style 1, colours `#00000000`, the position the f
 `expo-image-manipulator`) to the screen size and saved as PNG, native encodes the `.bin`, sends `27/09` with the old list plus the new
 name, serves the watch's `28/01` request and waits for the type 4 report. Delete sends `27/09` with the list minus the photo. After either
 save JoyoFit sends the `27/03` apply for the photo face, as Huawei Health does (`WatchfaceOps.apply`); the photo face then is the current
-face, and a refusal only changes the `onUploadResult` message. The watch
+face. Exception: a delete that empties the face while another face is on the screen sends no apply, so the watch does not switch to an
+empty photo face (JoyoFit's choice; Huawei Health applies there too). A refused apply does not fail the call: it sets `applyError` of the
+result and the `onUploadResult` message. The watch
 offers no preview, so JoyoFit keeps a copy of what it uploaded (`files/photoface`) for the screen. `27/09` echoes the settings the watch
 reported in `27/08` (`PhotoFaceCodec.saveTlv`): a photo already on the watch keeps its per-photo values, a new one goes with index and
 name only, and the top-level indexes, wrist / apply-all switches, data slots and selected options go back unchanged. The smart / Gaussian

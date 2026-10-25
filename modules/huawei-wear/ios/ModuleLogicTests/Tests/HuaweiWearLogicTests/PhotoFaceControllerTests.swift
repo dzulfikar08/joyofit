@@ -381,6 +381,25 @@ final class PhotoFaceControllerTests: XCTestCase {
         XCTAssertGreaterThan(apply, save)
     }
 
+    func testDeletingTheLastPhotoOfAFaceThatIsNotOnTheScreenLeavesTheWatchOnItsFace() async throws {
+        let (controller, _, watch) = make(photos: ["a.png"])
+
+        let js = try await controller.delete(name: "a.png")
+
+        XCTAssertTrue(watch.operations.isEmpty, "an emptied, inactive photo face is not applied")
+        XCTAssertEqual((js["face"] as? [String: Any])?["active"] as? Bool, false)
+        XCTAssertTrue(js["applyError"] is NSNull)
+    }
+
+    func testDeletingOneOfSeveralPhotosAppliesAnInactiveFace() async throws {
+        let (controller, _, watch) = make(photos: ["a.png", "b.png"])
+
+        let js = try await controller.delete(name: "a.png")
+
+        XCTAssertEqual(watch.operations.map(\.operation), [1])
+        XCTAssertEqual((js["face"] as? [String: Any])?["active"] as? Bool, true)
+    }
+
     func testARefusedApplyKeepsThePhotoAndSaysWhatTheWatchAnswered() async throws {
         let (controller, events, _) = make(tweak: { $0.applyStatus = 140_004 })
         let (url, _) = png(4, 3)
@@ -391,6 +410,7 @@ final class PhotoFaceControllerTests: XCTestCase {
         XCTAssertEqual((js["photos"] as? [[String: Any]])?.count, 1)
         XCTAssertEqual(events.results.first?.ok, true)
         XCTAssertEqual(events.results.first?.message, "Photo added, but the watch answered 140004 when the photo face was applied again.")
+        XCTAssertEqual(js["applyError"] as? String, "the watch answered 140004 when the photo face was applied again")
     }
 
     func testAPhotoOfTheWrongSizeIsRefusedBeforeAnythingIsSent() async throws {

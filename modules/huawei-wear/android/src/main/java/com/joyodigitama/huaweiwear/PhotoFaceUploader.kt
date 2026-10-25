@@ -266,7 +266,7 @@ internal class PhotoFaceController(
           else -> "Photo added."
         }
         events.uploadResult(listed && failed == 0, name, null, message)
-        after.toJs()
+        after.toJs(applyProblem)
       } catch (e: CancellationException) {
         throw e
       } catch (e: WearException) {
@@ -284,12 +284,13 @@ internal class PhotoFaceController(
     val names = before.info.photos.map { it.name }.filter { it != name }
     photos.save(before.info, names, emptyMap())
     store.delete(name)
-    reapply(watchfaces, before.face)
+    // An emptied face that was not on the screen stays off it: applying it would put the watch's "add photo" page up.
+    val applyProblem = if (names.isNotEmpty() || before.face.isCurrent) reapply(watchfaces, before.face) else null
     val after = state(watchfaces, photos)
     if (after.info.photos.any { it.name == name }) {
       throw WearException(ErrorCodes.UPLOAD_REJECTED, "The watch still lists the photo after it was removed.")
     }
-    after.toJs()
+    after.toJs(applyProblem)
   }
 
   /** Makes the photo face the active face (the ordinary 27/03 activation of an installed face). */
@@ -303,7 +304,8 @@ internal class PhotoFaceController(
   /**
    * 27/03 operation 1 for the photo face after a save, as Huawei Health's Apply does (protocol/README.md, "Photo faces"): the face is
    * applied again, current or not, so the watch rebuilds it from the new list (the expectation is that this drops its "add photo"
-   * prompt; UNVERIFIED). The photos are saved already, so a refusal is reported, not thrown. Null when the watch took it.
+   * prompt; UNVERIFIED). After a delete it is skipped when the face is emptied and was not the current one. The photos are saved
+   * already, so a refusal is reported (log, `applyError` of the result), not thrown. Null when the watch took it.
    */
   private suspend fun reapply(watchfaces: WatchfaceOps, face: WatchfaceEntry): String? {
     val problem = try {
@@ -328,7 +330,8 @@ internal class PhotoFaceController(
     return PhotoFaceState(face, info, screen.width, screen.height, list.updatedAtMs)
   }
 
-  private fun PhotoFaceState.toJs(): Map<String, Any?> = mapOf(
+  /** `PhotoFace` in `HuaweiWearPhotoFace.types.ts`; [applyError] is set by [add] / [delete] when the apply after the save failed. */
+  private fun PhotoFaceState.toJs(applyError: String? = null): Map<String, Any?> = mapOf(
     "face" to face.toJs(),
     "width" to width,
     "height" to height,
@@ -341,6 +344,7 @@ internal class PhotoFaceController(
     "dataIndex" to info.dataIndex,
     "photos" to info.photos.map { mapOf("index" to it.index, "name" to it.name, "uri" to store.uri(it.name)) },
     "updatedAt" to updatedAtMs,
+    "applyError" to applyError,
   )
 
   private fun noPhotoFace() = WearException(
