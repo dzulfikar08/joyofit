@@ -35,4 +35,9 @@ export interface PhotoFace {
   photos: PhotoFacePhoto[];
   /** Unix milliseconds when the face list was read. */
   updatedAt: number;
+  /**
+   * Set by `addPhoto` / `deletePhoto` when the photos were saved but applying the photo face again afterwards failed: the
+   * watch's answer in English. Null otherwise, and always null from `getPhotoFace` / `setPhotoFaceActive`.
+   */
+  applyError: string | null;
 }

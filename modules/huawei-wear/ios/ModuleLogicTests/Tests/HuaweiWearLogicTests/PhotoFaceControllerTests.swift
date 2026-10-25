@@ -26,6 +26,17 @@ private final class PhotoWatch: FrameSink, @unchecked Sendable {
     var photos: [String]
     var maxPhotos: Int
     var saveStatus: Int32 = 100_000
+    var applyStatus: Int32 = 100_000
+    /// The screen the 27/01 answer reports.
+    var screenWidth: Int32 = 4
+    var screenHeight: Int32 = 3
+    /// Tags 0x1a / 0x1b of the 27/01 answer (Gaussian colour, aesthetic album colour) as the Fit 4 Pro sends them; nil leaves one out.
+    var gaussianColour: UInt8? = 1
+    var aestheticColour: UInt8? = 1
+    /// Every 27/03 the phone sent: face id, version and operation.
+    private(set) var operations: [(id: String, version: String, operation: Int)] = []
+    /// Every 27/09 TLV the phone sent.
+    private(set) var saves: [HuaweiTLV] = []
     private(set) var received: [String: Bytes] = [:]
     private var pending: [String] = []
     private var current = ""
@@ -75,11 +86,13 @@ private final class PhotoWatch: FrameSink, @unchecked Sendable {
             case (0x27, 0x01):
                 var t = HuaweiTLV()
                 t.put(0x01, string: "2.10")
-                t.put(0x02, int: 4)
-                t.put(0x03, int: 3)
+                t.put(0x02, int: screenWidth)
+                t.put(0x03, int: screenHeight)
                 t.put(0x04, byte: 1)
                 t.put(0x05, byte: 0)
                 t.put(0x06, string: "2.1,2.2")
+                if let v = gaussianColour { t.put(0x1a, byte: v) }
+                if let v = aestheticColour { t.put(0x1b, byte: v) }
                 return [frame(0x27, 0x01, t)]
             case (0x27, 0x02):
                 var list = HuaweiTLV()
@@ -110,9 +123,12 @@ private final class PhotoWatch: FrameSink, @unchecked Sendable {
                 t.put(0x82, tlv: names)
                 return [frame(0x27, 0x06, t)]
             case (0x27, 0x03):
-                if (try? packet.tlv?.string(0x01)) == "2180736265" { faceCurrent = true }
+                let id = (try? packet.tlv?.string(0x01)) ?? ""
+                let operation = Int(packet.tlv?.byte(0x03, default: -1) ?? -1)
+                operations.append((id, (try? packet.tlv?.string(0x02)) ?? "", operation))
+                if id == "2180736265" && operation == 1 && (applyStatus == 100_000 || applyStatus == 0) { faceCurrent = true }
                 var t = HuaweiTLV()
-                t.put(0x7f, int: 100_000)
+                t.put(0x7f, int: applyStatus)
                 return [frame(0x27, 0x03, t)]
             case (0x27, 0x08):
                 var list = HuaweiTLV()
@@ -131,6 +147,7 @@ private final class PhotoWatch: FrameSink, @unchecked Sendable {
                 if !photos.isEmpty { t.put(0x84, tlv: list) }
                 return [frame(0x27, 0x08, t)]
             case (0x27, 0x09):
+                if let tlv = packet.tlv { saves.append(tlv) }
                 let names = ((try? packet.tlv?.object(0x82).objects(0x83)) ?? []).compactMap { try? $0.string(0x05) }
                 var status = HuaweiTLV()
                 if saveStatus != 100_000 {
@@ -238,14 +255,16 @@ final class PhotoFaceControllerTests: XCTestCase {
         return (PhotoFaceController(link: source, events: events, store: PhotoStore(directory: dir), progressIntervalMs: 0), events, watch)
     }
 
-    /// A PNG file of `width` x `height` RGB pixels (stored deflate) and its ARGB pixels.
-    private func png(_ width: Int, _ height: Int) -> (URL, [UInt32]) {
+    /// A PNG file of `width` x `height` RGB pixels (stored deflate) and its ARGB pixels; one colour everywhere when `flat` is given.
+    private func png(_ width: Int, _ height: Int, flat: UInt32? = nil) -> (URL, [UInt32]) {
         var rows = [Bytes]()
         var argb = [UInt32]()
         for y in 0..<height {
             var row = Bytes()
             for x in 0..<width {
-                let r = UInt8(x * 40), g = UInt8(y * 50), b = UInt8(x + y)
+                let r = flat.map { UInt8(($0 >> 16) & 0xFF) } ?? UInt8(truncatingIfNeeded: x * 40)
+                let g = flat.map { UInt8(($0 >> 8) & 0xFF) } ?? UInt8(truncatingIfNeeded: y * 50)
+                let b = flat.map { UInt8($0 & 0xFF) } ?? UInt8(truncatingIfNeeded: x + y)
                 row += [r, g, b]
                 argb.append(0xFF00_0000 | UInt32(r) << 16 | UInt32(g) << 8 | UInt32(b))
             }
@@ -257,8 +276,15 @@ final class PhotoFaceControllerTests: XCTestCase {
         ihdr.appendBE(UInt32(width))
         ihdr.appendBE(UInt32(height))
         ihdr += [8, 2, 0, 0, 0]
-        var z: Bytes = [0x78, 0x01, 1, UInt8(raw.count & 0xFF), UInt8(raw.count >> 8), UInt8(~raw.count & 0xFF), UInt8((~raw.count >> 8) & 0xFF)]
-        z += raw
+        var z: Bytes = [0x78, 0x01]
+        var offset = 0
+        repeat {
+            let n = min(65_535, raw.count - offset)
+            let last: UInt8 = offset + n == raw.count ? 1 : 0
+            z += [last, UInt8(n & 0xFF), UInt8(n >> 8), UInt8(~n & 0xFF), UInt8((~n >> 8) & 0xFF)]
+            z += raw[offset..<(offset + n)]
+            offset += n
+        } while offset < raw.count
         z.appendBE(PngDecoder.adler32(raw))
         func chunk(_ type: String, _ body: Bytes) -> Bytes {
             var out = Bytes()
@@ -343,6 +369,136 @@ final class PhotoFaceControllerTests: XCTestCase {
         XCTAssertEqual(events.progress.first?.0, 0)
         XCTAssertEqual(events.progress.last?.0, expectedBin.count)
         XCTAssertEqual(events.progress.last?.1, expectedBin.count)
+    }
+
+    func testANewPhotoGoesWithHuaweiHealthsFieldsAndATimeColourForItsTimeArea() async throws {
+        // The Fit 4 Pro's screen, so the known face's time area (68, 18, 406, 182) is inside the photo.
+        let (controller, _, watch) = make(tweak: { $0.screenWidth = 408; $0.screenHeight = 480 })
+        let (url, _) = png(408, 480, flat: 0xFF10_2060)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        _ = try await controller.add(uri: url.absoluteString)
+
+        let save = try XCTUnwrap(watch.saves.first)
+        let photo = try save.object(0x82).object(0x83)
+        XCTAssertEqual(photo.asInteger(0x04, default: -1), 0)
+        XCTAssertEqual(photo.asInteger(0x0a, default: -1), 1, "the face's time position")
+        XCTAssertEqual(photo.asInteger(0x0b, default: -1), 0)
+        XCTAssertEqual(photo.asInteger(0x0c, default: -1), 2, "the face's time style")
+        XCTAssertEqual(try photo.string(0x0d), "#01ffffff", "white over the dark blue time area, with Huawei Health's marker")
+        XCTAssertEqual(try photo.string(0x0e), "#00000000")
+        XCTAssertEqual(photo.asInteger(0x29, default: -1), 0)
+        XCTAssertEqual(photo.asInteger(0x15, default: -1), 2)
+        XCTAssertEqual(photo.asInteger(0x16, default: -1), 1)
+        XCTAssertEqual(photo.asInteger(0x17, default: -1), 1)
+        XCTAssertEqual(photo.asInteger(0x1c, default: -1), 0, "27/01 tag 0x1a = 1 is written as 0, like Huawei Health")
+        XCTAssertEqual(save.asInteger(0x06, default: -1), 1)
+        XCTAssertEqual(save.asInteger(0x07, default: -1), 2)
+        XCTAssertEqual(save.asInteger(0x1c, default: -1), 0)
+        XCTAssertEqual(try save.object(0x9d).objects(0x9e).count, 2)
+    }
+
+    func testWithoutTheAestheticTagTheColourIsNoneAndWithoutTheGaussianTagThereAreNoSmartFields() async throws {
+        let (controller, events, watch) = make(tweak: { $0.aestheticColour = nil; $0.gaussianColour = nil; $0.screenWidth = 408; $0.screenHeight = 480 })
+        let (url, _) = png(408, 480, flat: 0xFF10_2060)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        _ = try await controller.add(uri: url.absoluteString)
+
+        let save = try XCTUnwrap(watch.saves.first)
+        let photo = try save.object(0x82).object(0x83)
+        XCTAssertEqual(try photo.string(0x0d), "#00000000")
+        XCTAssertEqual(photo.asInteger(0x0a, default: -1), 1)
+        XCTAssertEqual(photo.asInteger(0x0c, default: -1), 2)
+        XCTAssertFalse(photo.contains(0x15), "no Gaussian tag in 27/01: no smart fields")
+        XCTAssertEqual(try save.bytes(0x1c), [0xff], "-1, as Huawei Health writes it")
+        XCTAssertEqual(events.results.first?.ok, true)
+    }
+
+    func testATimeAreaOutsideThePhotoTakesTheColourOfTheWholePhoto() async throws {
+        let (controller, _, watch) = make()
+        let (url, _) = png(4, 3)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        _ = try await controller.add(uri: url.absoluteString)
+
+        // The 4 x 3 photo is dark (mean #4C4102): white.
+        XCTAssertEqual(try watch.saves.first?.object(0x82).object(0x83).string(0x0d), "#01ffffff")
+    }
+
+    func testAddingAPhotoAppliesTheFaceAgainOnceTheWatchHasReported() async throws {
+        let (controller, _, watch) = make()
+        let (url, _) = png(4, 3)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let js = try await controller.add(uri: url.absoluteString)
+
+        // Huawei Health's Apply: 27/09, the upload, the 27/05 report (acknowledged), then 27/03 operation 1 for the photo face.
+        XCTAssertEqual(watch.operations.count, 1)
+        XCTAssertEqual(watch.operations.first?.id, "2180736265")
+        XCTAssertEqual(watch.operations.first?.version, "2.4.11")
+        XCTAssertEqual(watch.operations.first?.operation, 1)
+        let reportAck = try XCTUnwrap(watch.seen.lastIndex { $0 == (0x27, 0x05) })
+        let apply = try XCTUnwrap(watch.seen.firstIndex { $0 == (0x27, 0x03) })
+        XCTAssertGreaterThan(apply, reportAck)
+        XCTAssertEqual((js["face"] as? [String: Any])?["active"] as? Bool, true)
+    }
+
+    func testTheFaceIsAppliedAgainEvenWhenItIsAlreadyTheActiveFace() async throws {
+        let (controller, _, watch) = make(photos: ["a.png"], tweak: { $0.faceCurrent = true })
+
+        _ = try await controller.delete(name: "a.png")
+
+        XCTAssertEqual(watch.operations.map(\.operation), [1])
+        XCTAssertEqual(watch.operations.first?.id, "2180736265")
+        let save = try XCTUnwrap(watch.seen.firstIndex { $0 == (0x27, 0x09) })
+        let apply = try XCTUnwrap(watch.seen.firstIndex { $0 == (0x27, 0x03) })
+        XCTAssertGreaterThan(apply, save)
+    }
+
+    func testDeletingTheLastPhotoOfAFaceThatIsNotOnTheScreenLeavesTheWatchOnItsFace() async throws {
+        let (controller, _, watch) = make(photos: ["a.png"])
+
+        let js = try await controller.delete(name: "a.png")
+
+        XCTAssertTrue(watch.operations.isEmpty, "an emptied, inactive photo face is not applied")
+        XCTAssertEqual((js["face"] as? [String: Any])?["active"] as? Bool, false)
+        XCTAssertTrue(js["applyError"] is NSNull)
+    }
+
+    func testDeletingOneOfSeveralPhotosAppliesAnInactiveFace() async throws {
+        let (controller, _, watch) = make(photos: ["a.png", "b.png"])
+
+        let js = try await controller.delete(name: "a.png")
+
+        XCTAssertEqual(watch.operations.map(\.operation), [1])
+        XCTAssertEqual((js["face"] as? [String: Any])?["active"] as? Bool, true)
+    }
+
+    func testARefusedApplyKeepsThePhotoAndSaysWhatTheWatchAnswered() async throws {
+        let (controller, events, _) = make(tweak: { $0.applyStatus = 140_004 })
+        let (url, _) = png(4, 3)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let js = try await controller.add(uri: url.absoluteString)
+
+        XCTAssertEqual((js["photos"] as? [[String: Any]])?.count, 1)
+        XCTAssertEqual(events.results.first?.ok, true)
+        XCTAssertEqual(events.results.first?.message, "Photo added, but the watch answered 140004 when the photo face was applied again.")
+        XCTAssertEqual(js["applyError"] as? String, "the watch answered 140004 when the photo face was applied again")
+    }
+
+    func testAnApplyAnsweredWithZeroIsASuccess() async throws {
+        // The Fit 4 Pro answered the photo face apply with 7f = 0 (2026-10-25); Huawei Health counts 0 as success.
+        let (controller, events, _) = make(tweak: { $0.applyStatus = 0 })
+        let (url, _) = png(4, 3)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let js = try await controller.add(uri: url.absoluteString)
+
+        XCTAssertTrue(js["applyError"] is NSNull)
+        XCTAssertEqual(events.results.first?.message, "Photo added.")
+        XCTAssertEqual((js["face"] as? [String: Any])?["active"] as? Bool, true)
     }
 
     func testAPhotoOfTheWrongSizeIsRefusedBeforeAnythingIsSent() async throws {

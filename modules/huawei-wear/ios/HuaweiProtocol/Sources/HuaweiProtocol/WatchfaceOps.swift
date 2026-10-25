@@ -29,9 +29,14 @@ public struct WatchfaceScreen: Equatable, Sendable {
     /// Huawei Health `isSupportDialUnite`: capability bit 2 (value 4).
     public var supportsDialUnite: Bool { supportCapability >= 0 && supportCapability & Self.capabilityDialUnite != 0 }
 
+    /// Tag 0x1a, Huawei Health `supportGaussianColor`; -1 when absent.
+    public let gaussianColour: Int
+    /// Tag 0x1b, Huawei Health `supportAestheticAlbumColor` (1 = a photo's time colour is picked from the photo); -1 when absent.
+    public let aestheticAlbumColour: Int
+
     public init(
         maxVersion: String, width: Int, height: Int, supportFileType: Int, sort: Int, otherVersions: String,
-        supportCapability: Int = -1, supportSync: Int = -1, mode: Int = -1
+        supportCapability: Int = -1, supportSync: Int = -1, mode: Int = -1, gaussianColour: Int = -1, aestheticAlbumColour: Int = -1
     ) {
         self.maxVersion = maxVersion
         self.width = width
@@ -42,6 +47,8 @@ public struct WatchfaceScreen: Equatable, Sendable {
         self.supportCapability = supportCapability
         self.supportSync = supportSync
         self.mode = mode
+        self.gaussianColour = gaussianColour
+        self.aestheticAlbumColour = aestheticAlbumColour
     }
 }
 
@@ -231,7 +238,8 @@ public final class WatchfaceOps: @unchecked Sendable {
         )
         let screen = WatchfaceScreen(
             maxVersion: p.maxVersion, width: Int(p.width), height: Int(p.height), supportFileType: Int(p.supportFileType), sort: Int(p.sort),
-            otherVersions: p.otherWatchfaceVersions, supportCapability: Int(p.supportCapability), supportSync: Int(p.supportSync), mode: Int(p.mode)
+            otherVersions: p.otherWatchfaceVersions, supportCapability: Int(p.supportCapability), supportSync: Int(p.supportSync), mode: Int(p.mode),
+            gaussianColour: Int(p.gaussianColor), aestheticAlbumColour: Int(p.aestheticAlbumColor)
         )
         if p.supportCapability >= 0 {
             note("WatchfaceParams capability: watch face signature=\(screen.supportsSignature) (bit 8), dial unite=\(screen.supportsDialUnite) (bit 4)")
@@ -286,6 +294,22 @@ public final class WatchfaceOps: @unchecked Sendable {
         return after
     }
 
+    /// 27/03 operation 1 for `face` as listed, also when it is the current face, without listing before or after; the watch's status
+    /// (tag 0x7f) or nil when it sends none. Huawei Health sends this after every photo face save: the Apply button of its My watch faces
+    /// page saves the album (27/09 and the photo upload), then calls `applyWatchFace`, which is this packet
+    /// (`OperateWatchFaceService.sendApplyWatchFaceCommand`). See protocol/README.md, "Photo faces".
+    public func apply(_ face: WatchfaceEntry) async throws -> Int? {
+        try await operation(face, Watchface.WatchfaceOperation.operationActive, "apply")
+    }
+
+    /// Whether a 27/03 answer's status (tag 0x7f, nil when absent) means the watch took the operation. Huawei Health reads a missing 0x7f
+    /// as 0 (`WatchFaceDeviceService.handleApply`) and counts 0 and 100000 as success (`WatchFaceWearService.isSuccessErrorCode`); the
+    /// Fit 4 Pro answers an apply of its photo face with 0 (2026-10-25).
+    public static func operationAccepted(_ code: Int?) -> Bool {
+        guard let code else { return true }
+        return code == 0 || code == Int(uploadOK)
+    }
+
     /// GB `HuaweiWatchfaceManager.deleteWatchface`, then the list again to check that it is gone.
     public func delete(_ id: String) async throws -> WatchfaceList {
         let face = try find(try await list(), id)
@@ -315,7 +339,7 @@ public final class WatchfaceOps: @unchecked Sendable {
         )
         let code = (try? Watchface.WatchfaceOperation.Response(packet: answer))?.code
         let status = code.flatMap { $0 >= 0 ? Int($0) : nil }
-        note("\(label): watch answered \(status.map(String.init) ?? "without a status")")
+        note("\(label): watch answered \(status.map(String.init) ?? "without a status") TLV \(describeTlv(answer.tlv))")
         return status
     }
 
@@ -341,7 +365,7 @@ public final class WatchfaceOps: @unchecked Sendable {
         note(
             "\(label): watch answered status=\(code.map(String.init) ?? "none") needReceive=\(needReceive.map(String.init) ?? "none") TLV \(describeTlv(answer.tlv))"
         )
-        if let code, code != 0, code != Int(uploadOK) {
+        if let code, !Self.operationAccepted(code) {
             throw WearError(.uploadRejected, describeAnnounceCode(code), statusCode: code)
         }
         return Announcement(code: code, needReceive: needReceive)

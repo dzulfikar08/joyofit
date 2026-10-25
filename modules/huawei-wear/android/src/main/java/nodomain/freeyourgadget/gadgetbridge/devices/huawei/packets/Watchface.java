@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-// Modified for watch-fit (AGPL-3.0-or-later): WatchfaceOperation.Response parses the status tag 0x7f, the "need receive" tag 0x04 and the id / version echo (GB leaves the answer unparsed); WatchfaceParams.Response also reads the capability tags Huawei Health uses (0x11 capability bits, 0x17 sync, 0x18 mode, 0x7f status).
+// Modified for watch-fit (AGPL-3.0-or-later): WatchfaceOperation.Response parses the status tag 0x7f, the "need receive" tag 0x04 and the id / version echo (GB leaves the answer unparsed); WatchfaceParams.Response also reads the capability tags Huawei Health uses (0x11 capability bits, 0x17 sync, 0x18 mode, 0x1a Gaussian colour, 0x1b aesthetic album colour, 0x7f status).
 package nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets;
 
 import java.util.ArrayList;
@@ -41,6 +41,10 @@ public class Watchface {
         public int supportSync = -1;
         /** Tag 0x18 (0 = GT mode, 1 = AP mode), -1 when absent. */
         public int mode = -1;
+        /** Tag 0x1a (Huawei Health `supportGaussianColor`), -1 when absent. */
+        public int gaussianColor = -1;
+        /** Tag 0x1b (Huawei Health `supportAestheticAlbumColor`; 1 = a photo's time colour is picked from the photo), -1 when absent. */
+        public int aestheticAlbumColor = -1;
         /** Tag 0x7f, -1 when absent. */
         public int status = -1;
     }
@@ -132,6 +136,8 @@ public class Watchface {
                 this.params.supportCapability = this.tlv.getAsInteger(0x11, -1);
                 this.params.supportSync = this.tlv.getAsInteger(0x17, -1);
                 this.params.mode = this.tlv.getAsInteger(0x18, -1);
+                this.params.gaussianColor = this.tlv.getAsInteger(0x1a, -1);
+                this.params.aestheticAlbumColor = this.tlv.getAsInteger(0x1b, -1);
                 this.params.status = this.tlv.getAsInteger(0x7f, -1);
             }
         }
