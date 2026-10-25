@@ -49,14 +49,17 @@ export const SPORT_METRICS: Readonly<Record<SportCategory, readonly SportMetric[
   other: ['distance', 'climb', 'steps', 'route'],
 };
 
-export function metricApplies(category: SportCategory, metric: SportMetric): boolean {
-  return SPORT_METRICS[category].includes(metric);
+/** A cardio machine (`isCardioMachine`: rowing machine, elliptical, stepper) also keeps the distance, power and cadence it measures. */
+const MACHINE_METRICS: readonly SportMetric[] = ['distance', 'power', 'cadence'];
+
+export function metricApplies(category: SportCategory, metric: SportMetric, machine = false): boolean {
+  return SPORT_METRICS[category].includes(metric) || (machine && category === 'cardio' && MACHINE_METRICS.includes(metric));
 }
 
-/** Removes from `run` every field whose metric the family does not use. */
-export function dropInapplicable(run: JsonObject, category: SportCategory): void {
+/** Removes from `run` every field whose metric the family (or the machine) does not use. */
+export function dropInapplicable(run: JsonObject, category: SportCategory, machine = false): void {
   for (const [metric, fields] of Object.entries(METRIC_FIELDS) as [SportMetric, readonly string[]][]) {
-    if (metricApplies(category, metric)) continue;
+    if (metricApplies(category, metric, machine)) continue;
     for (const field of fields) delete run[field];
   }
 }

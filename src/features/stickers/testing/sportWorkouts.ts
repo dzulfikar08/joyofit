@@ -80,6 +80,9 @@ const rope = row(7, 'Jumping Rope', { durationSec: 900, kcal: 168, avgHr: 156, m
 const indoorRide = row(8, 'Indoor Cycling', { durationSec: 2700, distanceM: 18_100, kcal: 420, avgHr: 138, maxHr: 166 });
 const run = row(9, 'Running', { durationSec: 1992, distanceM: 5240, kcal: 402, avgHr: 154, maxHr: 178, steps: 5720 });
 const golf = row(10, 'Golf', { durationSec: 9000, distanceM: 6400, kcal: 830, avgHr: 104, maxHr: 131, steps: 11_200 });
+const rower = row(11, 'Rowing Machine', { durationSec: 1500, distanceM: 5000, kcal: 290, avgHr: 146, maxHr: 171 });
+const orienteering = row(12, 'Orienteering', { durationSec: 3900, distanceM: 6200, kcal: 520, avgHr: 139, maxHr: 168, steps: 7900 });
+const bmx = row(13, 'BMX', { durationSec: 1800, distanceM: 9000, kcal: 300, avgHr: 150, maxHr: 178 });
 
 /** One workout per sport family (plus a jump rope, an indoor ride, a run and an unknown sport). */
 export const SPORT_WORKOUTS: readonly SportWorkout[] = [
@@ -106,6 +109,9 @@ export const SPORT_WORKOUTS: readonly SportWorkout[] = [
   make('ride.indoor', 'Indoor ride, no route', indoorRide, { kind: 'INDOOR_CYCLING', avgCadence: 88, avgPower: 182 }),
   make('run.road', 'Road run', run, { kind: 'RUNNING', elevationGain: 38, avgCadence: 172 }, { route: route(loopRoute(520, 420)) }),
   make('other.golf', 'Golf: a sport outside every family', golf, { kind: 'GOLF' }),
+  make('cardio.rower', 'Rowing machine: metres, watts and stroke rate of its own', rower, { kind: 'ROWING_MACHINE', avgPower: 150, avgCadence: 26 }),
+  make('walk.orienteering', 'Orienteering: on foot, read as a pace', orienteering, { kind: 'ORIENTEERING' }),
+  make('ride.bmx', 'BMX: a ride the sport kind does not know, with a crank cadence', bmx, { kind: 'BMX', avgCadence: 78 }),
 ];
 
 export function sportWorkout(key: string): SportWorkout {

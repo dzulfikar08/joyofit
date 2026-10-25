@@ -426,7 +426,9 @@ Health Connect mark (`docs/brand-marks.md`).
 A watch workout is one of nine families (`features/workouts/sportCategory.ts`, by the watch's English sport name, then the
 summary's activity kind, then the analysed sport kind). `data/sportMetrics.ts` says which `run.*` numbers each family keeps;
 `buildRunSubject` drops the rest before any template sees it, so every card, the `run.*` ones included, hides them. Time, heart
-rate, calories, heart rate zones, strain and gear are kept for every family.
+rate, calories, heart rate zones, strain and gear are kept for every family. Pace or speed is chosen by family too: pace per km
+for `run` and `walk` (orienteering and obstacle races included), per 100 m for `swim`, speed for the rest. Durations are a
+clock (`dur`: `52:00`, `1:11:00`), never the core's `durhm` (`52m` would read as metres).
 
 | family (`run.category`) | sports | keeps besides time, HR, kcal, zones | family cards (hero, then the numbers) | opens on |
 |---|---|---|---|---|
@@ -435,7 +437,7 @@ rate, calories, heart rate zones, strain and gear are kept for every family.
 | `ride` | cycling, indoor cycling, spinning, BMX | distance, speed, climb, cadence (rpm), power, route, splits | distance (else time); time, speed, climb, power, cadence; art: route, else climb, else HR | `ride.bold` |
 | `swim` | pool and open water | distance (in metres), pace /100 m, route, laps, strokes, SWOLF, stroke rate, pool length | metres (else time); time, pace /100 m, laps, SWOLF, strokes, pool length; art: open-water route | `swim.bold` |
 | `gym` | strength, functional, core, crossfit, gymnastics | the merged strength log's volume, sets, reps, exercises | volume (else duration); duration, sets, reps, kcal, HR; art: HR zones, else HR chart; effort chip | `gym.bold` |
-| `cardio` | HIIT, jump rope, aerobics, machines (elliptical, stepper, rowing machine, air walker), boxing, martial arts, dance | jumps (a jump rope's steps) | jumps (else duration); duration, kcal, HR, max HR; art: HR zones, else HR chart; effort chip | `cardio.bold` |
+| `cardio` | HIIT, jump rope, aerobics, machines (elliptical, stepper, rowing machine, air walker), boxing, martial arts, dance | jumps (a jump rope's steps); a machine (`isCardioMachine`) also keeps its distance, power and cadence | jumps (else duration); duration, kcal, HR, max HR; distance, power, cadence; art: HR zones, else HR chart; effort chip | `cardio.bold` |
 | `flow` | yoga, pilates, stretching, tai chi, meditation | nothing more | duration; kcal, HR; art: HR chart; effort chip | `flow.minimal` |
 | `court` | team and racket sports | distance covered, steps | duration; kcal, HR, max HR, steps, distance; art: HR zones, else HR chart; effort chip | `court.bold` |
 | `other` | the rest (golf, paddling, skating, diving, ...) | distance, climb, steps, route | the `run` cards | `run.bold` |
@@ -443,7 +445,9 @@ rate, calories, heart rate zones, strain and gear are kept for every family.
 A family with cards lists its kind first in `subject.kinds` (`['gym', 'run']`), so the picker shows the family's cards first
 and every `run` card after them; `subject.defaultGroup` (`DEFAULT_GROUP`) is the card the sheet opens on (`offer.ts`
 `initialGroup`). The sport glyph of every card follows the family (`blocks.ts` `sportGlyph`: the barbell lifter for gym, MDI
-`run-fast`, `yoga` and `tennis` paths for cardio, flow and court), and the receipt reads metres for a swim, rpm for a ride and
+`run-fast`, `yoga` and `whistle` paths for cardio, flow and court; a whistle reads for every court sport, a racket would not),
+the minimal story falls back to the family glyph when the workout has no route or chart, the running cards and the receipt
+read metres for a swim, and the receipt reads rpm for a ride (by family, so BMX too) and
 thanks each family in its own words. `docs/screenshots/share-per-sport/` keeps the family contact sheets (Linux renders of
 `stickers-sheet.ts`) and the audit behind the families: `audit-before.png` (the cards the sheet offered a watch workout of
 every family before, `run.bold` first) and `audit-after.png` (the family's opening card, `run.bold` and the receipt now).

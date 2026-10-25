@@ -50,9 +50,11 @@ function runRouteSticker() {
   const line = k.group(
     { w: 'auto', h: 'auto' },
     [
-      k.stat({ w: 'auto' }, '{run.distanceM|km}', { unit: tl('unit.km'), size: 112, unitSize: 44, weight: 800, color: '$fg', labelPos: 'none', shadow: true, when: has('run.distanceM') }),
+      k.stat({ w: 'auto' }, '{run.distanceM|km}', { unit: tl('unit.km'), size: 112, unitSize: 44, weight: 800, color: '$fg', labelPos: 'none', shadow: true, when: all(has('run.distanceM'), not(is('run.category', 'swim'))) }),
+      k.stat({ w: 'auto' }, '{run.distanceM|int}', { unit: tl('unit.m'), size: 112, unitSize: 44, weight: 800, color: '$fg', labelPos: 'none', shadow: true, when: all(has('run.distanceM'), is('run.category', 'swim')) }),
       k.stat({ w: 'auto' }, '{run.paceSecKm|pace}', { unit: tl('unit.perKm'), size: 64, unitSize: 30, weight: 700, color: '$accent', labelPos: 'none', shadow: true, when: has('run.paceSecKm') }),
       k.stat({ w: 'auto' }, '{run.speedKmh|num:1}', { unit: tl('unit.kmh'), size: 64, unitSize: 30, weight: 700, color: '$accent', labelPos: 'none', shadow: true, when: has('run.speedKmh') }),
+      k.stat({ w: 'auto' }, '{run.pace100Sec|pace}', { unit: tl('unit.per100m'), size: 64, unitSize: 30, weight: 700, color: '$accent', labelPos: 'none', shadow: true, when: has('run.pace100Sec') }),
       k.stat({ w: 'auto' }, '{run.movingSec|dur}', { size: 64, weight: 700, color: '$accent', labelPos: 'none', shadow: true, when: all(lacks('run.distanceM')) }),
     ],
     { dir: 'row', gap: 48, align: 'end' },
@@ -90,10 +92,12 @@ function runStatsSticker() {
   const stack = k.group(
     { w: 'auto', h: 'auto' },
     [
-      cell('{run.distanceM|km}', 'label.distance', { unit: tl('unit.km'), size: 168, color: '$accent', when: has('run.distanceM') }),
+      cell('{run.distanceM|km}', 'label.distance', { unit: tl('unit.km'), size: 168, color: '$accent', when: all(has('run.distanceM'), not(is('run.category', 'swim'))) }),
+      cell('{run.distanceM|int}', 'label.distance', { unit: tl('unit.m'), size: 168, color: '$accent', when: all(has('run.distanceM'), is('run.category', 'swim')) }),
       cell('{run.movingSec|dur}', 'label.time', { size: 120 }),
       cell('{run.paceSecKm|pace}', 'label.pace', { unit: tl('unit.perKm'), size: 120, when: has('run.paceSecKm') }),
       cell('{run.speedKmh|num:1}', 'label.speed', { unit: tl('unit.kmh'), size: 120, when: has('run.speedKmh') }),
+      cell('{run.pace100Sec|pace}', 'label.pace', { unit: tl('unit.per100m'), size: 120, when: has('run.pace100Sec') }),
       cell('{run.hrAvg|int}', 'label.hr', { unit: tl('unit.bpm'), size: 120, when: has('run.hrAvg') }),
     ],
     { dir: 'column', gap: 40, align: 'start' },
@@ -211,8 +215,8 @@ function runReceiptSticker() {
       row('label.avgHr', '{run.hrAvg|int}', tl('unit.bpm'), has('run.hrAvg')),
       row('label.maxHr', '{run.hrMax|int}', tl('unit.bpm'), has('run.hrMax')),
       row('label.elevation', '{run.elevGainM|int}', tl('unit.m'), has('run.elevGainM')),
-      row('label.cadence', '{run.cadence|int}', tl('unit.spm'), all(has('run.cadence'), not(is('run.kind', 'ride')))),
-      row('label.cadence', '{run.cadence|int}', tl('unit.rpm'), all(has('run.cadence'), is('run.kind', 'ride'))),
+      row('label.cadence', '{run.cadence|int}', tl('unit.spm'), all(has('run.cadence'), not(is('run.category', 'ride')))),
+      row('label.cadence', '{run.cadence|int}', tl('unit.rpm'), all(has('run.cadence'), is('run.category', 'ride'))),
       row('label.power', '{run.power|int}', tl('unit.watt'), has('run.power')),
       row('label.steps', '{run.steps|int}', undefined, has('run.steps')),
       row('label.kcal', '{run.kcal|int}', tl('unit.kcal'), has('run.kcal')),
@@ -292,7 +296,8 @@ function runMapStory() {
   const headline = k.group(
     { w: 'fill', h: 'auto' },
     [
-      k.stat({ w: 'fill' }, '{run.distanceM|km}', { unit: tl('unit.km'), size: 210, unitSize: 60, weight: 800, color: '$accent', labelPos: 'none', minSize: 120, when: has('run.distanceM') }),
+      k.stat({ w: 'fill' }, '{run.distanceM|km}', { unit: tl('unit.km'), size: 210, unitSize: 60, weight: 800, color: '$accent', labelPos: 'none', minSize: 120, when: all(has('run.distanceM'), not(is('run.category', 'swim'))) }),
+      k.stat({ w: 'fill' }, '{run.distanceM|int}', { unit: tl('unit.m'), size: 210, unitSize: 60, weight: 800, color: '$accent', labelPos: 'none', minSize: 120, when: all(has('run.distanceM'), is('run.category', 'swim')) }),
       k.stat({ w: 'fill' }, '{run.movingSec|dur}', { size: 210, weight: 800, color: '$accent', labelPos: 'none', minSize: 120, when: lacks('run.distanceM') }),
       k.group(
         { w: 'auto', h: 'auto' },
@@ -497,7 +502,8 @@ function runZones(canvas: Canvas) {
       [
         { value: '{run.hrMax|int}', label: tl('label.maxHr'), unit: tl('unit.bpm'), when: has('run.hrMax') },
         { value: '{run.movingSec|dur}', label: tl('label.time') },
-        { value: '{run.distanceM|km}', label: tl('label.distance'), unit: tl('unit.km'), when: has('run.distanceM') },
+        { value: '{run.distanceM|km}', label: tl('label.distance'), unit: tl('unit.km'), when: all(has('run.distanceM'), not(is('run.category', 'swim'))) },
+        { value: '{run.distanceM|int}', label: tl('label.distance'), unit: tl('unit.m'), when: all(has('run.distanceM'), is('run.category', 'swim')) },
       ],
       { size, labelSize: 26, color: '$fg', labelColor: '$fgMuted', unitSize: 28, weight: 800 },
     );

@@ -266,6 +266,12 @@ const FAMILY_FIXTURES: readonly Fixture[] = [
     data: { run: { sport: 'Lompat tali', kind: 'other', category: 'cardio', startedAt: Date.UTC(2026, 9, 26, 23, 0), movingSec: 900, hrAvg: 156, hrMax: 179, kcal: 168, jumps: 1420 } },
   },
   {
+    key: 'cardio.rower',
+    kind: 'cardio',
+    label: 'Rowing machine: metres, watts and stroke rate',
+    data: { run: { sport: 'Mesin dayung', kind: 'other', category: 'cardio', startedAt: Date.UTC(2026, 9, 15, 23, 0), movingSec: 1500, distanceM: 5000, power: 150, cadence: 26, hrAvg: 146, hrMax: 171, kcal: 290 } },
+  },
+  {
     key: 'flow.yoga',
     kind: 'flow',
     label: 'Yoga with a heart rate trace',

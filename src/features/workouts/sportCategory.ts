@@ -45,3 +45,8 @@ export function sportCategory(sportName: string, summaryKind?: string, kind?: Sp
   const byActivity = activity ? RULES.find(([pattern]) => pattern.test(activity))?.[1] : undefined;
   return byActivity ?? (kind ? KIND_CATEGORY[kind] : 'other');
 }
+
+/** Cardio machines that measure a distance, power and cadence of their own (a rowing machine's metres and watts). */
+export function isCardioMachine(sportName: string): boolean {
+  return /air walker|elliptical|stepper|stair|rowing machine|indoor row|ski erg/i.test(sportName);
+}

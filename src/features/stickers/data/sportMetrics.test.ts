@@ -134,6 +134,20 @@ describe('sport families: the numbers each family keeps', () => {
       for (const field of dropped) expect({ category, field, value: run[field] }).toEqual({ category, field, value: undefined });
     }
   });
+
+  test('a cardio machine keeps the distance, power and cadence it measures; a HIIT class does not', () => {
+    expect(subjectOf('cardio.rower').run).toMatchObject({ category: 'cardio', distanceM: 5000, power: 150, cadence: 26 });
+    expect(subjectOf('cardio.rower').run.speedKmh).toBeUndefined();
+    expect(subjectOf('cardio.hiit').run.distanceM).toBeUndefined();
+  });
+
+  test('pace or speed follows the family, not the sport name: orienteering and an obstacle race read a pace, BMX a speed', () => {
+    expect(subjectOf('walk.orienteering').run).toMatchObject({ category: 'walk', paceSecKm: Math.round(3900 / 6.2) });
+    const obstacle = sportWorkout('run.road').input;
+    const race = buildRunSubject({ ...obstacle, workout: { ...obstacle.workout, sportName: 'Obstacle race' } }, 'id').data.run as JsonObject;
+    expect(race.paceSecKm).toBe(380);
+    expect(subjectOf('ride.bmx').run).toMatchObject({ category: 'ride', speedKmh: 18 });
+  });
 });
 
 describe('sport families: what the share sheet offers', () => {
@@ -180,5 +194,23 @@ describe('sport families: what the share sheet offers', () => {
     expect(shown).toContain('60');
     expect(shown).not.toContain('MAKASIH SUDAH LARI');
     expect(shown).toContain('MAKASIH SUDAH BERENANG');
+  });
+
+  test('a swim reads metres on every card, the running ones too', () => {
+    const shown = everyCardText('swim.pool');
+    expect(shown).not.toContain('km');
+    expect(shown).toContain('1.500');
+  });
+
+  test('durations read as a clock, never as "52m" (metres)', () => {
+    const shown = everyCardText('gym.watch');
+    expect(shown).toContain('52:00');
+    expect(shown.some((text) => /^\d+m$|\dj \d/.test(text))).toBe(false);
+  });
+
+  test('a BMX ride reads its cadence in rpm on the receipt although its sport kind is not a ride', () => {
+    const shown = everyCardText('ride.bmx');
+    expect(shown).toContain('rpm');
+    expect(shown).not.toContain('spm');
   });
 });

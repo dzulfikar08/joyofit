@@ -2,13 +2,12 @@ import type { WorkoutRow } from '@/db/queries';
 import { workoutTotals } from '@/features/strength/calc';
 import type { StrengthWorkout } from '@/features/strength/types';
 import { getT, type Locale } from '@/i18n';
-import { effortKind } from '@/features/share/shareStats';
 import { downsample, formatElapsed, kmSplits, type RoutePoint, type WorkoutSummary } from '@/features/workouts/summary';
 import { sportLabel } from '@/features/workouts/sportLabel';
 import { averagePaceSec, averageSpeedMs, workoutTimes } from '@/features/workouts/times';
 import { summaryCadence } from '@/features/workouts/analysis/cadence';
 import { sportKind, hasPace } from '@/features/workouts/analysis/sport';
-import { sportCategory } from '@/features/workouts/sportCategory';
+import { isCardioMachine, sportCategory, type SportCategory } from '@/features/workouts/sportCategory';
 import {
   BEST_EFFORT_DISTANCES,
   type AnalysisBestEffort,
@@ -90,13 +89,15 @@ export function speedFromPace(pace: number | null | undefined): number | null {
   return pos(pace) && pace <= MAX_PACE_SEC ? 3600 / pace : null;
 }
 
+/** Pace per km on foot (run, walk, orienteering, obstacle race), per 100 m in the pool, speed for the rest. */
 function paceFields(
   workout: WorkoutRow,
   summary: WorkoutSummary,
   movingSec: number,
+  category: SportCategory,
   out: JsonObject,
 ): void {
-  const kind = effortKind(workout.sportName);
+  const kind = category === 'swim' ? 'pace100m' : category === 'run' || category === 'walk' ? 'paceKm' : 'speed';
   const derivable = movingSec >= MIN_DERIVED_SECONDS;
   if (kind === 'speed') {
     const ms = (derivable ? averageSpeedMs(workout.distance, movingSec) : null) ?? summary.avgSpeed;
@@ -178,7 +179,7 @@ export function buildRunSubject(input: RunSubjectInput, locale: 'id' | 'en' | Lo
   if (Number.isFinite(elapsedSec) && elapsedSec - movingSec >= 60) run.elapsedSec = elapsedSec;
   const distance = pos(workout.distance) ? workout.distance : (analysis?.distanceM ?? null);
   if (pos(distance)) run.distanceM = distance;
-  paceFields(workout, summary, movingSec, run);
+  paceFields(workout, summary, movingSec, category, run);
 
   const hrAvg = pos(workout.avgHr) ? workout.avgHr : analysis?.stats.avgHr;
   const hrMax = pos(workout.maxHr) ? workout.maxHr : analysis?.stats.maxHr;
@@ -256,8 +257,9 @@ export function buildRunSubject(input: RunSubjectInput, locale: 'id' | 'en' | Lo
   }
 
   // What the sport family has no use for goes before any template sees it, so the running cards hide it too.
-  dropInapplicable(run, category);
-  const prs = metricApplies(category, 'records') ? rankOne(analysis) : [];
+  const machine = isCardioMachine(workout.sportName);
+  dropInapplicable(run, category, machine);
+  const prs = metricApplies(category, 'records', machine) ? rankOne(analysis) : [];
   const gear = cleanText(gearLine);
   if (gear) run.gear = gear;
 

@@ -24,8 +24,6 @@ interface Metric {
   value: string;
   label: Expr;
   unit?: Expr;
-  /** `1j 05m`: the hero keeps the descent of the `j` in its box, so the line under it does not run into it. */
-  descends?: boolean;
 }
 
 const metric = (field: string, filter: string, label: string, unit?: string): Metric => ({
@@ -33,14 +31,13 @@ const metric = (field: string, filter: string, label: string, unit?: string): Me
   value: `{run.${field}|${filter}}`,
   label: tl(`label.${label}`),
   unit: unit ? tl(`unit.${unit}`) : undefined,
-  ...(filter === 'durhm' ? { descends: true } : {}),
 });
 
 const M = {
   km: metric('distanceM', 'km', 'distance', 'km'),
   meters: metric('distanceM', 'int', 'distance', 'm'),
   clock: metric('movingSec', 'dur', 'time'),
-  duration: metric('movingSec', 'durhm', 'duration'),
+  duration: metric('movingSec', 'dur', 'duration'),
   pace: metric('paceSecKm', 'pace', 'pace', 'perKm'),
   pace100: metric('pace100Sec', 'pace', 'pace', 'per100m'),
   speed: metric('speedKmh', 'num:1', 'speed', 'kmh'),
@@ -48,6 +45,8 @@ const M = {
   steps: metric('steps', 'int', 'steps'),
   jumps: metric('jumps', 'int', 'jumps'),
   rpm: metric('cadence', 'int', 'cadence', 'rpm'),
+  /** A machine's cadence (strides or strokes a minute): no unit, the label says what it is. */
+  cadence: metric('cadence', 'int', 'cadence'),
   power: metric('power', 'int', 'power', 'watt'),
   hr: metric('hrAvg', 'int', 'avgHr', 'bpm'),
   /** "Heart rate" instead of "Avg heart rate", for rows of four. */
@@ -145,7 +144,10 @@ export const FAMILY_SPECS: readonly FamilySpec[] = [
     family: 'cardio',
     name: 'Cardio',
     hero: [M.jumps, M.duration],
-    rows: [[M.duration, M.kcal, M.hrShort, M.hrMax]],
+    rows: [
+      [M.duration, M.kcal, M.hrShort, M.hrMax],
+      [M.km, M.power, M.cadence],
+    ],
     brief: [M.duration, M.kcal, M.hrShort, M.hrMax],
     art: ['zones', 'hr'],
     effort: true,
@@ -251,7 +253,6 @@ function hero(k: Kit, spec: FamilySpec, o: HeroLook): LayerJson {
         gap: 16,
         minSize: 110,
         align: o.align,
-        trim: cell.descends ? false : undefined,
         shadow: o.shadow,
         when: heroWhen(spec, i),
       }),
@@ -504,7 +505,7 @@ function minimal(spec: FamilySpec, canvas: Canvas) {
         { dir: 'column', gap: 24, when: cellWhen(spec, m) },
       );
     const table = k.group({ w: W, h: 'auto' }, spec.brief.map(line), { dir: 'column', gap: 24 });
-    const middle = art(k, spec, { chartH: 220, stroke: 6, captionSize: 26, zoneLabels: true, routeColor: '$accent', routeColor2: '$accent', glyph: 0, glyphColor: '$fgMuted' });
+    const middle = art(k, spec, { chartH: 220, stroke: 6, captionSize: 26, zoneLabels: true, routeColor: '$accent', routeColor2: '$accent', glyph: 240, glyphColor: '$fgMuted' });
     const root = k.group(
       { x: 72, y: 250, w: W, h: 1330 },
       [head, rule(k, W), heroLayer, ...effort, table, ...middle, footerRow(k, W)],
@@ -516,7 +517,7 @@ function minimal(spec: FamilySpec, canvas: Canvas) {
   const table = k.group(
     { w: W, h: 'auto' },
     [rule(k, W), k.group({ w: W, h: 'auto' }, spec.brief.map((m) => cell(k, spec, m, { size: 50, labelSize: 26, unitSize: 24, weight: 600, color: '$fg', labelColor: '$fgMuted' })), { dir: 'row', gap: 24, align: 'start' })],
-    { dir: 'column', gap: 26 },
+    { dir: 'column', gap: 26, when: rowWhen(spec, spec.brief) },
   );
   const root = k.group({ x: 72, y: 72, w: W, h: 936 }, [head, spacer(k), heroLayer, ...effort, table, spacer(k), footerRow(k, W, 44)], { dir: 'column', gap: 32, align: 'stretch' });
   return build(spec, 'minimal', canvas, INK, [root], { tags: ['minimal', spec.family] });
