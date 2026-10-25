@@ -73,7 +73,8 @@ type Fetched = { text: string } | { problem: string };
 /** One source file as text (gunzipped when `gzip`), or why it could not be read. */
 async function fetchText(url: string, limit: number, gzip: boolean): Promise<Fetched> {
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    // no-store, as in agps.ts: the upstream files change every 15 minutes to 6 hours and carry no Cache-Control.
+    const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS), cache: "no-store" });
     if (!res.ok || !res.body) return { problem: `${url}: HTTP ${res.status}` };
     if (Number(res.headers.get("content-length") ?? "0") > limit) return { problem: `${url}: larger than ${limit} bytes` };
     const raw = await readCapped(res.body, limit);
@@ -101,7 +102,7 @@ async function fetchNavHeader(urls: string[]): Promise<Fetched> {
   const problems: string[] = [];
   for (const url of urls) {
     try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+      const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS), cache: "no-store" });
       if (!res.ok || !res.body) {
         problems.push(`${url}: HTTP ${res.status}`);
         continue;

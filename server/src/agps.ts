@@ -64,7 +64,9 @@ async function readCapped(body: ReadableStream<Uint8Array>, limit: number): Prom
 /** One BKG file as text, or why it could not be read. A missing file (today's, just after midnight) is a normal answer, not an error. */
 async function fetchRinex(url: string): Promise<{ text: string } | { problem: string }> {
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    // no-store: BKG sends no Cache-Control and Cloudflare caches `.gz` by default, so a plain fetch could get an hours-old copy of a
+    // file that is rewritten every 15 minutes (the 2026-10-25 builds had no GLONASS at all while the live file held 24 satellites).
+    const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS), cache: "no-store" });
     if (!res.ok || !res.body) return { problem: `${url}: HTTP ${res.status}` };
     if (Number(res.headers.get("content-length") ?? "0") > MAX_GZ_BYTES) return { problem: `${url}: larger than ${MAX_GZ_BYTES} bytes` };
     const gz = await readCapped(res.body, MAX_GZ_BYTES);
