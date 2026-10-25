@@ -85,6 +85,8 @@ The band's number wins when it is above zero. A band without GPS reports a flat 
 
 Four to twelve fields (`FieldCount` 4, 6, 8, 10, 12). The first six are the first page as before (a large first field, rows of three; or pairs); every further six are a page of their own in pairs, swiped sideways (`gridPages`, `MetricGrid`: a paging horizontal scroll, dots below that also switch the page). A layout saved by an older build (four or six fields) reads back unchanged, also one equal to an old default; only a kind without a saved layout gets the new default (run and walk: time, distance, pace, average pace, heart rate, HR zone | cadence, elevation gain, calories, average heart rate). The Run recorder's live view shares the grid, so it pages too, and it has the new fields as well: average and maximum heart rate of the recorded seconds, HR zone, steps (a pod's, else the phone's) and stride; its phone-counted cadence, steps and stride carry "(phone)" when no running pod is paired. Steps and stride are offered on foot only.
 
+A screen that can never read some metrics (an indoor recording: no elevation gain or altitude; not on foot: no steps or stride) offers only the field counts it can fill with the rest (`fieldCounts`: 10 at most on an indoor ride), and the repair of a saved layout never fills a slot with one of them (`normalizeLayout(raw, kind, exclude)`); a metric the person placed there themselves stays.
+
 The phone's position (`location`) is in the payload for the map; the trail is the screen's (`trail.ts`).
 
 ### Metrics by source on the watch-started screen (JRG-418 inventory, Fit 4 Pro 6.1.0.117, 2026-10-25)
