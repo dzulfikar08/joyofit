@@ -241,7 +241,9 @@ size the per-province maps.
 
 ### Results
 
-Pending: the lab APK and the device run on the owner's Fit 4 Pro (firmware 6.1.0.117).
+Pending device run. The owner runs it with the other open watch tests in one session (decision 2026-10-25); the steps and expected
+lines are above, the three files are in `~/re/offmaps/out/` on the build machine. Results go on JRG-426 and here: the handshake code, the
+`08` code, throughput (B/s) and parse time, the `01` free-space value next to the watch's storage screen, and photos of the map at two zooms.
 
 ## Evidence index (decompile paths are under `~/re/agps/jadx/`)
 
