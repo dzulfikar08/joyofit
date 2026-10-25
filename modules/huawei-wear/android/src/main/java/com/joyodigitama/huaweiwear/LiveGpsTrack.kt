@@ -1,5 +1,6 @@
 package com.joyodigitama.huaweiwear
 
+import kotlin.math.abs
 import kotlin.math.asin
 import kotlin.math.cos
 import kotlin.math.sin
@@ -164,5 +165,112 @@ internal class MotionStart {
   companion object {
     const val FIXES = 3
     const val MIN_SPEED_MPS = 1.0f
+  }
+}
+
+/**
+ * The phone's track of one live session (pure, so the rules run on the JVM):
+ *  - every fix becomes the newest [location], for the map, whatever state the session is in;
+ *  - only the fixes of a running stretch feed [track]: a fix while the watch only prepares (its GO screen, the GPS search, the countdown)
+ *    or while the workout is paused adds nothing;
+ *  - the switch to running begins a new stretch at the newest fix ([startStretch]).
+ * Start fresh rather than buffer the preparing fixes: the clock starts at that same moment (docs/live-run.md, "state machine"), so the
+ * distance and the time cover the same stretch and the average pace stays honest. A buffer would add the way to the start line, the
+ * pacing in front of the GO screen or the [MotionStart] run-up, none of which is in the clock (nor in the watch's own figures).
+ */
+internal class SessionTrack {
+  /** The newest fix, null before the first. */
+  var location: TrackFix? = null
+    private set
+
+  /** Distance, climb and speed of the running stretches. */
+  val track = TrackAccumulator()
+
+  /** Counts fixes of a person on the move, for a watch that never says when its workout starts. */
+  private val motion = MotionStart()
+
+  /**
+   * Takes a fix. [running]: the session runs, so the fix counts. [motionStarts]: the session prepares for a watch that gives no sign
+   * of its start, so movement is the start. Returns true when this fix completes that movement ([MotionStart]): the caller starts the
+   * session, which calls [startStretch].
+   */
+  fun onFix(fix: TrackFix, running: Boolean, motionStarts: Boolean): Boolean {
+    location = fix
+    if (running) {
+      track.add(fix)
+      return false
+    }
+    return motionStarts && motion.onFix(fix.speedMps, fix.accuracyM)
+  }
+
+  /**
+   * The session runs, from preparing or again after a pause: nothing from before is joined to what follows. The newest fix, when it
+   * is at most [ANCHOR_MAX_AGE_MS] from [nowMs], is where the new stretch starts, so the first second after the start is not lost; an
+   * older one is not where the person is now, and the next fix starts the stretch instead.
+   */
+  fun startStretch(nowMs: Long) {
+    track.gap()
+    val newest = location ?: return
+    if (abs(nowMs - newest.timeMs) <= ANCHOR_MAX_AGE_MS) track.add(newest)
+  }
+
+  companion object {
+    const val ANCHOR_MAX_AGE_MS = 5_000L
+  }
+}
+
+/**
+ * The phone's location updates for a live workout and the `18/03` feed of them to the watch, as two lifetimes ([WorkoutLink]):
+ *  - the watch's `18/02 {01: 1}` starts both; its `{01: 0}` stops only the feed. A watch with a GPS of its own withdraws its request
+ *    once it has a fix (Fit 4 Pro: 80 s into a walk, 2026-10-25) and sends no figures of its own, so the phone's track stays the only
+ *    source of distance and pace (docs/live-run.md);
+ *  - the updates stop when the live session ends ([sessionEnded]: Finish, the watch's stop, the status poll, the watchdog), or when the
+ *    request is withdrawn or the link lost with no live session to follow (a phone-started run, whose screen owns the watch's workout);
+ *  - a request after that starts both again.
+ * [start] returns false when the updates cannot run (no permission, no provider): the watch's next request tries again.
+ */
+internal class PhoneGpsSession(private val start: () -> Boolean, private val stop: () -> Unit) {
+  private val lock = Any()
+  private var tracking = false
+
+  /** The fixes also go to the watch. */
+  @Volatile
+  var feeding = false
+    private set
+
+  /** The phone's location updates run. */
+  val isTracking: Boolean get() = synchronized(lock) { tracking }
+
+  /** `18/02 {01: 1}`. */
+  fun watchAsks() {
+    synchronized(lock) {
+      feeding = true
+      if (!tracking) tracking = start()
+    }
+  }
+
+  /** `18/02 {01: 0}`: the feed stops; the updates go on while [liveSession] (a live workout is followed). */
+  fun watchWithdraws(liveSession: Boolean) {
+    synchronized(lock) {
+      feeding = false
+      if (!liveSession) stopTracking()
+    }
+  }
+
+  /** The link to the watch is gone: nothing to feed; the updates go on while [liveSession], until it ends. */
+  fun linkLost(liveSession: Boolean) = watchWithdraws(liveSession)
+
+  /** The live session ended: everything stops. */
+  fun sessionEnded() {
+    synchronized(lock) {
+      feeding = false
+      stopTracking()
+    }
+  }
+
+  private fun stopTracking() {
+    if (!tracking) return
+    tracking = false
+    stop()
   }
 }

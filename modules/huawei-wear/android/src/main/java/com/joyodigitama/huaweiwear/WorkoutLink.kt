@@ -29,7 +29,9 @@ internal class RawPacket(params: HuaweiPacket.ParamsProvider, service: Int, comm
  * What a workout started on the watch actually sends this phone (Fit 4 Pro, 6.1.0.117, observed 2026-10-15): no reverse
  * linkage, but GpsAndTime `18/02` `{01: 1}` about every 20 s while the workout runs ("send me the phone's GPS").
  *  - Phone GPS (GB `AsynchronousResponse.handleGpsRequest`, `SendGpsDataRequest`): answer `18/02 {7F: 100000}`, read the
- *    watch's wanted fields once (`18/01`), then stream every phone fix as `18/03 81{82{...}}` until `{01: 0}`.
+ *    watch's wanted fields once (`18/01`), then stream every phone fix as `18/03 81{82{...}}` until `{01: 0}`. The phone's
+ *    location updates themselves run until the live session ends ([PhoneGpsSession]): the watch withdraws its request once its
+ *    own GPS has a fix, and the phone's track is the only distance and pace there is.
  *  - Live numbers (as Huawei Health does):
  *    open the realtime report with `17/12 {01: 1}`; the watch pushes `17/11`, decoded into [LiveWorkout].
  */
@@ -46,9 +48,16 @@ internal class WorkoutLink(
   private val subscriptions = ArrayList<AutoCloseable>()
   private var reportOpenOn: HuaweiSession? = null
 
+  /** Read by the location listener on the main thread, written by the `18/01` request. */
+  @Volatile
   private var gpsParams: GpsParams? = null
   private var listener: LocationListener? = null
   private var lastLocation: Location? = null
+  private val phoneGps = PhoneGpsSession(start = ::startLocation, stop = ::stopLocation)
+
+  init {
+    live.onEnded = { phoneGps.sessionEnded() }
+  }
 
   private fun log(message: String) = events.log(LogDirection.INFO, null, null, null, message)
 
@@ -94,7 +103,8 @@ internal class WorkoutLink(
         }
         statusPoll?.cancel()
         statusPoll = null
-        stopGps()
+        synchronized(lock) { lastLocation = null }
+        phoneGps.linkLost(live.isLive)
       }
       else -> Unit
     }
@@ -195,10 +205,15 @@ internal class WorkoutLink(
         // A workout screen is open on the watch: follow it. The request comes before the workout runs (the watch is still
         // looking for a fix), so the session only prepares until the status poll says it runs; ask it right away.
         if (live.gpsPing()) pollSoon()
+        // The phone's own track does not wait for the watch's fields: they only shape the `18/03` feed.
+        phoneGps.watchAsks()
         openReport()
-        startGps()
+        loadGpsParams()
       } else {
-        stopGps()
+        synchronized(lock) { lastLocation = null }
+        val following = live.isLive
+        phoneGps.watchWithdraws(following)
+        if (following) log("Workout link: the watch stopped asking for the phone's GPS; feed stopped, the workout's track goes on")
       }
     }
   }
@@ -223,15 +238,14 @@ internal class WorkoutLink(
   private fun hasFineLocation() =
     appContext.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
+  /** Starts the phone's location updates ([PhoneGpsSession]); every fix goes to the live session, and to the watch while it asks. */
   @SuppressLint("MissingPermission")
-  private suspend fun startGps() {
-    if (synchronized(lock) { listener != null }) return
+  private fun startLocation(): Boolean {
     if (!hasFineLocation()) {
       log("Workout link: the watch asks for the phone's GPS, but JoyoFit has no precise location permission")
-      return
+      return false
     }
-    val params = loadGpsParams() ?: return
-    val manager = appContext.getSystemService(LocationManager::class.java) ?: return
+    val manager = appContext.getSystemService(LocationManager::class.java) ?: return false
     val l = LocationListener { location ->
       live.onLocation(
         TrackFix(
@@ -244,23 +258,26 @@ internal class WorkoutLink(
           bearingDeg = if (location.hasBearing()) location.bearing else null,
         ),
       )
-      scope.launch { sendLocation(location, params) }
+      // The `18/03` feed needs the fields the watch takes (`18/01`); without them yet, the fix is the track's only.
+      val params = gpsParams
+      if (phoneGps.feeding && params != null) scope.launch { sendLocation(location, params) }
     }
     synchronized(lock) {
-      if (listener != null) return
       listener = l
       lastLocation = null
     }
-    try {
+    return try {
       manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, l, Looper.getMainLooper())
-      log("Workout link: phone GPS started for the watch")
+      log("Workout link: phone GPS started for the workout")
+      true
     } catch (e: Exception) {
       synchronized(lock) { listener = null }
       log("Workout link: phone GPS not started: ${e.message}")
+      false
     }
   }
 
-  private fun stopGps() {
+  private fun stopLocation() {
     val l = synchronized(lock) { listener.also { listener = null; lastLocation = null } } ?: return
     appContext.getSystemService(LocationManager::class.java)?.removeUpdates(l)
     log("Workout link: phone GPS stopped")

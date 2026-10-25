@@ -428,7 +428,7 @@ final class LiveWorkoutTests: XCTestCase {
         let expected: Set<String> = [
             "id", "status", "source", "sportType", "sportName", "updatedAt", "endedAt", "durationSec", "heartRate", "heartRateZone", "maxHeartRate",
             "distanceM", "calories", "activeCalories", "speedKmh", "paceSecPerKm", "stepRate", "steps", "cadence", "altitudeM", "riseM", "descentM",
-            "aerobicTe", "anaerobicTe", "fatGrams", "carbGrams", "fatShare",
+            "aerobicTe", "anaerobicTe", "fatGrams", "carbGrams", "fatShare", "location", "locationAt", "gpsDistanceM", "gpsRiseM", "gpsPaceSecPerKm",
         ]
         XCTAssertEqual(keys, expected)
         XCTAssertTrue(r.live.snapshot()!["heartRate"] is NSNull)
@@ -475,6 +475,8 @@ final class LiveWorkoutTests: XCTestCase {
         l.r.rig.session.onData(gpsRequest(true))
 
         await eventually("gps started") { l.gps.started == 1 }
+        // The location updates start first; the fields the watch takes (18/01) come after, for the feed.
+        await eventually("fields read") { l.r.events.contains("watch takes GPS fields bitmap 0xd7") }
         // The answer (18/02 {7F: 100000}), the parameter read (18/01) and the report open (17/12) went out; a session follows the workout.
         let sent = l.r.rig.watch.sent
         let answer = try XCTUnwrap(sent.first { $0.service == 0x18 && $0.command == 0x02 })
@@ -504,15 +506,19 @@ final class LiveWorkoutTests: XCTestCase {
             WorkoutLinkWire.gpsFix(params, fix: second, previous: first, distanceFromPrevious: second.distance(to: first), nowMs: nowMs).tlv?.serialize()
         )
 
-        // A second request while streaming does not start a second stream; "off" stops it and further fixes are not sent.
+        // A second request while streaming does not start a second stream. "Off" stops only the feed: no further fixes reach the watch, but the
+        // phone keeps tracking the workout until it ends.
         l.r.rig.session.onData(gpsRequest(true))
         await sleepMs(100)
         XCTAssertEqual(l.gps.started, 1)
         l.r.rig.session.onData(gpsRequest(false))
-        await eventually("gps stopped") { l.gps.stopped == 1 }
+        await eventually("feed stopped") { l.r.events.contains("feed stopped") }
         l.gps.emit(first)
         await sleepMs(80)
         XCTAssertEqual(l.r.rig.watch.sent.filter { $0.service == 0x18 && $0.command == 0x03 }.count, 2)
+        XCTAssertEqual(l.gps.stopped, 0)
+        l.r.live.finish()
+        XCTAssertEqual(l.gps.stopped, 1)
         XCTAssertTrue(l.r.events.contains("phone GPS stopped"))
     }
 
@@ -538,6 +544,7 @@ final class LiveWorkoutTests: XCTestCase {
         // The user said no earlier in this process: the watch's next request does not ask again.
         l.gps.auth = .notDetermined
         l.r.rig.session.onData(gpsRequest(false))
+        l.r.live.finish()
         await eventually { l.gps.stopped == 1 }
         l.r.rig.session.onData(gpsRequest(true))
         await sleepMs(150)
@@ -549,6 +556,7 @@ final class LiveWorkoutTests: XCTestCase {
         await l.link.linkConnected(l.r.rig.source.current!)
         l.r.rig.session.onData(gpsRequest(true))
         await eventually { l.gps.started == 1 }
+        await eventually { l.r.events.contains("watch takes GPS fields bitmap 0x10") }
         l.gps.emit(WorkoutLinkWire.Fix(latitude: 1, longitude: 2, timeMs: l.r.counter.now, speed: 3, altitude: 4, bearing: 5, accuracy: 6))
         await eventually { l.r.rig.watch.sent.contains { $0.service == 0x18 && $0.command == 0x03 } }
         let fix = try XCTUnwrap(l.r.rig.watch.sent.first { $0.service == 0x18 && $0.command == 0x03 })
@@ -606,12 +614,15 @@ final class LiveWorkoutTests: XCTestCase {
         await eventually("flat report") { l.r.live.snapshot()?["heartRate"] as? Int == 160 }
     }
 
-    func testALinkLossStopsGpsAndTheNextSessionSubscribesAgain() async {
+    func testALinkLossKeepsTheWorkoutsTrackAndTheNextSessionSubscribesAgain() async {
         let l = makeLink()
         await l.link.linkConnected(l.r.rig.source.current!)
         l.r.rig.session.onData(gpsRequest(true))
         await eventually { l.gps.started == 1 }
+        // The workout goes on without the link: its track runs until the workout ends.
         l.link.linkDisconnected()
+        XCTAssertEqual(l.gps.stopped, 0)
+        l.r.live.finish()
         XCTAssertEqual(l.gps.stopped, 1)
         // The same session announced again is not subscribed twice; a request on it is still handled once.
         await l.link.linkConnected(l.r.rig.source.current!)
@@ -620,6 +631,97 @@ final class LiveWorkoutTests: XCTestCase {
         await eventually { l.gps.started == 2 }
         let answers = l.r.rig.watch.sent.filter { $0.service == 0x18 && $0.command == 0x02 }.count
         XCTAssertEqual(answers, 2)
+        l.link.linkDisconnected()
+    }
+
+    // MARK: the phone's own track (LiveGpsTrack.kt, docs/live-run.md "Phone GPS for the whole session")
+
+    private func walk(_ t0: Int64, _ sec: Int, _ northM: Double) -> WorkoutLinkWire.Fix {
+        WorkoutLinkWire.Fix(latitude: 10 + northM / 111_194.93, longitude: 20, timeMs: t0 + Int64(sec) * 1000, speed: 4, altitude: 100, accuracy: 5)
+    }
+
+    private func distance(_ r: Rig) -> Double { r.live.snapshot()?["gpsDistanceM"] as? Double ?? -1 }
+
+    func testTheWatchWithdrawingItsGpsRequestMidRunKeepsTheTrackGoing() async {
+        let l = makeLink()
+        await l.link.linkConnected(l.r.rig.source.current!)
+        l.r.rig.session.onData(gpsRequest(true))
+        await eventually { l.gps.started == 1 }
+        await eventually("fields read") { l.r.events.contains("watch takes GPS fields bitmap") }
+        let fed = { l.r.rig.watch.sent.filter { $0.service == 0x18 && $0.command == 0x03 }.count }
+        let t0 = l.r.counter.now
+        for s in 0...20 { l.gps.emit(walk(t0, s, Double(s) * 4)) }
+        await eventually("fixes fed") { fed() == 21 }
+        XCTAssertEqual(distance(l.r), 80, accuracy: 0.5)
+        // The watch has its own fix and withdraws its request (Fit 4 Pro, 80 s into a walk, 2026-10-25).
+        l.r.rig.session.onData(gpsRequest(false))
+        await eventually("feed stopped") { l.r.events.contains("feed stopped") }
+        for s in 21...40 { l.gps.emit(walk(t0, s, Double(s) * 4)) }
+        XCTAssertEqual(distance(l.r), 160, accuracy: 0.5)
+        XCTAssertEqual(Double(l.r.live.snapshot()?["gpsPaceSecPerKm"] as? Int ?? 0), 250, accuracy: 1)
+        XCTAssertEqual(l.r.live.snapshot()?["locationAt"] as? Double, Double(t0 + 40_000))
+        await sleepMs(80)
+        XCTAssertEqual(fed(), 21)
+        XCTAssertEqual(l.gps.stopped, 0)
+        // Asking again restarts the feed on the same location updates (the fix repeats until the request is handled; repeats add no distance).
+        l.r.rig.session.onData(gpsRequest(true))
+        await eventually("fed again") {
+            l.gps.emit(walk(t0, 41, 164))
+            return fed() > 21
+        }
+        XCTAssertEqual(l.gps.started, 1)
+        XCTAssertEqual(distance(l.r), 164, accuracy: 0.5)
+        // The end of the workout stops the phone's GPS.
+        l.r.live.finish()
+        XCTAssertEqual(l.gps.stopped, 1)
+        l.link.linkDisconnected()
+    }
+
+    func testFixesWhileTheWatchPreparesShowOnTheMapButAddNoDistance() async {
+        let r = make()
+        await r.rig.attach()
+        r.rig.session.onData(control(op: LiveWorkoutWire.opStart, type: 1, status: 0))
+        await eventually { r.events.last?["status"] as? String == "preparing" }
+        // 30 s of walking to the start line while the watch searches for GPS.
+        let t0 = r.counter.now
+        for s in 0...30 { r.live.onLocation(walk(t0, s, Double(s) * 4)) }
+        let preparing = r.live.snapshot()!
+        XCTAssertEqual(preparing["gpsDistanceM"] as? Double, 0)
+        XCTAssertEqual(preparing["locationAt"] as? Double, Double(t0 + 30_000))
+        XCTAssertEqual((preparing["location"] as? [String: Any])?["lat"] as? Double, walk(t0, 30, 120).latitude)
+        // The watch starts the workout: the stretch begins at the newest fix, the walk before it is not in it.
+        r.counter.advance(30_400)
+        var running = HuaweiTLV()
+        running.put(0x11, bytes: hex("01"))
+        r.live.onReport(WorkoutReport.parse(running))
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "running")
+        for s in 31...40 { r.live.onLocation(walk(t0, s, Double(s) * 4)) }
+        XCTAssertEqual(distance(r), 40, accuracy: 0.5)
+        // A pause adds nothing either.
+        var paused = HuaweiTLV()
+        paused.put(0x11, bytes: hex("02"))
+        r.live.onReport(WorkoutReport.parse(paused))
+        for s in 41...60 { r.live.onLocation(walk(t0, s, Double(s) * 4)) }
+        XCTAssertEqual(distance(r), 40, accuracy: 0.5)
+    }
+
+    func testAnyEndOfTheWorkoutStopsThePhonesGpsOnce() async {
+        let l = makeLink()
+        await l.link.linkConnected(l.r.rig.source.current!)
+        l.r.rig.session.onData(gpsRequest(true))
+        await eventually { l.gps.started == 1 }
+        // The watch's own stop, not Finish on the phone.
+        var stop = HuaweiTLV()
+        stop.put(0x11, bytes: hex("04"))
+        l.r.live.onReport(WorkoutReport.parse(stop))
+        XCTAssertEqual(l.r.live.snapshot()?["status"] as? String, "ended")
+        XCTAssertEqual(l.gps.stopped, 1)
+        l.r.live.finish()
+        l.r.live.onReport(WorkoutReport.parse(stop))
+        XCTAssertEqual(l.gps.stopped, 1)
+        // A new request (the next workout) starts it again.
+        l.r.rig.session.onData(gpsRequest(true))
+        await eventually { l.gps.started == 2 }
         l.link.linkDisconnected()
     }
 }

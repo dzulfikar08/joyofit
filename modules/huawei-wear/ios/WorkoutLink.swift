@@ -1,8 +1,10 @@
 // Port of WorkoutLink.kt: what a workout started on the watch actually sends this phone (Fit 4 Pro, 6.1.0.117): no reverse linkage, but
 // GpsAndTime `18/02` `{01: 1}` about every 20 s while the workout runs ("send me the phone's GPS").
 //  - Phone GPS (GB `AsynchronousResponse.handleGpsRequest`, `SendGpsDataRequest`): answer `18/02 {7F: 100000}`, read the watch's wanted fields
-//    once (`18/01`), then stream every phone fix as `18/03 81{82{...}}` until `{01: 0}`. On iOS the stream is CoreLocation with when-in-use
-//    authorization and no background location, so fixes flow while the app is in the foreground.
+//    once (`18/01`), then stream every phone fix as `18/03 81{82{...}}` until `{01: 0}`. The location updates themselves run until the live
+//    session ends (`PhoneGpsSession`): the watch withdraws its request once its own GPS has a fix, and the phone's track (`LiveWorkout.onLocation`)
+//    is the only distance and pace there is. On iOS the stream is CoreLocation with when-in-use authorization and no background location, so
+//    fixes flow while the app is in the foreground.
 //  - Live numbers (as Huawei Health does): open the realtime report with `17/12 {01: 1}`; the watch pushes `17/11`, decoded into `LiveWorkout`.
 //  - The 30 s `17/03` status poll: the only signal an indoor workout gives.
 import Foundation
@@ -29,7 +31,7 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
     private var attached: HuaweiSession?
     private var reportOpenOn: HuaweiSession?
     private var gpsParams: WorkoutLinkWire.GpsParams?
-    private var gpsRunning = false
+    private var phoneGps: PhoneGpsSession!
     private var lastFix: WorkoutLinkWire.Fix?
     private var statusPoll: Task<Void, Never>?
     private var lastStatusLog: String?
@@ -47,6 +49,8 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
         self.statusFirstMs = statusFirstMs
         self.statusEveryMs = statusEveryMs
         self.nowMs = nowMs
+        phoneGps = PhoneGpsSession(start: { [weak self] in self?.startLocation() ?? false }, stop: { [weak self] in self?.stopLocation() })
+        live.onEnded = { [weak self] in self?.phoneGps.sessionEnded() }
     }
 
     private func log(_ message: String) { events.info(message) }
@@ -89,7 +93,8 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
             return statusPoll
         }
         poll?.cancel()
-        stopGps()
+        lock.locked { lastFix = nil }
+        phoneGps.linkLost(liveSession: live.isLive)
     }
 
     // MARK: workout status poll (17/03, Huawei Health)
@@ -172,12 +177,18 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
             log("Workout link: GPS answer not sent: \((error as? WearError)?.message ?? "\(error)")")
         }
         if enable {
-            // A workout is running on the watch: follow it.
+            // A workout screen is open on the watch: follow it.
             live.gpsPing()
+            await askLocationOnce()
+            // The phone's own track does not wait for the watch's fields: they only shape the `18/03` feed.
+            phoneGps.watchAsks()
             await openReport()
-            await startGps()
+            _ = await loadGpsParams()
         } else {
-            stopGps()
+            lock.locked { lastFix = nil }
+            let following = live.isLive
+            phoneGps.watchWithdraws(liveSession: following)
+            if following { log("Workout link: the watch stopped asking for the phone's GPS; feed stopped, the workout's track goes on") }
         }
     }
 
@@ -199,58 +210,47 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
         }
     }
 
-    private func startGps() async {
-        if lock.locked({ gpsRunning }) { return }
-        var authorization = gps.authorization
-        // The system prompt (when-in-use) appears here, the first time the watch asks while the app is in the foreground.
-        if authorization == .notDetermined, !lock.locked({ phoneGpsPrompted }) {
-            lock.locked { phoneGpsPrompted = true }
-            authorization = await gps.requestAuthorization()
-        }
-        guard authorization == .granted else {
-            log("Workout link: the watch asks for the phone's GPS, but JoyoFit has no location permission")
-            return
-        }
-        guard let params = await loadGpsParams() else { return }
-        let started: Bool = lock.locked {
-            if gpsRunning { return false }
-            gpsRunning = true
-            lastFix = nil
-            return true
-        }
-        if !started { return }
-        if gps.start({ [weak self] fix in
-            guard let self else { return }
-            Task { await self.sendLocation(fix, params) }
-        }) {
-            log("Workout link: phone GPS started for the watch")
-        } else {
-            lock.locked { gpsRunning = false }
-            log("Workout link: phone GPS not started")
-        }
+    /// The system prompt (when-in-use) appears here, the first time the watch asks while the app is in the foreground.
+    private func askLocationOnce() async {
+        guard gps.authorization == .notDetermined, !lock.locked({ phoneGpsPrompted }) else { return }
+        lock.locked { phoneGpsPrompted = true }
+        _ = await gps.requestAuthorization()
     }
 
-    private func stopGps() {
-        let was: Bool = lock.locked {
-            defer {
-                gpsRunning = false
-                lastFix = nil
-            }
-            return gpsRunning
+    /// Starts the phone's location updates (`PhoneGpsSession`); every fix goes to the live session, and to the watch while it asks.
+    private func startLocation() -> Bool {
+        guard gps.authorization == .granted else {
+            log("Workout link: the watch asks for the phone's GPS, but JoyoFit has no location permission")
+            return false
         }
-        if !was { return }
+        lock.locked { lastFix = nil }
+        if gps.start({ [weak self] fix in self?.onFix(fix) }) {
+            log("Workout link: phone GPS started for the workout")
+            return true
+        }
+        log("Workout link: phone GPS not started")
+        return false
+    }
+
+    private func stopLocation() {
+        lock.locked { lastFix = nil }
         gps.stop()
         log("Workout link: phone GPS stopped")
     }
 
+    private func onFix(_ fix: WorkoutLinkWire.Fix) {
+        live.onLocation(fix)
+        // The `18/03` feed needs the fields the watch takes (`18/01`); without them yet, the fix is the track's only.
+        guard phoneGps.feeding, let params = lock.locked({ gpsParams }) else { return }
+        Task { await self.sendLocation(fix, params) }
+    }
+
     private func sendLocation(_ fix: WorkoutLinkWire.Fix, _ params: WorkoutLinkWire.GpsParams) async {
-        guard let handle = link.handle() else { return }
+        guard let handle = link.handle(), phoneGps.feeding else { return }
         let previous: WorkoutLinkWire.Fix? = lock.locked {
-            guard gpsRunning else { return nil }
             defer { lastFix = fix }
             return lastFix
         }
-        if !lock.locked({ gpsRunning }) { return }
         let packet = WorkoutLinkWire.gpsFix(params, fix: fix, previous: previous, distanceFromPrevious: previous.map { fix.distance(to: $0) }, nowMs: nowMs())
         do {
             try await handle.session.send(packet, label: "phone GPS fix", logFrames: false)

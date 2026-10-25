@@ -535,7 +535,7 @@ export interface LiveWorkout {
   clockConfirmed?: boolean;
   /** The watch asked for the phone's GPS during this workout: an outdoor sport, whatever sport tag it sent. Absent from older builds (`source` `gps` says the same). */
   gpsRequested?: boolean;
-  /** The phone's last GPS fix (it runs for the watch while the watch asks for it), null before the first. Absent from older builds. */
+  /** The phone's last GPS fix (it runs from the watch's first GPS request to the end of the workout), null before the first. Absent from older builds. */
   location?: LiveLocation | null;
   /** GPS time (Unix ms) of `location`. */
   locationAt?: number | null;
