@@ -5,7 +5,7 @@ shipped: 2026-10-25
 available: code
 tier: free
 post: todo
-atur:
+atur: JRG-415
 ---
 
 **Apa:** Saat memutar musik atau podcast di HP Android (Spotify, YouTube Music, Apple Music, dan aplikasi media lainnya), layar Musik di jam kini menampilkan judul lagu, artis, status putar/jeda, dan volume, serta tombol Play, Pause, Next, Previous, dan pengatur volume di jam langsung mengontrol pemutaran di HP.
