@@ -10,8 +10,8 @@ interface MetricTileProps {
   value: string;
   unit?: string;
   size: 'hero' | 'lg' | 'md';
-  /** Tints the tile and adds the zone line: the heart-rate tile in its training zone. */
-  zone?: { color: string; text: string } | null;
+  /** Tints the tile and adds the zone line (when `text` is not null): the heart-rate tile in its training zone. */
+  zone?: { color: string; text: string | null } | null;
   /** Long press changes this field (the picker opens on this slot). */
   onLongPress: () => void;
   longPressHint: string;
@@ -24,7 +24,7 @@ export function MetricTile({ label, value, unit, size, zone, onLongPress, longPr
   return (
     <PressableScale
       accessible
-      accessibilityLabel={`${label}: ${value}${unit ? ` ${unit}` : ''}${zone ? `, ${zone.text}` : ''}`}
+      accessibilityLabel={`${label}: ${value}${unit ? ` ${unit}` : ''}${zone?.text ? `, ${zone.text}` : ''}`}
       accessibilityHint={longPressHint}
       accessibilityActions={[{ name: 'longpress', label: longPressHint }]}
       onAccessibilityAction={(event) => {
@@ -43,7 +43,7 @@ export function MetricTile({ label, value, unit, size, zone, onLongPress, longPr
         {label}
       </AppText>
       <Metric value={value} unit={unit} size={size} />
-      {zone ? (
+      {zone?.text ? (
         <View style={styles.zone}>
           <View style={[styles.zoneDot, { backgroundColor: zone.color }]} />
           <AppText variant="label" numberOfLines={1} style={styles.zoneText}>

@@ -15,6 +15,8 @@ export interface FieldText {
 function unitOf(id: RunMetricId, foot: boolean): string | undefined {
   switch (id) {
     case 'duration':
+    case 'hrZone':
+    case 'steps':
       return undefined;
     case 'distance':
       return 'km';
@@ -26,9 +28,12 @@ function unitOf(id: RunMetricId, foot: boolean): string | undefined {
     case 'cadence':
       return foot ? 'spm' : 'rpm';
     case 'hr':
+    case 'avgHr':
+    case 'maxHr':
       return 'bpm';
     case 'calories':
       return 'kcal';
+    case 'stride':
     case 'elevationGain':
     case 'altitude':
       return 'm';
@@ -49,6 +54,8 @@ export function formatMetric(id: RunMetricId, value: number | null | undefined, 
       return { value: paceValue(value), unit };
     case 'speed':
       return { value: fmtDecimal(value, 1), unit };
+    case 'stride':
+      return { value: fmtDecimal(value, 2), unit };
     default:
       return { value: fmtInt(value), unit };
   }

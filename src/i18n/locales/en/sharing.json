@@ -87,6 +87,8 @@
     "emptyDescription": "Outdoor walks, runs and rides started on the watch open here. Indoors, start on the watch, then tap Start.",
     "start": "Start",
     "finish": "Finish",
+    "finishOnWatch": "Finish the workout on the watch. This screen ends with it.",
+    "stopFollowing": "Stop following on the phone",
     "workout": "Workout",
     "status": {
       "searching": "Waiting for the start on the watch…",
@@ -147,6 +149,12 @@
     "map": {
       "waiting": "Waiting for the phone’s GPS position"
     },
+    "steps": {
+      "ask": "Cadence, steps and stride come from your phone’s step counter (the watch sends none). Allow it to see them here.",
+      "allow": "Allow step counter",
+      "denied": "The step counter is not allowed for JoyoFit. Turn on Physical activity (Android) or Motion & Fitness (iPhone) in the phone’s settings; counting starts when you come back.",
+      "openSettings": "Open settings"
+    },
     "route": {
       "title": "Route on the map",
       "none": "No route",
@@ -166,6 +174,9 @@
       "slotTitle": "Field {{number}}",
       "shownIn": "Now in field {{number}}, swaps with it",
       "longPress": "Hold to change this field",
+      "phoneLabel": "{{label}} (phone)",
+      "page": "Page {{current}} of {{total}}",
+      "pagesHint": "More than {{count}} fields go on further pages: swipe the fields sideways.",
       "metric": {
         "duration": "Time",
         "distance": "Distance",
@@ -173,8 +184,13 @@
         "avgPace": "Average pace",
         "speed": "Speed",
         "hr": "Heart rate",
+        "hrZone": "Heart-rate zone",
+        "avgHr": "Average heart rate",
+        "maxHr": "Max heart rate",
         "calories": "Calories",
         "cadence": "Cadence",
+        "steps": "Steps",
+        "stride": "Stride length",
         "elevationGain": "Elevation gain",
         "altitude": "Altitude"
       }

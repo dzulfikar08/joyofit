@@ -27,6 +27,7 @@ import { syncHrZonesAtLaunch } from '@/features/hrzones/settings';
 import { BikeRideProvider } from '@/features/bikecomputer/BikeRideProvider';
 import { lockPortrait } from '@/features/bikecomputer/ui/orientation';
 import { flushSupportReports } from '@/features/device/aturReports';
+import { LiveExtrasFeed } from '@/features/live/liveExtras';
 import { LivePill } from '@/features/record/ui/LivePill';
 import { RoomCaptureRunner } from '@/features/thermometer/RoomCaptureRunner';
 import { UpdateBanner } from '@/features/updates/UpdateBanner';
@@ -192,6 +193,8 @@ function RootNavigator() {
                   <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
                   {/* The bedroom thermometer's readings (foreground scan, overnight file); idle without a paired thermometer. */}
                   <RoomCaptureRunner />
+                  {/* A watch-started workout's average and highest heart rate, and the phone's step counter while it runs on foot. */}
+                  <LiveExtrasFeed />
                   <TabBarInsetProvider>
                   <StartWorkoutProvider>
                   <View style={{ flex: 1 }}>

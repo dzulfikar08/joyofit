@@ -66,13 +66,25 @@ private func frame(_ service: UInt8, _ command: UInt8, _ tlv: HuaweiTLV) -> Byte
     return body
 }
 
-private func statusAnswer(operatorType: Int, workoutType: Int) -> Bytes {
+/// A `17/03` answer; `trainMonitorState` nil leaves tag 02 out (a watch read by its operator alone).
+private func statusAnswer(operatorType: Int, workoutType: Int, trainMonitorState: Int? = nil) -> Bytes {
     var body = HuaweiTLV()
+    if let trainMonitorState { body.put(0x02, byte: UInt8(trainMonitorState)) }
     body.put(0x03, byte: UInt8(operatorType))
     body.put(0x06, byte: UInt8(workoutType))
     var t = HuaweiTLV()
     t.put(0x81, tlv: body)
     return frame(0x17, 0x03, t)
+}
+
+/// What the scripted watch answers next.
+private final class Script: @unchecked Sendable {
+    private let lock = NSLock()
+    private var _answer: Bytes?
+    var answer: Bytes? {
+        get { lock.locked { _answer } }
+        set { lock.locked { _answer = newValue } }
+    }
 }
 
 final class LiveWorkoutTests: XCTestCase {
@@ -320,63 +332,69 @@ final class LiveWorkoutTests: XCTestCase {
 
     func testTheStatusPollStartsFollowsAndEndsAPhoneSideSession() {
         let r = make()
-        r.live.watchStatus(running: true, paused: false, workoutType: 7)
+        r.live.watchStatus(phase: .running, workoutType: 7)
         XCTAssertEqual(r.events.last?["source"] as? String, "status")
         XCTAssertEqual(r.events.last?["sportType"] as? Int, 7)
+        XCTAssertEqual(r.events.last?["clockConfirmed"] as? Bool, true)
         XCTAssertEqual(r.counter.toggles, [true])
         r.live.onHeartRate(120)
-        r.live.watchStatus(running: true, paused: true, workoutType: 7)
+        r.live.watchStatus(phase: .paused, workoutType: 7)
         XCTAssertEqual(r.events.last?["status"] as? String, "paused")
         r.live.onHeartRate(120) // paused: not counted
         XCTAssertEqual(r.events.last?["status"] as? String, "paused")
-        r.live.watchStatus(running: true, paused: false, workoutType: nil)
+        r.live.watchStatus(phase: .running, workoutType: nil)
         XCTAssertEqual(r.events.last?["status"] as? String, "running")
-        // One idle answer is not enough; the second ends it (no GPS request ever came, so the silence has elapsed).
-        r.counter.advance(LiveWorkout.gpsSilenceMs + 1_000)
-        r.live.watchStatus(running: false, paused: false, workoutType: nil)
+        // The watch confirmed the workout: three idle answers in a row end it, the first two do not.
+        r.live.watchStatus(phase: .idle, workoutType: nil)
+        r.live.watchStatus(phase: .idle, workoutType: nil)
         XCTAssertEqual(r.events.last?["status"] as? String, "running")
-        r.live.watchStatus(running: false, paused: false, workoutType: nil)
+        r.live.watchStatus(phase: .idle, workoutType: nil)
         XCTAssertEqual(r.events.last?["status"] as? String, "ended")
         XCTAssertEqual(r.counter.toggles, [true, false])
-        XCTAssertTrue(r.events.contains("no workout 2 times in a row"))
+        XCTAssertTrue(r.events.contains("no workout 3 times in a row"))
     }
 
-    func testARunningAnswerResetsTheIdleCountAndGpsRequestsKeepASessionAlive() {
+    func testARunningAnswerResetsTheIdleCountAndGpsRequestsKeepAPreparingSessionAlive() {
         let r = make()
-        r.live.watchStatus(running: true, paused: false, workoutType: nil)
-        r.live.watchStatus(running: false, paused: false, workoutType: nil)
-        r.live.watchStatus(running: true, paused: false, workoutType: nil)
-        r.live.watchStatus(running: false, paused: false, workoutType: nil)
+        r.live.watchStatus(phase: .running, workoutType: nil)
+        r.live.watchStatus(phase: .idle, workoutType: nil)
+        r.live.watchStatus(phase: .idle, workoutType: nil)
+        r.live.watchStatus(phase: .running, workoutType: nil)
+        r.live.watchStatus(phase: .idle, workoutType: nil)
+        r.live.watchStatus(phase: .idle, workoutType: nil)
         XCTAssertEqual(r.events.last?["status"] as? String, "running")
-        // Two idle answers but a GPS request a moment ago: the watch is still running a workout.
+        r.live.finish()
+        // A session that waits for GO: idle answers are normal while the watch still asks for GPS.
+        r.counter.advance(LiveWorkoutPolicy.restartGuardMs)
         r.live.gpsPing()
-        r.live.watchStatus(running: false, paused: false, workoutType: nil)
-        XCTAssertEqual(r.events.last?["status"] as? String, "running")
-        r.counter.advance(LiveWorkout.gpsSilenceMs + 1)
-        r.live.watchStatus(running: false, paused: false, workoutType: nil)
-        XCTAssertEqual(r.events.last?["status"] as? String, "ended")
+        for _ in 0..<5 { r.live.watchStatus(phase: .idle, workoutType: nil) }
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "preparing")
+        // The watch stopped asking: the next idle answer drops it.
+        r.counter.advance(LiveWorkoutPolicy.preparingSilenceMs + 1)
+        r.live.watchStatus(phase: .idle, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "ended")
     }
 
     func testAnIdleAnswerNeverEndsAWatchFedOrManualSession() async {
         let r = make()
         r.live.startManual()
-        r.counter.advance(LiveWorkout.gpsSilenceMs * 2)
-        r.live.watchStatus(running: false, paused: false, workoutType: nil)
-        r.live.watchStatus(running: false, paused: false, workoutType: nil)
+        r.counter.advance(LiveWorkoutPolicy.gpsSilenceMs * 2)
+        for _ in 0..<5 { r.live.watchStatus(phase: .idle, workoutType: nil) }
         XCTAssertEqual(r.live.snapshot()?["status"] as? String, "running")
     }
 
     func testGpsPingOpensASessionOnceAndTheWatchdogEndsItOnSilence() async {
         let r = make(watchdogEveryMs: 20)
-        r.live.gpsPing()
+        XCTAssertTrue(r.live.gpsPing())
         XCTAssertEqual(r.events.last?["source"] as? String, "gps")
+        XCTAssertEqual(r.events.last?["status"] as? String, "preparing")
         XCTAssertEqual(r.counter.toggles, [true])
         let n = r.events.payloads.count
-        r.live.gpsPing()
+        XCTAssertTrue(r.live.gpsPing(), "still preparing: ask the status")
         XCTAssertEqual(r.events.payloads.count, n)
         XCTAssertEqual(r.counter.toggles, [true])
         // Silence for longer than the limit and no status answer ever: the watchdog ends the session.
-        r.counter.advance(LiveWorkout.gpsSilenceMs + LiveWorkout.statusStaleMs)
+        r.counter.advance(LiveWorkoutPolicy.gpsSilenceMs + LiveWorkoutPolicy.statusStaleMs)
         await eventually("watchdog end") { r.events.last?["status"] as? String == "ended" }
         XCTAssertTrue(r.events.contains("does not answer the status poll"))
         XCTAssertEqual(r.counter.toggles, [true, false])
@@ -385,8 +403,8 @@ final class LiveWorkoutTests: XCTestCase {
     func testTheWatchdogLeavesASessionAloneWhileTheStatusPollAnswers() async {
         let r = make(watchdogEveryMs: 20)
         r.live.gpsPing()
-        r.counter.advance(LiveWorkout.gpsSilenceMs + 1_000)
-        r.live.watchStatus(running: true, paused: false, workoutType: nil) // a fresh answer
+        r.counter.advance(LiveWorkoutPolicy.gpsSilenceMs + 1_000)
+        r.live.watchStatus(phase: .running, workoutType: nil) // a fresh answer
         await sleepMs(150)
         XCTAssertEqual(r.live.snapshot()?["status"] as? String, "running")
         r.live.finish()
@@ -428,10 +446,14 @@ final class LiveWorkoutTests: XCTestCase {
         let expected: Set<String> = [
             "id", "status", "source", "sportType", "sportName", "updatedAt", "endedAt", "durationSec", "heartRate", "heartRateZone", "maxHeartRate",
             "distanceM", "calories", "activeCalories", "speedKmh", "paceSecPerKm", "stepRate", "steps", "cadence", "altitudeM", "riseM", "descentM",
-            "aerobicTe", "anaerobicTe", "fatGrams", "carbGrams", "fatShare", "location", "locationAt", "gpsDistanceM", "gpsRiseM", "gpsPaceSecPerKm",
+            "aerobicTe", "anaerobicTe", "fatGrams", "carbGrams", "fatShare", "endSuspected", "clockConfirmed", "gpsRequested", "location", "locationAt",
+            "gpsDistanceM", "gpsRiseM", "gpsPaceSecPerKm",
         ]
         XCTAssertEqual(keys, expected)
         XCTAssertTrue(r.live.snapshot()!["heartRate"] is NSNull)
+        XCTAssertEqual(r.live.snapshot()!["clockConfirmed"] as? Bool, true)
+        XCTAssertEqual(r.live.snapshot()!["gpsRequested"] as? Bool, false)
+        XCTAssertEqual(r.live.snapshot()!["endSuspected"] as? Bool, false)
     }
 
     // MARK: WorkoutLink: GPS, status poll and report against a scripted watch
@@ -443,11 +465,14 @@ final class LiveWorkoutTests: XCTestCase {
     }
 
     private func makeLink(
-        statusFirstMs: Int = 20, statusEveryMs: Int = 40, gpsBitmap: Int = 0xD7, watchdogEveryMs: Int = 10_000, poll: @escaping @Sendable () -> Bytes? = { nil }
+        statusFirstMs: Int = 20, pollDelayMs: @escaping @Sendable (Int64) -> Int64 = { $0 / 100 }, gpsBitmap: Int = 0xD7, watchdogEveryMs: Int = 10_000,
+        poll: @escaping @Sendable () -> Bytes? = { nil }
     ) -> LinkRig {
         let r = make(watchdogEveryMs: watchdogEveryMs)
         let gps = FakeGps()
-        let link = WorkoutLink(link: r.rig.source, events: r.events, live: r.live, gps: gps, statusFirstMs: statusFirstMs, statusEveryMs: statusEveryMs, nowMs: { r.counter.now })
+        let link = WorkoutLink(
+            link: r.rig.source, events: r.events, live: r.live, gps: gps, statusFirstMs: statusFirstMs, pollDelayMs: pollDelayMs, nowMs: { r.counter.now }
+        )
         r.rig.watch.responder = { sent in
             switch (sent.service, sent.command) {
             case (0x18, 0x01):
@@ -574,9 +599,8 @@ final class LiveWorkoutTests: XCTestCase {
         await eventually("session from the poll") { l.r.live.snapshot()?["source"] as? String == "status" }
         XCTAssertEqual(l.r.live.snapshot()?["sportType"] as? Int, 13)
         XCTAssertEqual(l.r.counter.toggles, [true])
-        // The watch reports the workout over: two idle answers in a row end it (the clock is past the GPS silence).
+        // The watch reports the workout over: three idle answers in a row end it.
         idle.toggle(true)
-        l.r.counter.advance(LiveWorkout.gpsSilenceMs + 1_000)
         await eventually("ended by the poll") { l.r.live.snapshot()?["status"] as? String == "ended" }
         XCTAssertTrue(l.r.rig.watch.sent.contains { $0.service == 0x17 && $0.command == 0x03 })
         l.link.linkDisconnected()
@@ -625,7 +649,7 @@ final class LiveWorkoutTests: XCTestCase {
         // The workout goes on without the link: its track runs until the session ends, which the watchdog does once the watch stays quiet.
         l.link.linkDisconnected()
         XCTAssertEqual(l.gps.stopped, 0)
-        l.r.counter.advance(LiveWorkout.gpsSilenceMs + LiveWorkout.statusStaleMs)
+        l.r.counter.advance(LiveWorkoutPolicy.gpsSilenceMs + LiveWorkoutPolicy.statusStaleMs)
         await eventually("watchdog end") { l.r.live.snapshot()?["status"] as? String == "ended" }
         await eventually("gps stopped") { l.gps.stopped == 1 }
     }
@@ -672,6 +696,9 @@ final class LiveWorkoutTests: XCTestCase {
         await eventually { l.gps.started == 1 }
         await eventually("fields read") { l.r.events.contains("watch takes GPS fields bitmap") }
         let fed = { l.r.rig.watch.sent.filter { $0.service == 0x18 && $0.command == 0x03 }.count }
+        // The watch's status says the workout runs (after GO): the phone's track counts from here.
+        l.r.live.watchStatus(phase: .running, workoutType: nil)
+        XCTAssertEqual(l.r.live.snapshot()?["status"] as? String, "running")
         let t0 = l.r.counter.now
         for s in 0...20 { l.gps.emit(walk(t0, s, Double(s) * 4)) }
         await eventually("fixes fed") { fed() == 21 }
@@ -745,6 +772,244 @@ final class LiveWorkoutTests: XCTestCase {
         // A new request (the next workout) starts it again.
         l.r.rig.session.onData(gpsRequest(true))
         await eventually { l.gps.started == 2 }
+        l.link.linkDisconnected()
+    }
+
+    // MARK: the GO screen, GO and the watch's workout screen (WatchPhase, 18/08; Fit 4 Pro 2026-10-25)
+
+    func testTheGoScreenKeepsAGpsSessionPreparingAndGoStartsTheClock() {
+        let r = make()
+        XCTAssertTrue(r.live.gpsPing())
+        XCTAssertEqual(r.live.pollEveryMs(), LiveWorkoutPolicy.preparingPollMs)
+        var s = r.live.snapshot()!
+        XCTAssertEqual(s["status"] as? String, "preparing")
+        XCTAssertTrue(s["durationSec"] is NSNull)
+        XCTAssertEqual(s["clockConfirmed"] as? Bool, false)
+        XCTAssertEqual(s["gpsRequested"] as? Bool, true)
+        XCTAssertEqual(s["endSuspected"] as? Bool, false)
+        // The heart rate shows while the watch waits for GO; no time, no energy.
+        r.live.onHeartRate(110)
+        r.counter.advance(5_000)
+        r.live.onHeartRate(110)
+        s = r.live.snapshot()!
+        XCTAssertEqual(s["heartRate"] as? Int, 110)
+        XCTAssertTrue(s["calories"] is NSNull)
+        XCTAssertTrue(s["durationSec"] is NSNull)
+        // The GO screen (`02 00 03 01`) is no start.
+        r.live.watchStatus(phase: .open, workoutType: nil)
+        r.counter.advance(2_000)
+        r.live.watchStatus(phase: .open, workoutType: nil)
+        s = r.live.snapshot()!
+        XCTAssertEqual(s["status"] as? String, "preparing")
+        XCTAssertTrue(s["durationSec"] is NSNull)
+        XCTAssertEqual(s["clockConfirmed"] as? Bool, false)
+        XCTAssertTrue(r.live.gpsPing(), "still waiting for GO: ask the status")
+        // GO (`02 01 03 03`): the clock starts now.
+        r.counter.advance(1_000)
+        r.live.watchStatus(phase: .running, workoutType: nil)
+        s = r.live.snapshot()!
+        XCTAssertEqual(s["status"] as? String, "running")
+        XCTAssertEqual(s["durationSec"] as? Int, 0)
+        XCTAssertEqual(s["clockConfirmed"] as? Bool, true)
+        XCTAssertTrue(r.events.contains("the watch started the workout (GO); timer running"))
+        XCTAssertEqual(r.live.pollEveryMs(), LiveWorkoutPolicy.livePollMs)
+        XCTAssertFalse(r.live.gpsPing())
+        r.counter.advance(10_000)
+        r.live.onHeartRate(110)
+        XCTAssertEqual(r.live.snapshot()?["durationSec"] as? Int, 10)
+        // Back on the open screen without counting: the phone's clock stops too.
+        r.live.watchStatus(phase: .open, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "paused")
+        XCTAssertTrue(r.events.contains("timer paused"))
+        r.counter.advance(30_000)
+        r.live.watchStatus(phase: .running, workoutType: nil)
+        r.counter.advance(5_000)
+        r.live.onHeartRate(110)
+        XCTAssertEqual(r.live.snapshot()?["durationSec"] as? Int, 15)
+        // Pause and resume follow the watch.
+        r.live.watchStatus(phase: .paused, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "paused")
+        r.counter.advance(20_000)
+        r.live.watchStatus(phase: .running, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "running")
+        XCTAssertEqual(r.live.snapshot()?["durationSec"] as? Int, 15)
+    }
+
+    func testAClosedWorkoutScreenEndsOnTheNextIdleAnswer() {
+        let r = make()
+        r.live.gpsPing()
+        r.live.watchStatus(phase: .running, workoutType: nil)
+        XCTAssertTrue(r.live.workoutScreen(open: false), "a close asks the status now")
+        r.counter.advance(5_000)
+        r.live.watchStatus(phase: .idle, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "ended")
+        XCTAssertTrue(r.events.contains("no workout 1 times in a row"))
+    }
+
+    func testIdleAnswersWithoutTheScreenClosingNeedThree() {
+        let r = make()
+        r.live.gpsPing()
+        r.live.watchStatus(phase: .running, workoutType: nil)
+        XCTAssertFalse(r.live.workoutScreen(open: true))
+        r.live.watchStatus(phase: .idle, workoutType: nil)
+        r.live.watchStatus(phase: .idle, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "running")
+        r.live.watchStatus(phase: .idle, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "ended")
+    }
+
+    func testAClosedScreenOnAWatchThatDoesNotAnswerTheStatusAsksTheUser() {
+        let r = make()
+        r.live.gpsPing()
+        XCTAssertTrue(r.live.workoutScreen(open: false))
+        XCTAssertEqual(r.events.last?["endSuspected"] as? Bool, true)
+        XCTAssertEqual(r.events.last?["status"] as? String, "preparing")
+        XCTAssertTrue(r.events.contains("closed its workout screen and does not answer the status poll"))
+        // The watch asks for GPS again: it was not over.
+        r.live.gpsPing()
+        XCTAssertEqual(r.events.last?["endSuspected"] as? Bool, false)
+        // Nothing followed: a screen event asks nothing.
+        r.live.finish()
+        XCTAssertFalse(r.live.workoutScreen(open: false))
+    }
+
+    func testLeavingTheGoScreenAndComingBackOpensANewSessionWhoseClockStartsAtGo() {
+        let r = make()
+        // The workout screen opens (GPS request, then 18/08 {01: 1}); the person leaves it without GO.
+        XCTAssertTrue(r.live.gpsPing())
+        XCTAssertFalse(r.live.workoutScreen(open: true), "the open of a live session asks nothing")
+        let first = r.live.snapshot()?["id"] as? Double
+        r.counter.advance(5_000)
+        XCTAssertTrue(r.live.workoutScreen(open: false))
+        r.live.watchStatus(phase: .idle, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "ended")
+        // Back 20 s later: the GPS request opens a new session at once (the ended one never ran), and the open finds it live.
+        r.counter.advance(20_000)
+        XCTAssertTrue(r.live.gpsPing())
+        XCTAssertFalse(r.live.workoutScreen(open: true))
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "preparing")
+        XCTAssertNotEqual(r.live.snapshot()?["id"] as? Double, first)
+        XCTAssertTrue(r.live.snapshot()?["durationSec"] is NSNull)
+        // GO screen, then GO: the clock starts at GO.
+        r.live.watchStatus(phase: .open, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "preparing")
+        r.counter.advance(3_000)
+        r.live.watchStatus(phase: .running, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "running")
+        XCTAssertEqual(r.live.snapshot()?["durationSec"] as? Int, 0)
+        r.counter.advance(7_000)
+        r.live.onHeartRate(100)
+        XCTAssertEqual(r.live.snapshot()?["durationSec"] as? Int, 7)
+    }
+
+    func testAWorkoutThatRanAndEndedBlocksAStragglerUnlessTheScreenOpensAgain() {
+        let r = make()
+        r.live.gpsPing()
+        r.live.watchStatus(phase: .running, workoutType: nil)
+        XCTAssertTrue(r.live.workoutScreen(open: false))
+        r.live.watchStatus(phase: .idle, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "ended")
+        let ended = r.live.snapshot()?["id"] as? Double
+        // A late GPS request of the workout that ran: a straggler, nothing opens.
+        r.counter.advance(10_000)
+        XCTAssertFalse(r.live.gpsPing())
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "ended")
+        XCTAssertEqual(r.live.snapshot()?["id"] as? Double, ended)
+        // The watch opens its workout screen again (its GPS request came a few ms earlier and was taken for a straggler): a new session.
+        r.counter.advance(1_000)
+        XCTAssertTrue(r.live.workoutScreen(open: true), "the new session waits for GO: ask the status")
+        XCTAssertEqual(r.live.snapshot()?["status"] as? String, "preparing")
+        XCTAssertNotEqual(r.live.snapshot()?["id"] as? Double, ended)
+        // Its next GPS requests follow that session.
+        let reopened = r.live.snapshot()?["id"] as? Double
+        XCTAssertTrue(r.live.gpsPing())
+        XCTAssertEqual(r.live.snapshot()?["id"] as? Double, reopened)
+        r.live.watchStatus(phase: .running, workoutType: nil)
+        XCTAssertEqual(r.live.snapshot()?["durationSec"] as? Int, 0)
+    }
+
+    private func workoutScreen(_ open: Bool) -> Bytes {
+        var t = HuaweiTLV()
+        t.put(0x01, byte: open ? 1 : 0)
+        return frame(0x18, 0x08, t)
+    }
+
+    func testTheLinkWaitsForGoAndEndsAtOnceWhenTheWatchClosesItsWorkoutScreen() async {
+        let script = Script()
+        script.answer = statusAnswer(operatorType: 0, workoutType: 13, trainMonitorState: 0)
+        // A minute between answers: only the first one, the GPS requests and the screen close ask the status here.
+        let l = makeLink(pollDelayMs: { _ in 60_000 }, poll: { script.answer })
+        await l.link.linkConnected(l.r.rig.source.current!)
+        await eventually("first answer") { l.r.events.contains("Workout link: workout status") }
+        XCTAssertNil(l.r.live.snapshot())
+        // The workout screen opens, GO not pressed: 18/08 {01: 1} and the GPS request; the status says `02 00 03 01`.
+        script.answer = statusAnswer(operatorType: 1, workoutType: 13, trainMonitorState: 0)
+        l.r.rig.session.onData(workoutScreen(true))
+        l.r.rig.session.onData(gpsRequest(true))
+        await eventually("the GO screen answered") { l.r.live.snapshot()?["sportType"] as? Int == 13 }
+        XCTAssertEqual(l.r.live.snapshot()?["status"] as? String, "preparing")
+        XCTAssertTrue(l.r.live.snapshot()?["durationSec"] is NSNull)
+        XCTAssertTrue(l.r.events.contains("the watch's workout screen opened (18/08)"))
+        // GO: the watch's next GPS request asks the status again while the session waits.
+        script.answer = statusAnswer(operatorType: 3, workoutType: 13, trainMonitorState: 1)
+        l.r.rig.session.onData(gpsRequest(true))
+        await eventually("GO") { l.r.live.snapshot()?["status"] as? String == "running" }
+        XCTAssertEqual(l.r.live.snapshot()?["durationSec"] as? Int, 0)
+        XCTAssertEqual(l.r.live.snapshot()?["clockConfirmed"] as? Bool, true)
+        // Finish on the watch: 18/08 {01: 0} asks the status now, and one idle answer ends the session.
+        script.answer = statusAnswer(operatorType: 0, workoutType: 13, trainMonitorState: 0)
+        l.r.rig.session.onData(workoutScreen(false))
+        await eventually("ended") { l.r.live.snapshot()?["status"] as? String == "ended" }
+        XCTAssertTrue(l.r.events.contains("the watch's workout screen closed (18/08)"))
+        XCTAssertTrue(l.r.events.contains("no workout 1 times in a row"))
+        await eventually("both answered") { l.r.rig.watch.sent.filter { $0.service == 0x18 && $0.command == 0x08 }.count == 2 }
+        for answer in l.r.rig.watch.sent.filter({ $0.service == 0x18 && $0.command == 0x08 }) {
+            XCTAssertEqual(answer.tlv.serialize(), WorkoutLinkWire.workoutScreenAnswer().tlv?.serialize())
+        }
+        l.link.linkDisconnected()
+    }
+
+    func testThePauseAndResumeOfTheFit4ProProbeFollowTheWatchAndDoNotEndTheSession() async {
+        // 2026-10-25 17:43, Outdoor walk on a Fit 4 Pro: pre-start screen, GO (03 03), pause (03 04), resume (03 05), finish (02 00 03 00).
+        let script = Script()
+        script.answer = statusAnswer(operatorType: 1, workoutType: 13, trainMonitorState: 0)
+        let l = makeLink(poll: { script.answer })
+        await l.link.linkConnected(l.r.rig.source.current!)
+        l.r.rig.session.onData(gpsRequest(true))
+        await eventually("pre-start screen") { l.r.live.snapshot()?["sportType"] as? Int == 13 }
+        XCTAssertEqual(l.r.live.snapshot()?["status"] as? String, "preparing")
+        script.answer = statusAnswer(operatorType: 3, workoutType: 13, trainMonitorState: 1)
+        await eventually("GO") { l.r.live.snapshot()?["status"] as? String == "running" }
+        script.answer = statusAnswer(operatorType: 4, workoutType: 13, trainMonitorState: 1)
+        await eventually("paused") { l.r.live.snapshot()?["status"] as? String == "paused" }
+        // A pause is no "no workout": several answers later the session is still paused.
+        await sleepMs(300)
+        XCTAssertEqual(l.r.live.snapshot()?["status"] as? String, "paused")
+        script.answer = statusAnswer(operatorType: 5, workoutType: 13, trainMonitorState: 1)
+        await eventually("resumed") { l.r.live.snapshot()?["status"] as? String == "running" }
+        XCTAssertTrue(l.r.events.contains("the watch resumed the workout"))
+        script.answer = statusAnswer(operatorType: 0, workoutType: 13, trainMonitorState: 0)
+        await eventually("finished") { l.r.live.snapshot()?["status"] as? String == "ended" }
+        l.link.linkDisconnected()
+    }
+
+    func testRoughFixesGoToTheMapButNotToTheWatch() async {
+        let l = makeLink()
+        await l.link.linkConnected(l.r.rig.source.current!)
+        l.r.rig.session.onData(gpsRequest(true))
+        await eventually { l.gps.started == 1 }
+        await eventually("fields read") { l.r.events.contains("watch takes GPS fields bitmap 0xd7") }
+        let fed = { l.r.rig.watch.sent.filter { $0.service == 0x18 && $0.command == 0x03 }.count }
+        let t0 = l.r.counter.now
+        // A Wi-Fi or cell position, worse than the track's limit.
+        l.gps.emit(WorkoutLinkWire.Fix(latitude: 10, longitude: 20, timeMs: t0, accuracy: TrackAccumulator.maxAccuracyM + 20))
+        await sleepMs(80)
+        XCTAssertEqual(fed(), 0)
+        XCTAssertEqual(l.r.live.snapshot()?["locationAt"] as? Double, Double(t0))
+        XCTAssertTrue(l.r.events.contains("phone fix 1, accuracy 50 m"))
+        l.gps.emit(WorkoutLinkWire.Fix(latitude: 10, longitude: 20, timeMs: t0 + 1_000, accuracy: TrackAccumulator.maxAccuracyM))
+        await eventually("a good fix is fed") { fed() == 1 }
+        l.r.live.finish()
         l.link.linkDisconnected()
     }
 }

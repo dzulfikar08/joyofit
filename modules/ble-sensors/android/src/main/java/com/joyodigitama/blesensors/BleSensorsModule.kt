@@ -79,7 +79,7 @@ class BleSensorsModule : Module() {
     Name("BleSensors")
 
     Events(
-      "onScanResult", "onScanState", "onConnection", "onValue", "onLocation", "onBluetoothState", "onWorkoutAction", "onSteps",
+      "onScanResult", "onScanState", "onConnection", "onValue", "onLocation", "onBluetoothState", "onWorkoutAction", "onSteps", "onLiveSteps",
       "onScaleAdvertisement", "onScaleScanState", "onScaleLink", "onScaleValue",
     )
 
@@ -163,6 +163,11 @@ class BleSensorsModule : Module() {
         else -> "denied"
       }
     }
+
+    // The live screen of a workout started on the watch: the phone's step counter alone, without a recording session or its service.
+    AsyncFunction("startLiveSteps") { LiveSteps.start(context(), hub()) }
+
+    AsyncFunction("stopLiveSteps") { LiveSteps.stop() }
 
     AsyncFunction("startWorkoutSession") Coroutine { options: WorkoutSessionOptionsRecord ->
       val controls = options.controls?.let { RecordingNotificationSpec.Controls(it.locale, it.paused, it.pause, it.resume, it.lap) }
