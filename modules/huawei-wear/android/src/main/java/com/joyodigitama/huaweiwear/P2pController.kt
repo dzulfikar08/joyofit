@@ -37,6 +37,9 @@ internal class P2pController(
   private var stack: P2pStack? = null
   private var attached: HuaweiSession? = null
 
+  /** The offline-map lab (experimental switch, off by default). */
+  val offlineMaps = OfflineMapLab(context, settings, link, events, scope) { stack }
+
   init {
     // The dictionary sync runs inside the activity sync, under its operation lock, after the workouts.
     link.syncExtensions.add { _ -> syncHealthMetrics() }
@@ -73,6 +76,7 @@ internal class P2pController(
         stack = created
         created.start()
         created.registerServices()
+        offlineMaps.attach(created)
         scope.launch(Dispatchers.IO) { recordGates(created) }
       }
       LinkState.DISCONNECTED -> detach()

@@ -37,6 +37,16 @@ function readAgpsPgnssLab(): boolean | null {
   }
 }
 
+/** The offline-map lab switch, or null on a binary without it or when the status cannot be read. */
+function readOfflineMapLab(): boolean | null {
+  if (!hasNative('setOfflineMapLab')) return null;
+  try {
+    return HuaweiWear.getOfflineMapLab().enabled;
+  } catch {
+    return null;
+  }
+}
+
 export default function AdvancedScreen() {
   const { t } = useTranslation('settings');
   const theme = useTheme();
@@ -53,6 +63,8 @@ export default function AdvancedScreen() {
   const [agpsLabError, setAgpsLabError] = useState<string | null>(null);
   const [pgnssLab, setPgnssLab] = useState(readAgpsPgnssLab);
   const [pgnssLabError, setPgnssLabError] = useState<string | null>(null);
+  const [mapLab, setMapLab] = useState(readOfflineMapLab);
+  const [mapLabError, setMapLabError] = useState<string | null>(null);
 
   useNativeRefresh(
     useCallback(() => {
@@ -60,6 +72,7 @@ export default function AdvancedScreen() {
       setForceBle(HuaweiWear.getForceBle());
       setAgpsLab(readAgpsLab());
       setPgnssLab(readAgpsPgnssLab());
+      setMapLab(readOfflineMapLab());
     }, []),
   );
 
@@ -109,6 +122,17 @@ export default function AdvancedScreen() {
       setPgnssLabError(errorMessage(e));
     } finally {
       setPgnssLab(readAgpsPgnssLab());
+    }
+  };
+
+  const toggleMapLab = async (enabled: boolean) => {
+    setMapLabError(null);
+    try {
+      await HuaweiWear.setOfflineMapLab(enabled);
+    } catch (e) {
+      setMapLabError(errorMessage(e));
+    } finally {
+      setMapLab(readOfflineMapLab());
     }
   };
 
@@ -171,6 +195,13 @@ export default function AdvancedScreen() {
               {pgnssLabError ? <Notice tone="danger">{pgnssLabError}</Notice> : null}
             </>
           ) : null}
+          {mapLab !== null ? (
+            <>
+              <SwitchRow label={t('advanced.offlineMapLab')} value={mapLab} onValueChange={(enabled) => void toggleMapLab(enabled)} />
+              <Notice tone={mapLab ? 'danger' : 'info'}>{t('advanced.offlineMapLabRisk')}</Notice>
+              {mapLabError ? <Notice tone="danger">{mapLabError}</Notice> : null}
+            </>
+          ) : null}
           {__DEV__ ? (
             <SwitchRow
               label={t('advanced.bleLink')}
@@ -184,15 +215,29 @@ export default function AdvancedScreen() {
           </Details>
         </Section>
       ) : null}
-      {withWatch && courses.enabled ? (
-        <NavRow
-          icon="walk"
-          tint="workouts"
-          title={t('advanced.courses')}
-          subtitle={t('advanced.coursesSubtitle')}
-          onPress={() => router.push('/settings/courses')}
-          style={groupedRowStyle(theme, 0, 1)}
-        />
+      {withWatch && (courses.enabled || mapLab) ? (
+        <View>
+          {courses.enabled ? (
+            <NavRow
+              icon="walk"
+              tint="workouts"
+              title={t('advanced.courses')}
+              subtitle={t('advanced.coursesSubtitle')}
+              onPress={() => router.push('/settings/courses')}
+              style={groupedRowStyle(theme, 0, mapLab ? 2 : 1)}
+            />
+          ) : null}
+          {mapLab ? (
+            <NavRow
+              icon="map"
+              tint="workouts"
+              title={t('advanced.offlineMapLab')}
+              subtitle={t('advanced.offlineMapLabSubtitle')}
+              onPress={() => router.push('/settings/offline-maps')}
+              style={groupedRowStyle(theme, courses.enabled ? 1 : 0, courses.enabled ? 2 : 1)}
+            />
+          ) : null}
+        </View>
       ) : null}
     </Screen>
   );

@@ -633,6 +633,28 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await runtime.p2p.pushRoute(P2pController.parseRoute(route)) }
         }
 
+        // MARK: offline-map lab (experimental, off by default; OfflineMapLab.swift)
+
+        Function("getOfflineMapLab") { () -> [String: Any] in runtime.p2p.offlineMaps.status() }
+        AsyncFunction("setOfflineMapLab") { (enabled: Bool) async throws -> Void in
+            try await wearCall { runtime.p2p.offlineMaps.setEnabled(enabled) }
+        }
+        AsyncFunction("offlineMapFreeSpace") { () async throws -> [String: Any] in
+            try await wearCall { try await runtime.p2p.offlineMaps.freeSpace() }
+        }
+        AsyncFunction("listOfflineMaps") { () async throws -> [String: Any] in
+            try await wearCall { try await runtime.p2p.offlineMaps.list() }
+        }
+        AsyncFunction("inspectOfflineMap") { (uri: String, name: String) async throws -> [String: Any] in
+            try await wearCall { try await runtime.p2p.offlineMaps.inspect(uri: uri, name: name) }
+        }
+        AsyncFunction("sendOfflineMap") { (uri: String, name: String) async throws -> [String: Any] in
+            try await wearCall { try await runtime.p2p.offlineMaps.send(uri: uri, name: name) }
+        }
+        AsyncFunction("deleteOfflineMap") { (mapId: String, mapType: Int) async throws -> [String: Any] in
+            try await wearCall { try await runtime.p2p.offlineMaps.delete(mapId: mapId, mapType: mapType) }
+        }
+
         // MARK: cycle calendar
 
         AsyncFunction("setCycleEnabled") { (enabled: Bool) async throws -> Void in

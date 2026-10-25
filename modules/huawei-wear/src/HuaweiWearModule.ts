@@ -53,6 +53,13 @@ import type { RoutePushResult, RoutesStatus, WatchRoute } from './HuaweiWearRout
 import type { HuaweiImportSummary } from './HuaweiWearImport.types';
 import type { NotificationFilterStatus, NotificationFilterTest } from './HuaweiWearNotifications.types';
 import type { FamilyConfig, FamilyUploadResult, FamilyUploadStatus } from './HuaweiWearFamily.types';
+import type {
+  OfflineMapDeleteResult,
+  OfflineMapFile,
+  OfflineMapLabStatus,
+  OfflineMapList,
+  OfflineMapSendResult,
+} from './HuaweiWearOfflineMaps.types';
 
 declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   /**
@@ -588,6 +595,25 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    * refused the file or the handshake failed; the message carries its code) and ERR_TIMEOUT (no handshake answer).
    */
   pushRoute(route: WatchRoute): Promise<RoutePushResult>;
+
+  /** The offline-map lab: switch, gates (ExpandCapability 201/202/284), mapkit registration and the last parse result. Synchronous. */
+  getOfflineMapLab(): OfflineMapLabStatus;
+  /** Off by default. On: registers the mapkit module now when connected (and on every connect); off: every map call rejects at once. */
+  setOfflineMapLab(enabled: boolean): Promise<void>;
+  /** The watch's `01` free space (raw value; KiB per huac, unverified). Rejects with ERR_UNSUPPORTED while the switch is off or bit 201 is unset. */
+  offlineMapFreeSpace(): Promise<{ value: number | null }>;
+  /** The maps on the watch (`03`). */
+  listOfflineMaps(): Promise<OfflineMapList>;
+  /** Reads and checks a picked map file (name `<id>.bin`, `offvmp` header) without sending it. `name` is the picked file's own name. */
+  inspectOfflineMap(uri: string, name: string): Promise<OfflineMapFile>;
+  /**
+   * Sends a picked map file: free space, list, handshake, the file over FileUpload (P2P file type 7, `<id>.bin`), then waits for the watch's
+   * parse result. Progress arrives as `onUploadProgress`. Rejects with ERR_UNSUPPORTED, ERR_NOT_CONNECTED, ERR_INVALID_ARGUMENT (bad name or
+   * not an offvmp file, over 64 MiB), ERR_BUSY, ERR_TIMEOUT (no handshake answer), ERR_UPLOAD_REJECTED (handshake code or upload refusal).
+   */
+  sendOfflineMap(uri: string, name: string): Promise<OfflineMapSendResult>;
+  /** Deletes one map on the watch (`05`). */
+  deleteOfflineMap(mapId: string, mapType: number): Promise<OfflineMapDeleteResult>;
 }
 
 export default requireNativeModule<HuaweiWearModule>('HuaweiWear');

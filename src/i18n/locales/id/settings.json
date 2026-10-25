@@ -31,7 +31,8 @@
     "akun": "Akun",
     "homeCards": "Atur kartu Beranda",
     "hrZones": "Zona HR",
-    "coach": "Coach"
+    "coach": "Coach",
+    "offlineMapLab": "Peta offline (lab)"
   },
   "index": {
     "title": "Lainnya",
@@ -87,7 +88,10 @@
     "pgnssLab": "Data satelit prediksi HW_PGNSS_PRED dari JoyoFit (uji lab)",
     "pgnssLabRisk": "Mati secara bawaan, terpisah dari saklar di atas. Kalau dinyalakan dan jam meminta jenis HW_PGNSS_PRED, JoyoFit mengirim enam berkas prediksi orbit satelit untuk 3 hari ke depan yang dihitung server JoyoFit dari data publik, disusun seperti berkas Huawei tetapi bukan dari Huawei. HP mengambilnya (sekitar 800 KB) dari server JoyoFit tanpa data pribadi apa pun; server melihat alamat IP. Lebih berisiko daripada HW_AGNSS: prediksinya belum terverifikasi, jam menyimpannya berhari-hari tanpa memeriksanya, dan data yang salah pernah membuat GPS jam lain macet. Reset pabrik memulihkan jam. Belum terbukti di jam mana pun: nyalakan hanya untuk uji coba.",
     "details": "Rute lari: belum terverifikasi, format rute berasal dari analisis statis Huawei Health. Jam bisa saja menolaknya.",
-    "detailsDev": "Rute lari: belum terverifikasi, format rute berasal dari analisis statis Huawei Health. Jam bisa saja menolaknya. Tautan Bluetooth LE: terhubung lewat Bluetooth LE GATT (layanan FE86), bukan tautan bawaan jam. Putuskan lalu hubungkan lagi agar berlaku. Langkahnya masuk ke logcat dengan tag JoyoFitBle."
+    "detailsDev": "Rute lari: belum terverifikasi, format rute berasal dari analisis statis Huawei Health. Jam bisa saja menolaknya. Tautan Bluetooth LE: terhubung lewat Bluetooth LE GATT (layanan FE86), bukan tautan bawaan jam. Putuskan lalu hubungkan lagi agar berlaku. Langkahnya masuk ke logcat dengan tag JoyoFitBle.",
+    "offlineMapLab": "Peta offline di jam (uji lab)",
+    "offlineMapLabSubtitle": "Kirim file peta dari OpenStreetMap ke jam",
+    "offlineMapLabRisk": "Mati secara bawaan. Saat menyala, JoyoFit berbicara dengan aplikasi peta offline di jam (seperti aplikasi pembuat jam mengirim petanya) dan bisa mengirim file peta yang kamu buat dari OpenStreetMap dengan alat JoyoFit. Format petanya berasal dari riset publik, bukan dari pembuat jam; jam bisa menolak file itu atau aplikasi petanya bisa bermasalah. Hapus peta dari sini untuk membatalkan. Belum terbukti di jam mana pun: nyalakan hanya untuk menguji."
   },
   "log": {
     "filters": {
@@ -1097,5 +1101,56 @@
       "weighIns_other": "{{count}} timbangan",
       "waiting_other": "{{count}} menunggu JoyoRogo"
     }
+  },
+  "offlineMapLab": {
+    "unavailable": "Versi aplikasi ini belum punya lab peta offline.",
+    "off": "Nyalakan dulu \"Peta offline di jam (uji lab)\" di Tentang & lanjutan → Eksperimental.",
+    "watch": "Jam",
+    "gate": "Bit peta offline (201)",
+    "registered": "Aplikasi peta terhubung",
+    "ping": "Ping aplikasi peta",
+    "politicalView": "Tampilan politik {{view}}",
+    "freeSpace": "Ruang kosong (mentah)",
+    "lastParsed": "Hasil baca terakhir",
+    "parsedValue": "peta {{id}}: kode {{code}} {{time}}",
+    "yes": "ya",
+    "no": "tidak",
+    "noAnswer": "tidak ada jawaban",
+    "notConnected": "Hubungkan jam dulu.",
+    "noGate": "Jam tidak melaporkan dukungan peta offline (bit 201).",
+    "list": "Peta di jam",
+    "space": "Ruang kosong",
+    "empty": "Tidak ada peta di jam.",
+    "noList": "Jam tidak menjawab daftar peta.",
+    "version": "Versi",
+    "delete": "Hapus",
+    "deleteAnswer": "Hapus {{id}}: jam menjawab kode {{code}} (0 = terhapus).",
+    "deleteNoAnswer": "Hapus {{id}}: jam tidak menjawab.",
+    "file": "File peta",
+    "pick": "Pilih .bin",
+    "send": "Kirim ke jam",
+    "region": "Wilayah",
+    "fileName": "Nama di jam",
+    "size": "Ukuran",
+    "sizeValue": "{{kb}} KB ({{mb}} MB diumumkan)",
+    "zooms": "Tingkat zoom",
+    "preparing": "Menanyai jam…",
+    "uploading": "Mengirim {{done}} dari {{total}} KB…",
+    "verdict": {
+      "parsedOk": "Jam berhasil membaca peta (kode 0). Buka tampilan peta di jam untuk memastikan peta tergambar.",
+      "parsedFailed": "File sampai, tetapi jam tidak bisa membacanya (kode {{code}}).",
+      "noParse": "File sampai, tetapi jam tidak mengirim hasil baca dalam {{budget}} detik."
+    },
+    "timing": "Kirim {{upload}} detik, {{rate}} kB/s, baca {{parse}} detik, pembaruan {{update}}.",
+    "mapType": {
+      "region": "Peta wilayah",
+      "contour": "Garis kontur",
+      "global": "Peta dunia",
+      "ski": "Peta ski",
+      "other": "Peta"
+    },
+    "details": "ID peta diambil dari nama file (<id>.bin). Buat file dengan tools/offline-maps di repositori JoyoFit. Setiap pesan dengan jam tercatat di log (baris Mapkit).",
+    "attribution": "Data peta © kontributor OpenStreetMap, tersedia di bawah Open Database License (ODbL).",
+    "sha256": "SHA-256"
   }
 }
