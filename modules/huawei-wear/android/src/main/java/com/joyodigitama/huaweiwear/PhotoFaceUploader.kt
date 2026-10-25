@@ -346,7 +346,7 @@ internal class PhotoFaceController(
           withContext(Dispatchers.Default) { PhotoTimeColour.pick(pixels, state.width, state.height, it[0], it[1], it[2], it[3]) }
         }
         if (picked != null) colours[name] = PhotoFaceCodec.smartColour(picked)
-        log("time colour of $name: ${colours[name] ?: "none (${if (rect == null) "no time area known for face ${state.face.id}" else "the time area is outside the photo"})"}")
+        log("time colour of $name: ${colours[name] ?: "none (${if (rect == null) "no time area known for face ${state.face.id}" else "the photo has no pixels"})"}")
       }
     }
     val gauss = PhotoFaceCodec.gaussSwitch(state.screen.gaussianColour)

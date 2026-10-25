@@ -690,7 +690,7 @@ the end report is `27/05` with type 4 (photos), 7, 8, 9 respectively.
 |---|---|---|
 | `27/08` | phone | tags `01 02 03 04 0c 0d 08 09 0a` empty (Huawei Health's Diy path asks for `01 02 03 04 08 09`; the watch answers every tag either way) |
 | `27/08` | watch | VERIFIED: `01` max photos (20), `02` text colour from photo (1), `03` background type (2 = `.bin`), `84{85{06 index from **0**, 07 name, 0c port position, 0d portrait mode, 0e time style, 0f time colour, 10 background colour (`#AARRGGBB` strings), 18 / 19 / 1a smart time / font / position, 1b…1e Gaussian saturation / brightness / blur / font opacity, 29 time size}…}`, `08` position (2), `09` style (1), `0a` data index (0), `0b` image option (1 = RGB24), `11` wrist switch, `12` style applies to all, `93{94{15 container, 16 option}}` data slots (6 on the Fit 4 Pro), `17` carousel mode, `9f{a0{21 option}}` selected options (2) |
-| `27/09` | phone | `makeNewPhotoInfoCommand`: `01` count, `82{83{04 index, 05 name, 0a time position, 0b portrait, 0c time style, 0d time colour, 0e background colour, 29 time size, [15 / 16 / 17 smart time / font / position, 1c Gaussian switch: only when the switch is not -1], [18…1b Gaussian values: only when it is 1, which the page never passes]}…}` the **whole** list, then `06` position, `07` style, `09` data index, `0f` wrist switch, `10` style applies to all, `91{92{13 container, 14 option}}` (only when the list is not empty), `1c` Gaussian switch, `9d{9e{1f option}}` (only with exactly two). Every value is one byte (-1 as `ff`), the colours `#AARRGGBB` strings. VERIFIED byte layout of Huawei Health's own save below |
+| `27/09` | phone | `makeNewPhotoInfoCommand`: `01` count, `82{83{04 index, 05 name, 0a time position, 0b portrait, 0c time style, 0d time colour, 0e background colour, 29 time size, [15 / 16 / 17 smart time / font / position, 1c Gaussian switch: only when the switch is not -1], [18…1b Gaussian values: only when it is 1, which the page never passes]}…}` the **whole** list, then `06` position, `07` style, `09` data index, `0f` wrist switch, `10` style applies to all, `91{92{13 container, 14 option}}` (only when the list is not empty), `1c` Gaussian switch, `9d{9e{1f option}}` (only with exactly two). Every value is one byte (-1 as `ff`), the colours `#AARRGGBB` strings. Huawei Health's own save below, its bytes reconstructed from the captured album JSON via the encoder |
 | `27/09` | watch | `7f` 100000 and `08` = how many photos it still needs; 0 = done |
 | `28/01` | watch | for each missing photo: `01` file name (`<name>.png`), `02` file type (3), `05` resource type (optional). Answered by the phone with the same tags plus `7f` 100000, or 140006 when it has no such file |
 | `28/02` to `28/07` | both | the ordinary upload of `FileUploader`, file type **3** (`background image`), under the requested name; no `05` / `06` tags, no hash of a face |
@@ -714,15 +714,17 @@ Header: `45 23`, then the format code (`88 88` image option 0, `88 08` option 1,
 for the same pixels. The option is the watch's tag `0b`; Huawei Health treats any value but 1 and 2 as 0.
 Max photos and the option are the watch's, not constants. Count and naming: names are free (Huawei's H5 page chooses them, `yyyyMMddHHmmssSSS.png`); JoyoFit uses `<epoch ms>.png`. The watch takes up to `01` (20) photos and shows them in turn; `17` carousel mode is read by Huawei Health and never written (no carousel setting exists in `27/09`).
 
-**What Huawei Health sends (VERIFIED 2026-10-25 21:10, Fit 4 Pro 6.1.0.117, `~/re/agps/hh_photo_session.txt`; the watch's "Tambahkan foto /
-scan the QR code" prompt went away after it).** Watch `27/08` before (line 896): `01=14 02=01 03=02 84{} 08=02 09=01 0a=00 0b=01 11=00 12=00
+**What Huawei Health sends (captured 2026-10-25 21:10, Fit 4 Pro 6.1.0.117, `~/re/agps/hh_photo_session.txt`; the watch's "Tambahkan foto /
+scan the QR code" prompt went away after it; the `27/09` bytes below are reconstructed from the captured album JSON via the encoder).** Watch
+`27/08` before (line 896): `01=14 02=01 03=02 84{} 08=02 09=01 0a=00 0b=01 11=00 12=00
 93{} 17=00 9f{}`. The page handed `makeNewPhotoInfoCommand` (line 982): `{"backgroundList":[{"backgroundIndex":0,"backgroundName":
 "20261025211044440.png","smartTimeIndex":2,"timeColor":"#01ffe7d8","backgroundColor":"#00000000","smartPosIndex":1,"portraitMode":0,
 "smartFontIndex":1,"timeStyleIndex":2,"portPositionIndex":1}],"dataList":[],"isUseGaussColor":0,"positionIndex":1,"styleApplyAll":0,
 "styleIndex":2,"valueTypeIndex":0,"wristSwitch":0,"optionSelectedList":[0,0]}` (plus fields the encoder does not write: `backgroundImageNum`,
-`backgroundImageOption`, `backgroundImageType`, `canIntellectColor`, `carouselMode`, `maxBackgroundImages`). Encoded (`cqe`, one-byte ints):
+`backgroundImageOption`, `backgroundImageType`, `canIntellectColor`, `carouselMode`, `maxBackgroundImages`). Reconstructed from that album JSON
+via the encoder (`cqe`, one-byte ints):
 `01=01 82{83{04=00 05="20261025211044440.png" 0a=01 0b=00 0c=02 0d="#01ffe7d8" 0e="#00000000" 29=00 15=02 16=01 17=01 1c=00}} 06=01 07=02
-09=00 0f=00 10=00 1c=00 9d{9e{1f=00} 9e{1f=00}}` (`PhotoFaceTest.saveIsByteForByteWhatHuaweiHealthSentForItsFirstPhoto`). Then the watch
+09=00 0f=00 10=00 1c=00 9d{9e{1f=00} 9e{1f=00}}` (`PhotoFaceTest.saveMatchesTheBytesReconstructedFromHuaweiHealthsCapturedAlbumJson`). Then the watch
 answered `08=01` (line 1007), took the file, reported `27/05` type 1 and 4, and the `27/03` apply was answered `7f=0`, "isApplySuccess: true"
 (line 1395). Where the values come from (`com.huawei.health.h5.watchface` 0.0.263, `entry/js/app.9e08d218.js` after `prettier --parser babel`):
 
@@ -772,10 +774,15 @@ page's fallbacks 1 / 2 / 1 and no time area. The Gaussian switch comes from `27/
 index takes the table's, as a new photo) and its colour (JoyoFit cannot read photos back from the watch). The smart Gaussian values
 `18`…`1b` are never written, as in Huawei Health.
 
-**JoyoFit's time colour** (`PhotoTimeColour.kt` / `.swift`, a heuristic of our own, not Huawei Health's algorithm): the time area cut to the
-photo; its dominant colour = the mean of the most populated bin of a 4-bit-per-channel histogram; then a readable colour of its hue, a pale
-tint HSV(H, 15, 100) when the area is dark (luma < 128) and a dark shade HSV(H, 100, 20) when it is light, white or `0xFF333333` for a grey
-area (saturation < 10). Integer arithmetic, the same on both platforms.
+**JoyoFit's time colour** (`PhotoTimeColour.kt` / `.swift`; JoyoFit's own rule; not derived from Huawei code): the time area cut to the photo,
+or the whole photo when nothing of it is left. Its mean colour in linear-light sRGB (fully transparent pixels skipped, semi-transparent ones
+composited over black), because the eye mixes a busy area in linear light and a gamma-space mean makes it look darker than it is. Against that
+mean's WCAG 2 relative luminance, four candidates: white `#FFFFFF`, near-black `#111111` (softer than pure black, still above 18:1 on white),
+and two that keep the area's hue, a light tint HSV(H, 0.25, 0.95) and a dark shade HSV(H, 0.60, 0.25) (our own constants: readable, with the
+hue still visible). The highest WCAG contrast ratio wins, except that a hue-keeping candidate with a contrast of at least 4.5 (WCAG AA) and
+within 1.0 of the best is preferred, so the digits match the photo when that costs little readability. A grey area (saturation of the mean
+below 0.08) gets only white or near-black. The same integer and double arithmetic on both platforms (sRGB to linear through a 256-entry
+table), so they pick the same colour; tests on synthetic pictures.
 
 **Device result (2026-10-14 23:10, first upload, before the echo and the apply).** JoyoFit sent `01=01 82{83{04=01 05="1791994229644.png"}} 06=02 07=01
 09=00`; the watch answered `08=01`, asked for the file, took the 585551-byte RGB24 `.bin` and reported `27/05` type 4 with 0 failed. It then

@@ -196,7 +196,7 @@ public final class PhotoFaceController: @unchecked Sendable {
                 if let r = rect, let picked = PhotoTimeColour.pick(pixels, width: state.width, height: state.height, left: r[0], top: r[1], right: r[2], bottom: r[3]) {
                     colours[name] = PhotoFaceCodec.smartColour(picked)
                 }
-                let none = rect == nil ? "no time area known for face \(state.face.id)" : "the time area is outside the photo"
+                let none = rect == nil ? "no time area known for face \(state.face.id)" : "the photo has no pixels"
                 events.info("Photo face: time colour of \(name): \(colours[name] ?? "none (\(none))")")
             }
         }

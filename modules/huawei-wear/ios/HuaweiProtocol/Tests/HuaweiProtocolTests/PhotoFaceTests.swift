@@ -165,9 +165,10 @@ final class PhotoFaceCodecTests: XCTestCase {
     /// The Fit 4 Pro photo face's new-photo values, as in `PhotoFaceCodec.knownFaceConfigs`: position 1, time style 2, font 1.
     let fitConfig = PhotoFaceCodec.faceConfig("2180736265")
 
-    func testSaveIsByteForByteWhatHuaweiHealthSentForItsFirstPhoto() throws {
+    func testSaveMatchesTheBytesReconstructedFromHuaweiHealthsCapturedAlbumJson() throws {
         // Huawei Health 17.0.8.300, Fit 4 Pro, 2026-10-25 21:10:47 (after which the watch's "add photo" prompt went away): the watch's 27/08
-        // answer before, and the album the page handed to makeNewPhotoInfoCommand (see the Kotlin PhotoFaceTest for the JSON).
+        // answer before, and the album the page handed to makeNewPhotoInfoCommand (see the Kotlin PhotoFaceTest for the JSON). The expected
+        // bytes are reconstructed from that captured album JSON via the encoder (not a capture of the 27/09 on the wire).
         let before = try HuaweiTLV(parsing: Bytes(hex: "01011402010103010284000801020901010A01000B010111010012010093001701009F00")!)
         let info = try PhotoFaceCodec.parseInfo(before)
         let fields = PhotoSaveFields(

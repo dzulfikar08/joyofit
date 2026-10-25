@@ -385,7 +385,7 @@ final class PhotoFaceControllerTests: XCTestCase {
         XCTAssertEqual(photo.asInteger(0x0a, default: -1), 1, "the face's time position")
         XCTAssertEqual(photo.asInteger(0x0b, default: -1), 0)
         XCTAssertEqual(photo.asInteger(0x0c, default: -1), 2, "the face's time style")
-        XCTAssertEqual(try photo.string(0x0d), "#01d9e0ff", "a pale tint over the dark blue time area, with Huawei Health's marker")
+        XCTAssertEqual(try photo.string(0x0d), "#01ffffff", "white over the dark blue time area, with Huawei Health's marker")
         XCTAssertEqual(try photo.string(0x0e), "#00000000")
         XCTAssertEqual(photo.asInteger(0x29, default: -1), 0)
         XCTAssertEqual(photo.asInteger(0x15, default: -1), 2)

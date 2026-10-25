@@ -4,7 +4,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-/** JoyoFit's time colour heuristic on synthetic 408 x 480 pictures with the Fit 4 Pro photo face's top time area (68, 18, 406, 182). */
+/**
+ * JoyoFit's time colour rule on synthetic 408 x 480 pictures with the Fit 4 Pro photo face's top time area (68, 18, 406, 182). The Swift
+ * twin (PhotoTimeColourTests.swift) expects the same values.
+ */
 class PhotoTimeColourTest {
   private val w = 408
   private val h = 480
@@ -14,53 +17,63 @@ class PhotoTimeColourTest {
   private fun pickTop(pixels: IntArray) = PhotoTimeColour.pick(pixels, w, h, 68, 18, 406, 182)
 
   @Test
-  fun aDarkAreaGetsAPaleTintOfItsHueAndALightOneADarkShade() {
-    // Dark blue (H 228): HSV(228, 15, 100).
-    assertEquals(0xFFD9E0FF.toInt(), pickTop(flat(0xFF102060)))
-    // Light yellow (H 54): HSV(54, 100, 20).
-    assertEquals(0xFF332D00.toInt(), pickTop(flat(0xFFF0E68C)))
+  fun theLinearTableIsTheSameOnBothPlatforms() {
+    assertEquals(0, PhotoTimeColour.LINEAR[0])
+    assertEquals(14146, PhotoTimeColour.LINEAR[128])
+    assertEquals(65535, PhotoTimeColour.LINEAR[255])
+    assertEquals(5217863, PhotoTimeColour.LINEAR.sum())
   }
 
   @Test
-  fun greyAreasGetWhiteOrDarkGrey() {
+  fun aFlatDarkAreaGetsWhiteAndAFlatLightOneNearBlack() {
+    assertEquals(0xFFFFFFFF.toInt(), pickTop(flat(0xFF102060))) // navy: white 15.0, tint 8.6
+    assertEquals(0xFF111111.toInt(), pickTop(flat(0xFFF0E0C0))) // beige: near-black 14.5, shade 9.5
+  }
+
+  @Test
+  fun saturatedAreasKeepTheirHueOnlyWhenItIsReadableAndCloseToTheBest() {
+    assertEquals(0xFFFFFFFF.toInt(), pickTop(flat(0xFFD01010))) // red: white 5.6, tint 3.2
+    assertEquals(0xFFFFFFFF.toInt(), pickTop(flat(0xFF1030D0))) // blue: white 8.9, tint 5.0
+    assertEquals(0xFFF2F2B6.toInt(), pickTop(flat(0xFF606030))) // olive: tint 5.6 >= 4.5 and within 1.0 of white's 6.5
+    assertEquals(0xFF1A1A40.toInt(), pickTop(flat(0xFFA0A0F0))) // lavender: shade 6.9, within 1.0 of near-black's 7.9
+  }
+
+  @Test
+  fun greyAreasGetOnlyWhiteOrNearBlack() {
     assertEquals(0xFFFFFFFF.toInt(), pickTop(flat(0xFF000000)))
-    assertEquals(0xFF333333.toInt(), pickTop(flat(0xFFFFFFFF)))
-    assertEquals(0xFF333333.toInt(), pickTop(flat(0xFF808080)))
+    assertEquals(0xFF111111.toInt(), pickTop(flat(0xFFFFFFFF)))
+    assertEquals(0xFF111111.toInt(), pickTop(flat(0xFF808080)))
+    // Saturation 6 / 90 < 0.08: white, though its yellow tint would pass the hue rule.
+    assertEquals(0xFFFFFFFF.toInt(), pickTop(flat(0xFF5A5A54)))
   }
 
   @Test
-  fun theDominantColourWinsOverAMinority() {
-    // 70 % of the area's columns dark blue, the rest white.
-    val pixels = IntArray(w * h) { i -> if (i % w - 68 < (406 - 68) * 7 / 10) 0xFF102060.toInt() else -1 }
-    assertEquals(0xFFD9E0FF.toInt(), pickTop(pixels))
+  fun aMixIsAveragedInLinearLight() {
+    // 70 % black, 30 % white: linear mean 0.3, so near-black (6.3 against white's 3.0); a gamma-space mean (#4D4D4D) would give white.
+    val mix = IntArray(10) { if (it < 7) 0xFF000000.toInt() else -1 }
+    assertEquals(0xFF111111.toInt(), PhotoTimeColour.pick(mix, 10, 1, 0, 0, 10, 1))
+    assertEquals(0xFFFFFFFF.toInt(), PhotoTimeColour.pick(intArrayOf(0xFF4D4D4D.toInt()), 1, 1, 0, 0, 1, 1))
   }
 
   @Test
-  fun onlyTheTimeAreaCounts() {
-    val pixels = IntArray(w * h) { i ->
-      val x = i % w
-      val y = i / w
-      if (x in 68 until 406 && y in 18 until 182) 0xFFF0E68C.toInt() else 0xFFFF0000.toInt()
-    }
-    assertEquals(0xFF332D00.toInt(), pickTop(pixels))
+  fun theAreaIsCutToThePhotoAndAnAreaOutsideItUsesTheWholePhoto() {
+    // Top half beige, bottom half navy.
+    val half = IntArray(w * h) { if (it / w < 240) 0xFFF0E0C0.toInt() else 0xFF102060.toInt() }
+    assertEquals(0xFFFFFFFF.toInt(), PhotoTimeColour.pick(half, w, h, 300, 400, 600, 600))
+    assertEquals(0xFF111111.toInt(), PhotoTimeColour.pick(half, w, h, 500, 500, 600, 600))
+    assertEquals(0xFF111111.toInt(), PhotoTimeColour.pick(half, w, h, -50, -50, -10, -10))
+    assertEquals(0xFF111111.toInt(), PhotoTimeColour.pick(half, w, h, 100, 100, 100, 200))
+    assertNull(PhotoTimeColour.pick(IntArray(3), 2, 2, 0, 0, 2, 2))
+    assertNull(PhotoTimeColour.pick(IntArray(0), 0, 0, 0, 0, 1, 1))
   }
 
   @Test
-  fun smallNoiseDoesNotMoveTheDominantColour() {
-    val pixels = IntArray(w * h) { i ->
-      val d = (i * 7) % 9 - 4
-      (0xFF shl 24) or ((40 + d) shl 16) or ((90 + d) shl 8) or (60 + d)
-    }
-    assertEquals(0x27593B, PhotoTimeColour.dominant(pixels, w, 68, 18, 406, 182))
-    assertEquals(0xFFD9FFE8.toInt(), pickTop(pixels))
-  }
-
-  @Test
-  fun theAreaIsCutToThePictureAndAnEmptyOneHasNoColour() {
-    assertEquals(0xFFD9E0FF.toInt(), PhotoTimeColour.pick(flat(0xFF102060), w, h, 300, 400, 600, 600))
-    assertNull(PhotoTimeColour.pick(flat(0xFF102060), w, h, 500, 500, 600, 600))
-    // A tie between two bins goes to the lower bin (dark blue before white).
-    val tie = intArrayOf(0xFF102060.toInt(), 0xFF102060.toInt(), -1, 0xFF102060.toInt(), -1, -1)
-    assertEquals(0xFFD9E0FF.toInt(), PhotoTimeColour.pick(tie, 3, 2, 0, 0, 3, 2))
+  fun transparentPixelsAreSkippedAndSemiTransparentOnesSitOnBlack() {
+    // Every other pixel fully transparent white: the navy alone counts.
+    assertEquals(0xFFFFFFFF.toInt(), pickTop(IntArray(w * h) { if (it % 2 == 1) 0x00FFFFFF else 0xFF102060.toInt() }))
+    // Nothing visible: black, so white.
+    assertEquals(0xFFFFFFFF.toInt(), pickTop(flat(0x00FFFFFFL)))
+    // White at alpha 0x20 over black is dark (L 0.13): white, where opaque white gets near-black.
+    assertEquals(0xFFFFFFFF.toInt(), pickTop(flat(0x20FFFFFFL)))
   }
 }

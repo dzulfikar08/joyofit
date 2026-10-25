@@ -168,9 +168,10 @@ class PhotoFaceTest {
   private val fitConfig = PhotoFaceCodec.faceConfig("2180736265")
 
   @Test
-  fun saveIsByteForByteWhatHuaweiHealthSentForItsFirstPhoto() {
+  fun saveMatchesTheBytesReconstructedFromHuaweiHealthsCapturedAlbumJson() {
     // Huawei Health 17.0.8.300, Fit 4 Pro, 2026-10-25 21:10:47 (after which the watch's "add photo" prompt went away): the watch's 27/08
-    // answer before, and the album the page handed to makeNewPhotoInfoCommand:
+    // answer before, and the album the page handed to makeNewPhotoInfoCommand. The expected bytes are reconstructed from that captured album
+    // JSON via the encoder (not a capture of the 27/09 on the wire):
     // {"backgroundList":[{"backgroundIndex":0,"backgroundName":"20261025211044440.png","smartTimeIndex":2,"timeColor":"#01ffe7d8",
     // "backgroundColor":"#00000000","smartPosIndex":1,"portraitMode":0,"smartFontIndex":1,"timeStyleIndex":2,"portPositionIndex":1}],
     // "dataList":[],"isUseGaussColor":0,"positionIndex":1,"styleApplyAll":0,"styleIndex":2,"valueTypeIndex":0,"wristSwitch":0,
