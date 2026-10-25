@@ -1,35 +1,61 @@
 /**
  * The cadence metronome, shared by the live screen of a watch-started workout and the Run recorder.
  *
- * Each beat is a short vibration (`Vibration` from React Native): the app has no audio package, and adding one is a native change
- * that cannot ship over the air. One engine for the whole app, so the beat goes on while the person moves between screens; it
- * stops when switched off, or when the workout screen that started it reports the workout over (`useStopMetronomeWhen`).
+ * Each beat vibrates (`Vibration` from React Native), clicks (`expo-audio`), or both: the mode is a setting kept like the tempo,
+ * vibration by default. One engine for the whole app, so the beat goes on while the person moves between screens; it stops when
+ * switched off, or when the workout screen that started it reports the workout over (`useStopMetronomeWhen`). The on/off state is
+ * not stored: the metronome is always off after the app starts.
  *
- * Limit: beats are scheduled from JS timers. They keep going with the screen off only while the app process and its JS thread are
- * kept alive, which on Android is the case during a recording (foreground service); on a watch-started workout the screen
- * holds the device awake instead (see `LiveWorkoutScreen`). Android may still throttle timers of an app it has put to sleep.
- * The on/off state is not stored: the metronome is always off after the app starts. Only the tempo is kept.
+ * The click is `assets/sounds/metronome-click.wav` (35 ms of 16-bit PCM, written by `scripts/metronome-click.ts`). Two players are
+ * created the first time a click is wanted and kept for the life of the app; a beat only starts a player that is loaded and back at
+ * the start of the sample, so no beat waits for loading or seeking. A player rewinds as soon as its click ends, and beats take
+ * turns between the two, so a slow rewind skips nothing. A beat that finds no ready player stays silent rather than late (the
+ * first beat or so after the players are created, while they load). The beats keep the fixed grid of `nextBeatAt`: the output
+ * latency (larger over Bluetooth) is the same on every beat, so it moves the whole grid a little and never makes it drift.
+ *
+ * The audio session mixes with other audio (`interruptionMode: 'mixWithOthers'`: no audio focus on Android, `.mixWithOthers` on
+ * iOS), so music keeps playing at full volume, and the click plays where media sound goes: a connected Bluetooth headset, else the
+ * speaker. It also plays with the ringer on silent or vibrate (`playsInSilentMode`): the person chose the sound. Nothing touches
+ * the audio session while the mode is vibration; it is released when the metronome stops or leaves the sound modes.
+ *
+ * Screen off: beats are scheduled from JS timers, so they keep going only while the app process and its JS thread are kept alive.
+ * On Android that is the recording's foreground service (Run recorder); on a watch-started workout the screen holds the device
+ * awake instead (see `LiveWorkoutScreen`). Android may still throttle timers of an app it has put to sleep. `shouldPlayInBackground`
+ * stops expo-audio from pausing its players when the app leaves the foreground. expo-audio's own media-playback foreground service
+ * and notification are not declared (`enableBackgroundPlayback: false` in app.json): the recording already has a foreground service,
+ * and a click needs no player controls. On iOS the `location` background mode keeps a phone recording running with the screen
+ * locked, but iOS mutes an app in the background unless it has the `audio` background mode, so app.json adds `audio` to
+ * `UIBackgroundModes` for the click; the session is active only while the metronome clicks.
  */
+import { type AudioPlayer, createAudioPlayer, setAudioModeAsync, setIsAudioActiveAsync } from 'expo-audio';
 import Storage from 'expo-sqlite/kv-store';
 import { useEffect, useSyncExternalStore } from 'react';
 import { Vibration } from 'react-native';
 
-import { BEAT_PULSE_MS, beatIntervalMs, clampBpm, DEFAULT_BPM, nextBeatAt } from './metronomeModel';
+import {
+  BEAT_PULSE_MS,
+  beatIntervalMs,
+  BPM_KEY,
+  clampBpm,
+  clicks,
+  type MetronomeMode,
+  MODE_KEY,
+  nextBeatAt,
+  parseMode,
+  readSettings,
+  saveSetting,
+  vibrates,
+} from './metronomeModel';
 
-const BPM_KEY = 'joyofit.metronome.bpm';
+const CLICK_SOURCE: number = require('../../../assets/sounds/metronome-click.wav');
+const CLICK_PLAYERS = 2;
+/** A player still not rewound this long after its 35 ms click (an interruption paused it, a status got lost) is rewound anyway. */
+const CLICK_STUCK_MS = 1000;
 
 export interface MetronomeState {
   enabled: boolean;
   bpm: number;
-}
-
-function readBpm(): number {
-  try {
-    const text = Storage.getItemSync(BPM_KEY);
-    return text === null ? DEFAULT_BPM : clampBpm(Number(text));
-  } catch {
-    return DEFAULT_BPM;
-  }
+  mode: MetronomeMode;
 }
 
 let state: MetronomeState | null = null;
@@ -38,7 +64,7 @@ let timer: ReturnType<typeof setTimeout> | undefined;
 let dueAt = 0;
 
 function current(): MetronomeState {
-  state ??= { enabled: false, bpm: readBpm() };
+  state ??= { enabled: false, ...readSettings(Storage) };
   return state;
 }
 
@@ -47,10 +73,98 @@ function commit(next: MetronomeState): void {
   listeners.forEach((listener) => listener());
 }
 
+interface ClickPlayer {
+  player: AudioPlayer;
+  /** Loaded and at the start of the sample: the next `play()` sounds at once. */
+  ready: boolean;
+  loaded: boolean;
+  playedAt: number;
+}
+
+let clickPlayers: ClickPlayer[] | null = null;
+let nextClick = 0;
+let audioActive = false;
+
+function rewind(click: ClickPlayer): void {
+  // ExoPlayer stays "play when ready" after the end: without the pause, the seek would play the click a second time.
+  click.player.pause();
+  const done = () => {
+    click.ready = true;
+  };
+  void click.player.seekTo(0).then(done, done);
+}
+
+function createClickPlayer(): ClickPlayer {
+  // keepAudioSessionActive: iOS would otherwise deactivate the session after every click and activate it again on the next one.
+  const click: ClickPlayer = {
+    player: createAudioPlayer(CLICK_SOURCE, { keepAudioSessionActive: true }),
+    ready: false,
+    loaded: false,
+    playedAt: 0,
+  };
+  click.player.addListener('playbackStatusUpdate', (status) => {
+    if (status.didJustFinish) {
+      rewind(click);
+    } else if (!click.loaded && status.isLoaded) {
+      click.loaded = true;
+      click.ready = true;
+    }
+  });
+  return click;
+}
+
+/** Sets up the session (once per start) and the players (once per app run) when a click is wanted. */
+function startAudio(): void {
+  if (audioActive) return;
+  audioActive = true;
+  void setAudioModeAsync({
+    interruptionMode: 'mixWithOthers',
+    playsInSilentMode: true,
+    shouldPlayInBackground: true,
+    allowsRecording: false,
+  })
+    .then(() => setIsAudioActiveAsync(true))
+    .catch(() => undefined)
+    .then(() => {
+      clickPlayers ??= Array.from({ length: CLICK_PLAYERS }, createClickPlayer);
+    });
+}
+
+function stopAudio(): void {
+  if (!audioActive) return;
+  audioActive = false;
+  void setIsAudioActiveAsync(false).catch(() => undefined);
+}
+
+function click(now: number): void {
+  if (!clickPlayers) return;
+  for (let i = 0; i < clickPlayers.length; i++) {
+    const index = (nextClick + i) % clickPlayers.length;
+    const candidate = clickPlayers[index];
+    if (!candidate.ready) {
+      if (candidate.loaded && now - candidate.playedAt > CLICK_STUCK_MS) rewind(candidate);
+      continue;
+    }
+    candidate.ready = false;
+    candidate.playedAt = now;
+    candidate.player.play();
+    nextClick = (index + 1) % clickPlayers.length;
+    return;
+  }
+}
+
+/** Starts or stops the click to match the state: on while enabled in a mode with a click. */
+function syncAudio(next: MetronomeState): void {
+  if (next.enabled && clicks(next.mode)) startAudio();
+  else stopAudio();
+}
+
 function beat(): void {
-  Vibration.vibrate(BEAT_PULSE_MS);
   const now = Date.now();
-  dueAt = nextBeatAt(dueAt, now, beatIntervalMs(current().bpm));
+  const { bpm, mode } = current();
+  if (vibrates(mode)) Vibration.vibrate(BEAT_PULSE_MS);
+  if (clicks(mode)) click(now);
+  dueAt = nextBeatAt(dueAt, now, beatIntervalMs(bpm));
   timer = setTimeout(beat, Math.max(0, dueAt - now));
 }
 
@@ -68,7 +182,9 @@ export const metronome = {
   setEnabled(enabled: boolean): void {
     const now = current();
     if (now.enabled === enabled) return;
-    commit({ ...now, enabled });
+    const next = { ...now, enabled };
+    commit(next);
+    syncAudio(next);
     stopTimer();
     if (enabled) {
       dueAt = Date.now();
@@ -81,11 +197,16 @@ export const metronome = {
   setBpm(bpm: number): void {
     const next = clampBpm(bpm);
     commit({ ...current(), bpm: next });
-    try {
-      Storage.setItemSync(BPM_KEY, String(next));
-    } catch {
-      // The tempo still applies for this session.
-    }
+    saveSetting(Storage, BPM_KEY, String(next));
+  },
+  /** The new mode takes effect from the next beat. */
+  setMode(mode: MetronomeMode): void {
+    const value = parseMode(mode);
+    const next = { ...current(), mode: value };
+    commit(next);
+    syncAudio(next);
+    if (!vibrates(value)) Vibration.cancel();
+    saveSetting(Storage, MODE_KEY, value);
   },
 };
 

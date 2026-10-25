@@ -23,7 +23,7 @@
         "NSMotionUsageDescription": "JoyoFit reads the step counter of your iPhone to record the cadence and steps of a run, walk or hike you start on the phone. Nothing leaves your phone.",
         "NSHealthShareUsageDescription": "JoyoFit reads your Apple Health history once, only when you tap Import history from Apple Health, to bring the steps, heart rate, sleep, blood oxygen, active energy and workouts that Huawei Health saved there into JoyoFit. It stays on your phone.",
         "NSHealthUpdateUsageDescription": "Allow JoyoFit to save the steps, distance, calories, heart rate, blood oxygen, sleep, workouts and workout routes recorded by your watch to Apple Health.",
-        "UIBackgroundModes": ["bluetooth-central", "location"],
+        "UIBackgroundModes": ["bluetooth-central", "location", "audio"],
         "LSSupportsOpeningDocumentsInPlace": false,
         "CFBundleDocumentTypes": [
           {
@@ -259,6 +259,15 @@
         }
       ],
       "expo-font",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false,
+          "enableBackgroundRecording": false
+        }
+      ],
       [
         "expo-screen-orientation",
         {

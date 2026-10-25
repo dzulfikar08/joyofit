@@ -15,6 +15,8 @@
     "eslint-config-expo": "~57.0.2",
     "expo": "~57.0.28",
     "expo-apple-authentication": "~57.0.2",
+    "expo-asset": "~57.0.20",
+    "expo-audio": "~57.0.5",
     "expo-brightness": "~57.0.2",
     "expo-build-properties": "~57.0.22",
     "expo-clipboard": "~57.0.2",

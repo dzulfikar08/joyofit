@@ -87,6 +87,23 @@ A refusal is not remembered between runs: every start is one command and one ans
 
 After the app was killed mid-run the recording comes back paused. A band workout still open in the same process (a JS reload) is taken over (`adopt`) and paused; after a real restart the native side has forgotten it (`owned` is in memory) and the band keeps running on its own: stop it on the band.
 
+## Metronome (`src/features/metronome/`)
+
+On both live screens (band-started live screen, Run recorder): a switch, the tempo (120 to 200 beats per minute, steps of 5) and
+what a beat does: **Vibration** (default), **Sound** or **Both**. Tempo and mode are kept (`joyofit.metronome.bpm`,
+`joyofit.metronome.mode` in the KV store); the switch is not.
+
+- **Timing.** JS timers on a fixed grid (`nextBeatAt`): a late timer does not shift the next beat; a suspension longer than a beat
+  restarts the grid instead of firing a burst.
+- **Sound.** `expo-audio` plays `assets/sounds/metronome-click.wav` (35 ms PCM, written by `scripts/metronome-click.ts`) from two
+  preloaded players taking turns; a beat only starts a player that is loaded and rewound, so it is never late, at worst silent
+  (while the players load after the first switch-on). The session mixes with other audio (`mixWithOthers`: no audio focus on
+  Android, `.mixWithOthers` on iOS): music keeps playing at full volume and the click goes to the connected Bluetooth headset. It
+  plays with the ringer on silent. Nothing touches the audio session in Vibration mode.
+- **Screen off.** Android: the recording's foreground service keeps JS running (Run recorder); the band-started live screen holds
+  the screen on while the metronome runs. expo-audio's own media-playback service is not declared (`enableBackgroundPlayback:
+  false`). iOS: `audio` in `UIBackgroundModes` (a background app is muted without it); the session is active only while clicking.
+
 ## OTA or store build
 
 | Part | OTA (JS only) | Needs a store build (native) |
@@ -97,6 +114,7 @@ After the app was killed mid-run the recording comes back paused. A band workout
 | Sport tag read with validation | no | `WorkoutLink.pollStatus`, `WorkoutSportTypes.pick` |
 | Phone GPS for the whole session (track goes on after `18/02 {01: 0}`, preparing fixes not counted), iOS phone track | no | `PhoneGpsSession`, `SessionTrack`, `WorkoutLink`, `LiveWorkout.onLocation` (Kotlin and Swift); the JS payload contract is unchanged |
 | Phone-started run: start, pause, resume, stop, band heart rate, the setting | yes, on a binary that already has `startWatchWorkout` (the strength logger's functions); `setLiveHeartRate` is the fallback | `setWorkoutHeartRate` (heart rate in the background); a binary without `startWatchWorkout` shows `unavailable` |
+| Metronome sound mode (Sound / Both) | no: `expo-audio` is a new native module (the fingerprint changes, so an OTA never reaches an older binary) | `expo-audio`, iOS `audio` background mode |
 
 ## Unverifiable without a Band 11
 

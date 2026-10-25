@@ -181,7 +181,16 @@
     },
     "metronome": {
       "title": "Metronome",
-      "hint": "A buzz on every step beat",
+      "hint": {
+        "vibration": "A buzz on every step beat",
+        "sound": "A click on every step beat, mixed with your music",
+        "both": "A click and a buzz on every step beat"
+      },
+      "mode": {
+        "vibration": "Vibration",
+        "sound": "Sound",
+        "both": "Both"
+      },
       "slower": "Slower",
       "faster": "Faster",
       "value": "{{bpm}} beats per minute"
