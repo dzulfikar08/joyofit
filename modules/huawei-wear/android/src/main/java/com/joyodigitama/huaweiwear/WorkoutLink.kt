@@ -266,8 +266,8 @@ internal class WorkoutLink(
       val answer = handle.session.request(RawPacket(handle.session.params, GPS_SERVICE, 0x01, HuaweiTLV().put(0x81)), REQUEST_MS, "GpsParameters")
       val tlv = answer.getTlv()
       val sub = tlv?.getObject(0x81) ?: return null
-      val bitmap = sub.getBytes(0x02, null)?.firstOrNull()?.toInt()?.and(0xFF) ?: return null
-      log("Workout link: watch takes GPS fields bitmap 0x%02x (answer %s)".format(bitmap, tlv))
+      val bitmap = gpsBitmap(sub.getBytes(0x02, null)) ?: return null
+      log("Workout link: watch takes GPS fields bitmap 0x%x (answer %s)".format(bitmap, tlv))
       GpsParams(bitmap).also { gpsParams = it }
     } catch (e: CancellationException) {
       throw e
@@ -421,6 +421,13 @@ internal class WorkoutLink(
     const val GPS_DATA = 0x03
     /** `18/08`: the watch's workout screen opened or closed (Huawei Health's activity-recognition switch). */
     const val WORKOUT_SCREEN = 0x08
+
+    /**
+     * The `18/01` field bitmap, all of its bytes big-endian (Huawei Health `GpsParameter.getGpsInfoBitmap`, an int). The Fit 4 Pro sends
+     * two, `01 DF` (2026-10-25): reading only the first byte, as GB's `getByte` does, gave 0x01 (speed only), so the watch never got the
+     * latitude, longitude, altitude, distance, bearing or accuracy it asks for.
+     */
+    fun gpsBitmap(bytes: ByteArray?): Int? = LiveWorkoutWire.unsigned(bytes)?.toInt()
     const val WORKOUT_SERVICE = 0x17
     const val REPORT_DATA = 0x11
     const val REPORT_OPEN = 0x12

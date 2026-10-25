@@ -150,6 +150,18 @@ class WatchWorkoutTest {
   }
 
   @Test
+  fun theGpsFieldBitmapIsReadWhole() {
+    // Fit 4 Pro 18/01 answer, 2026-10-25 18:49:49: 81{02 01DF, 03 01, 05 01}.
+    val sub = HuaweiTLV().parse(hex("81 0a  02 02 01df  03 01 01  05 01 01")).getObject(0x81)
+    val bitmap = WorkoutLink.gpsBitmap(sub.getBytes(0x02, null))!!
+    assertEquals(0x1DF, bitmap)
+    val params = WorkoutLink.GpsParams(bitmap)
+    assertTrue(params.speed && params.distance && params.altitude && params.latLon && params.direction && params.precision)
+    assertEquals(0x01, WorkoutLink.gpsBitmap(hex("01")))
+    assertNull(WorkoutLink.gpsBitmap(ByteArray(0)))
+  }
+
+  @Test
   fun noticeFromTheWatchCarriesOperatorAndWorkoutType() {
     val notice = WatchWorkoutWire.parseNotice(HuaweiTLV().parse(hex("81 09  02 01 04  03 01 01  05 01 8c")))!!
     assertEquals(WatchWorkoutWire.OP_STOP, notice.operator)

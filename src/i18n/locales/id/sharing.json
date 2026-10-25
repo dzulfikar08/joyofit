@@ -87,6 +87,8 @@
     "emptyDescription": "Jalan, lari, dan gowes di luar ruangan yang dimulai dari jam akan terbuka di sini. Di dalam ruangan, mulai dari jam, lalu ketuk Mulai.",
     "start": "Mulai",
     "finish": "Selesai",
+    "finishOnWatch": "Selesaikan latihan di jam. Layar ini ikut selesai.",
+    "stopFollowing": "Berhenti memantau di ponsel",
     "workout": "Latihan",
     "status": {
       "searching": "Menunggu mulai di jam…",

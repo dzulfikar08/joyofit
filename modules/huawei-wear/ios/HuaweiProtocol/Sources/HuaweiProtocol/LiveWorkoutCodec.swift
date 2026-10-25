@@ -381,10 +381,16 @@ public enum WorkoutLinkWire {
         return HuaweiPacket(serviceId: gpsService, commandId: gpsParameters, tlv: tlv)
     }
 
-    /// The bitmap of the `18/01` answer (`81{02: bitmap}`), nil when it is missing.
+    /// The bitmap of the `18/01` answer (`81{02: bitmap}`), nil when it is missing (Kotlin `WorkoutLink.gpsBitmap`).
     public static func parseGpsParams(_ tlv: HuaweiTLV?) -> GpsParams? {
-        guard let sub = try? tlv?.object(0x81), let first = sub.bytes(0x02, default: nil)?.first else { return nil }
-        return GpsParams(bitmap: Int(first))
+        gpsBitmap(tlv).map { GpsParams(bitmap: $0) }
+    }
+
+    /// All bytes of the `18/01` bitmap, big-endian (Huawei Health reads an int). The Fit 4 Pro sends two, `01 DF` (2026-10-25): its first
+    /// byte alone (GB's `getByte`) is 0x01, speed only, and the watch never got the position, altitude, bearing and accuracy it asks for.
+    public static func gpsBitmap(_ tlv: HuaweiTLV?) -> Int? {
+        guard let sub = try? tlv?.object(0x81), let bytes = sub.bytes(0x02, default: nil), !bytes.isEmpty, bytes.count <= 4 else { return nil }
+        return bytes.reduce(0) { ($0 << 8) | Int($1) }
     }
 
     /// Kotlin `Float.toInt()` / `Double.toInt()`: truncates, saturates, NaN is 0.

@@ -325,8 +325,8 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
         do {
             let answer = try await handle.session.request(WorkoutLinkWire.gpsParametersRequest(), timeoutMs: Self.requestMs, label: "GpsParameters")
             guard let params = WorkoutLinkWire.parseGpsParams(answer.tlv) else { return nil }
-            let bitmap = (try? answer.tlv?.object(0x81))?.bytes(0x02, default: nil)?.first ?? 0
-            log("Workout link: watch takes GPS fields bitmap 0x\(String(format: "%02x", bitmap)) (answer \(answer.tlv.map { "\($0)" } ?? "nil"))")
+            let bitmap = WorkoutLinkWire.gpsBitmap(answer.tlv) ?? 0
+            log("Workout link: watch takes GPS fields bitmap 0x\(String(bitmap, radix: 16)) (answer \(answer.tlv.map { "\($0)" } ?? "nil"))")
             lock.locked { gpsParams = params }
             return params
         } catch is CancellationError {
