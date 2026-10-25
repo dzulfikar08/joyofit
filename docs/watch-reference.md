@@ -179,10 +179,11 @@ JoyoRogo sign-in, JoyoRogo Pro (hidden when the build has no cloud server), Done
   JoyoFit connect got authType 5 (`Auth: the watch does not know this identity (authType 5) although a bind key is stored locally`). Huawei Health does this as long as the
   watch is in its device list, also when it is paused or force-stopped. JoyoFit now says so in the bind confirmation of that case ("this watch no longer knows this phone's
   pairing", `device.bind.lostAndroid` / `lostIos`) and in the background note; Pair again restores the binding, nothing on the watch is lost.
+- **Unbind cause, control run (2026-10-25, JRG-414).** With Huawei Health disabled (`pm disable-user com.huawei.health`; `pm suspend` alone left its device manager
+  running and reconnecting), JoyoFit's binding survived both triggers: Bluetooth off for 30 s and on (14:56:38–14:57:08), then `authType 6` at 14:59:21; `adb install -r`
+  of the same build while linked (15:00:46–15:01:17), then `authType 6` at 15:01:26. The positive case (Huawei Health running, re-binding within seconds) is in the
+  morning's log, see the item above. So for any device test: disable Huawei Health, do not just suspend it.
 - **Device experiments still to run for JRG-414** (Fit 4 Pro; capture `adb logcat -v threadtime` with JoyoFit's frame log on):
-  1. *Unbind cause, control.* `pm disable-user com.huawei.health`; bind JoyoFit fresh (Lupakan pairing, Connect, Lanjut, ✓); switch Bluetooth off for 30 s and on; then
-     `adb install -r` the same build. Expected: authType 6 after both. Then `pm enable com.huawei.health`, wait until its process runs, repeat the Bluetooth toggle. Expected:
-     `pin code parse 1` and `The device is successfully bound!` from `DEVMGR`/`HiChain` within ~30 s, and authType 5 for JoyoFit.
   2. *Unpair in Huawei Health is enough.* With Huawei Health enabled, remove the watch in Huawei Health (Devices, the watch, Unpair), note whether the watch resets, bind
      JoyoFit, toggle Bluetooth. Expected: no `DEVMGR_ReconnectManager start reconnect device` for the watch and authType 6.
   3. *What the prompt's Yes does.* Pair Huawei Health once (its account goes to the watch), then bind JoyoFit with Huawei Health disabled. On the next JoyoFit connect wait
