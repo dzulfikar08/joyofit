@@ -84,12 +84,19 @@ function countFor(n: number): FieldCount {
   return Math.min(12, n + (n % 2)) as FieldCount;
 }
 
+/** The field counts a screen that can never read `exclude` can fill with metrics of its own: no count above what is left. */
+export function fieldCounts(exclude: readonly RunMetricId[] = []): FieldCount[] {
+  const available = RUN_METRIC_IDS.filter((id) => !exclude.includes(id)).length;
+  return FIELD_COUNTS.filter((count) => count <= available);
+}
+
 /**
  * A stored layout of any shape, made valid: unknown and repeated ids go, and the list is filled up (from the sport's defaults, then
- * the remaining metrics) to the next field count, or cut to twelve. A layout saved by an older build (four or six valid fields) comes
- * back unchanged. Anything unusable is the sport's default layout.
+ * the remaining metrics, never one of `exclude`) to the next field count, or cut to twelve; when the metrics left run out first, it is
+ * cut to the count below. A layout saved by an older build (four or six valid fields) comes back unchanged. Anything unusable is the
+ * sport's default layout.
  */
-export function normalizeLayout(raw: unknown, kind: FieldSportKind): RunLayout {
+export function normalizeLayout(raw: unknown, kind: FieldSportKind, exclude: readonly RunMetricId[] = []): RunLayout {
   if (typeof raw !== 'object' || raw === null) return defaultLayout(kind);
   const source = raw as { ids?: unknown; big?: unknown };
   if (!Array.isArray(source.ids)) return defaultLayout(kind);
@@ -99,9 +106,10 @@ export function normalizeLayout(raw: unknown, kind: FieldSportKind): RunLayout {
   const count = countFor(ids.length);
   for (const id of [...DEFAULT_IDS[kind], ...RUN_METRIC_IDS]) {
     if (ids.length >= count) break;
-    if (!ids.includes(id)) ids.push(id);
+    if (!ids.includes(id) && !exclude.includes(id)) ids.push(id);
   }
-  return { ids: ids.slice(0, count), big: source.big === true };
+  const fits = [...FIELD_COUNTS].reverse().find((c) => c <= Math.min(count, ids.length)) ?? 4;
+  return { ids: ids.slice(0, fits), big: source.big === true };
 }
 
 /** The layout with `count` fields: cut from the end, or filled up with metrics not yet shown and not in `exclude` (the screen has none of them). */

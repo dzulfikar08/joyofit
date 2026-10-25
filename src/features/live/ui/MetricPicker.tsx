@@ -11,7 +11,7 @@ import { Segmented } from '@/components/Segmented';
 import { SwitchRow } from '@/components/SwitchRow';
 import { spacing, useTheme } from '@/theme';
 
-import { assignMetric, FIELD_COUNTS, PAGE_SIZE, RUN_METRIC_IDS, withCount, type FieldCount, type RunLayout, type RunMetricId } from '../runFields';
+import { assignMetric, fieldCounts, PAGE_SIZE, RUN_METRIC_IDS, withCount, type FieldCount, type RunLayout, type RunMetricId } from '../runFields';
 
 interface MetricPickerProps {
   visible: boolean;
@@ -43,6 +43,8 @@ function Sheet({ initialSlot, layout, exclude = NONE, onChange, onClose }: Sheet
   const insets = useSafeAreaInsets();
   const [slot, setSlot] = useState<number | null>(initialSlot);
   const choosing = slot !== null;
+  // No count above what this screen can fill: a twelfth field would have to be one it can never read.
+  const counts = fieldCounts(exclude);
 
   const back = () => (initialSlot !== null ? onClose() : setSlot(null));
 
@@ -94,8 +96,8 @@ function Sheet({ initialSlot, layout, exclude = NONE, onChange, onClose }: Sheet
               <View style={styles.setting}>
                 <AppText variant="bodyStrong">{t('live.fields.count')}</AppText>
                 <Segmented<FieldCount>
-                  options={FIELD_COUNTS.map((count) => ({ value: count, label: String(count) }))}
-                  value={FIELD_COUNTS.find((count) => count === layout.ids.length) ?? 4}
+                  options={counts.map((count) => ({ value: count, label: String(count) }))}
+                  value={counts.find((count) => count === layout.ids.length) ?? counts[counts.length - 1] ?? 4}
                   onChange={(count) => onChange(withCount(layout, count, exclude))}
                 />
                 <AppText variant="caption" muted>

@@ -151,7 +151,9 @@
     },
     "steps": {
       "ask": "Kadensi, langkah, dan panjang langkah diambil dari penghitung langkah ponselmu (jam tidak mengirimnya). Izinkan agar tampil di sini.",
-      "allow": "Izinkan penghitung langkah"
+      "allow": "Izinkan penghitung langkah",
+      "denied": "Penghitung langkah belum diizinkan untuk JoyoFit. Nyalakan Aktivitas fisik (Android) atau Gerakan & Kebugaran (iPhone) di pengaturan ponsel; hitungan mulai saat kamu kembali.",
+      "openSettings": "Buka pengaturan"
     },
     "route": {
       "title": "Rute di peta",

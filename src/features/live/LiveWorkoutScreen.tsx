@@ -1,7 +1,7 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { AppText } from '@/components/AppText';
@@ -143,6 +143,8 @@ function LiveBody({ session, title }: { session: LiveSession; title: string }) {
   const metronome = useMetronome();
   const phase = livePhase(live);
   const extras = useLiveExtras(session, nowMs);
+  // The system asks only once: after a refusal the card leads to the phone's settings (coming back re-checks, `runLiveSteps`).
+  const [stepsRefused, setStepsRefused] = useState(false);
   const active = session.state !== 'ended';
   const statusColor = live.status === 'running' ? colors.link : live.status === 'paused' ? colors.warning : colors.mutedForeground;
   const showMap = session.gpsSport || location !== null || (session.sportKind !== null && session.sportKind !== 'other');
@@ -235,9 +237,18 @@ function LiveBody({ session, title }: { session: LiveSession; title: string }) {
       {askSteps ? (
         <Card>
           <AppText variant="caption" muted>
-            {t('live.steps.ask')}
+            {t(stepsRefused ? 'live.steps.denied' : 'live.steps.ask')}
           </AppText>
-          <Button label={t('live.steps.allow')} icon="footsteps-outline" variant="secondary" onPress={() => void allowLiveSteps()} />
+          {stepsRefused ? (
+            <Button label={t('live.steps.openSettings')} icon="settings-outline" variant="secondary" onPress={() => void Linking.openSettings()} />
+          ) : (
+            <Button
+              label={t('live.steps.allow')}
+              icon="footsteps-outline"
+              variant="secondary"
+              onPress={() => void allowLiveSteps().then((answer) => setStepsRefused(answer !== 'granted'))}
+            />
+          )}
         </Card>
       ) : null}
 

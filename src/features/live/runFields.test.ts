@@ -4,6 +4,7 @@ import {
   assignMetric,
   averagePace,
   defaultLayout,
+  fieldCounts,
   gridPages,
   normalizeLayout,
   rowSizes,
@@ -34,6 +35,27 @@ describe('normalizeLayout', () => {
     expect(normalizeLayout({ ids: ['hr', 'pace', 'distance', 'duration', 'cadence', 'calories', 'speed'] }, 'run').ids.length).toBe(8);
     const fourteen: RunMetricId[] = ['duration', 'distance', 'pace', 'avgPace', 'speed', 'hr', 'hrZone', 'avgHr', 'maxHr', 'calories', 'cadence', 'steps', 'stride', 'altitude'];
     expect(normalizeLayout({ ids: fourteen }, 'run').ids).toEqual(fourteen.slice(0, 12));
+  });
+});
+
+describe('a screen that cannot read some metrics (indoor ride, indoor "other")', () => {
+  const indoorRide: RunMetricId[] = ['elevationGain', 'altitude', 'steps', 'stride'];
+  test('the editor offers no count above the metrics left', () => {
+    expect(fieldCounts()).toEqual([4, 6, 8, 10, 12]);
+    expect(fieldCounts(indoorRide)).toEqual([4, 6, 8, 10]);
+  });
+  test('twelve on such a screen never brings an excluded metric back', () => {
+    const filled = withCount(defaultLayout('ride'), 12, indoorRide);
+    const saved = normalizeLayout(filled, 'ride', indoorRide);
+    expect(saved.ids.some((id) => indoorRide.includes(id))).toBe(false);
+    expect(saved.ids.length).toBe(10);
+    const other = normalizeLayout(withCount(defaultLayout('other'), 12, indoorRide), 'other', indoorRide);
+    expect(other.ids).not.toContain('steps');
+    expect(other.ids.length).toBe(10);
+  });
+  test('the fill skips excluded metrics, and a metric the person placed stays', () => {
+    const layout = normalizeLayout({ ids: ['duration', 'altitude', 'hr', 'speed', 'distance'] }, 'ride', indoorRide);
+    expect(layout.ids).toEqual(['duration', 'altitude', 'hr', 'speed', 'distance', 'calories']);
   });
 });
 

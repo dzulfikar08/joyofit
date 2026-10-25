@@ -151,7 +151,9 @@
     },
     "steps": {
       "ask": "Cadence, steps and stride come from your phone’s step counter (the watch sends none). Allow it to see them here.",
-      "allow": "Allow step counter"
+      "allow": "Allow step counter",
+      "denied": "The step counter is not allowed for JoyoFit. Turn on Physical activity (Android) or Motion & Fitness (iPhone) in the phone’s settings; counting starts when you come back.",
+      "openSettings": "Open settings"
     },
     "route": {
       "title": "Route on the map",

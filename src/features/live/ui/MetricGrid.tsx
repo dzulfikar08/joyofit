@@ -57,6 +57,7 @@ export function MetricGrid({ kind, values, editor, exclude = NONE, phoneMeasured
   const palette = useAnalysisPalette();
   const [layout, setLayout] = useRunLayout(kind);
   const foot = footKind(kind);
+  const pickerExclude = foot ? exclude : [...exclude, ...FOOT_ONLY_METRICS];
   const pages = gridPages(layout);
   const [width, setWidth] = useState(0);
   const [page, setPage] = useState(0);
@@ -163,8 +164,8 @@ export function MetricGrid({ kind, values, editor, exclude = NONE, phoneMeasured
         visible={editor.state.open}
         initialSlot={editor.state.slot}
         layout={layout}
-        exclude={foot ? exclude : [...exclude, ...FOOT_ONLY_METRICS]}
-        onChange={setLayout}
+        exclude={pickerExclude}
+        onChange={(next) => setLayout(next, pickerExclude)}
         onClose={editor.close}
       />
     </>
