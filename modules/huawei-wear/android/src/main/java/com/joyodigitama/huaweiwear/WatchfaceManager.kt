@@ -150,6 +150,13 @@ internal fun watchfaceOperationPacket(
   it.setTlv(tlv)
 }
 
+/**
+ * Whether a 27/03 answer's status (tag 0x7f, null when absent) means the watch took the operation. Huawei Health reads a missing
+ * 0x7f as 0 (`WatchFaceDeviceService.handleApply`) and counts 0 and 100000 as success (`WatchFaceWearService.isSuccessErrorCode`);
+ * the Fit 4 Pro answers an apply of its photo face with 0 (2026-10-25).
+ */
+internal fun operationAccepted(code: Int?): Boolean = code == null || code == 0 || code == UPLOAD_OK
+
 /** Huawei Health `WatchFaceWearService.isSignFailErrorCode`. */
 internal val SIGNATURE_FAILURE_CODES = setOf(100007, 100014)
 
@@ -281,6 +288,14 @@ internal class WatchfaceOps(
     return after
   }
 
+  /**
+   * 27/03 operation 1 for [face] as listed, also when it is the current face, without listing before or after; the watch's status
+   * (tag 0x7f) or null when it sends none. Huawei Health sends this after every photo face save: the Apply button of its My watch
+   * faces page saves the album (27/09 and the photo upload), then calls `applyWatchFace`, which is this packet
+   * (`OperateWatchFaceService.sendApplyWatchFaceCommand`). See protocol/README.md, "Photo faces".
+   */
+  suspend fun apply(face: WatchfaceEntry): Int? = operation(face, Watchface.WatchfaceOperation.operationActive, "apply")
+
   /** GB `HuaweiWatchfaceManager.deleteWatchface`, then the list again to check that it is gone. */
   suspend fun delete(id: String): WatchfaceList {
     val face = find(list(), id)
@@ -305,7 +320,7 @@ internal class WatchfaceOps(
     val label = "WatchfaceOperation $what ${face.id}_${face.version}"
     val answer = session.request(watchfaceOperationPacket(params, face.id, face.version, operation), queryMs, label)
     val code = (answer as? Watchface.WatchfaceOperation.Response)?.code?.takeIf { it >= 0 }
-    log("$label: watch answered ${code ?: "without a status"}")
+    log("$label: watch answered ${code ?: "without a status"} TLV ${describeTlv(answer.getTlv())}")
     return code
   }
 
@@ -332,7 +347,7 @@ internal class WatchfaceOps(
     val code = response?.code?.takeIf { it >= 0 }
     val needReceive = response?.needReceive?.takeIf { it >= 0 }
     log("$label: watch answered status=${code ?: "none"} needReceive=${needReceive ?: "none"} TLV ${describeTlv(answer.getTlv())}")
-    if (code != null && code != 0 && code != UPLOAD_OK) {
+    if (code != null && !operationAccepted(code)) {
       throw WearException(ErrorCodes.UPLOAD_REJECTED, describeAnnounceCode(code), statusCode = code)
     }
     return Announcement(code, needReceive)

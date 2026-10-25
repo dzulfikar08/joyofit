@@ -106,6 +106,7 @@ public final class PhotoFaceController: @unchecked Sendable {
                 } catch {
                     events.error("Photo face: the local copy of \(name) could not be kept: \(error)")
                 }
+                let applyProblem = try await self.reapply(watchfaces, before.face)
                 let after = try await self.state(watchfaces, photos)
                 let failed = result.failedNum ?? 0
                 let listed = after.info.photos.contains { $0.name == name }
@@ -114,11 +115,13 @@ public final class PhotoFaceController: @unchecked Sendable {
                     message = "The watch took the photo but does not list it."
                 } else if failed > 0 {
                     message = "The watch reported \(failed) photo(s) it could not take."
+                } else if let applyProblem {
+                    message = "Photo added, but \(applyProblem)."
                 } else {
                     message = "Photo added."
                 }
                 events.uploadResult(ok: listed && failed == 0, fileName: name, code: nil, message: message)
-                return after.toJS(self.store)
+                return after.toJS(self.store, applyError: applyProblem)
             } catch let e as WearError {
                 events.uploadResult(ok: false, fileName: name.isEmpty ? "photo" : name, code: e.statusCode, message: e.message)
                 throw e
@@ -135,11 +138,14 @@ public final class PhotoFaceController: @unchecked Sendable {
             let names = before.info.photos.map(\.name).filter { $0 != name }
             _ = try await photos.save(before.info, names: names, files: [:])
             self.store.delete(name)
+            // An emptied face that was not on the screen stays off it: applying it would put the watch's "add photo" page up.
+            var applyProblem: String?
+            if !names.isEmpty || before.face.isCurrent { applyProblem = try await self.reapply(watchfaces, before.face) }
             let after = try await self.state(watchfaces, photos)
             if after.info.photos.contains(where: { $0.name == name }) {
                 throw WearError(.uploadRejected, "The watch still lists the photo after it was removed.")
             }
-            return after.toJS(self.store)
+            return after.toJS(self.store, applyError: applyProblem)
         }
     }
 
@@ -151,6 +157,26 @@ public final class PhotoFaceController: @unchecked Sendable {
             if !face.isCurrent { _ = try await watchfaces.setActive(face.id) }
             return try await self.state(watchfaces, photos).toJS(self.store)
         }
+    }
+
+    /// 27/03 operation 1 for the photo face after a save, as Huawei Health's Apply does (protocol/README.md, "Photo faces"): the face is
+    /// applied again, current or not, so the watch rebuilds it from the new list (the expectation is that this drops its "add photo"
+    /// prompt; UNVERIFIED). After a delete it is skipped when the face is emptied and was not the current one. The photos are saved
+    /// already, so a refusal is reported (log, `applyError` of the result), not thrown. Nil when the watch took it.
+    private func reapply(_ watchfaces: WatchfaceOps, _ face: WatchfaceEntry) async throws -> String? {
+        let problem: String?
+        do {
+            if let code = try await watchfaces.apply(face), !WatchfaceOps.operationAccepted(code) {
+                problem = "the watch answered \(code) when the photo face was applied again"
+            } else {
+                problem = nil
+            }
+        } catch let e as WearError {
+            if e.code == .disconnected { throw e }
+            problem = "applying the photo face again failed: \(e.message)"
+        }
+        if let problem { events.error("Photo face: \(problem)") }
+        return problem
     }
 
     private func state(_ watchfaces: WatchfaceOps, _ photos: PhotoFaceOps) async throws -> PhotoFaceState {
@@ -210,8 +236,8 @@ public final class PhotoFaceController: @unchecked Sendable {
 }
 
 extension PhotoFaceState {
-    /// `PhotoFace` in `HuaweiWearPhotoFace.types.ts`.
-    func toJS(_ store: PhotoStore) -> [String: Any] {
+    /// `PhotoFace` in `HuaweiWearPhotoFace.types.ts`; `applyError` is set by `add` / `delete` when the apply after the save failed.
+    func toJS(_ store: PhotoStore, applyError: String? = nil) -> [String: Any] {
         [
             "face": face.toJS(), "width": width, "height": height, "maxPhotos": info.maxPhotos, "imageOption": info.imageOption,
             "backgroundType": info.backgroundType, "intellectColour": info.intellectColour,
@@ -219,6 +245,7 @@ extension PhotoFaceState {
             "dataIndex": info.dataIndex.map { $0 as Any } ?? NSNull(),
             "photos": info.photos.map { ["index": $0.index, "name": $0.name, "uri": store.uri($0.name).map { $0 as Any } ?? NSNull()] as [String: Any] },
             "updatedAt": updatedAtMs,
+            "applyError": applyError.map { $0 as Any } ?? NSNull(),
         ]
     }
 }

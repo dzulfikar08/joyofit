@@ -381,13 +381,15 @@
     "revert": "Revert"
   },
   "photo": {
-    "added": "Photo added to the watch face.",
+    "added": "Photo added. The watch now shows the photo face.",
     "title": "Photo watch face",
     "photoA11y": "Photo {{n}}",
     "noPreview": "Added from another phone, no preview",
     "deleteN": "Delete photo {{n}}",
     "deleteTitle": "Delete photo",
     "deleteMessage": "Remove photo {{n}} from the watch face?",
+    "deleteMessageSwitch": "Remove photo {{n}} from the watch face? The watch then switches to the photo face.",
+    "notApplied": "The photos are saved, but the watch did not switch to the photo face: {{reason}}",
     "connect": "Connect your watch to manage the photos on its photo face.",
     "summary": "{{used}} of {{max}} photos · {{width}} x {{height}} px",
     "add": "Add a photo",
