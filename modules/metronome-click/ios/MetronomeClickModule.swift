@@ -13,6 +13,8 @@ public final class MetronomeClickModule: Module {
     private let queue = DispatchQueue(label: "com.joyodigitama.metronomeclick")
     // Touched only on `queue`.
     private var player: AVAudioPlayer?
+    /// Whether this module activated the session (and so has to deactivate it), tracked apart from the player: either can fail alone.
+    private var sessionActive = false
 
     public func definition() -> ModuleDefinition {
         Name("MetronomeClick")
@@ -35,37 +37,48 @@ public final class MetronomeClickModule: Module {
         }
     }
 
+    /// The player first: it does not need the session. An activation that fails leaves it in place, and the next click retries.
     private func open() {
         guard player == nil else { return }
         do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
-            try session.setActive(true)
             let created = try AVAudioPlayer(data: ClickSound.wav(), fileTypeHint: AVFileType.wav.rawValue)
             created.prepareToPlay()
             player = created
         } catch {
-            NSLog("MetronomeClick: start failed: \(error)")
+            NSLog("MetronomeClick: loading the click failed: \(error)")
+            return
+        }
+        activate()
+    }
+
+    @discardableResult
+    private func activate() -> Bool {
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            try session.setActive(true)
+            sessionActive = true
+            return true
+        } catch {
+            NSLog("MetronomeClick: activating the audio session failed: \(error)")
+            return false
         }
     }
 
     private func play() {
         guard let player else { return }
+        if !sessionActive && !activate() { return }
         player.currentTime = 0
         if player.play() { return }
         // An interruption (a call, Siri) deactivated the session: activate it again and retry once.
-        do {
-            try AVAudioSession.sharedInstance().setActive(true)
-            player.play()
-        } catch {
-            NSLog("MetronomeClick: click failed: \(error)")
-        }
+        if activate() { player.play() }
     }
 
     private func close() {
-        guard let player else { return }
-        player.stop()
-        self.player = nil
+        player?.stop()
+        player = nil
+        guard sessionActive else { return }
+        sessionActive = false
         do {
             try AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
         } catch {
