@@ -407,6 +407,9 @@ class HuaweiWearModule : Module() {
     // Satellite data (A-GPS): status, update now, cancel, the watch maker's servers switch (AgpsModuleApi.kt, Ephemeris.kt).
     agpsApi { runtime() }
 
+    // Offline-map lab (P2P module mapkit; experimental switch): send / list / delete OSM-built maps (OfflineMapModuleApi.kt, OfflineMapLab.kt).
+    offlineMapApi { runtime() }
+
     OnDestroy {
       destroyed = true
       runtimeRef?.let {

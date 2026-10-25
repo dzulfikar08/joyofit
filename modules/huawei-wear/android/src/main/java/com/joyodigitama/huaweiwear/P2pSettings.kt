@@ -51,6 +51,11 @@ internal class P2pSettings(context: Context) : HealthLivingState {
     get() = prefs.getBoolean(KEY_COURSES, false)
     set(value) = prefs.edit().putBoolean(KEY_COURSES, value).apply()
 
+  /** The offline-map lab (P2P module `mapkit`, docs/offline-maps.md). Off: a lab test of OSM-built maps, unproven on any watch JoyoFit supports. */
+  var offlineMapLab: Boolean
+    get() = prefs.getBoolean(KEY_OFFLINE_MAP_LAB, false)
+    set(value) = prefs.edit().putBoolean(KEY_OFFLINE_MAP_LAB, value).apply()
+
   /** The quick replies the user chose (one per line); null until the app sent a list. Never contains a newline inside a reply. */
   var quickReplies: List<String>?
     get() = prefs.getString(KEY_QUICK, null)?.split('\n')
@@ -72,5 +77,6 @@ internal class P2pSettings(context: Context) : HealthLivingState {
     const val KEY_HL_REPORT = "hl_report_ms"
     const val KEY_HL_SUMMARY = "hl_summary"
     const val KEY_COURSES = "courses_experimental"
+    const val KEY_OFFLINE_MAP_LAB = "offline_map_lab"
   }
 }
