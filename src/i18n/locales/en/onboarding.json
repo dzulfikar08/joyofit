@@ -26,7 +26,7 @@
     "before3": "Know which phone or app the watch is paired with now. A watch accepts one app at a time, so it has to be released there first.",
     "coversTitle": "What this covers",
     "covers1": "Releasing the watch from Huawei Health, and keeping your old history.",
-    "covers2": "Pairing, then the first sync.",
+    "covers2": "Pairing; the first sync then runs by itself in the background.",
     "covers3Ios": "Permissions: notifications, Apple Health, weather.",
     "covers3Android": "Permissions: notifications, Health Connect, weather, staying connected.",
     "covers4": "Signing in with JoyoRogo, which is optional.",
@@ -50,37 +50,60 @@
   },
   "pair": {
     "title": "Pair your watch",
-    "intro": "Connect the watch to JoyoFit. The first time, the watch asks you to confirm on its own screen.",
-    "connected": "Connected. Continue to read your history from the watch.",
+    "intro": "Wake the watch and keep it next to the phone. JoyoFit looks for it as soon as Bluetooth is allowed; the first time, the watch asks you to confirm on its own screen.",
+    "connected": "Connected. The first sync runs in the background while you finish setting up.",
     "helpTitle": "The watch refuses to pair?",
     "help": "Check that it is unbound from Huawei Health and not connected to another phone or app, that it is awake and close, and try Connect again. If it still refuses after a restart of the watch, a reset of the watch from its own Settings is the last resort. A reset erases the data stored on the watch (workouts and days that were never synced), so sync first if you can, and do not start here.",
-    "preTitle": "What happens next",
-    "pre1Ios": "iOS asks whether JoyoFit may use Bluetooth. Allow it: that is how the watch is found.",
-    "pre1Android": "Android asks whether JoyoFit may find and connect to nearby devices. Allow it: that is how the watch is found.",
-    "pre2Ios": "Pick your watch in the list and tap Connect.",
-    "pre2Android": "Pick your watch in the list (or scan for it) and tap Connect.",
-    "pre3Ios": "Confirm the pairing in JoyoFit, accept the prompt on the watch, then tap Pair when iOS shows its pairing request.",
-    "pre3Android": "Confirm the pairing in JoyoFit, then accept the prompt on the watch.",
     "keepAwake": "Keep the watch awake. When its screen asks to pair, accept it on the watch. This can take up to a minute.",
-    "keepAwakeIos": "Keep the watch awake. When its screen asks to pair, accept it on the watch, then tap Pair if iOS shows its pairing request. This can take up to a minute."
+    "keepAwakeIos": "Keep the watch awake. When its screen asks to pair, accept it on the watch, then tap Pair if iOS shows its pairing request. This can take up to a minute.",
+    "cardLinked": "Connected",
+    "cardPicked": "Your model",
+    "scan": {
+      "searching": "Looking for your watch...",
+      "found_one": "{{count}} device found",
+      "found_other": "{{count}} devices found",
+      "none": "No watch found",
+      "keepClose": "Keep the watch awake and next to the phone.",
+      "again": "Scan again",
+      "stop": "Stop"
+    },
+    "confirm": {
+      "title": "Tap ✓ on your watch",
+      "body": "JoyoFit is connecting to {{name}}.",
+      "thisWatch": "your watch",
+      "elapsed": "{{seconds}} s",
+      "helpTitle": "Nothing on the watch?",
+      "helpAwake": "Wake the watch and keep its screen on: the request only shows on a lit screen.",
+      "helpNear": "Hold the watch right next to the phone.",
+      "helpUnpaired": "Check that Huawei Health, or another phone, no longer holds the watch. Unbind it there, then tap Connect again.",
+      "helpIos": "Also look for the iPhone's Bluetooth pairing request and tap Pair."
+    },
+    "manual": {
+      "title": "Add manually",
+      "open": "Add manually",
+      "search": "Search a model, e.g. Fit 4",
+      "count_one": "{{count}} model",
+      "count_other": "{{count}} models",
+      "none": "No model matches. A Huawei or Honor watch that is not listed is still tried: close this list and scan.",
+      "promptTitle": "Not found yet?",
+      "prompt": "Pick your model to see how to put it in pairing mode. JoyoFit then scans again and marks your watch.",
+      "change": "Other model",
+      "clear": "Clear"
+    },
+    "mode": {
+      "title": "Pairing mode",
+      "huaweiWatch": "A watch that is ready to pair shows a pairing screen (a QR code or its Bluetooth name) once its language is chosen. If it shows its normal watch face, it is still paired with a phone: unbind it in Huawei Health first, which usually resets it to that screen.",
+      "huaweiBand": "A band that is ready to pair shows a pairing screen once it is switched on and its language is chosen. If it shows the time, it is still paired with a phone: unbind it in Huawei Health first. Bands do not appear in the phone's Bluetooth settings; only JoyoFit's scan finds them.",
+      "honor": "Honor watches and bands work like Huawei ones: a pairing screen once the language is chosen. One that shows the time is still paired and has to be unbound in Honor Health or Huawei Health first. The newest Honor watches (Watch 5 and later) cannot be paired yet.",
+      "then": "Then keep it next to the phone: it appears as a card here when the scan sees it.",
+      "thenIos": "Then keep it next to the iPhone: it appears as a card here when the list sees it."
+    }
   },
-  "sync": {
-    "title": "Read your history from the watch",
-    "intro": "JoyoFit now pulls what the watch has stored: steps, heart rate, sleep and workouts. It is saved on this phone.",
-    "notConnected": "The watch is not connected. Go back to connect it, or choose Later and sync from More, Watch any time.",
-    "reading": "Reading from the watch...",
-    "readingHint": "The first sync collects everything the watch still holds, so it can take a few minutes. Keep the watch close and awake.",
-    "syncNow": "Sync now",
-    "resultTitle": "What came in",
-    "samples": "Activity samples",
-    "sleep": "Sleep segments",
-    "workouts": "Workouts",
-    "stepsToday": "Steps today",
-    "caloriesToday": "Calories today",
-    "distanceToday": "Distance today",
-    "note1": "Steps, heart rate and sleep appear on Today. Workouts are in the Workouts tab.",
-    "note2": "A watch only keeps a limited stretch of history. Older days are not on it; the Huawei Health import from the first step is how they come back.",
-    "note3": "Zeros are normal on a brand new or freshly reset watch. Wear it and sync again later."
+  "firstSync": {
+    "running": "Reading the history from your watch in the background. You can carry on.",
+    "done": "History from the watch is in.",
+    "doneCounts": "History from the watch is in. Workouts: {{workouts}} · Sleep segments: {{sleep}} · Activity samples: {{samples}}.",
+    "failed": "The first sync stopped: {{error}}. Sync later from More, Watch, or pull down on Today."
   },
   "notifications": {
     "title": "Notifications on the watch",
@@ -211,7 +234,6 @@
     "where": {
       "unbind": "More, Import from Huawei Health",
       "pair": "More, Watch",
-      "sync": "More, Watch, or pull down on Today",
       "notifications": "More, Notifications and calls",
       "health": "More, {{place}}",
       "weather": "More, Weather",
@@ -222,7 +244,6 @@
     "name": {
       "unbind": "Huawei Health history",
       "pair": "Pairing",
-      "sync": "First sync",
       "notifications": "Notifications",
       "weather": "Weather",
       "background": "Background connection",

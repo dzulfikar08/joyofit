@@ -26,7 +26,7 @@
     "before3": "Tahu jam sedang terhubung ke HP atau aplikasi mana. Jam hanya menerima satu aplikasi dalam satu waktu, jadi harus dilepas dari sana dulu.",
     "coversTitle": "Yang dibahas",
     "covers1": "Melepas jam dari Huawei Health, sambil menyimpan riwayat lamamu.",
-    "covers2": "Memasangkan jam, lalu sinkron pertama.",
+    "covers2": "Memasangkan jam; sinkron pertama lalu berjalan sendiri di latar belakang.",
     "covers3Ios": "Izin: notifikasi, Apple Health, cuaca.",
     "covers3Android": "Izin: notifikasi, Health Connect, cuaca, tetap terhubung.",
     "covers4": "Masuk dengan JoyoRogo, ini opsional.",
@@ -50,37 +50,58 @@
   },
   "pair": {
     "title": "Pasangkan jam kamu",
-    "intro": "Hubungkan jam ke JoyoFit. Pertama kali, jam meminta konfirmasi di layarnya sendiri.",
-    "connected": "Terhubung. Lanjut untuk membaca riwayat dari jam.",
+    "intro": "Nyalakan jam dan taruh di dekat HP. JoyoFit langsung mencarinya begitu Bluetooth diizinkan; pertama kali, jam meminta konfirmasi di layarnya sendiri.",
+    "connected": "Terhubung. Sinkron pertama berjalan di latar belakang sambil kamu menyelesaikan penyiapan.",
     "helpTitle": "Jam menolak dipasangkan?",
     "help": "Pastikan pasangannya sudah dilepas dari Huawei Health dan jam tidak terhubung ke HP atau aplikasi lain, jam menyala dan dekat, lalu coba Hubungkan lagi. Kalau masih menolak setelah jam dihidupkan ulang, reset jam dari Pengaturan di jam adalah jalan terakhir. Reset menghapus data yang tersimpan di jam (latihan dan hari yang belum pernah disinkronkan), jadi sinkronkan dulu kalau bisa, dan jangan mulai dari sini.",
-    "preTitle": "Yang terjadi selanjutnya",
-    "pre1Ios": "iOS menanyakan apakah JoyoFit boleh memakai Bluetooth. Izinkan: begitulah jam ditemukan.",
-    "pre1Android": "Android menanyakan apakah JoyoFit boleh menemukan dan terhubung ke perangkat di sekitar. Izinkan: begitulah jam ditemukan.",
-    "pre2Ios": "Pilih jam kamu di daftar lalu ketuk Hubungkan.",
-    "pre2Android": "Pilih jam kamu di daftar (atau cari) lalu ketuk Hubungkan.",
-    "pre3Ios": "Konfirmasi pemasangan di JoyoFit, terima permintaan di jam, lalu ketuk Pasangkan saat iOS menampilkan permintaan pemasangannya.",
-    "pre3Android": "Konfirmasi pemasangan di JoyoFit, lalu terima permintaan di jam.",
     "keepAwake": "Biarkan jam menyala. Saat layarnya meminta pemasangan, terima di jam. Ini bisa sampai satu menit.",
-    "keepAwakeIos": "Biarkan jam menyala. Saat layarnya meminta pemasangan, terima di jam, lalu ketuk Pasangkan kalau iOS menampilkan permintaan pemasangannya. Ini bisa sampai satu menit."
+    "keepAwakeIos": "Biarkan jam menyala. Saat layarnya meminta pemasangan, terima di jam, lalu ketuk Pasangkan kalau iOS menampilkan permintaan pemasangannya. Ini bisa sampai satu menit.",
+    "cardLinked": "Terhubung",
+    "cardPicked": "Model kamu",
+    "scan": {
+      "searching": "Mencari jam kamu...",
+      "found_other": "{{count}} perangkat ditemukan",
+      "none": "Jam tidak ditemukan",
+      "keepClose": "Biarkan jam menyala dan dekat dengan HP.",
+      "again": "Cari lagi",
+      "stop": "Berhenti"
+    },
+    "confirm": {
+      "title": "Ketuk ✓ di jam kamu",
+      "body": "JoyoFit sedang menghubungkan {{name}}.",
+      "thisWatch": "jam kamu",
+      "elapsed": "{{seconds}} dtk",
+      "helpTitle": "Tidak ada apa-apa di jam?",
+      "helpAwake": "Nyalakan layar jam dan biarkan tetap menyala: permintaannya hanya muncul di layar yang menyala.",
+      "helpNear": "Dekatkan jam tepat di samping HP.",
+      "helpUnpaired": "Pastikan Huawei Health, atau HP lain, sudah tidak memegang jam. Lepas pasangannya di sana, lalu ketuk Hubungkan lagi.",
+      "helpIos": "Cari juga permintaan pemasangan Bluetooth dari iPhone lalu ketuk Pasangkan."
+    },
+    "manual": {
+      "title": "Tambah manual",
+      "open": "Tambah manual",
+      "search": "Cari model, misalnya Fit 4",
+      "count_other": "{{count}} model",
+      "none": "Tidak ada model yang cocok. Jam Huawei atau Honor yang tidak ada di daftar tetap dicoba: tutup daftar ini lalu cari.",
+      "promptTitle": "Belum ketemu?",
+      "prompt": "Pilih model kamu untuk melihat cara memasukkannya ke mode pemasangan. JoyoFit lalu mencari lagi dan menandai jam kamu.",
+      "change": "Model lain",
+      "clear": "Hapus pilihan"
+    },
+    "mode": {
+      "title": "Mode pemasangan",
+      "huaweiWatch": "Jam yang siap dipasangkan menampilkan layar pemasangan (kode QR atau nama Bluetooth-nya) setelah bahasanya dipilih. Kalau jam menampilkan tampilan jam biasa, ia masih terpasang ke sebuah HP: lepas pasangannya di Huawei Health dulu, yang biasanya mengembalikan jam ke layar itu.",
+      "huaweiBand": "Band yang siap dipasangkan menampilkan layar pemasangan setelah dinyalakan dan bahasanya dipilih. Kalau band menampilkan jam, ia masih terpasang ke sebuah HP: lepas pasangannya di Huawei Health dulu. Band tidak muncul di pengaturan Bluetooth HP; hanya pencarian JoyoFit yang menemukannya.",
+      "honor": "Jam dan band Honor bekerja seperti Huawei: layar pemasangan muncul setelah bahasanya dipilih. Yang menampilkan jam masih terpasang dan harus dilepas dulu di Honor Health atau Huawei Health. Jam Honor terbaru (Watch 5 dan sesudahnya) belum bisa dipasangkan.",
+      "then": "Lalu taruh di dekat HP: jam muncul sebagai kartu di sini begitu pencarian melihatnya.",
+      "thenIos": "Lalu taruh di dekat iPhone: jam muncul sebagai kartu di sini begitu daftar melihatnya."
+    }
   },
-  "sync": {
-    "title": "Baca riwayat dari jam",
-    "intro": "JoyoFit sekarang mengambil yang tersimpan di jam: langkah, detak jantung, tidur, dan latihan. Semuanya disimpan di HP ini.",
-    "notConnected": "Jam tidak terhubung. Kembali untuk menghubungkannya, atau pilih Nanti dan sinkron dari Lainnya, Jam kapan saja.",
-    "reading": "Membaca dari jam...",
-    "readingHint": "Sinkron pertama mengumpulkan semua yang masih tersimpan di jam, jadi bisa butuh beberapa menit. Biarkan jam tetap dekat dan menyala.",
-    "syncNow": "Sinkron sekarang",
-    "resultTitle": "Yang masuk",
-    "samples": "Sampel aktivitas",
-    "sleep": "Segmen tidur",
-    "workouts": "Latihan",
-    "stepsToday": "Langkah hari ini",
-    "caloriesToday": "Kalori hari ini",
-    "distanceToday": "Jarak hari ini",
-    "note1": "Langkah, detak jantung, dan tidur muncul di Hari ini. Latihan ada di tab Latihan.",
-    "note2": "Jam hanya menyimpan riwayat dalam rentang terbatas. Hari-hari yang lebih lama tidak ada di sana; impor Huawei Health dari langkah pertama adalah cara mengembalikannya.",
-    "note3": "Angka nol itu wajar di jam yang baru atau baru direset. Pakai jamnya dan sinkron lagi nanti."
+  "firstSync": {
+    "running": "Membaca riwayat dari jam kamu di latar belakang. Kamu bisa lanjut.",
+    "done": "Riwayat dari jam sudah masuk.",
+    "doneCounts": "Riwayat dari jam sudah masuk. Latihan: {{workouts}} · Segmen tidur: {{sleep}} · Sampel aktivitas: {{samples}}.",
+    "failed": "Sinkron pertama berhenti: {{error}}. Sinkron nanti dari Lainnya, Jam, atau tarik ke bawah di Hari ini."
   },
   "notifications": {
     "title": "Notifikasi di jam",
@@ -211,7 +232,6 @@
     "where": {
       "unbind": "Lainnya, Impor dari Huawei Health",
       "pair": "Lainnya, Jam",
-      "sync": "Lainnya, Jam, atau tarik ke bawah di Hari ini",
       "notifications": "Lainnya, Notifikasi dan panggilan",
       "health": "Lainnya, {{place}}",
       "weather": "Lainnya, Cuaca",
@@ -222,7 +242,6 @@
     "name": {
       "unbind": "Riwayat Huawei Health",
       "pair": "Pemasangan",
-      "sync": "Sinkron pertama",
       "notifications": "Notifikasi",
       "weather": "Cuaca",
       "background": "Koneksi latar belakang",

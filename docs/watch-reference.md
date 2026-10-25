@@ -151,15 +151,22 @@ reopened from **Settings → Setup guide**, and is never shown on its own to som
 `device` row from an earlier sync: a `bypassed` record is written once). Progress is one JSON record in the `expo-sqlite/kv-store` key `joyofit.onboarding`. Back and a skip
 exist on every step except while the watch is connecting; Continue on the pairing step waits until the watch is linked. There is no event tracking in the app, so the guide sends none.
 
-Order, with the rules in `flow.ts` (pure, tested in `flow.test.ts`): Welcome, Huawei Health, Pair, First sync, Notifications, Apple Health / Health Connect, Weather, Background
-(Android only), JoyoRogo sign-in, JoyoRogo Pro (hidden when the build has no cloud server), Done.
+Order, with the rules in `flow.ts` (pure, tested in `flow.test.ts`): Welcome, Huawei Health, Pair, Background (Android only), Notifications, Apple Health / Health Connect, Weather,
+JoyoRogo sign-in, JoyoRogo Pro (hidden when the build has no cloud server), Done. Pairing follows Huawei Health 17.0.8's own flow (captured 2026-10-25).
 
 - **Huawei Health first**: the watch accepts one app, so it is released before pairing. It is also the last point to let Huawei Health sync once more and to request the data export
   (which takes up to 7 days), so the step carries the real import sections behind a button and the ZIP can be imported when it arrives. A watch reset is only mentioned as a last resort
   under the pairing step, because it wipes the watch's stored data.
-- **Pair** is the Watch tab's list and bind confirmation (`AvailableWatchesSection`, `BindConfirmDialog`), not a copy; nothing asks for Bluetooth before the pre-prompt "Continue".
-- **First sync** comes right after pairing: it proves the link, and the scores, exports and backups below all need data. The native sync reports no percentage, so the step shows that it
-  is running and then what came in.
+- **Pair** has no text pre-prompt: arriving asks for Bluetooth and starts the scan at once (iOS: the list refresh) under a radar, and each watch found is one large card with one
+  Connect button (`steps/PairStep.tsx`, `pair/`, logic in `pairing.ts`). It shares the Watch tab's hooks and pieces, not a copy: `useBluetoothPermission`, `useBondedDevices`,
+  `withActiveWatch`, `useWatchRowActions`, `BluetoothPermissionPrompt` and `BindConfirmDialog`. **Add manually** lists every model of the catalogue (`watchCatalogue.ts`, the names
+  of `WatchModels.kt`) by family with a search box; picking one explains that kind of watch's pairing mode and moves its scan cards to the top, marked. While the link is
+  connecting, authenticating or initializing a full-width panel shows the watch with the tick to tap, the seconds waited and, after 30 s, what to check. No product photos ship, so
+  the cards draw a watch glyph.
+- **First sync** is not a step: it starts by itself once the watch is linked (from the pairing step on, `firstSyncStarts`), runs in the background as Huawei Health's does, and shows
+  as one line under the progress bar on the following steps (`useFirstSync`, `FirstSyncLine`), with a retry when it fails. A run stored on the old `sync` step resumes on what now
+  follows pairing.
+- **Background** comes straight after pairing, while the person is still paying attention to the watch link, where Huawei Health shows its keep-alive tips.
 - **JoyoRogo Pro** (`pro.ts`): the price and the AI scan limits are read from `GET https://api.joyorogo.com/api/config` (`founderPriceIdr`, `founderYearlyPriceIdr`, `founderDailyCap`,
   `freeDailyScans`, `promo`), never written in the app. By store: iOS only says Pro is available in JoyoRogo, with no price and no link
   ([App Store Review Guideline 3.1.1](https://developer.apple.com/app-store/review/guidelines/#in-app-purchase)); a Google Play build shows no price and links to the JoyoRogo app's Play

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import type { BondedDevice } from '@/wear';
 
-import { listBonded, sortBonded, withDiscovered } from './bondedList';
+import { listBonded, sortBonded, withActiveWatch, withDiscovered } from './bondedList';
 
 const GT6 = 'AA:BB:CC:DD:EE:01';
 const BAND = 'AA:BB:CC:DD:EE:02';
@@ -80,5 +80,24 @@ describe('sortBonded', () => {
     const input = [device('1', 'b'), device('2', 'a'), device('3', 'z', { support: 'tested' })];
     expect(sortBonded(input).map((d) => d.name)).toEqual(['z', 'a', 'b']);
     expect(input.map((d) => d.name)).toEqual(['b', 'a', 'z']);
+  });
+});
+
+describe('withActiveWatch', () => {
+  test('the watch in use comes first, then by support', () => {
+    const list = withActiveWatch([device(BAND, 'Band', { support: 'tested' }), device(GT6, 'GT')], GT6, null);
+    expect(list.map((d) => d.address)).toEqual([GT6, BAND]);
+  });
+
+  test('a watch in use that the list does not hold yet is added from the link', () => {
+    const list = withActiveWatch([device(BAND, 'Band')], GT6, { name: 'HUAWEI WATCH GT 6-1A2', model: 'Huawei Watch GT 6', support: 'experimental' });
+    expect(list[0]).toEqual({ address: GT6, name: 'HUAWEI WATCH GT 6-1A2', model: 'Huawei Watch GT 6', support: 'experimental', reason: null });
+    expect(list).toHaveLength(2);
+  });
+
+  test('without a watch in use the input is only sorted, never changed', () => {
+    const input = [device(GT6, 'GT'), device(BAND, 'Band', { support: 'tested' })];
+    expect(withActiveWatch(input, null, null).map((d) => d.address)).toEqual([BAND, GT6]);
+    expect(input.map((d) => d.address)).toEqual([GT6, BAND]);
   });
 });
