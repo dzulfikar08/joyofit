@@ -2,7 +2,7 @@
 app: joyofit
 feature: Peta offline di jam (uji lab, eksperimen)
 shipped: 2026-10-25
-available: code
+available: test-build
 tier: free
 post: skip (eksperimen untuk uji lab di jam pemilik, PR lab belum di-merge, belum terbukti di jam mana pun)
 atur: JRG-426
@@ -16,4 +16,4 @@ atur: JRG-426
 
 **Bukti visual:** Belum ada. Setelah uji lab berhasil: foto peta Malang di jam pada dua tingkat zoom dan tangkapan layar lab dengan hasil "kode 0" (catatan di docs/offline-maps.md, "Lab").
 
-**Jangan klaim:** Eksperimen, mati secara bawaan, hanya di build lab (belum di-merge, belum ada di build pengguna). Baru diuji di satu Watch Fit 4 Pro. Jangan tulis "semua kota tersedia" sebelum build penuh diunggah (saat ini Kota Malang, Kabupaten Malang, Kota Batu, Kabupaten Sidoarjo, Surabaya). Pengiriman lewat Bluetooth sekitar 75 kB/s (peta kota besar sampai sekitar 10 menit). Peta dibuat dari OpenStreetMap (© kontributor OpenStreetMap, ODbL), bukan peta Huawei/Petal. Jangan tulis 'tersedia di Play Store/App Store'. Tidak berafiliasi dengan Huawei.
+**Jangan klaim:** Eksperimen, mati secara bawaan, baru ada di build uji internal (belum di toko). Baru diuji di satu Watch Fit 4 Pro. Peta tersedia per kabupaten/kota di Indonesia (514 wilayah di server); jangan tulis peta di luar Indonesia. Pengiriman lewat Bluetooth sekitar 75 kB/s (peta kota besar sampai sekitar 10 menit). Peta dibuat dari OpenStreetMap (© kontributor OpenStreetMap, ODbL), bukan peta Huawei/Petal. Jangan tulis 'tersedia di Play Store/App Store'. Tidak berafiliasi dengan Huawei.

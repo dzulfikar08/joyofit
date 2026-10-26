@@ -2,7 +2,7 @@
 app: joyofit
 feature: Metronom bunyi (Getar / Bunyi / Keduanya)
 shipped: 2026-10-25
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-420
@@ -16,4 +16,4 @@ atur: JRG-420
 
 **Bukti visual:** Rekam layar HP: Rekam latihan, mulai lari, di kartu Metronom pilih Bunyi lalu nyalakan; rekam juga suaranya (klik terdengar di atas lagu yang sedang diputar).
 
-**Jangan klaim:** Belum ada di build mana pun: butuh build aplikasi baru (bukan update OTA), jangan tulis "tersedia di Play Store/App Store". Bawaannya tetap Getar; bunyi harus dipilih. Dengan layar mati, ketukan di Android jalan selama rekam latihan dari HP; di layar Live latihan yang dimulai di jam, layar tetap menyala selama metronom aktif. Belum diuji di iPhone dengan layar terkunci. Ketukan dari timer aplikasi, bukan alat ukur presisi. Jangan bandingkan dengan aplikasi lain dan jangan sebut jam tertentu.
+**Jangan klaim:** Baru ada di build uji internal (bukan update OTA), jangan tulis "tersedia di Play Store/App Store". Bawaannya tetap Getar; bunyi harus dipilih. Dengan layar mati, ketukan di Android jalan selama rekam latihan dari HP; di layar Live latihan yang dimulai di jam, layar tetap menyala selama metronom aktif. Belum diuji di iPhone dengan layar terkunci. Ketukan dari timer aplikasi, bukan alat ukur presisi. Jangan bandingkan dengan aplikasi lain dan jangan sebut jam tertentu.

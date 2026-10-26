@@ -2,7 +2,7 @@
 app: joyofit
 feature: Perekam lari: status band, pesan band yang jelas, tanjakan live
 shipped: 2026-10-25
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-422
@@ -16,4 +16,4 @@ atur: JRG-422
 
 **Bukti visual:** Tangkapan layar perekam lari dengan status Band di samping GPS dan sensor; layar live dengan kotak Tanjakan saat lari outdoor.
 
-**Jangan klaim:** Memulai band dari HP tetap belum teruji berhasil di band mana pun (Watch Fit 4 Pro menolaknya); jangan tulis "mulai dari HP, band ikut jalan". Tanjakan dihitung dari ketinggian GPS HP (perkiraan; angka Ketinggian bisa beda antara Android dan iPhone). Belum ada di build uji atau toko; jangan tulis "tersedia di Play Store/App Store". Tidak berafiliasi dengan Huawei; jangan bandingkan dengan Huawei Health.
+**Jangan klaim:** Memulai band dari HP tetap belum teruji berhasil di band mana pun (Watch Fit 4 Pro menolaknya); jangan tulis "mulai dari HP, band ikut jalan". Tanjakan dihitung dari ketinggian GPS HP (perkiraan; angka Ketinggian bisa beda antara Android dan iPhone). Baru ada di build uji internal, belum di toko; jangan tulis "tersedia di Play Store/App Store". Tidak berafiliasi dengan Huawei; jangan bandingkan dengan Huawei Health.

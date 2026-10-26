@@ -2,7 +2,7 @@
 app: joyofit
 feature: Lari dari jam: timer mulai saat GO, selesai ikut jam, data lari lengkap
 shipped: 2026-10-25
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-421

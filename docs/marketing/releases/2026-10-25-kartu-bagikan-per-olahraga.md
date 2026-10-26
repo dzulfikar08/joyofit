@@ -2,7 +2,7 @@
 app: joyofit
 feature: Kartu bagikan per jenis olahraga
 shipped: 2026-10-25
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-424
@@ -23,7 +23,7 @@ gowes menonjolkan jarak, kecepatan, elevasi, daya dan kadensi.
 **Bukti visual:** `docs/screenshots/share-per-sport/` (contact sheet per keluarga olahraga, gelap dan terang). Di HP: buka
 latihan gym, renang atau yoga dari jam, ketuk Bagikan.
 
-**Jangan klaim:** Belum ada di build yang dipakai pengguna (`available: code`). Set, repetisi dan volume hanya muncul kalau sesi
+**Jangan klaim:** Baru ada di build uji internal (`available: test-build`), belum di toko. Set, repetisi dan volume hanya muncul kalau sesi
 jam digabung dengan log angkat beban di JoyoFit; jam tidak mencatatnya sendiri. Lap, ayunan dan SWOLF hanya kalau jam
 mengirimnya. Angka kalori dan detak adalah perkiraan, bukan alat medis. Tidak berafiliasi dengan Huawei; jangan bandingkan
 dengan aplikasi atau kartu share merek lain.
