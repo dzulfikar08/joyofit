@@ -37,6 +37,7 @@ const sources = {
   RunningCoursePushResult: 'HuaweiWearP2p.types',
   RoutesStatus: 'HuaweiWearRoutes.types',
   OfflineMapLabStatus: 'HuaweiWearOfflineMaps.types',
+  WatchNavStatus: 'HuaweiWearWatchNav.types',
   RoutePushResult: 'HuaweiWearRoutes.types',
   NotificationFilterStatus: 'HuaweiWearNotifications.types',
   NotificationFilterTest: 'HuaweiWearNotifications.types',

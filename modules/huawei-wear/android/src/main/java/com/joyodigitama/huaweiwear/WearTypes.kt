@@ -151,4 +151,7 @@ internal interface WearEvents {
   fun deviceDiscovered(device: DiscoveredDevice) = Unit
   /** The state of the active Bluetooth LE scanner changed (`onScanStateChange`). */
   fun scanState(scanning: Boolean, error: String?) = Unit
+
+  /** Watch navigation (`onWatchNav`): a message of JoyoFit's watch app or a change of its presence ([WatchNavService]). */
+  fun watchNav(payload: Map<String, Any?>) = Unit
 }

@@ -111,6 +111,10 @@ class HuaweiWearModule : Module() {
       emit("onScanStateChange", mapOf("scanning" to scanning, "error" to error))
     }
 
+    override fun watchNav(payload: Map<String, Any?>) {
+      emit("onWatchNav", payload)
+    }
+
     fun emit(name: String, payload: Map<String, Any?>) {
       if (destroyed) return
       try {
@@ -152,7 +156,7 @@ class HuaweiWearModule : Module() {
     // "play" for the Google Play build, "sideload" otherwise (see Distribution.kt).
     Constant("distribution") { Distribution.name }
 
-    Events("onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged", "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress", "onDeviceDiscovered", "onScanStateChange")
+    Events("onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged", "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress", "onDeviceDiscovered", "onScanStateChange", "onWatchNav")
 
     OnCreate {
       val runtime = runtime()
@@ -409,6 +413,9 @@ class HuaweiWearModule : Module() {
 
     // Offline-map lab (P2P module mapkit; experimental switch): send / list / delete OSM-built maps (OfflineMapModuleApi.kt, OfflineMapLab.kt).
     offlineMapApi { runtime() }
+
+    // Watch navigation (P2P with JoyoFit's watch app com.joyodigitama.navi; experimental switch) (WatchNavModuleApi.kt, WatchNav.kt).
+    watchNavApi { runtime() }
 
     OnDestroy {
       destroyed = true

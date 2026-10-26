@@ -145,6 +145,7 @@ public final class HuaweiWearModule: Module {
         func huaweiImportProgress(_ payload: [String: Any]) { emit("onHuaweiImportProgress", payload) }
         func watchMealLogged(_ payload: [String: Any]) { emit("onWatchMealLogged", payload) }
         func liveWorkout(_ payload: [String: Any]) { emit("onLiveWorkout", payload) }
+        func watchNav(_ payload: [String: Any]) { emit("onWatchNav", payload) }
         func log(_ entry: LogEntry) {
             emit(
                 "onLog",
@@ -171,7 +172,7 @@ public final class HuaweiWearModule: Module {
 
         Events(
             "onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged",
-            "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress", "onDeviceDiscovered", "onScanStateChange"
+            "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress", "onDeviceDiscovered", "onScanStateChange", "onWatchNav"
         )
 
         OnCreate {
@@ -653,6 +654,25 @@ public final class HuaweiWearModule: Module {
         }
         AsyncFunction("deleteOfflineMap") { (mapId: String, mapType: Int) async throws -> [String: Any] in
             try await wearCall { try await runtime.p2p.offlineMaps.delete(mapId: mapId, mapType: mapType) }
+        }
+
+        // MARK: watch navigation (experimental, off by default; WatchNav.swift)
+
+        Function("getWatchNav") { () -> [String: Any] in runtime.p2p.watchNav.status() }
+        AsyncFunction("setWatchNavLab") { (enabled: Bool) async throws -> Void in
+            try await wearCall { runtime.p2p.watchNav.setEnabled(enabled) }
+        }
+        AsyncFunction("startWatchNav") { (config: [String: Any]) async throws -> [String: Any] in
+            guard let phone = config["phoneFingerprint"] as? String, let watch = config["watchFingerprint"] as? String else {
+                throw WearException(.invalidArgument, "The configuration needs phoneFingerprint and watchFingerprint")
+            }
+            return try await wearCall { try runtime.p2p.watchNav.start(WatchNavConfig(phoneFingerprint: phone, watchFingerprint: watch)) }
+        }
+        AsyncFunction("sendWatchNav") { (json: String) async throws -> Bool in
+            try await wearCall { try runtime.p2p.watchNav.send(json) }
+        }
+        AsyncFunction("stopWatchNav") { () async throws -> Void in
+            try await wearCall { runtime.p2p.watchNav.stop() }
         }
 
         // MARK: cycle calendar

@@ -4,10 +4,12 @@ import type { FetchLike } from './http';
 import {
   createRoutingClient,
   parseRouteResponse,
+  parseStepsResponse,
   parseViaResponse,
   routeCacheKey,
   routeUrl,
   routeViaCacheKey,
+  routeStepsUrl,
   routeViaUrl,
 } from './routingClient';
 import { rejectionOf } from './testSupport';
@@ -110,6 +112,56 @@ describe('parseRouteResponse', () => {
   });
 });
 
+const withSteps = {
+  ...ok,
+  routes: [
+    {
+      ...ok.routes[0],
+      legs: [
+        {
+          steps: [
+            { name: 'Jalan Ijen', distance: 420.5, maneuver: { type: 'depart', location: [112.63, -7.98], bearing_after: 88 } },
+            { name: '', ref: 'R 12', distance: 300, maneuver: { type: 'turn', modifier: 'left', location: [112.635, -7.975], bearing_before: 88, bearing_after: 2 } },
+          ],
+        },
+        {
+          steps: [
+            { name: 'Bundaran Tugu', distance: 80, maneuver: { type: 'roundabout', modifier: 'right', exit: 2, location: [112.637, -7.972] } },
+            { name: '', distance: 0, maneuver: { type: 'arrive', location: [112.64, -7.97], bearing_before: 45 } },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+describe('navigation steps', () => {
+  test('routeStepsUrl asks for steps and never turns back at a waypoint', () => {
+    expect(routeStepsUrl('bike', [A, B])).toBe(`${routeViaUrl('bike', [A, B])}&continue_straight=true&steps=true`);
+  });
+
+  test('parseStepsResponse reads the steps of every leg in order: type, modifier, exit, name (ref when unnamed), distance, place, headings', () => {
+    const answer = parseStepsResponse(withSteps);
+    expect(answer.line).toHaveLength(3);
+    expect(answer.steps.map((s) => [s.type, s.modifier, s.exit, s.name, s.distanceM])).toEqual([
+      ['depart', null, null, 'Jalan Ijen', 420.5],
+      ['turn', 'left', null, 'R 12', 300],
+      ['roundabout', 'right', 2, 'Bundaran Tugu', 80],
+      ['arrive', null, null, '', 0],
+    ]);
+    expect(answer.steps[1]!.location).toEqual({ lat: -7.975, lon: 112.635 });
+    expect([answer.steps[1]!.bearingBefore, answer.steps[1]!.bearingAfter]).toEqual([88, 2]);
+    expect(answer.steps[2]!.bearingBefore).toBeNull();
+  });
+
+  test('an answer without legs or with a broken step is a parse error; NoRoute stays a code error', () => {
+    expect(() => parseStepsResponse(ok)).toThrow(expect.objectContaining({ kind: 'parse' }));
+    const broken = { ...withSteps, routes: [{ ...withSteps.routes[0], legs: [{ steps: [{ maneuver: { type: 'turn' } }] }] }] };
+    expect(() => parseStepsResponse(broken)).toThrow(expect.objectContaining({ kind: 'parse' }));
+    expect(() => parseStepsResponse({ code: 'NoRoute', routes: [] })).toThrow(expect.objectContaining({ kind: 'code' }));
+  });
+});
+
 describe('createRoutingClient', () => {
   function setup(respond: FetchLike) {
     let time = 0;
@@ -174,6 +226,16 @@ describe('createRoutingClient', () => {
     expect(calls).toHaveLength(2);
     await client.route('foot', A, B);
     expect(calls).toHaveLength(2);
+  });
+
+  test('navigate asks with steps through the same 1.1 s queue and identity, uncached', async () => {
+    const { client, calls } = setup(async () => jsonResponse(withSteps));
+    const [first, second] = await Promise.all([client.navigate('foot', [A, B]), client.navigate('foot', [A, B])]);
+    expect(first.steps).toHaveLength(4);
+    expect(second.steps).toHaveLength(4);
+    expect(calls.map((c) => c.at)).toEqual([0, 1100]);
+    expect(calls[0].url).toBe(routeStepsUrl('foot', [A, B]));
+    expect(calls[0].headers['User-Agent']).toBe('JoyoFit/1.0 (https://joyofit.app)');
   });
 
   test('does not cache a failure', async () => {

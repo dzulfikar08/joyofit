@@ -11,6 +11,7 @@ import { Screen, Section } from '@/components/Screen';
 import { LoadingState, Notice } from '@/components/States';
 import { errorMessage } from '@/format';
 import { fmtInt } from '@/i18n';
+import { WatchNavSection } from '@/features/watchnav/WatchNavSection';
 
 import { formatRouteDateTime, sourceLabel } from './copy';
 import { RouteMap } from './map/RouteMap';
@@ -68,7 +69,7 @@ function NameSection({ route, onRename }: { route: SavedRoute; onRename: (name: 
   );
 }
 
-/** `/routes/[id]`: the route on a map, its numbers, the send to the watch and how to start it there. */
+/** `/routes/[id]`: the route on a map, its numbers, the send to the watch, how to start it there and watch navigation (lab). */
 export function RouteDetailScreen() {
   const { t } = useTranslation('routes');
   const router = useRouter();
@@ -165,6 +166,7 @@ export function RouteDetailScreen() {
 
       <RoutePushSection push={push} routeName={route.name} />
       <RouteStartGuide justSent={push.outcome?.kind === 'sent'} />
+      <WatchNavSection route={route} points={points} />
       <NameSection key={route.name} route={route} onRename={rename} />
 
       {error !== null ? <Notice tone="danger">{error}</Notice> : null}

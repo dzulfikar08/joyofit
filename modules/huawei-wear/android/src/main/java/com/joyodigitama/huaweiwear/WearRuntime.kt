@@ -146,6 +146,10 @@ internal class WearRuntime private constructor(context: Context) {
     override fun scanState(scanning: Boolean, error: String?) {
       listeners.forEach { it.scanState(scanning, error) }
     }
+
+    override fun watchNav(payload: Map<String, Any?>) {
+      listeners.forEach { it.watchNav(payload) }
+    }
   }
 
   /** Same fan-out the link reports through; background code logs here so the Log tab shows it. */

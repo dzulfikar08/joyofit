@@ -282,6 +282,7 @@ public final class WearRuntime: @unchecked Sendable {
         func faceCustomization(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.faceCustomization(payload) } }
         func watchMealLogged(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.watchMealLogged(payload) } }
         func liveWorkout(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.liveWorkout(payload) } }
+        func watchNav(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.watchNav(payload) } }
     }
 
     // MARK: bonded devices

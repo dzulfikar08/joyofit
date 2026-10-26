@@ -16,7 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 // Modified for watch-fit (AGPL-3.0-or-later): HuaweiSupportProvider is replaced by the small Transport interface (the session layer
 // implements it); the wake-app screenshot route (HuaweiP2PWakeAppScreenshot, android.net.Uri) is not ported, so every wake-app link is
-// answered with GB's "not supported" code 0xd2; packets and files are routed by the same source package GB uses.
+// answered with GB's "not supported" code 0xd2; packets and files are routed by the same source package GB uses; unregisterService(module)
+// removes one service (JoyoFit's watch navigation registers only while a session runs).
 package nodomain.freeyourgadget.gadgetbridge.service.devices.huawei;
 
 import org.slf4j.Logger;
@@ -94,6 +95,15 @@ public class HuaweiP2PManager {
             svr.unregister();
         }
         registeredServices.clear();
+    }
+
+    public synchronized void unregisterService(String module) {
+        for (HuaweiBaseP2PService svr : new ArrayList<>(registeredServices)) {
+            if (svr.getModule().equals(module)) {
+                svr.unregister();
+                registeredServices.remove(svr);
+            }
+        }
     }
 
     private synchronized List<HuaweiBaseP2PService> snapshot() {

@@ -2,6 +2,7 @@ import type { WatchMealLoggedEvent } from './HuaweiWearDiet.types';
 import type { UploadProgressEvent, UploadResultEvent } from './HuaweiWearWatchface.types';
 import type { FaceCustomization } from './HuaweiWearFaceCustom.types';
 import type { HuaweiImportProgressEvent } from './HuaweiWearImport.types';
+import type { WatchNavEvent } from './HuaweiWearWatchNav.types';
 
 export type LinkState =
   | 'disconnected'
@@ -599,4 +600,6 @@ export type HuaweiWearModuleEvents = {
   onHuaweiImportProgress: (event: HuaweiImportProgressEvent) => void;
   onDeviceDiscovered: (event: BondedDevice) => void;
   onScanStateChange: (event: { scanning: boolean; error: string | null }) => void;
+  /** Watch navigation (lab): a message of the watch app, or a change of whether it answers. */
+  onWatchNav: (event: WatchNavEvent) => void;
 };

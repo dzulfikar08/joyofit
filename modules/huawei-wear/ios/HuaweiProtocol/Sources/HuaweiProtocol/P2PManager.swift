@@ -48,6 +48,14 @@ public final class P2PManager: @unchecked Sendable {
 
     public func registeredService(_ module: String) -> P2PService? { lock.p2pLocked { services.first { $0.module == module } } }
 
+    /// Unregisters and removes the service of `module`, if one is registered.
+    public func unregisterService(_ module: String) {
+        lock.p2pLocked {
+            for service in services where service.module == module { service.unregister() }
+            services.removeAll { $0.module == module }
+        }
+    }
+
     public func unregisterAllServices() {
         lock.p2pLocked {
             for service in services { service.unregister() }

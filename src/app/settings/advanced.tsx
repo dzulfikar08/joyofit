@@ -15,6 +15,7 @@ import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { dbHealth, useDbHealth } from '@/db/recovery';
 import { errorMessage } from '@/format';
 import { useTheme } from '@/theme';
+import { watchNavSession } from '@/features/watchnav/instance';
 import { HuaweiWear, hasNative } from '@/wear';
 
 /** The experimental HW_AGNSS switch, or null on a binary without it (OTA bundle on an older build) or when the status cannot be read. */
@@ -47,6 +48,16 @@ function readOfflineMapLab(): boolean | null {
   }
 }
 
+/** The watch-navigation lab switch, or null on a binary without it or when the status cannot be read. */
+function readWatchNavLab(): boolean | null {
+  if (!hasNative('setWatchNavLab')) return null;
+  try {
+    return HuaweiWear.getWatchNav().enabled;
+  } catch {
+    return null;
+  }
+}
+
 export default function AdvancedScreen() {
   const { t } = useTranslation('settings');
   const theme = useTheme();
@@ -65,6 +76,8 @@ export default function AdvancedScreen() {
   const [pgnssLabError, setPgnssLabError] = useState<string | null>(null);
   const [mapLab, setMapLab] = useState(readOfflineMapLab);
   const [mapLabError, setMapLabError] = useState<string | null>(null);
+  const [navLab, setNavLab] = useState(readWatchNavLab);
+  const [navLabError, setNavLabError] = useState<string | null>(null);
 
   useNativeRefresh(
     useCallback(() => {
@@ -73,6 +86,7 @@ export default function AdvancedScreen() {
       setAgpsLab(readAgpsLab());
       setPgnssLab(readAgpsPgnssLab());
       setMapLab(readOfflineMapLab());
+      setNavLab(readWatchNavLab());
     }, []),
   );
 
@@ -133,6 +147,19 @@ export default function AdvancedScreen() {
       setMapLabError(errorMessage(e));
     } finally {
       setMapLab(readOfflineMapLab());
+    }
+  };
+
+  const toggleNavLab = async (enabled: boolean) => {
+    setNavLabError(null);
+    // Off ends a running session: the watch gets its `end` before the native side unregisters.
+    if (!enabled && watchNavSession.running) await watchNavSession.stop();
+    try {
+      await HuaweiWear.setWatchNavLab(enabled);
+    } catch (e) {
+      setNavLabError(errorMessage(e));
+    } finally {
+      setNavLab(readWatchNavLab());
     }
   };
 
@@ -200,6 +227,13 @@ export default function AdvancedScreen() {
               <SwitchRow label={t('advanced.offlineMapLab')} value={mapLab} onValueChange={(enabled) => void toggleMapLab(enabled)} />
               <Notice tone={mapLab ? 'danger' : 'info'}>{t('advanced.offlineMapLabRisk')}</Notice>
               {mapLabError ? <Notice tone="danger">{mapLabError}</Notice> : null}
+            </>
+          ) : null}
+          {navLab !== null ? (
+            <>
+              <SwitchRow label={t('advanced.watchNavLab')} value={navLab} onValueChange={(enabled) => void toggleNavLab(enabled)} />
+              <Notice tone={navLab ? 'danger' : 'info'}>{t('advanced.watchNavLabRisk')}</Notice>
+              {navLabError ? <Notice tone="danger">{navLabError}</Notice> : null}
             </>
           ) : null}
           {__DEV__ ? (

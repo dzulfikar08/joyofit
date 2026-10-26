@@ -27,6 +27,8 @@ public protocol WearEvents: AnyObject, Sendable {
     func watchMealLogged(_ payload: [String: Any])
     /// A workout started on the watch changed state or pushed new numbers (`onLiveWorkout`, see `LiveWorkout`).
     func liveWorkout(_ payload: [String: Any])
+    /// Watch navigation (`onWatchNav`, `WatchNavEvent`): a message of the watch app or a change of its presence.
+    func watchNav(_ payload: [String: Any])
 }
 
 extension WearEvents {
@@ -37,6 +39,7 @@ extension WearEvents {
     public func faceCustomization(_ payload: [String: Any]) {}
     public func watchMealLogged(_ payload: [String: Any]) {}
     public func liveWorkout(_ payload: [String: Any]) {}
+    public func watchNav(_ payload: [String: Any]) {}
 
     public func info(_ message: String) { log(LogEntry(.info, message)) }
     public func error(_ message: String) { log(LogEntry(.error, message)) }

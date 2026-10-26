@@ -40,7 +40,7 @@ final class PacketsAuthFakeWatch: FrameSink, @unchecked Sendable {
         var authId = Array("5B3F0A1C77D2E9486AB0C3D41E5F6071829A3B4C5D6E7F8091A2B3C4D5E6F708".utf8)
         var mac = "30:A9:98:FC:64:0A"
         /// 64 bytes the PinCode answer carries.
-        var pin = Bytes((0..<64).map { UInt8(($0 % 10) << 4 | (($0 + 3) % 10)) })
+        var pin = Bytes((0..<64).map { (i: Int) -> UInt8 in UInt8((i % 10) << 4 | ((i + 3) % 10)) })
 
         /// The auth token handed to a phone during op 1 (nil: random).
         var authToken: Bytes?

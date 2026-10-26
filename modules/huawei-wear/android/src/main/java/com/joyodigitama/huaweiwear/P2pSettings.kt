@@ -56,6 +56,11 @@ internal class P2pSettings(context: Context) : HealthLivingState {
     get() = prefs.getBoolean(KEY_OFFLINE_MAP_LAB, false)
     set(value) = prefs.edit().putBoolean(KEY_OFFLINE_MAP_LAB, value).apply()
 
+  /** Watch navigation with JoyoFit's own watch app (JRG-439, [WatchNav]). Off: a lab test until the watch app is signed and installed. */
+  var watchNavLab: Boolean
+    get() = prefs.getBoolean(KEY_WATCH_NAV_LAB, false)
+    set(value) = prefs.edit().putBoolean(KEY_WATCH_NAV_LAB, value).apply()
+
   /** The quick replies the user chose (one per line); null until the app sent a list. Never contains a newline inside a reply. */
   var quickReplies: List<String>?
     get() = prefs.getString(KEY_QUICK, null)?.split('\n')
@@ -78,5 +83,6 @@ internal class P2pSettings(context: Context) : HealthLivingState {
     const val KEY_HL_SUMMARY = "hl_summary"
     const val KEY_COURSES = "courses_experimental"
     const val KEY_OFFLINE_MAP_LAB = "offline_map_lab"
+    const val KEY_WATCH_NAV_LAB = "watch_nav_lab"
   }
 }

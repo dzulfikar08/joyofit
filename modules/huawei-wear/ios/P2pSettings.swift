@@ -18,6 +18,7 @@ public final class P2pSettings: HealthLivingState, @unchecked Sendable {
         static let summary = "hl_summary"
         static let courses = "courses_experimental"
         static let offlineMapLab = "offline_map_lab"
+        static let watchNavLab = "watch_nav_lab"
     }
 
     public init(defaults: UserDefaults? = nil) {
@@ -68,5 +69,11 @@ public final class P2pSettings: HealthLivingState, @unchecked Sendable {
     public var offlineMapLab: Bool {
         get { defaults.bool(forKey: Key.offlineMapLab) }
         set { defaults.set(newValue, forKey: Key.offlineMapLab) }
+    }
+
+    /// Watch navigation (LAB, `WatchNav`). Off: nothing registers and `startWatchNav` refuses.
+    public var watchNavLab: Bool {
+        get { defaults.bool(forKey: Key.watchNavLab) }
+        set { defaults.set(newValue, forKey: Key.watchNavLab) }
     }
 }

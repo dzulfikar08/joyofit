@@ -1164,6 +1164,7 @@ are passed to the native service at session start. UNVERIFIED on any watch.
 4. Routes (Routes library, a saved route, **Kirim ke jam**): `Routes: gates ExpandCapability 70 (deliver)=true 216 (altitude)=...`, `Routes: handshake for "<name>": ...`, `Routes: handshake answer body ... -> code 1, point limit N`,
    `Routes: <name>: N points -> M (limit L), version V, byte.bin ... bytes`, the `Upload:` lines and `Routes: upload finished, watch result status=1; file answer body ... -> code 1`. Then on the watch: Workout -> outdoor run -> gear icon -> Routes.
 5. Offline maps (lab; Settings → About & advanced → Experimental → Offline maps, then the lab screen): see `docs/offline-maps.md`, "Lab procedure" for the file, the steps and the expected `Mapkit:` lines.
+6. Watch navigation (lab; Settings → About & advanced → Experimental → Navigasi di jam, then a saved route → Mulai navigasi di jam): see `docs/watch-nav.md`, "Device test" for the expected `WatchNav:` lines.
 
 ## Auth decision
 

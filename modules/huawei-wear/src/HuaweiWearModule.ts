@@ -60,6 +60,7 @@ import type {
   OfflineMapList,
   OfflineMapSendResult,
 } from './HuaweiWearOfflineMaps.types';
+import type { WatchNavConfig, WatchNavStatus } from './HuaweiWearWatchNav.types';
 
 declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   /**
@@ -620,6 +621,24 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   sendOfflineMap(uri: string, name: string): Promise<OfflineMapSendResult>;
   /** Deletes one map on the watch (`05`). */
   deleteOfflineMap(mapId: string, mapType: number): Promise<OfflineMapDeleteResult>;
+
+  /** Watch navigation (lab): the switch, the session, the registration and whether the watch app answers. Synchronous. */
+  getWatchNav(): WatchNavStatus;
+  /** Off by default. Off also ends a running session (the service is unregistered). */
+  setWatchNavLab(enabled: boolean): Promise<void>;
+  /**
+   * Starts a session: registers the watch-nav P2P service now when the watch is connected with 34/01, and again on every connect until
+   * `stopWatchNav`; on registration it pings `com.joyodigitama.navi`. Rejects with ERR_UNSUPPORTED while the switch is off and with
+   * ERR_INVALID_ARGUMENT for an empty fingerprint. Not connected is fine: the session waits for the link.
+   */
+  startWatchNav(config: WatchNavConfig): Promise<WatchNavStatus>;
+  /**
+   * Sends one message (UTF-8 JSON, at most 1000 bytes) as P2P data to the watch app. Resolves false when it was not sent (no session, not
+   * connected, no P2P service): nothing is queued. Rejects with ERR_INVALID_ARGUMENT for an empty or too long message.
+   */
+  sendWatchNav(json: string): Promise<boolean>;
+  /** Ends the session: unregisters the service. Resolves when none runs. */
+  stopWatchNav(): Promise<void>;
 }
 
 export default requireNativeModule<HuaweiWearModule>('HuaweiWear');

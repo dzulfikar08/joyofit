@@ -357,6 +357,14 @@ function Indonesian() {
           lokal. Izin lokasi presisi diminta hanya saat kamu memilih Lokasiku dan hanya dibaca saat layar loop dibuka. Mencari
           tempat untuk menaruh Rumah mengirim teks yang kamu tulis ke Nominatim (OpenStreetMap).
         </p>
+        <p>
+          <span className="font-semibold">Navigasi di jam (eksperimen lab, mati secara bawaan):</span> bila kamu menyalakannya di
+          Pengaturan &gt; Tentang &amp; lanjutan &gt; Eksperimental lalu memulainya dari rute tersimpan, JoyoFit sekali mengirim sampai 50
+          titik rute itu ke layanan OSRM FOSSGIS e.V. yang sama untuk nama jalan dan belokan, dan, bila kamu keluar dari rute dengan
+          &quot;Cari rute baru&quot; menyala, posisimu saat itu dan sisa rute (paling sering sekali tiap 30 detik selama di luar rute). Tidak ada
+          akun, ID perangkat, atau kunci API yang ikut dikirim. Selain itu posisi GPS-mu hanya dipakai di HP, dan petunjuk belok dikirim
+          ke aplikasi JoyoFit Navi di jam lewat Bluetooth.
+        </p>
       </Block>
 
       <Block title="Notifikasi ke jam">
@@ -514,7 +522,7 @@ function Indonesian() {
             "IGS dan BKG (Bundesamt für Kartographie und Geodäsie): data siaran satelit publik yang diambil server JoyoFit untuk eksperimen HW_AGNSS dan HW_PGNSS_PRED (bagian Lokasi). HP tidak menghubungi mereka.",
             "CODE (Institut Astronomi, Universitas Bern): prediksi orbit satelit publik yang diambil server JoyoFit untuk eksperimen HW_PGNSS_PRED (bagian Lokasi). HP tidak menghubungi mereka.",
             "Kontributor OpenStreetMap (ODbL): data peta untuk eksperimen peta offline, dibuat oleh JoyoFit dari ekstrak Geofabrik (bagian Lokasi). HP tidak menghubungi OpenStreetMap atau Geofabrik.",
-            "FOSSGIS e.V. (OSRM) dan Nominatim (OpenStreetMap): jalur rute dan pencarian tempat untuk Loop dari rumah (bagian Loop dari rumah).",
+            "FOSSGIS e.V. (OSRM) dan Nominatim (OpenStreetMap): jalur rute dan pencarian tempat untuk Loop dari rumah, serta belokan dan rute baru untuk eksperimen navigasi di jam (bagian Loop dari rumah).",
             "Cloudflare: tempat cloud JoyoFit dan situs ini berjalan.",
             "JoyoRogo, Google dan Apple: login dan layanan JoyoRogo (bagian Cloud dan Masuk dengan Apple).",
             "Expo, Google (Firebase Cloud Messaging) dan Apple (APNs): mengantar notifikasi push Keluarga (bagian Notifikasi push).",
@@ -886,6 +894,14 @@ function English() {
           location is requested only when you choose My location, and is read only while the loop screen is open. Searching a place to set
           Home sends the text you type to Nominatim (OpenStreetMap).
         </p>
+        <p>
+          <span className="font-semibold">Watch navigation (lab experiment, off by default):</span> when you switch it on under Settings &gt;
+          About &amp; advanced &gt; Experimental and start it from a saved route, JoyoFit sends up to 50 points of that route to the same OSRM
+          service of FOSSGIS e.V. once, to get street names and turns, and, if you leave the route with &quot;Find a new route&quot; on, your
+          current position and the rest of the route (at most every 30 seconds while you are off the route). No account, device ID or API
+          key is sent. Your GPS position is otherwise only used on the phone, and the turn instructions go to the JoyoFit Navi app on your
+          watch over Bluetooth.
+        </p>
       </Block>
 
       <Block title="Notifications, calls, photos">
@@ -1013,7 +1029,7 @@ function English() {
 
       <Block title="Third parties">
         <p>
-          Open-Meteo (weather), Broadcom (satellite-assist data), IGS and BKG (public broadcast satellite data fetched by JoyoFit&apos;s server for the HW_AGNSS and HW_PGNSS_PRED experiments; the phone does not contact them), CODE at the University of Bern (public satellite orbit predictions fetched by JoyoFit&apos;s server for the HW_PGNSS_PRED experiment; the phone does not contact it), OpenStreetMap contributors (ODbL; map data for the offline-map experiment, built by JoyoFit from Geofabrik extracts; the phone does not contact OpenStreetMap or Geofabrik), FOSSGIS e.V. (OSRM) and Nominatim (OpenStreetMap) (route paths and place search for Loop from home), Cloudflare (hosting of the cloud and this
+          Open-Meteo (weather), Broadcom (satellite-assist data), IGS and BKG (public broadcast satellite data fetched by JoyoFit&apos;s server for the HW_AGNSS and HW_PGNSS_PRED experiments; the phone does not contact them), CODE at the University of Bern (public satellite orbit predictions fetched by JoyoFit&apos;s server for the HW_PGNSS_PRED experiment; the phone does not contact it), OpenStreetMap contributors (ODbL; map data for the offline-map experiment, built by JoyoFit from Geofabrik extracts; the phone does not contact OpenStreetMap or Geofabrik), FOSSGIS e.V. (OSRM) and Nominatim (OpenStreetMap) (route paths and place search for Loop from home, turns and new routes for the watch navigation experiment), Cloudflare (hosting of the cloud and this
           site), JoyoRogo, Google and Apple (sign-in), Apple (Apple Health write and one-time import read, and place-name geocoding on iPhone), Strava (upload destination when you connect it), the AI provider you choose, for example Anthropic for Claude or OpenAI for ChatGPT (receives the data read while you ask questions, only if you connect the AI connection), the AI provider you choose for Joyo AI with your own key (OpenRouter, OpenAI, Anthropic, Google Gemini or an address you enter; your choice and your own account, not our data processor; receives your data summary and conversation only after you enter a key and consent), Expo, Google (Firebase Cloud Messaging) and Apple (APNs) (delivery of Keluarga push notifications), RevKlik (visitor
           statistics for this site). No ads and no sale of data. Data is not used for advertising or
           ad profiling. Everything the app and this site send over the internet uses HTTPS (TLS).
