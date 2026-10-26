@@ -39,11 +39,12 @@ public final class BleSensorsModule: Module {
         let location = WorkoutLocation.shared
         let scales = ScaleCentral.shared
         let steps = WorkoutSteps.shared
+        let liveSteps = WorkoutSteps.live
 
         Name("BleSensors")
 
         Events(
-            "onScanResult", "onScanState", "onConnection", "onValue", "onLocation", "onBluetoothState", "onWorkoutAction", "onSteps",
+            "onScanResult", "onScanState", "onConnection", "onValue", "onLocation", "onBluetoothState", "onWorkoutAction", "onSteps", "onLiveSteps",
             "onScaleAdvertisement", "onScaleScanState", "onScaleLink", "onScaleValue"
         )
 
@@ -139,6 +140,15 @@ public final class BleSensorsModule: Module {
             await steps.requestPermission()
         }
 
+        // The live screen of a workout started on the watch: the phone's pedometer alone, counted from now. False without it or its permission.
+        AsyncFunction("startLiveSteps") { () async -> Bool in
+            liveSteps.start { central.emit("onLiveSteps", $0) }
+        }
+
+        AsyncFunction("stopLiveSteps") { () async -> Void in
+            liveSteps.stop()
+        }
+
         // `options` is WorkoutSessionOptions: title, text, gps and `openUrl` and `controls` (the Android notification's link and buttons). Only `gps` matters here: iOS has no notification.
         AsyncFunction("startWorkoutSession") { (options: [String: Any]) async throws -> Void in
             let gps = options["gps"] as? Bool ?? false
@@ -152,7 +162,7 @@ public final class BleSensorsModule: Module {
             }
             // The phone's step counter is optional: without it (not requested, refused, no sensor) the workout just has no steps.
             if options["steps"] as? Bool ?? false {
-                _ = steps.start { ts, count in central.emit("onSteps", ["ts": ts, "steps": count]) }
+                _ = steps.start { central.emit("onSteps", $0) }
             } else {
                 steps.stop()
             }

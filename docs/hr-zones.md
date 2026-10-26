@@ -50,7 +50,7 @@ JoyoFit's limits as they are, so app and watch agree.
 - Zone time of a workout (`analyzeWorkout` takes `zones`; the numbers of `analysis.hrZones`) and its upload; the burn split by zone.
 - The heart-rate day screen (`listDayHeartLoad` with `zones.bounds`).
 - Coach: the bpm range of a planned run's zone and the post-workout feedback.
-- Live workout screens (zone label and colour), the strength logger's strap chip, the recorder's live view, the bike computer's zone field.
+- Live workout screens (zone label and colour, and the "Heart-rate zone" data field), the strength logger's strap chip, the recorder's live view, the bike computer's zone field.
 - The watch (`watchConfig`).
 
 Not read from the zones (only `zones.maxHr`): strain, training load, readiness, energy, sleep need, ride heart-rate load, intensity minutes. See "What the zones do not change".

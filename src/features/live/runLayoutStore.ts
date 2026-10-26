@@ -5,7 +5,7 @@
 import Storage from 'expo-sqlite/kv-store';
 import { useSyncExternalStore } from 'react';
 
-import { defaultLayout, normalizeLayout, type FieldSportKind, type RunLayout } from './runFields';
+import { defaultLayout, normalizeLayout, type FieldSportKind, type RunLayout, type RunMetricId } from './runFields';
 
 const KEY = 'joyofit.live.fields';
 
@@ -38,8 +38,9 @@ export const runLayoutStore = {
     listeners.add(listener);
     return () => listeners.delete(listener);
   },
-  set(kind: FieldSportKind, layout: RunLayout): void {
-    const next = normalizeLayout(layout, kind);
+  /** `exclude`: metrics the editing screen can never read; the repair never fills a slot with one of them. */
+  set(kind: FieldSportKind, layout: RunLayout, exclude: readonly RunMetricId[] = []): void {
+    const next = normalizeLayout(layout, kind, exclude);
     cache.set(kind, next);
     stored = { ...(stored ?? (readAll() as Partial<Record<FieldSportKind, RunLayout>>)), [kind]: next };
     try {
@@ -51,12 +52,12 @@ export const runLayoutStore = {
   },
 };
 
-/** The layout of `kind` and a setter; it follows changes made from any screen. */
-export function useRunLayout(kind: FieldSportKind): [RunLayout, (layout: RunLayout) => void] {
+/** The layout of `kind` and a setter (`exclude` as for `runLayoutStore.set`); it follows changes made from any screen. */
+export function useRunLayout(kind: FieldSportKind): [RunLayout, (layout: RunLayout, exclude?: readonly RunMetricId[]) => void] {
   const layout = useSyncExternalStore(
     runLayoutStore.subscribe,
     () => layoutOf(kind),
     () => layoutOf(kind),
   );
-  return [layout, (next) => runLayoutStore.set(kind, next)];
+  return [layout, (next, exclude) => runLayoutStore.set(kind, next, exclude)];
 }

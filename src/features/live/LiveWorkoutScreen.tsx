@@ -1,7 +1,7 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { AppText } from '@/components/AppText';
@@ -29,7 +29,8 @@ import { HuaweiWear } from '@/wear';
 import { sportLabel } from '@/features/workouts/sportLabel';
 import { OPEN_IN_STACK } from '@/components/navigation';
 
-import { footKind, speedFromPace, type FieldSportKind, type RunMetricValues } from './runFields';
+import { allowLiveSteps, useLiveExtras } from './liveExtras';
+import { footKind, speedFromPace, type FieldSportKind, type RunMetricId, type RunMetricValues } from './runFields';
 import { useRunLayout } from './runLayoutStore';
 import { useTrail } from './trail';
 import { LiveRunMap } from './ui/LiveRunMap';
@@ -43,6 +44,8 @@ const DASH = '--';
 const CHOOSABLE_KINDS: readonly Exclude<FieldSportKind, 'other'>[] = ['run', 'walk', 'ride', 'hike'];
 /** The phone's GPS fix older than this (seconds) no longer counts as a signal. */
 const GPS_SIGNAL_MAX_AGE_S = 10;
+/** The fields the phone's step counter fills. */
+const STEP_FIELDS: readonly RunMetricId[] = ['cadence', 'steps', 'stride'];
 
 /** A workout started on the watch, as it happens: the map with the phone's GPS, the configurable data fields, the metronome, and what is burned. */
 export function LiveWorkoutScreen() {
@@ -139,6 +142,9 @@ function LiveBody({ session, title }: { session: LiveSession; title: string }) {
   const trail = useTrail(location);
   const metronome = useMetronome();
   const phase = livePhase(live);
+  const extras = useLiveExtras(session, nowMs);
+  // The system asks only once: after a refusal the card leads to the phone's settings (coming back re-checks, `runLiveSteps`).
+  const [stepsRefused, setStepsRefused] = useState(false);
   const active = session.state !== 'ended';
   const statusColor = live.status === 'running' ? colors.link : live.status === 'paused' ? colors.warning : colors.mutedForeground;
   const showMap = session.gpsSport || location !== null || (session.sportKind !== null && session.sportKind !== 'other');
@@ -151,6 +157,10 @@ function LiveBody({ session, title }: { session: LiveSession; title: string }) {
     return () => void deactivateKeepAwake('live-metronome');
   }, [hold]);
 
+  // The watch's own numbers win when it sends them (a `17/11` report); else the phone's step counter fills cadence, steps and stride.
+  // A watch's 0 cadence comes last: it must not hide the steps the phone counts.
+  const watchCadence = metrics.cadence;
+  const watchSteps = live.steps !== null && live.steps > 0 ? live.steps : null;
   const values: RunMetricValues = {
     duration: showsClock(live) ? elapsedSec(live, nowMs) : null,
     distance: metrics.distanceM,
@@ -158,12 +168,20 @@ function LiveBody({ session, title }: { session: LiveSession; title: string }) {
     avgPace: metrics.avgPaceSPerKm,
     speed: live.speedKmh ?? speedFromPace(metrics.paceSPerKm),
     hr: metrics.hr,
+    avgHr: extras.figures.avgHr,
+    maxHr: extras.figures.maxHr,
     calories: metrics.calories,
-    cadence: metrics.cadence ?? live.stepRate,
+    cadence: watchCadence ?? extras.figures.cadence ?? live.stepRate,
+    steps: watchSteps ?? extras.figures.steps,
+    stride: watchSteps === null ? extras.figures.strideM : null,
     elevationGain: metrics.elevationGainM,
     altitude: metrics.altitudeM,
   };
+  const phoneMeasured: RunMetricId[] = [];
+  if (watchCadence === null && extras.figures.cadence !== null) phoneMeasured.push('cadence');
+  if (watchSteps === null && extras.figures.steps !== null) phoneMeasured.push('steps', 'stride');
   const shown = new Set(layout.ids);
+  const askSteps = extras.steps === 'ask' && active && STEP_FIELDS.some((id) => shown.has(id));
   const fixAge = location !== null && live.locationAt ? Math.max(0, (nowMs - live.locationAt) / 1000) : null;
   const signal =
     location !== null && session.gpsFix && (fixAge === null || fixAge <= GPS_SIGNAL_MAX_AGE_S)
@@ -215,7 +233,25 @@ function LiveBody({ session, title }: { session: LiveSession; title: string }) {
 
       {showMap ? <LiveRunMap position={location ? { lat: location.lat, lon: location.lon, headingDeg: location.bearing } : null} trail={trail} fix={signal} /> : null}
 
-      <MetricGrid kind={kind} values={values} editor={editor} />
+      <MetricGrid kind={kind} values={values} editor={editor} phoneMeasured={phoneMeasured} />
+
+      {askSteps ? (
+        <Card>
+          <AppText variant="caption" muted>
+            {t(stepsRefused ? 'live.steps.denied' : 'live.steps.ask')}
+          </AppText>
+          {stepsRefused ? (
+            <Button label={t('live.steps.openSettings')} icon="settings-outline" variant="secondary" onPress={() => void Linking.openSettings()} />
+          ) : (
+            <Button
+              label={t('live.steps.allow')}
+              icon="footsteps-outline"
+              variant="secondary"
+              onPress={() => void allowLiveSteps().then((answer) => setStepsRefused(answer !== 'granted'))}
+            />
+          )}
+        </Card>
+      ) : null}
 
       {active ? (
         <Card>
@@ -244,7 +280,7 @@ function LiveBody({ session, title }: { session: LiveSession; title: string }) {
 
       <Section title={t('live.more.title')} icon="list">
         <View style={styles.grid}>
-          {live.steps !== null ? <Pair label={t('live.more.steps')} value={fmtInt(live.steps)} /> : null}
+          {values.steps !== null && values.steps !== undefined && !shown.has('steps') ? <Pair label={t('live.more.steps')} value={fmtInt(values.steps)} /> : null}
           {values.cadence !== null && values.cadence !== undefined && values.cadence > 0 && !shown.has('cadence') ? (
             <Pair
               label={t('live.more.cadence')}

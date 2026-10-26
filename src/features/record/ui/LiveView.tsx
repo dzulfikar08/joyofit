@@ -9,7 +9,7 @@ import { StatusDot } from '@/components/StatusDot';
 import { Card, Divider, Section } from '@/components/Screen';
 import { StatTile } from '@/components/StatTile';
 import { Notice } from '@/components/States';
-import { averagePace, type FieldSportKind, type RunMetricId, type RunMetricValues } from '@/features/live/runFields';
+import { averagePace, strideLength, type FieldSportKind, type RunMetricId, type RunMetricValues } from '@/features/live/runFields';
 import { useTrail } from '@/features/live/trail';
 import { LiveRunMap } from '@/features/live/ui/LiveRunMap';
 import { MetricGrid, useFieldEditor } from '@/features/live/ui/MetricGrid';
@@ -32,6 +32,8 @@ const DASH = '--';
 
 /** Without GPS (treadmill, indoor ride) a recording has no altitude, so these two fields are not offered. */
 const NO_ALTITUDE: readonly RunMetricId[] = ['elevationGain', 'altitude'];
+/** The fields the phone's step counter fills when no running pod is paired. */
+const PHONE_STEP_FIELDS: readonly RunMetricId[] = ['cadence', 'steps', 'stride'];
 
 /** The sport kind a recording's data fields are saved under (a treadmill run is a run, an indoor ride a ride). */
 function fieldKind(sport: ManualSport): FieldSportKind {
@@ -95,11 +97,17 @@ export function LiveView({ saving, saveError, onFinish, onSaveAgain, onDiscard }
     avgPace: averagePace(live.movingSec, live.distanceM),
     speed: live.speedMps === null ? null : live.speedMps * 3.6,
     hr: live.hr,
+    avgHr: live.avgHr,
+    maxHr: live.maxHr,
     calories: live.calories,
     cadence: live.cadence,
+    steps: live.steps > 0 ? live.steps : null,
+    stride: strideLength(live.distanceM, live.steps),
     elevationGain: live.elevationGainM,
     altitude: live.altitudeM,
   };
+  // A running pod's cadence and steps win (`Recorder`); without one they are the phone's step counter's.
+  const phoneMeasured = snapshot.phoneSteps && !channels.has('pod') ? PHONE_STEP_FIELDS : undefined;
   // Only what the person should know: the band is not part of this recording (or not yet); a start under way or confirmed says nothing.
   const bandKey = band.phase === 'off' || band.phase === 'starting' || band.phase === 'linked' ? null : bandLinkLine(band.phase);
 
@@ -129,7 +137,13 @@ export function LiveView({ saving, saveError, onFinish, onSaveAgain, onDiscard }
         <LiveRunMap position={snapshot.position} trail={trail} fix={{ accuracyM: live.fixAccuracyM, ageSec: live.fixAgeSec }} />
       ) : null}
 
-      <MetricGrid kind={fieldKind(sport)} values={values} editor={editor} exclude={snapshot.gps ? undefined : NO_ALTITUDE} />
+      <MetricGrid
+        kind={fieldKind(sport)}
+        values={values}
+        editor={editor}
+        exclude={snapshot.gps ? undefined : NO_ALTITUDE}
+        phoneMeasured={phoneMeasured}
+      />
 
       {failed ? (
         <>

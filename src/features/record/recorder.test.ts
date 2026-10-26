@@ -473,6 +473,28 @@ describe("the phone's step counter", () => {
     expect(w.steps).toBe(15);
   });
 
+  it('shows the average and highest heart rate of the recorded seconds and the steps so far, pauses excluded, also after a restore', () => {
+    const r = new Recorder(config('run'));
+    r.sensor('2a37', hr(120), T0);
+    r.start(T0);
+    r.steps(0, T0);
+    for (let s = 0; s < 10; s++) {
+      r.sensor('2a37', hr(s < 5 ? 120 : 160), T0 + s * 1000);
+      r.steps(s * 3, T0 + s * 1000);
+      r.tick(T0 + s * 1000);
+    }
+    r.pause(T0 + 9_000);
+    // a peak while paused counts for nothing
+    r.sensor('2a37', hr(190), T0 + 12_000);
+    r.steps(60, T0 + 12_000);
+    const live = r.live(T0 + 12_000);
+    expect(live.avgHr).toBe(140);
+    expect(live.maxHr).toBe(160);
+    expect(live.steps).toBe(27);
+    const restored = Recorder.restore(r.meta(), r.drainNew());
+    expect(restored.live(T0 + 12_000)).toMatchObject({ avgHr: 140, maxHr: 160, steps: 27 });
+  });
+
   it('ignores readings before start and after finish', () => {
     const r = new Recorder(config('run'));
     r.steps(500, T0 - 1000);
@@ -523,7 +545,7 @@ describe("the phone's step counter", () => {
     expect(s[6]!.cadence).toBeNull();
   });
 
-  it('gives 0 when the counter stops moving, then nothing once the readings are stale', () => {
+  it('fades to 0 once the counter stops moving, and stays 0 while it runs', () => {
     const r = new Recorder(config('run'));
     r.start(T0);
     for (let s = 1; s <= 6; s++) {
@@ -533,14 +555,17 @@ describe("the phone's step counter", () => {
     // the person stands still: the counter repeats its value, then says nothing at all
     r.steps(15, T0 + 8000);
     r.steps(15, T0 + 12_000);
+    r.tick(T0 + 12_000);
     r.steps(15, T0 + 16_000);
     r.tick(T0 + 16_000);
     r.tick(T0 + 21_000);
     r.tick(T0 + 27_000);
     const s = r.finish(T0 + 27_000)!.samples;
-    expect(s[16]!.cadence).toBe(0);
+    // held for 8 s after the last step (6 s), fading over the next 4 s
+    expect(s[12]!.cadence).toBeGreaterThan(0);
+    expect(s[16]!.cadence).toBeLessThan(s[12]!.cadence!);
     expect(s[21]!.cadence).toBe(0);
-    expect(s[27]!.cadence).toBeNull();
+    expect(s[27]!.cadence).toBe(0);
   });
 
   it('does nothing for other sports', () => {
