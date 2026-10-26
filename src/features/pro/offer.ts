@@ -15,8 +15,8 @@ export const JOYOROGO_APP_URL = 'joyorogo://founder?from=joyofit';
 export const JOYOROGO_PLAY_ID = 'com.joyodigitama.joyorogo';
 
 /**
- * JoyoRogo's App Store page (ASC app id 6823222101). Version 1.0.0 is still in review, so the page may not resolve until it is
- * released; this is the one place to change when the id or the page moves.
+ * JoyoRogo's App Store page (ASC app id 6823222101), live since version 1.0.0 was approved (2026-10-26); this is the one place
+ * to change when the id or the page moves.
  */
 export const JOYOROGO_APP_STORE_URL = 'https://apps.apple.com/app/id6823222101';
 

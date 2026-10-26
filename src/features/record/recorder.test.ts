@@ -473,6 +473,28 @@ describe("the phone's step counter", () => {
     expect(w.steps).toBe(15);
   });
 
+  it('shows the average and highest heart rate of the recorded seconds and the steps so far, pauses excluded, also after a restore', () => {
+    const r = new Recorder(config('run'));
+    r.sensor('2a37', hr(120), T0);
+    r.start(T0);
+    r.steps(0, T0);
+    for (let s = 0; s < 10; s++) {
+      r.sensor('2a37', hr(s < 5 ? 120 : 160), T0 + s * 1000);
+      r.steps(s * 3, T0 + s * 1000);
+      r.tick(T0 + s * 1000);
+    }
+    r.pause(T0 + 9_000);
+    // a peak while paused counts for nothing
+    r.sensor('2a37', hr(190), T0 + 12_000);
+    r.steps(60, T0 + 12_000);
+    const live = r.live(T0 + 12_000);
+    expect(live.avgHr).toBe(140);
+    expect(live.maxHr).toBe(160);
+    expect(live.steps).toBe(27);
+    const restored = Recorder.restore(r.meta(), r.drainNew());
+    expect(restored.live(T0 + 12_000)).toMatchObject({ avgHr: 140, maxHr: 160, steps: 27 });
+  });
+
   it('ignores readings before start and after finish', () => {
     const r = new Recorder(config('run'));
     r.steps(500, T0 - 1000);
@@ -523,7 +545,7 @@ describe("the phone's step counter", () => {
     expect(s[6]!.cadence).toBeNull();
   });
 
-  it('gives 0 when the counter stops moving, then nothing once the readings are stale', () => {
+  it('fades to 0 once the counter stops moving, and stays 0 while it runs', () => {
     const r = new Recorder(config('run'));
     r.start(T0);
     for (let s = 1; s <= 6; s++) {
@@ -533,14 +555,17 @@ describe("the phone's step counter", () => {
     // the person stands still: the counter repeats its value, then says nothing at all
     r.steps(15, T0 + 8000);
     r.steps(15, T0 + 12_000);
+    r.tick(T0 + 12_000);
     r.steps(15, T0 + 16_000);
     r.tick(T0 + 16_000);
     r.tick(T0 + 21_000);
     r.tick(T0 + 27_000);
     const s = r.finish(T0 + 27_000)!.samples;
-    expect(s[16]!.cadence).toBe(0);
+    // held for 8 s after the last step (6 s), fading over the next 4 s
+    expect(s[12]!.cadence).toBeGreaterThan(0);
+    expect(s[16]!.cadence).toBeLessThan(s[12]!.cadence!);
     expect(s[21]!.cadence).toBe(0);
-    expect(s[27]!.cadence).toBeNull();
+    expect(s[27]!.cadence).toBe(0);
   });
 
   it('does nothing for other sports', () => {
@@ -570,5 +595,43 @@ describe("the phone's step counter", () => {
     expect(w.steps).toBe(Math.round((170 / 60) * 19 + (170 / 60) * 11));
     expect(w.avgCadence).toBe(170);
     expect(w.samples[w.samples.length - 1]!.cadence).toBe(170);
+  });
+});
+
+describe('live elevation gain', () => {
+  const run = (alts: number[], extra: (i: number) => Partial<GpsFix> = () => ({})) => {
+    const r = new Recorder(config('run', true));
+    r.start(T0);
+    alts.forEach((alt, i) => r.fix(fixAt(i + 1, (i + 1) * 3, { alt, accuracy: 5, ...extra(i) })));
+    return r;
+  };
+
+  it('adds nothing for flat noise of +-2 m', () => {
+    const r = run(Array.from({ length: 120 }, (_, i) => 100 + (i % 2 === 0 ? 2 : -2)));
+    expect(r.live(T0 + 120_000).elevationGainM).toBe(0);
+  });
+
+  it('counts a 10 m climb', () => {
+    const r = run([...Array(10).fill(100), ...Array.from({ length: 20 }, (_, i) => 100 + (i + 1) / 2), ...Array(30).fill(110)]);
+    const live = r.live(T0 + 60_000);
+    expect(live.elevationGainM).toBeGreaterThan(8.5);
+    expect(live.elevationGainM).toBeLessThanOrEqual(10);
+    expect(live.altitudeM).toBe(110);
+  });
+
+  it('ignores fixes worse than 30 m', () => {
+    const r = run([...Array(10).fill(100), ...Array(30).fill(150)], (i) => (i >= 10 ? { accuracy: 32 } : {}));
+    expect(r.live(T0 + 40_000).elevationGainM).toBe(0);
+  });
+
+  it('does not count a climb made while paused', () => {
+    const r = new Recorder(config('run', true));
+    r.start(T0);
+    for (let i = 1; i <= 10; i++) r.fix(fixAt(i, i * 3, { alt: 100, accuracy: 5 }));
+    r.pause(T0 + 11_000);
+    for (let i = 12; i <= 40; i++) r.fix(fixAt(i, i * 3, { alt: 100 + i, accuracy: 5 }));
+    r.resume(T0 + 41_000);
+    for (let i = 42; i <= 70; i++) r.fix(fixAt(i, i * 3, { alt: 140, accuracy: 5 }));
+    expect(r.live(T0 + 71_000).elevationGainM).toBe(0);
   });
 });

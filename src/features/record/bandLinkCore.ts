@@ -23,11 +23,13 @@ export interface BandLinkNative {
 
 /**
  * `off`: no band in this recording (the setting is off, the sport has none, nothing started). `starting`: the start command is on its way.
- * `linked`: the band confirmed the start. `refused`: the band answered no, or did not confirm (the phone records alone). `unavailable`: no
- * band connected, the band cannot be told to start, or this build cannot (the phone records alone). `ended`: the band stopped its workout
- * itself; the phone recording is paused for the person to finish or go on.
+ * `connecting`: the band was not connected at the start (the link is down or reconnecting); the start is sent once it connects (`poll`).
+ * `linked`: the band confirmed the start. `refused`: the band answered no, or did not confirm (the phone records alone). `unsupported`: the
+ * band does not list the phone-started workout (`17/01`), so it cannot be told to start; its heart rate is still read. `nobuild`: this
+ * binary has no workout start functions. `ended`: the band stopped its workout itself; the phone recording is paused for the person to
+ * finish or go on.
  */
-export type BandLinkPhase = 'off' | 'starting' | 'linked' | 'refused' | 'unavailable' | 'ended';
+export type BandLinkPhase = 'off' | 'starting' | 'connecting' | 'linked' | 'refused' | 'unsupported' | 'nobuild' | 'ended';
 
 export interface BandLinkSnapshot {
   phase: BandLinkPhase;
@@ -73,6 +75,21 @@ export function bandHeartRateHex(bpm: number): string | null {
 
 const errorText = (e: unknown): string => String((e as { message?: unknown } | null)?.message ?? e);
 
+/** The phase a start's outcome leaves the band in. */
+function startPhase(outcome: WatchWorkoutResult['outcome']): BandLinkPhase {
+  switch (outcome) {
+    case 'confirmed':
+      return 'linked';
+    case 'sent':
+    case 'refused':
+      return 'refused';
+    case 'unsupported':
+      return 'unsupported';
+    case 'not_connected':
+      return 'connecting';
+  }
+}
+
 export class BandLink {
   private snap: BandLinkSnapshot = OFF;
   private readonly listeners = new Set<() => void>();
@@ -82,6 +99,12 @@ export class BandLink {
   /** What the band was last told (or last said): the state the recording and the band agree on. */
   private agreed: 'running' | 'paused' = 'running';
   private stopHeartRate: (() => void) | null = null;
+  /** The recording is paused (`setPaused`): a start that waits for the band to connect also waits for the resume. */
+  private recordingPaused = false;
+  /** The sport of the start that waits for the band to connect (phase `connecting`), else null. */
+  private pendingSport: number | null = null;
+  /** The next time the band is seen connected, the waiting start is sent. Cleared by each attempt, set again when the band is seen down. */
+  private retryArmed = false;
 
   constructor(private readonly deps: BandLinkDeps) {}
 
@@ -113,6 +136,8 @@ export class BandLink {
    * heart rate. Resolves with the phase it ended in; never rejects. `onHeartRate` gets every reading.
    */
   begin(sport: ManualSport, onHeartRate: (bpm: number, ts: number) => void): Promise<BandLinkPhase> {
+    this.recordingPaused = false;
+    this.pendingSport = null;
     return this.run(async () => {
       const code = bandSportCode(sport);
       if (!this.deps.enabled() || code === null) {
@@ -127,38 +152,77 @@ export class BandLink {
       });
       const native = this.deps.native();
       if (native === null) {
-        this.set({ phase: 'unavailable' });
-        return 'unavailable';
+        this.deps.log?.(`band start (type ${code}): not sent, this build has no workout start functions -> nobuild`);
+        this.set({ phase: 'nobuild' });
+        return 'nobuild';
       }
       // A workout the phone owns on the band already (the screens reloaded, the app did not restart): take it over.
       const open = native.getWatchWorkout();
       if (open.active) {
+        this.deps.log?.(`band start (type ${code}): took over the open workout (${open.state ?? 'running'}) -> linked`);
         this.agreed = open.state === 'paused' ? 'paused' : 'running';
         this.set({ phase: 'linked' });
         return 'linked';
       }
-      let result: WatchWorkoutResult;
-      try {
-        result = await native.startWatchWorkout(code);
-      } catch (e) {
-        this.deps.log?.(`band start failed: ${errorText(e)}`);
-        this.set({ phase: 'refused' });
-        return 'refused';
+      if (!open.connected) {
+        this.deps.log?.(`band start (type ${code}): not sent (connected false, supported ${open.supported}) -> connecting, sent once the band connects`);
+        this.pendingSport = code;
+        this.retryArmed = true;
+        this.set({ phase: 'connecting' });
+        return 'connecting';
       }
-      this.deps.log?.(`band start (type ${code}): ${result.outcome}${result.code !== null ? ` (${result.code})` : ''}`);
-      this.agreed = 'running';
-      switch (result.outcome) {
-        case 'confirmed':
-          this.set({ phase: 'linked' });
-          return 'linked';
-        case 'sent':
-        case 'refused':
-          this.set({ phase: 'refused', code: result.code });
-          return 'refused';
-        default:
-          this.set({ phase: 'unavailable' });
-          return 'unavailable';
+      // The first start may retry once even when the band reads connected again right after a `not_connected`: the link may have just come back.
+      this.retryArmed = true;
+      return this.start(native, code);
+    });
+  }
+
+  /** Sends the start of sport `code` and sets the phase its outcome leaves. Runs inside `run`. */
+  private async start(native: BandLinkNative, code: number): Promise<BandLinkPhase> {
+    let result: WatchWorkoutResult;
+    try {
+      result = await native.startWatchWorkout(code);
+    } catch (e) {
+      this.deps.log?.(`band start (type ${code}) failed: ${errorText(e)} -> refused`);
+      this.pendingSport = null;
+      this.set({ phase: 'refused' });
+      return 'refused';
+    }
+    const phase = startPhase(result.outcome);
+    const after = native.getWatchWorkout();
+    this.deps.log?.(
+      `band start (type ${code}): ${result.outcome}${result.code !== null ? ` (${result.code})` : ''} (connected ${after.connected}, supported ${after.supported}) -> ${phase}`,
+    );
+    this.agreed = 'running';
+    this.pendingSport = phase === 'connecting' ? code : null;
+    this.set(phase === 'refused' ? { phase, code: result.code } : { phase });
+    return phase;
+  }
+
+  /**
+   * Phase `connecting`: sends the waiting start once the band is connected and the recording runs. One attempt per connect: an attempt
+   * that finds the band gone again waits until the band has been seen down and then connected once more.
+   */
+  private startWhenConnected(): void {
+    const code = this.pendingSport;
+    const native = this.deps.native();
+    if (code === null || native === null) return;
+    const status = native.getWatchWorkout();
+    if (!status.connected) {
+      if (!this.retryArmed) {
+        this.retryArmed = true;
+        this.deps.log?.(`band still not connected (connected false, supported ${status.supported}): the start waits for it to connect`);
       }
+      return;
+    }
+    if (!this.retryArmed || this.recordingPaused) return;
+    this.retryArmed = false;
+    this.deps.log?.(`band connected (connected true, supported ${status.supported}): sending the waiting start (type ${code})`);
+    this.set({ phase: 'starting' });
+    void this.run(async () => {
+      // The recording ended (or started again) while this waited in the queue: nothing to start.
+      if (this.snap.phase !== 'starting' || this.pendingSport !== code) return;
+      await this.start(native, code);
     });
   }
 
@@ -167,6 +231,7 @@ export class BandLink {
    * from this process is taken over. Otherwise the band is not told anything new (the start belongs to "Mulai").
    */
   adopt(sport: ManualSport, onHeartRate: (bpm: number, ts: number) => void): Promise<BandLinkPhase> {
+    this.pendingSport = null;
     return this.run(async () => {
       if (!this.deps.enabled() || bandSportCode(sport) === null) return 'off';
       this.stopHeartRate?.();
@@ -185,8 +250,12 @@ export class BandLink {
     });
   }
 
-  /** Follows the recording's pause: true pauses the band's workout, false resumes it. Nothing is sent when the band is not linked or already agrees. */
+  /**
+   * Follows the recording's pause: true pauses the band's workout, false resumes it. Nothing is sent when the band is not linked or
+   * already agrees; a start waiting for the band to connect waits for the resume.
+   */
   setPaused(paused: boolean): Promise<void> {
+    this.recordingPaused = paused;
     return this.run(async () => {
       if (this.snap.phase !== 'linked') return;
       const want = paused ? 'paused' : 'running';
@@ -208,10 +277,16 @@ export class BandLink {
 
   /**
    * What the band did on its own since the last call, for the recording to follow. Call about once a second while recording. A pause
-   * or resume on the band, or a stop (the band's workout is gone), each come once.
+   * or resume on the band, or a stop (the band's workout is gone), each come once. In phase `connecting` it sends the waiting start
+   * once the band has connected (and returns null).
    */
   poll(): BandOrder | null {
-    if (this.snap.phase !== 'linked' || this.busy > 0) return null;
+    if (this.busy > 0) return null;
+    if (this.snap.phase === 'connecting') {
+      this.startWhenConnected();
+      return null;
+    }
+    if (this.snap.phase !== 'linked') return null;
     const native = this.deps.native();
     if (native === null) return null;
     const status = native.getWatchWorkout();
@@ -234,6 +309,10 @@ export class BandLink {
   end(): Promise<void> {
     this.stopHeartRate?.();
     this.stopHeartRate = null;
+    // A start still waiting for the band is given up: nothing reaches the band after the recording.
+    this.pendingSport = null;
+    this.retryArmed = false;
+    this.recordingPaused = false;
     return this.run(async () => {
       const { phase } = this.snap;
       this.set({ ...OFF });

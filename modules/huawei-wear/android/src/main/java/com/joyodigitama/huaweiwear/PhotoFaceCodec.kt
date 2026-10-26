@@ -3,7 +3,8 @@
 //    layout lists photos under 82{83} and the watch does not use it)
 //  - 28/01 (the watch asks for a file): the device request and its report
 //  - the .bin image: run-length coded pixels
-// No signature or account data is part of any of these.
+// No signature or account data is part of any of these. The values a new photo gets come from a table of known faces
+// ([PhotoFaceCodec.KNOWN_FACE_CONFIGS]).
 package com.joyodigitama.huaweiwear
 
 import java.io.ByteArrayOutputStream
@@ -11,7 +12,7 @@ import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiTLV
 
 /**
  * One photo of the face, as the watch lists it in 27/08 (`84{85{…}}`). The settings are the watch's own; JoyoFit has no editor for them
- * and only sends them back unchanged so a save does not reset them. Null = the watch did not report it.
+ * and sends them back so a save does not reset them. Null = the watch did not report it.
  */
 internal class PhotoSlot(
   /** Tag 0x06: position in the face's list; the watch counts from 0. */
@@ -30,6 +31,38 @@ internal class PhotoSlot(
   val backgroundColour: String? = null,
   /** Tag 0x29, the same tag both ways. */
   val timeSize: Int? = null,
+  /** Tags 0x18 / 0x19 / 0x1a: smart time style, font and position (written as 0x15 / 0x16 / 0x17). */
+  val smartTime: Int? = null,
+  val smartFont: Int? = null,
+  val smartPosition: Int? = null,
+)
+
+/**
+ * The values Huawei Health's My watch faces page gives a photo it adds, which it takes from the face's `watch_face_config.xml`
+ * (`<config>`), with the page's fallbacks when the face is unknown (app.js module 221: `RN` 1, `jY` 2, `m$` 1). JoyoFit does not fetch
+ * that file: the faces whose values are known are in [PhotoFaceCodec.KNOWN_FACE_CONFIGS] (protocol/README.md, "Photo faces").
+ */
+internal class PhotoFaceConfig(
+  /** `timeStylePostions selected_index`: a new photo's time position (`0a` and smart `17`). */
+  val timePosition: Int = 1,
+  /** `timeStyles selected_index`: a new photo's time style (`0c` and smart `15`). */
+  val timeStyle: Int = 2,
+  /** `fontStyles selected_index`: a new photo's smart font (`16`). */
+  val font: Int = 1,
+  /** `positions` / `styles selected_index`: the top-level `06` / `07`. */
+  val positionIndex: Int = 1,
+  val styleIndex: Int = 2,
+  /** `timeStylePostions/position position_rect` (left, top, right, bottom) by index: where the time is drawn, the area the time colour is chosen for. */
+  val positionRects: Map<Int, IntArray> = emptyMap(),
+)
+
+/** What [PhotoFaceCodec.saveTlv] needs besides the watch's 27/08 answer. */
+internal class PhotoSaveFields(
+  val config: PhotoFaceConfig = PhotoFaceConfig(),
+  /** [PhotoFaceCodec.gaussSwitch] of the watch's 27/01; -1 leaves the smart fields out. */
+  val gaussSwitch: Int = -1,
+  /** Time colours picked from the phone's copy of a photo ([PhotoFaceCodec.smartColour]), by name. */
+  val timeColours: Map<String, String> = emptyMap(),
 )
 
 /** The photo face's settings and its photo list (the answer to 27/08). */
@@ -56,6 +89,8 @@ internal class PhotoFaceInfo(
   val dataSlots: List<Pair<Int, Int>> = emptyList(),
   /** Tag 0x1f `{20{21 option}}` (written as 0x1d `{1e{1f}}`); Huawei Health only reads and writes it with exactly two entries. */
   val selectedOptions: List<Int> = emptyList(),
+  /** Tag 0x17. Huawei Health reads it and never writes it: there is no carousel setting in 27/09. */
+  val carouselMode: Int? = null,
 )
 
 /** The answer to 27/09: tag 0x7f status (100000 = fine) and tag 0x08 the number of photos the watch still wants from the phone. */
@@ -93,6 +128,9 @@ internal object PhotoFaceCodec {
             timeColour = entry.optString(0x0f),
             backgroundColour = entry.optString(0x10),
             timeSize = entry.opt(0x29),
+            smartTime = entry.opt(0x18),
+            smartFont = entry.opt(0x19),
+            smartPosition = entry.opt(0x1a),
           ),
         )
       }
@@ -118,51 +156,109 @@ internal object PhotoFaceCodec {
       styleApplyAll = tlv.opt(0x12),
       dataSlots = dataSlots,
       selectedOptions = if (selected.size == 2 && selected.all { it != null }) selected.map { it!! } else emptyList(),
+      carouselMode = tlv.opt(0x17),
     )
   }
 
+  /** A photo's time colour when nothing else is known: Huawei Health's `Dp`. */
+  const val NO_COLOUR = "#00000000"
+
   /**
-   * The 27/09 TLV (`makeNewPhotoInfoCommand`): `01` count, `82{83{04 index, 05 name, 0a, 0b, 0c, 0d, 0e, 29}}` for [names] in order,
-   * then `06`, `07`, `09`, `0f`, `10`, `91{92{13, 14}}` and `9d{9e{1f}}` echoed from [info]. A photo the watch already lists keeps its
-   * settings; a new one is sent with name and index only and the watch fills in its defaults. Indexes count from 0, as the watch reports
-   * them. The smart-colour / Gaussian fields (`15`…`1c`) are left out: the watch does not report the switch that decides them.
+   * The time colour Huawei Health sends for a photo whose colour comes from the picture (when the watch's 27/01 tag 0x1b
+   * `supportAestheticAlbumColor` is 1): `#01` (the page's `xv` marker) and an RGB, e.g. `#01ffe7d8`. JoyoFit's RGB comes from
+   * [PhotoTimeColour].
    */
-  fun saveTlv(info: PhotoFaceInfo, names: List<String>): HuaweiTLV {
+  fun smartColour(picked: Int): String = "#01" + String.format("%08x", picked).substring(2)
+
+  /**
+   * The Gaussian switch Huawei Health writes (`isUseGaussColor`): the page gets the watch's 27/01 tag 0x1a with 1 turned into 0
+   * (`WatchFaceApiImpl.getH5Params`), -1 when the watch did not send the tag.
+   */
+  fun gaussSwitch(paramsTag1a: Int): Int = if (paramsTag1a == 1) 0 else paramsTag1a
+
+  /**
+   * The 27/09 TLV as Huawei Health's `makeNewPhotoInfoCommand` writes the album its My watch faces page hands over (capture 2026-10-25,
+   * Fit 4 Pro: the "add photo" prompt on the watch went away after it). `01` count, then for [names] in order (index from 0)
+   * `82{83{04 index, 05 name, 0a time position, 0b portrait 0, 0c time style, 0d time colour, 0e background colour, 29 time size,
+   * [15 smart time, 16 smart font, 17 smart position, 1c Gaussian switch]}}` (the bracket only when the switch is not -1), then `06`,
+   * `07`, `09`, `0f`, `10`, `91{92{13, 14}}` (only when the watch reported data slots), `1c` Gaussian switch and `9d{9e{1f}…}` (the
+   * watch's two selected options, or 0 and 0). A photo the watch lists keeps the values it reported; anything missing or 0 comes from
+   * the face config like a new photo. A photo without a colour in [PhotoSaveFields.timeColours] keeps the watch's colour, else
+   * [NO_COLOUR].
+   */
+  fun saveTlv(info: PhotoFaceInfo, names: List<String>, fields: PhotoSaveFields = PhotoSaveFields()): HuaweiTLV {
+    val config = fields.config
+    val gaussSwitch = fields.gaussSwitch
+    val timeColours = fields.timeColours
+    fun Int?.orElse(fallback: Int): Int = if (this == null || this <= 0) fallback else this
     val known = info.photos.associateBy { it.name }
     val tlv = HuaweiTLV().put(0x01, names.size.toByte())
     if (names.isNotEmpty()) {
       val list = HuaweiTLV()
       names.forEachIndexed { i, name ->
-        val entry = HuaweiTLV().put(0x04, i.toByte()).put(0x05, name)
-        known[name]?.let { slot ->
-          slot.portPosition?.let { entry.put(0x0a, it.toByte()) }
-          slot.portraitMode?.let { entry.put(0x0b, it.toByte()) }
-          slot.timeStyle?.let { entry.put(0x0c, it.toByte()) }
-          slot.timeColour?.let { entry.put(0x0d, it) }
-          slot.backgroundColour?.let { entry.put(0x0e, it) }
-          slot.timeSize?.let { entry.put(0x29, it.toByte()) }
+        val slot = known[name]
+        val position = slot?.portPosition.orElse(config.timePosition)
+        val timeStyle = slot?.timeStyle.orElse(config.timeStyle)
+        val entry = HuaweiTLV()
+          .put(0x04, i.toByte())
+          .put(0x05, name)
+          .put(0x0a, position.toByte())
+          .put(0x0b, 0.toByte())
+          .put(0x0c, timeStyle.toByte())
+          .put(0x0d, timeColours[name] ?: slot?.timeColour?.takeIf { it.isNotEmpty() } ?: NO_COLOUR)
+          .put(0x0e, slot?.backgroundColour?.takeIf { it.isNotEmpty() } ?: NO_COLOUR)
+          .put(0x29, (slot?.timeSize ?: 0).toByte())
+        if (gaussSwitch != -1) {
+          entry
+            .put(0x15, slot?.smartTime.orElse(timeStyle).toByte())
+            .put(0x16, slot?.smartFont.orElse(config.font).toByte())
+            .put(0x17, slot?.smartPosition.orElse(position).toByte())
+            .put(0x1c, gaussSwitch.toByte())
         }
         list.put(0x83, entry)
       }
       tlv.put(0x82, list)
     }
-    info.positionIndex?.let { tlv.put(0x06, it.toByte()) }
-    info.styleIndex?.let { tlv.put(0x07, it.toByte()) }
-    info.dataIndex?.let { tlv.put(0x09, it.toByte()) }
-    info.wristSwitch?.let { tlv.put(0x0f, it.toByte()) }
-    info.styleApplyAll?.let { tlv.put(0x10, it.toByte()) }
+    tlv.put(0x06, config.positionIndex.toByte())
+    tlv.put(0x07, config.styleIndex.toByte())
+    tlv.put(0x09, (info.dataIndex ?: 0).toByte())
+    tlv.put(0x0f, (info.wristSwitch ?: 0).toByte())
+    tlv.put(0x10, (info.styleApplyAll ?: 0).toByte())
     if (info.dataSlots.isNotEmpty()) {
       val slots = HuaweiTLV()
       for ((container, option) in info.dataSlots) slots.put(0x92, HuaweiTLV().put(0x13, container.toByte()).put(0x14, option.toByte()))
       tlv.put(0x91, slots)
     }
-    if (info.selectedOptions.isNotEmpty()) {
-      val options = HuaweiTLV()
-      for (option in info.selectedOptions) options.put(0x9e, HuaweiTLV().put(0x1f, option.toByte()))
-      tlv.put(0x9d, options)
-    }
+    tlv.put(0x1c, gaussSwitch.toByte())
+    val options = HuaweiTLV()
+    for (option in info.selectedOptions.ifEmpty { listOf(0, 0) }) options.put(0x9e, HuaweiTLV().put(0x1f, option.toByte()))
+    tlv.put(0x9d, options)
     return tlv
   }
+
+  /**
+   * The new-photo values of the photo faces whose `watch_face_config.xml` was read during research (2026-10-25, protocol/README.md,
+   * "Photo faces"), by face id. 2180736265 is the Watch Fit 4 Pro's photo face (version 2.4.11).
+   */
+  val KNOWN_FACE_CONFIGS: Map<String, PhotoFaceConfig> = mapOf(
+    "2180736265" to PhotoFaceConfig(
+      timePosition = 1, timeStyle = 2, font = 1, positionIndex = 1, styleIndex = 2,
+      positionRects = mapOf(
+        1 to intArrayOf(68, 18, 406, 182),
+        2 to intArrayOf(68, 288, 406, 432),
+        3 to intArrayOf(10, 108, 276, 399),
+        4 to intArrayOf(236, 108, 456, 399),
+        5 to intArrayOf(68, 108, 406, 399),
+        6 to intArrayOf(10, 10, 194, 230),
+        7 to intArrayOf(214, 10, 398, 230),
+        8 to intArrayOf(10, 250, 194, 470),
+        9 to intArrayOf(214, 250, 398, 470),
+      ),
+    ),
+  )
+
+  /** [KNOWN_FACE_CONFIGS] for [faceId], else the page's fallbacks (position 1, style 2, font 1, no time area). */
+  fun faceConfig(faceId: String): PhotoFaceConfig = KNOWN_FACE_CONFIGS[faceId] ?: PhotoFaceConfig()
 
   fun parseSaveStatus(tlv: HuaweiTLV): PhotoSaveStatus =
     PhotoSaveStatus(tlv.getAsInteger(0x7f, -1), tlv.getAsInteger(0x08, 0))

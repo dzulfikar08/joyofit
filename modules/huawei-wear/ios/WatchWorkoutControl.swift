@@ -212,14 +212,15 @@ public final class WatchWorkoutControl: LinkObserver, @unchecked Sendable {
         }
     }
 
-    /// `17/03` once, a moment after a start: true when the watch reports a running workout, false when it reports none, nil without an answer.
+    /// `17/03` once, a moment after a start: true when the watch reports its workout open (its GO screen, `WatchPhase.open`) or running, false
+    /// when it reports none, nil without an answer.
     private func verifyRunning() async -> Bool? {
         try? await Task.sleep(nanoseconds: UInt64(Self.verifyDelayMs) * 1_000_000)
         guard let handle = link.handle() else { return nil }
         do {
             let answer = try await handle.session.request(WatchWorkoutWire.statusRequest(), timeoutMs: Self.requestMs, label: "workout status after start")
             log("Watch workout: status after the start \(answer.tlv.map { "\($0)" } ?? "(empty)")")
-            return WatchWorkoutWire.parseStatus(answer.tlv)?.running ?? false
+            return (WatchWorkoutWire.parseStatus(answer.tlv)?.phase ?? .idle) != .idle
         } catch {
             log("Watch workout: status after the start failed: \((error as? WearError)?.message ?? "\(error)")")
             return nil

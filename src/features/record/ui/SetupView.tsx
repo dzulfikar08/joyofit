@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState, type ComponentProps } from 'react';
+import { useMemo, useState, type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
@@ -22,7 +22,8 @@ import { useSensors } from '@/state/SensorsProvider';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing, useColors } from '@/theme';
 
-import { setBandStartEnabled, useBandStartEnabled } from '../bandLink';
+import { hasWatch, setBandStartEnabled, useBandStartEnabled } from '../bandLink';
+import { bandSportCode } from '../bandLinkCore';
 import { canPrepare, gpsChip, permissionPlan } from './format';
 import { GpsLine } from './GpsLine';
 import { PermissionCards, StepsPanel, useRecordPermissions } from './PermissionGate';
@@ -31,7 +32,7 @@ import { RecordStage } from './RecordStage';
 import { SportPicker } from './SportPicker';
 import { StartButton } from './StartButton';
 import { StatPreview } from './StatPreview';
-import { useGpsSegment, useSensorsSegment, useStepsSegment } from './statusSegments';
+import { useBandSegment, useGpsSegment, useSensorsSegment, useStepsSegment } from './statusSegments';
 import { useGpsWarmUp } from './useGpsWarmUp';
 import { OPEN_IN_STACK } from '@/components/navigation';
 
@@ -81,7 +82,12 @@ export function SetupView({ sport, onSport, notice, onBack }: SetupViewProps) {
   const gpsSegment = useGpsSegment(chip, fix);
   const sensorsSegment = useSensorsSegment(autoSensors.length, () => router.push('/watch/sensors', OPEN_IN_STACK));
   const stepsSegment = useStepsSegment(permissions.steps === 'granted', () => setStepsOpen((open) => !open));
-  const segments = plan.steps ? [gpsSegment, sensorsSegment, stepsSegment] : [gpsSegment, sensorsSegment];
+  const bandSegment = useBandSegment(linkState, () => router.push('/watch'));
+  // The band's link, only when the band takes part in this recording (a watch exists, the setting is on, the sport has a band workout).
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the remembered watch is read again when the link changes
+  const watchKnown = useMemo(() => device !== null || hasWatch(), [device, linkState]);
+  const showBand = watchKnown && bandStart && bandSportCode(sport) !== null;
+  const segments = [gpsSegment, sensorsSegment, ...(plan.steps ? [stepsSegment] : []), ...(showBand ? [bandSegment] : [])];
 
   const start = async () => {
     setBusy(true);

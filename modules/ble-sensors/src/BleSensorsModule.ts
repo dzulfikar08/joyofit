@@ -62,6 +62,18 @@ declare class BleSensorsModule extends NativeModule<BleSensorsModuleEvents> {
    * PermissionsAndroid (features/sensors/permissions.ts), so this function does not exist there.
    */
   requestStepCounterPermission(): Promise<StepCounterPermission>;
+  /**
+   * Store build only: absent on a binary built before it, so check `typeof module.startLiveSteps === 'function'` first
+   * (`src/features/live/liveExtras.ts` does).
+   *
+   * The phone's step counter for the live screen of a workout started on the watch, without a workout session (no foreground service,
+   * no GPS): readings arrive as `onLiveSteps`, counted from this call (cumulative). A counter of its own, apart from the one of
+   * `startWorkoutSession({ steps })`. Resolves false without the sensor or the permission (Android: ACTIVITY_RECOGNITION; iOS: motion,
+   * where an undetermined permission raises the prompt). Calling it while it runs does nothing.
+   */
+  startLiveSteps(): Promise<boolean>;
+  /** Stops the live screen's step counter. Resolves even when it did not run. */
+  stopLiveSteps(): Promise<void>;
 
   /**
    * Bathroom scales. Starts an UNFILTERED scan (a scale that broadcasts its weight hides it in manufacturer data, so there is no service

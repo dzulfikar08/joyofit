@@ -548,7 +548,7 @@ export class RecordingController {
       this.deps.session.onAction((action) => this.onNotificationAction(action)),
       this.deps.hub.onValue((e) => this.onSensorValue(e)),
       this.deps.hub.onSteps((e) => {
-        if (this.recorder && this.snap.phase === 'active') this.recorder.steps(e.steps, e.ts);
+        if (this.recorder && this.snap.phase === 'active') this.recorder.steps(e.steps, e.ts, this.deps.now(), e.cadence ?? null);
       }),
       this.deps.hub.onLocation((e) => {
         this.lastFix = e;

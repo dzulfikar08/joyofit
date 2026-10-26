@@ -74,17 +74,18 @@ public final class PhotoFaceOps: @unchecked Sendable {
         return info
     }
 
-    /// 27/09 with `names` (every photo the face should hold, `<name>.png`), then serves every file the watch asks for from `files`. `info`
-    /// supplies the face's settings to write back (`PhotoFaceCodec.saveTlv`).
+    /// 27/09 with `names` (every photo the face should hold, `<name>.png`), then serves every file the watch asks for from `files`. `info` and
+    /// `fields` supply the values written for each photo and the face (`PhotoFaceCodec.saveTlv`).
     public func save(
-        _ info: PhotoFaceInfo, names: [String], files: [String: PhotoFiles], progress: @escaping @Sendable (_ bytes: Int, _ total: Int) -> Void = { _, _ in }
+        _ info: PhotoFaceInfo, names: [String], files: [String: PhotoFiles], fields: PhotoSaveFields = PhotoSaveFields(),
+        progress: @escaping @Sendable (_ bytes: Int, _ total: Int) -> Void = { _, _ in }
     ) async throws -> PhotoSaveResult {
         let inbox = FileBlockInbox()
         var subscriptions = [Int]()
         subscriptions.append(await session.subscribe(service: PhotoFace.fileUploadId, command: PhotoFace.FileRequestAnswer.id, label: "photo file request") { inbox.push($0) })
         subscriptions.append(await session.subscribe(service: PhotoFace.watchfaceId, command: PhotoFace.ReportAck.id, label: "photo face report") { inbox.push($0) })
         do {
-            let result = try await run(info, names, files, progress, inbox)
+            let result = try await run(info, names, files, fields, progress, inbox)
             await release(inbox, subscriptions)
             return result
         } catch {
@@ -99,9 +100,10 @@ public final class PhotoFaceOps: @unchecked Sendable {
     }
 
     private func run(
-        _ info: PhotoFaceInfo, _ names: [String], _ files: [String: PhotoFiles], _ progress: @escaping @Sendable (Int, Int) -> Void, _ inbox: FileBlockInbox
+        _ info: PhotoFaceInfo, _ names: [String], _ files: [String: PhotoFiles], _ fields: PhotoSaveFields,
+        _ progress: @escaping @Sendable (Int, Int) -> Void, _ inbox: FileBlockInbox
     ) async throws -> PhotoSaveResult {
-        let request = PhotoFace.SaveRequest.request(PhotoFaceCodec.saveTlv(info, names))
+        let request = PhotoFace.SaveRequest.request(PhotoFaceCodec.saveTlv(info, names, fields))
         note("PhotoSave \(names.count) photo(s) TLV before encryption: \(describeTlv(request.tlv))")
         let answer = try await session.request(request, timeoutMs: queryMs, label: "PhotoSave")
         guard let tlv = answer.tlv else { throw WearError(.protocolError, "PhotoSave: the watch's answer has no TLV") }

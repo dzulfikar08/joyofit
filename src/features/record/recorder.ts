@@ -12,6 +12,7 @@ import { virtualSpeedMs } from '@/features/cycling/series';
 import { haversineM } from '../workouts/analysis/geo';
 import { SPORT_ROWS, type ManualSport } from '../workouts/manual';
 import { SensorTracker, type SensorReadings } from '../sensors/gatt';
+import { PhoneStepCount } from '../sensors/phoneSteps';
 import { HR_COVERAGE_MIN, type EnergyProfile, keytelKcalPerMin, metKcalPerSec } from './energy';
 
 export type RecorderStatus = 'idle' | 'recording' | 'paused' | 'finished';
@@ -102,16 +103,31 @@ export interface LiveStats {
   cadence: number | null;
   watts: number | null;
   calories: number;
+  /** Heart rate of the recorded seconds so far (pauses excluded): mean and highest, null before the first reading. */
+  avgHr: number | null;
+  maxHr: number | null;
+  /** Steps so far: a running pod's, else the phone's step counter's (pauses excluded); 0 without either. */
+  steps: number;
   lapNumber: number;
   lapDistanceM: number;
   lapMovingSec: number;
   /** Age of the last GPS fix in seconds, null when there has been none. */
   fixAgeSec: number | null;
   fixAccuracyM: number | null;
+  /** Climb so far in metres from the GPS altitude (smoothed, 3 m dead band), pauses excluded; 0 without GPS. */
+  elevationGainM: number;
+  /** Altitude of the latest fresh fix in metres, null without one. */
+  altitudeM: number | null;
 }
 
 /** Fixes worse than this (horizontal accuracy, metres) are not used. */
 export const MAX_FIX_ACCURACY_M = 35;
+/** Altitude counts only from fixes at least this good (horizontal accuracy, metres), as the watch-live GPS track does. */
+const MAX_ALT_ACCURACY_M = 30;
+/** Weight of a new altitude in the smoothed one (GPS altitude jumps by metres). */
+const ALT_ALPHA = 0.25;
+/** The smoothed altitude must move this far (metres) from the reference before a rise counts. */
+const RISE_HYSTERESIS_M = 3;
 /** Under this ground speed (m/s) a fix is the phone standing still, not movement. */
 const STILL_SPEED_MPS = 0.4;
 /** A step shorter than this (metres) from the anchor is jitter. */
@@ -128,13 +144,6 @@ const VIRTUAL_FRESH_MS = 5000;
 
 /** Sports where the phone's own step counter gives cadence and steps when no running pod does (the phone is carried on the body). */
 export const FOOT_SPORTS: readonly ManualSport[] = ['run', 'walk', 'hike'];
-
-/** A phone step counter reading counts for the cadence this long. */
-const PHONE_STEPS_FRESH_MS = 10_000;
-/** The cadence needs readings at least this far apart; a counter silent this long means the person stopped. */
-const PHONE_STEPS_MIN_SPAN_MS = 4000;
-/** More than this many steps per minute is not a human on foot (counter glitch, phone shaken). */
-const MAX_PHONE_CADENCE_SPM = 260;
 
 interface Segment {
   start: number;
@@ -157,6 +166,8 @@ export interface RecorderMeta {
   lapStartDistance: number;
   /** Steps counted by the phone's step counter, pauses excluded. Absent in a journal written before it existed. */
   phoneSteps?: number;
+  /** Live climb in metres. Absent in a journal written before it existed. */
+  elevationGainM?: number;
 }
 
 const isCycling = (sport: ManualSport) => sport === 'ride' || sport === 'indoorRide';
@@ -172,11 +183,12 @@ export class Recorder {
   private distance = 0;
   /** Steps added up from the running pod's cadence. */
   private podSteps = 0;
-  /** Steps counted by the phone's step counter (cumulative readings differences), pauses excluded. */
-  private phoneSteps = 0;
-  /** The step counter readings of the last seconds, oldest first, and the newest raw count seen (also while paused) as the baseline of the next difference. */
-  private stepReadings: { ts: number; count: number }[] = [];
-  private stepCount: number | null = null;
+  /** The phone's step counter: steps counted while recording and the cadence of the last seconds. */
+  private phoneSteps = new PhoneStepCount();
+  /** Heart rate of the recorded seconds: sum, count and highest, for the live average and maximum. */
+  private hrSum = 0;
+  private hrCount = 0;
+  private hrMax: number | null = null;
   private kcalHr = 0;
   private kcalMet = 0;
   private hrSeconds = 0;
@@ -193,6 +205,10 @@ export class Recorder {
   private gpsDeltaM = 0;
   private lastWheelM = 0;
   private lastFixSpeed: number | null = null;
+  /** Live climb: total, smoothed altitude and the reference level of the dead band (both reset at resume). */
+  private elevationGain = 0;
+  private smoothedAlt: number | null = null;
+  private referenceAlt: number | null = null;
   /** The web game's speed for an indoor ride without a wheel sensor ("Main di web"), and when it was last reported. */
   private virtual: { speedMps: number; at: number } | null = null;
 
@@ -219,7 +235,7 @@ export class Recorder {
     this.closeSegment(nowMs);
     this.status = 'paused';
     // Readings of the pause must not enter the cadence of the first seconds after it.
-    this.stepReadings = [];
+    this.phoneSteps.pause();
   }
 
   resume(nowMs: number): void {
@@ -230,6 +246,8 @@ export class Recorder {
     // Nothing moved while paused: restart the GPS path and the wheel baseline so the pause adds no distance.
     this.anchor = null;
     this.gpsDeltaM = 0;
+    this.smoothedAlt = null;
+    this.referenceAlt = null;
     this.lastWheelM = this.tracker.wheelDistanceM;
     this.tick(nowMs);
   }
@@ -265,6 +283,7 @@ export class Recorder {
     this.lastFixSpeed = fix.speed;
     if (this.status !== 'recording' || !this.config.gps) return;
     if (fix.accuracy !== null && fix.accuracy > MAX_FIX_ACCURACY_M) return;
+    this.climb(fix);
     const prev = this.anchor;
     if (!prev) {
       this.anchor = fix;
@@ -292,33 +311,37 @@ export class Recorder {
     this.anchor = fix;
   }
 
+  /** Adds the rise of a recorded fix's altitude to the live climb: the same rule as the watch-live GPS track (LiveGpsTrack). */
+  private climb(fix: GpsFix): void {
+    const alt = fix.alt;
+    if (alt === null || !Number.isFinite(alt)) return;
+    if (fix.accuracy !== null && fix.accuracy > MAX_ALT_ACCURACY_M) return;
+    const smooth = this.smoothedAlt === null ? alt : this.smoothedAlt + ALT_ALPHA * (alt - this.smoothedAlt);
+    this.smoothedAlt = smooth;
+    const ref = this.referenceAlt;
+    if (ref === null || ref - smooth >= RISE_HYSTERESIS_M) {
+      this.referenceAlt = smooth;
+    } else if (smooth - ref >= RISE_HYSTERESIS_M) {
+      this.elevationGain += smooth - ref;
+      this.referenceAlt = smooth;
+    }
+  }
+
   /** The speed (m/s) the web game says the rider makes; used for an indoor ride while it is fresh and no wheel sensor reports a speed. */
   virtualSpeed(speedMps: number, nowMs: number): void {
     this.virtual = { speedMps: Math.max(0, speedMps), at: nowMs };
   }
 
   /**
-   * A reading of the phone's step counter: `count` steps counted since the workout session started (cumulative), `tsMs` the instant of
-   * the reading. Only foot sports use it. The steps counted between two readings are added to the workout's total while it records;
-   * the ones of a pause are skipped. A count lower than the one before (the counter restarted, the phone rebooted) starts the baseline
-   * over without subtracting anything. Readings before `start` and after `finish` are ignored.
+   * A reading of the phone's step counter: `count` steps counted since the workout session started (cumulative), `tsMs` the sensor's
+   * instant of the reading, `atMs` when it reached the app, `spm` the pedometer's own cadence when it gives one (iOS). Only foot sports
+   * use it. The steps counted between two readings are added to the workout's total while it records; the ones of a pause are skipped
+   * (`PhoneStepCount`). Readings before `start` and after `finish` are ignored.
    */
-  steps(count: number, tsMs: number): void {
+  steps(count: number, tsMs: number, atMs: number = tsMs, spm: number | null = null): void {
     if (!FOOT_SPORTS.includes(this.config.sport)) return;
     if (this.status !== 'recording' && this.status !== 'paused') return;
-    if (!Number.isFinite(count) || !Number.isFinite(tsMs)) return;
-    const before = this.stepCount;
-    this.stepCount = count;
-    if (before !== null && count < before) {
-      this.stepReadings = [];
-    } else if (before !== null && this.status === 'recording') {
-      this.phoneSteps += count - before;
-    }
-    if (this.status === 'recording') {
-      this.stepReadings.push({ ts: tsMs, count });
-      const cutoff = tsMs - 2 * PHONE_STEPS_FRESH_MS;
-      while (this.stepReadings.length > 2 && (this.stepReadings[0] as { ts: number }).ts < cutoff) this.stepReadings.shift();
-    }
+    this.phoneSteps.reading(count, tsMs, this.status === 'recording', atMs, spm);
   }
 
   /** A raw characteristic value from a connected sensor; true when the tracker used it. `ts` is the radio timestamp in ms. */
@@ -378,7 +401,7 @@ export class Recorder {
       ? r.cadenceRpm !== undefined
         ? Math.round(r.cadenceRpm)
         : null
-      : podCadence ?? (FOOT_SPORTS.includes(sport) ? this.phoneCadence(nowMs) : null);
+      : podCadence ?? (FOOT_SPORTS.includes(sport) ? this.phoneSteps.cadence(nowMs) : null);
     const hr = r.hr ?? null;
     if (cycling && r.balanceLeftPct !== undefined && r.watts !== undefined && r.watts > 0) this.balances.push(r.balanceLeftPct);
 
@@ -386,6 +409,9 @@ export class Recorder {
     if (hr !== null) {
       this.hrSeconds += 1;
       this.kcalHr += keytelKcalPerMin(hr, profile) / 60;
+      this.hrSum += hr;
+      this.hrCount += 1;
+      this.hrMax = this.hrMax === null ? hr : Math.max(this.hrMax, hr);
     } else {
       this.kcalHr += metKcalPerSec(row.met, profile.weightKg);
     }
@@ -401,23 +427,6 @@ export class Recorder {
       stride: !cycling && r.podStrideM !== undefined ? r.podStrideM : null,
       power: r.watts ?? null,
     });
-  }
-
-  /**
-   * Steps per minute from the step counter: the newest reading of the last 10 s minus the oldest of them, over the time between them
-   * (at least 4 s apart). 0 when the counter did not move over that span, or has said nothing for 4 s (it reports changes only, so
-   * silence is a stop); null without a fresh reading, with a single one, or above `MAX_PHONE_CADENCE_SPM`.
-   */
-  private phoneCadence(nowMs: number): number | null {
-    const fresh = this.stepReadings.filter((p) => nowMs - p.ts <= PHONE_STEPS_FRESH_MS);
-    const newest = fresh[fresh.length - 1];
-    const oldest = fresh[0];
-    if (!newest || !oldest) return null;
-    if (nowMs - newest.ts >= PHONE_STEPS_MIN_SPAN_MS) return 0;
-    const spanMs = newest.ts - oldest.ts;
-    if (spanMs < PHONE_STEPS_MIN_SPAN_MS) return null;
-    const spm = Math.round(((newest.count - oldest.count) / spanMs) * 60_000);
-    return spm > MAX_PHONE_CADENCE_SPM ? null : spm;
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -446,11 +455,16 @@ export class Recorder {
       cadence: last?.cadence ?? null,
       watts: last?.power ?? null,
       calories: calories.kcal,
+      avgHr: this.hrCount > 0 ? Math.round(this.hrSum / this.hrCount) : null,
+      maxHr: this.hrMax,
+      steps: Math.round(this.stepsSoFar()),
       lapNumber: this.laps.length + 1,
       lapDistanceM: this.distance - this.lapStartDistance,
       lapMovingSec: this.samples.length - this.lapStartIndex,
       fixAgeSec: this.latestFix ? Math.max(0, Math.floor((nowMs - this.latestFix.ts) / 1000)) : null,
       fixAccuracyM: this.latestFix?.accuracy ?? null,
+      elevationGainM: this.elevationGain,
+      altitudeM: this.latestFix && this.latestFix.alt !== null && nowMs - this.latestFix.ts <= FIX_FRESH_MS ? this.latestFix.alt : null,
     };
   }
 
@@ -497,7 +511,8 @@ export class Recorder {
       nextSec: this.nextSec,
       distanceM: this.distance,
       steps: this.podSteps,
-      phoneSteps: this.phoneSteps,
+      phoneSteps: this.phoneSteps.total,
+      elevationGainM: this.elevationGain,
       kcalHr: this.kcalHr,
       kcalMet: this.kcalMet,
       hrSeconds: this.hrSeconds,
@@ -527,7 +542,14 @@ export class Recorder {
     r.nextSec = last ? Math.max(meta.nextSec, last.ts + 1) : meta.nextSec;
     r.distance = meta.distanceM;
     r.podSteps = meta.steps;
-    r.phoneSteps = meta.phoneSteps ?? 0;
+    r.phoneSteps.total = meta.phoneSteps ?? 0;
+    for (const s of samples) {
+      if (s.hr === null) continue;
+      r.hrSum += s.hr;
+      r.hrCount += 1;
+      r.hrMax = r.hrMax === null ? s.hr : Math.max(r.hrMax, s.hr);
+    }
+    r.elevationGain = meta.elevationGainM ?? 0;
     r.kcalHr = meta.kcalHr;
     r.kcalMet = meta.kcalMet;
     r.hrSeconds = meta.hrSeconds;
@@ -543,6 +565,11 @@ export class Recorder {
   private closeSegment(nowMs: number): void {
     const open = this.segments[this.segments.length - 1];
     if (open && open.end === null) open.end = Math.max(nowMs, open.start);
+  }
+
+  /** A running pod's steps win; without one the phone's step counter has the count. */
+  private stepsSoFar(): number {
+    return this.podSteps > 0 ? this.podSteps : this.phoneSteps.total;
   }
 
   private calories(): { kcal: number; source: 'hr' | 'met' } {
@@ -592,8 +619,7 @@ export class Recorder {
       distanceM: Math.round(this.distance),
       calories: kcal,
       kcalSource: source,
-      // A running pod's cadence wins; without one the phone's step counter has the count.
-      steps: Math.round(this.podSteps > 0 ? this.podSteps : this.phoneSteps),
+      steps: Math.round(this.stepsSoFar()),
       avgHr: hrs.length > 0 ? Math.round(mean(hrs)) : null,
       maxHr: hrs.length > 0 ? Math.max(...hrs) : null,
       minHr: hrs.length > 0 ? Math.min(...hrs) : null,

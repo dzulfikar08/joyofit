@@ -121,15 +121,44 @@ class WatchWorkoutTest {
 
   @Test
   fun statusAnswerSaysWhetherTheWatchRunsAWorkout() {
-    val running = WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 0c  02 01 01  03 01 01  04 01 01  06 01 8c")))!!
-    assertEquals(1, running.operator)
+    val running = WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 0c  02 01 01  03 01 03  04 01 01  06 01 8c")))!!
+    assertEquals(3, running.operator)
     assertEquals(140, running.workoutType)
     assertTrue(running.running)
     val paused = WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 06  02 01 01  03 01 02")))!!
     assertFalse(paused.running)
+    assertEquals(WatchPhase.PAUSED, paused.phase)
     val stopped = WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 03  03 01 04")))!!
     assertFalse(stopped.running)
+    assertEquals(WatchPhase.IDLE, stopped.phase)
     assertNull(WatchWorkoutWire.parseStatus(HuaweiTLV()))
+  }
+
+  @Test
+  fun theGoScreenIsOpenNotRunning() {
+    // Fit 4 Pro, 2026-10-25 17:43: Outdoor walk opened (GO not pressed), GO, pause, resume.
+    val goScreen = WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 06  02 01 00  03 01 01")))!!
+    assertEquals(0, goScreen.trainMonitorState)
+    assertEquals(1, goScreen.operator)
+    assertEquals(WatchPhase.OPEN, goScreen.phase)
+    assertFalse(goScreen.running)
+    val afterGo = WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 06  02 01 01  03 01 03")))!!
+    assertEquals(WatchPhase.RUNNING, afterGo.phase)
+    assertTrue(afterGo.running)
+    assertEquals(WatchPhase.PAUSED, WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 06  02 01 01  03 01 04")))!!.phase)
+    assertEquals(WatchPhase.RUNNING, WatchWorkoutWire.parseStatus(HuaweiTLV().parse(hex("81 06  02 01 01  03 01 05")))!!.phase)
+  }
+
+  @Test
+  fun theGpsFieldBitmapIsReadWhole() {
+    // Fit 4 Pro 18/01 answer, 2026-10-25 18:49:49: 81{02 01DF, 03 01, 05 01}.
+    val sub = HuaweiTLV().parse(hex("81 0a  02 02 01df  03 01 01  05 01 01")).getObject(0x81)
+    val bitmap = WorkoutLink.gpsBitmap(sub.getBytes(0x02, null))!!
+    assertEquals(0x1DF, bitmap)
+    val params = WorkoutLink.GpsParams(bitmap)
+    assertTrue(params.speed && params.distance && params.altitude && params.latLon && params.direction && params.precision)
+    assertEquals(0x01, WorkoutLink.gpsBitmap(hex("01")))
+    assertNull(WorkoutLink.gpsBitmap(ByteArray(0)))
   }
 
   @Test
