@@ -235,8 +235,8 @@
   },
   "watchNav": {
     "title": "Navigasi di jam (lab)",
-    "explainer": "HP menghitung belokan dari rute ini dan mengirim petunjuknya ke aplikasi JoyoFit Navi di jam: arah belok, jaraknya, sisa jarak dan perkiraan waktu tiba. Jam bergetar saat belokan sudah dekat.",
-    "placeholder": "Aplikasi JoyoFit Navi belum bisa dipasang di jam (akun pengembang Huawei belum siap). HP sudah menghitung petunjuknya, tetapi jam belum akan menerimanya.",
+    "explainer": "HP menghitung belokan dari rute ini dan mengirim petunjuknya ke aplikasi JoyoNavi di jam: arah belok, jaraknya, sisa jarak dan perkiraan waktu tiba. Jam bergetar saat belokan sudah dekat.",
+    "placeholder": "Aplikasi JoyoNavi belum bisa dipasang di jam (akun pengembang Huawei belum siap). HP sudah menghitung petunjuknya, tetapi jam belum akan menerimanya.",
     "activity": "Aktivitas",
     "walk": "Jalan",
     "run": "Lari",
@@ -255,7 +255,7 @@
     "eta": "Perkiraan tiba",
     "etaMinutes_other": "{{count}} mnt",
     "etaHours": "{{hours}} j {{minutes}} mnt",
-    "watchApp": "Aplikasi jam terhubung",
+    "watchApp": "JoyoNavi tersambung",
     "watchAppYes": "Ya",
     "watchAppNo": "Tidak",
     "watchAppUnknown": "Belum tahu",
@@ -287,6 +287,7 @@
       "arrive": "Tujuan"
     },
     "roundaboutExit": "Bundaran, keluar ke-{{exit}}",
-    "onto": "{{dir}} ke {{street}}"
+    "onto": "{{dir}} ke {{street}}",
+    "openWatchApp": "Buka JoyoNavi di jam untuk melihat petunjuknya."
   }
 }

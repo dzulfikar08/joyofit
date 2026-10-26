@@ -1,5 +1,5 @@
 /**
- * The messages between JoyoFit and the JoyoFit Navi watch app (`protocol/watch-nav.schema.json`): the types, the encoder that stamps the
+ * The messages between JoyoFit and the JoyoNavi watch app (`protocol/watch-nav.schema.json`): the types, the encoder that stamps the
  * envelope and keeps every message within the 1000-byte P2P payload, and the decoder of the watch app's messages. Pure.
  */
 

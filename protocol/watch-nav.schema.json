@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://joyofit.app/protocol/watch-nav.schema.json",
   "title": "JoyoFit watch navigation message (version 1)",
-  "description": "One message between JoyoFit (phone, package com.joyodigitama.joyofit) and the JoyoFit Navi watch app (bundle com.joyodigitama.navi) over Wear Engine P2P: link service 0x34, command 0x01, P2P cmd 2 (data), payload = this object as UTF-8 JSON, at most 1000 bytes, one object per message, no trailing newline. The P2P layer acknowledges every data message with cmd 3 code 0xcf; nothing in the JSON is an acknowledgement. See protocol/README.md, 'P2P (f) Watch navigation'. Distances are whole metres, times whole seconds. Unknown fields must be ignored by the receiver; an unknown `t` must be ignored (logged), never answered.",
+  "description": "One message between JoyoFit (phone, package com.joyodigitama.joyofit) and the JoyoNavi watch app (bundle com.joyodigitama.navi) over Wear Engine P2P: link service 0x34, command 0x01, P2P cmd 2 (data), payload = this object as UTF-8 JSON, at most 1000 bytes, one object per message, no trailing newline. The P2P layer acknowledges every data message with cmd 3 code 0xcf; nothing in the JSON is an acknowledgement. See protocol/README.md, 'P2P (f) Watch navigation'. Distances are whole metres, times whole seconds. Unknown fields must be ignored by the receiver; an unknown `t` must be ignored (logged), never answered.",
   "type": "object",
   "required": ["v", "t", "n"],
   "properties": {

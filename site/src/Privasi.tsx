@@ -363,7 +363,7 @@ function Indonesian() {
           titik rute itu ke layanan OSRM FOSSGIS e.V. yang sama untuk nama jalan dan belokan, dan, bila kamu keluar dari rute dengan
           &quot;Cari rute baru&quot; menyala, posisimu saat itu dan sisa rute (paling sering sekali tiap 30 detik selama di luar rute). Tidak ada
           akun, ID perangkat, atau kunci API yang ikut dikirim. Selain itu posisi GPS-mu hanya dipakai di HP, dan petunjuk belok dikirim
-          ke aplikasi JoyoFit Navi di jam lewat Bluetooth.
+          ke aplikasi JoyoNavi di jam lewat Bluetooth.
         </p>
       </Block>
 
@@ -899,7 +899,7 @@ function English() {
           About &amp; advanced &gt; Experimental and start it from a saved route, JoyoFit sends up to 50 points of that route to the same OSRM
           service of FOSSGIS e.V. once, to get street names and turns, and, if you leave the route with &quot;Find a new route&quot; on, your
           current position and the rest of the route (at most every 30 seconds while you are off the route). No account, device ID or API
-          key is sent. Your GPS position is otherwise only used on the phone, and the turn instructions go to the JoyoFit Navi app on your
+          key is sent. Your GPS position is otherwise only used on the phone, and the turn instructions go to the JoyoNavi app on your
           watch over Bluetooth.
         </p>
       </Block>

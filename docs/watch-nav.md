@@ -1,7 +1,7 @@
 # Watch navigation: the phone side (JRG-439, LAB)
 
 Turn-by-turn on the Huawei Watch Fit 4 Pro (HarmonyOS lite wearable, fw 6.1.0.117) with JoyoFit's **own** watch app `com.joyodigitama.navi`
-(JoyoFit Navi). The phone does all the work; the watch app shows the current instruction and vibrates. The two talk over Wear Engine P2P
+(JoyoNavi). The phone does all the work; the watch app shows the current instruction and vibrates. The two talk over Wear Engine P2P
 (link service `0x34`, command `0x01`), the same P2P layer JoyoFit already speaks for Huawei's own watch apps. Message format:
 [`protocol/watch-nav.schema.json`](../protocol/watch-nav.schema.json), wire details: `protocol/README.md`, "P2P (f) Watch navigation".
 

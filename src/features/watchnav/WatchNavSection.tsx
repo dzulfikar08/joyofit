@@ -51,6 +51,7 @@ function StatusCard({ snap, view }: { snap: SessionSnapshot; view: NavView }) {
       {view.rerouting ? <Notice icon="sync">{t('watchNav.rerouting')}</Notice> : null}
       {view.phase === 'paused' ? <Notice icon="pause">{t('watchNav.paused')}</Notice> : null}
       {!view.matched && view.phase === 'navigating' ? <Notice icon="locate">{t('watchNav.noFix')}</Notice> : null}
+      {watchApp !== 'present' ? <Notice icon="watch">{t('watchNav.openWatchApp')}</Notice> : null}
       <KeyValue icon="arrow-redo" label={t('watchNav.nextTurn')} value={turnText(view.maneuver)} />
       <KeyValue icon="navigate" label={t('watchNav.distToTurn')} value={view.distToTurnM === null ? null : formatRouteDistance(view.distToTurnM)} />
       <KeyValue icon="flag" label={t('watchNav.remaining')} value={formatRouteDistance(view.remainingM)} />

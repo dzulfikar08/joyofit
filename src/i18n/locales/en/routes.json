@@ -239,8 +239,8 @@
   },
   "watchNav": {
     "title": "Watch navigation (lab)",
-    "explainer": "The phone works out the turns of this route and sends the instructions to the JoyoFit Navi app on the watch: the turn, how far it is, the distance left and the arrival time. The watch vibrates when a turn is near.",
-    "placeholder": "The JoyoFit Navi app cannot be installed on the watch yet (the Huawei developer account is not ready). The phone already works out the instructions, but the watch will not take them yet.",
+    "explainer": "The phone works out the turns of this route and sends the instructions to the JoyoNavi app on the watch: the turn, how far it is, the distance left and the arrival time. The watch vibrates when a turn is near.",
+    "placeholder": "The JoyoNavi app cannot be installed on the watch yet (the Huawei developer account is not ready). The phone already works out the instructions, but the watch will not take them yet.",
     "activity": "Activity",
     "walk": "Walk",
     "run": "Run",
@@ -260,7 +260,7 @@
     "etaMinutes_one": "{{count}} min",
     "etaMinutes_other": "{{count}} min",
     "etaHours": "{{hours}} h {{minutes}} min",
-    "watchApp": "Watch app connected",
+    "watchApp": "JoyoNavi connected",
     "watchAppYes": "Yes",
     "watchAppNo": "No",
     "watchAppUnknown": "Not yet known",
@@ -292,6 +292,7 @@
       "arrive": "Destination"
     },
     "roundaboutExit": "Roundabout, exit {{exit}}",
-    "onto": "{{dir}} onto {{street}}"
+    "onto": "{{dir}} onto {{street}}",
+    "openWatchApp": "Open JoyoNavi on the watch to see the instructions."
   }
 }
