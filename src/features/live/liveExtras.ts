@@ -36,7 +36,7 @@ const steps = createLiveSteps({
     AppState.addEventListener('change', (state) => {
       if (state === 'active') listener();
     }),
-  onReading: (e) => current?.stepReading(e.steps, e.ts),
+  onReading: (e) => current?.stepReading(e.steps, e.ts, Date.now(), e.cadence ?? null),
 });
 
 /** Feeds the session's payloads and runs the step counter while a session on foot is open. Render once, inside `LiveWorkoutProvider`. */

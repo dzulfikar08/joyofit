@@ -545,7 +545,7 @@ describe("the phone's step counter", () => {
     expect(s[6]!.cadence).toBeNull();
   });
 
-  it('gives 0 when the counter stops moving, then nothing once the readings are stale', () => {
+  it('fades to 0 once the counter stops moving, and stays 0 while it runs', () => {
     const r = new Recorder(config('run'));
     r.start(T0);
     for (let s = 1; s <= 6; s++) {
@@ -555,14 +555,17 @@ describe("the phone's step counter", () => {
     // the person stands still: the counter repeats its value, then says nothing at all
     r.steps(15, T0 + 8000);
     r.steps(15, T0 + 12_000);
+    r.tick(T0 + 12_000);
     r.steps(15, T0 + 16_000);
     r.tick(T0 + 16_000);
     r.tick(T0 + 21_000);
     r.tick(T0 + 27_000);
     const s = r.finish(T0 + 27_000)!.samples;
-    expect(s[16]!.cadence).toBe(0);
+    // held for 8 s after the last step (6 s), fading over the next 4 s
+    expect(s[12]!.cadence).toBeGreaterThan(0);
+    expect(s[16]!.cadence).toBeLessThan(s[12]!.cadence!);
     expect(s[21]!.cadence).toBe(0);
-    expect(s[27]!.cadence).toBeNull();
+    expect(s[27]!.cadence).toBe(0);
   });
 
   it('does nothing for other sports', () => {

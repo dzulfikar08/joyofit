@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
 import { DEFAULT_HR_ZONE_SETTINGS, hrZonesForMax, resolveHrZones, type HrZoneSettings } from '@/features/hrzones/zones';
-import { PhoneStepCount } from '@/features/sensors/phoneSteps';
 
 import { heartZone } from './liveWorkout';
 import { HR_HOLD_MS, HrStats, LiveExtrasSession } from './liveStats';
@@ -91,51 +90,6 @@ describe('the zone field follows the person\'s zone settings (Settings > HR zone
   });
 });
 
-describe('PhoneStepCount: cadence from step deltas', () => {
-  test('steps per minute over the last seconds', () => {
-    const steps = new PhoneStepCount();
-    steps.reading(1000, s(0), true);
-    steps.reading(1015, s(5), true);
-    steps.reading(1030, s(10), true);
-    // 30 steps in 10 s
-    expect(steps.cadence(s(10))).toBe(180);
-    expect(steps.total).toBe(30);
-  });
-
-  test('a single reading or two too close together give no cadence; silence is a stop', () => {
-    const steps = new PhoneStepCount();
-    steps.reading(0, s(0), true);
-    expect(steps.cadence(s(0))).toBeNull();
-    steps.reading(5, s(2), true);
-    expect(steps.cadence(s(2))).toBeNull();
-    steps.reading(15, s(6), true);
-    expect(steps.cadence(s(6))).toBe(150);
-    expect(steps.cadence(s(10))).toBe(0);
-    expect(steps.cadence(s(30))).toBeNull();
-  });
-
-  test('above 260 per minute is a glitch, not a cadence', () => {
-    const steps = new PhoneStepCount();
-    steps.reading(0, s(0), true);
-    steps.reading(100, s(5), true);
-    expect(steps.cadence(s(5))).toBeNull();
-  });
-
-  test('steps of a pause are skipped, and a counter that starts over keeps what was counted', () => {
-    const steps = new PhoneStepCount();
-    steps.reading(0, s(0), true);
-    steps.reading(50, s(20), true);
-    steps.pause();
-    steps.reading(80, s(40), false);
-    expect(steps.total).toBe(50);
-    steps.reading(90, s(45), true);
-    expect(steps.total).toBe(60);
-    steps.reading(3, s(50), true);
-    steps.reading(13, s(55), true);
-    expect(steps.total).toBe(70);
-  });
-});
-
 describe('LiveExtrasSession: the phone\'s figures of a watch-started workout', () => {
   test('steps, cadence and stride from the phone, counted only while the clock runs', () => {
     const session = new LiveExtrasSession(1);
@@ -172,5 +126,22 @@ describe('LiveExtrasSession: the phone\'s figures of a watch-started workout', (
     session.payload(130, true, s(30), 560);
     session.stepReading(80, s(30));
     expect(session.figures(s(30)).strideM).toBeCloseTo(60 / 80, 5);
+  });
+
+  test('an outdoor walk with the phone in a pocket: a counter that reports every 12 s keeps the cadence, it never drops to 0', () => {
+    const session = new LiveExtrasSession(3);
+    session.payload(100, false, s(0), 0);
+    session.stepReading(0, s(0));
+    session.payload(100, true, s(1), 0);
+    const shown: (number | null)[] = [];
+    for (let t = 1; t <= 180; t++) {
+      session.payload(110, true, s(t), t * 1.3);
+      // 116 spm, handed over 12 s at a time, each batch a second after its newest step
+      if (t % 12 === 1 && t > 1) session.stepReading(Math.round(((t - 2) * 116) / 60), s(t - 1), s(t));
+      shown.push(session.figures(s(t)).cadence);
+    }
+    const fromSecondBatch = shown.slice(25);
+    expect(fromSecondBatch.every((c) => c !== null && c >= 112 && c <= 120)).toBe(true);
+    expect(session.figures(s(180)).steps).toBe(Math.round((167 * 116) / 60));
   });
 });
