@@ -1130,6 +1130,30 @@ the lab switch on and bit 201 set.
 
 Every frame both ways is logged as `Mapkit: tx|rx <type> <name>: <tags>` (`MapkitWire.describe`; containers `87 88 90 91` expanded, ASCII values quoted). Map ids are u64 and travel to JS as decimal strings.
 
+### (f) Watch navigation: JoyoFit (`com.joyodigitama.joyofit`) ↔ our own watch app `com.joyodigitama.navi` — LAB, off by default
+
+Turn-by-turn on the watch with JoyoFit's own lite-wearable app (Wear Engine P2P, not a Huawei system app). The phone works out every instruction (`src/features/watchnav/`,
+docs/watch-nav.md); the watch app only shows and vibrates. Messages are P2P data (`34/01` cmd 2): source package `com.joyodigitama.joyofit` with the phone app's
+signing-certificate fingerprint (tag `05`), destination `com.joyodigitama.navi` with the watch app's fingerprint (tag `06`), payload = one UTF-8 JSON object of at most 1000 bytes
+(**schema: `protocol/watch-nav.schema.json`**). Pings (cmd 1) carry no fingerprints, in both directions: the phone answers the watch app's ping with cmd 3 code `0xca` (present), every data
+message with `0xcf`. Code: `WatchNavService.kt` / `WatchNavService.swift` (registered only while a navigation session runs and the lab switch is on), `watchNavMessages.ts` (encoding).
+
+| Direction | `t` | Fields | When |
+|---|---|---|---|
+| phone → watch | `start` | `dest`, `totalM`, `etaS` | session start; answer to `hello` and `resume` |
+| phone → watch | `turn` | `dir`, `distM`, `street`, `exit?`, `next?{dir, street}` | the instruction changed; crossing 200 m and 50 m; after `start` |
+| phone → watch | `prog` | `distM`, `remM`, `etaS` | at most every 5 s, sooner on a 10% change of `distM` |
+| phone → watch | `off` / `reroute` | — | > 40 m off the route for 10 s / a new line from OSRM follows |
+| phone → watch | `arrive` / `end` | — / `why` (`arrived`, `stopped`, `error`) | destination reached / session over |
+| phone → watch | `hb` | — | 30 s after the last message |
+| watch → phone | `hello` | `app` (version) | watch app opened |
+| watch → phone | `pause` / `resume` / `stop` | — | the wearer's buttons |
+
+Envelope `{"v":1,"t":…,"n":…}`; `n` counts per sender from 1 (the phone restarts it per session). `dir` ∈ `depart straight slight_left left sharp_left slight_right right sharp_right
+uturn roundabout arrive`. The watch vibrates once when `distM` first drops to ≤ 200 and again at ≤ 50. **Fingerprints are placeholders** until the Huawei developer account exists (JRG-440): the phone
+app's comes from the certificate that signs the store build (SHA-256, as AppGallery Connect lists it), the watch app's from its AppGallery Connect project; both live in `watchNavConfig.ts` and
+are passed to the native service at session start. UNVERIFIED on any watch.
+
 ### Device test steps
 
 1. Connect, tap **Sync now** and read `adb logcat -d -s JoyoFit:V | grep -E "P2P|Health metric|Healthy Living|Courses"`. Expected: `P2P: SupportedCommands 34/01=true; registering P2P services`, `P2P dictionary sync: ping answered 0xca`,

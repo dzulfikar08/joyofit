@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joyofit.app/protocol/watch-nav.schema.json",
+  "title": "JoyoFit watch navigation message (version 1)",
+  "description": "One message between JoyoFit (phone, package com.joyodigitama.joyofit) and the JoyoFit Navi watch app (bundle com.joyodigitama.navi) over Wear Engine P2P: link service 0x34, command 0x01, P2P cmd 2 (data), payload = this object as UTF-8 JSON, at most 1000 bytes, one object per message, no trailing newline. The P2P layer acknowledges every data message with cmd 3 code 0xcf; nothing in the JSON is an acknowledgement. See protocol/README.md, 'P2P (f) Watch navigation'. Distances are whole metres, times whole seconds. Unknown fields must be ignored by the receiver; an unknown `t` must be ignored (logged), never answered.",
+  "type": "object",
+  "required": ["v", "t", "n"],
+  "properties": {
+    "v": { "const": 1, "description": "Protocol version. A receiver drops a message whose `v` it does not know." },
+    "t": {
+      "enum": ["start", "turn", "prog", "off", "reroute", "arrive", "end", "hb", "hello", "pause", "resume", "stop"],
+      "description": "Message type. Phone -> watch: start, turn, prog, off, reroute, arrive, end, hb. Watch -> phone: hello, pause, resume, stop."
+    },
+    "n": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647,
+      "description": "Sequence number of the sender, one counter per direction: 1 for the first message of a navigation session (phone) or of an app launch (watch), +1 per message, after 2147483647 back to 1. A receiver ignores a message whose `n` equals the previous one it took from that sender (a P2P retry)."
+    }
+  },
+  "oneOf": [
+    { "$ref": "#/$defs/start" },
+    { "$ref": "#/$defs/turn" },
+    { "$ref": "#/$defs/prog" },
+    { "$ref": "#/$defs/empty", "properties": { "t": { "const": "off" } } },
+    { "$ref": "#/$defs/empty", "properties": { "t": { "const": "reroute" } } },
+    { "$ref": "#/$defs/empty", "properties": { "t": { "const": "arrive" } } },
+    { "$ref": "#/$defs/end" },
+    { "$ref": "#/$defs/empty", "properties": { "t": { "const": "hb" } } },
+    { "$ref": "#/$defs/hello" },
+    { "$ref": "#/$defs/empty", "properties": { "t": { "const": "pause" } } },
+    { "$ref": "#/$defs/empty", "properties": { "t": { "const": "resume" } } },
+    { "$ref": "#/$defs/empty", "properties": { "t": { "const": "stop" } } }
+  ],
+  "$defs": {
+    "metres": { "type": "integer", "minimum": 0, "maximum": 10000000 },
+    "seconds": { "type": "integer", "minimum": 0, "maximum": 8640000 },
+    "street": {
+      "type": "string",
+      "maxLength": 48,
+      "description": "Street or path name from OpenStreetMap via OSRM, cut to 48 characters by the phone; empty when the way has no name or the turn was derived from the route's shape."
+    },
+    "dir": {
+      "enum": ["depart", "straight", "slight_left", "left", "sharp_left", "slight_right", "right", "sharp_right", "uturn", "roundabout", "arrive"],
+      "description": "Maneuver. `depart` = the first instruction (head off along the route), `arrive` = the destination is the next point, `roundabout` comes with `exit`."
+    },
+    "empty": {
+      "description": "A message with no fields besides the envelope.",
+      "properties": { "v": true, "t": true, "n": true },
+      "additionalProperties": false
+    },
+    "start": {
+      "description": "Phone -> watch, first message of a session and the answer to `hello` and to `resume`. The watch shows the navigation screen.",
+      "required": ["dest", "totalM", "etaS"],
+      "properties": {
+        "t": { "const": "start" },
+        "dest": { "type": "string", "maxLength": 48, "description": "Name of the route (or the destination), cut to 48 characters." },
+        "totalM": { "$ref": "#/$defs/metres", "description": "Length of the route still to go when the message was sent." },
+        "etaS": { "$ref": "#/$defs/seconds", "description": "Seconds to the destination: from the recent speed, before any speed from the route's activity default (walk 1.4 m/s, run 2.8 m/s, ride 5 m/s)." }
+      }
+    },
+    "turn": {
+      "description": "Phone -> watch, the instruction the wearer acts on next. Sent when the instruction changes (a turn was passed, a reroute), on `hello`/`resume`, and when the distance crosses 200 m and 50 m (the watch vibrates once at <= 200 and at <= 50).",
+      "required": ["dir", "distM", "street"],
+      "properties": {
+        "t": { "const": "turn" },
+        "dir": { "$ref": "#/$defs/dir" },
+        "distM": { "$ref": "#/$defs/metres", "description": "Metres along the route from the wearer to the maneuver." },
+        "street": { "$ref": "#/$defs/street", "description": "The street the maneuver leads onto." },
+        "exit": { "type": "integer", "minimum": 1, "maximum": 12, "description": "Roundabout exit to take; only with dir `roundabout`, and only when OSRM gave it." },
+        "next": {
+          "type": "object",
+          "description": "The instruction after this one, only when it follows within 150 m (a quick double turn).",
+          "required": ["dir", "street"],
+          "properties": { "dir": { "$ref": "#/$defs/dir" }, "street": { "$ref": "#/$defs/street" } },
+          "additionalProperties": false
+        }
+      }
+    },
+    "prog": {
+      "description": "Phone -> watch, progress: at most every 5 s, sooner when the distance to the turn changed by 10% or more since the last `prog`.",
+      "required": ["distM", "remM", "etaS"],
+      "properties": {
+        "t": { "const": "prog" },
+        "distM": { "$ref": "#/$defs/metres", "description": "Metres to the current `turn`." },
+        "remM": { "$ref": "#/$defs/metres", "description": "Metres to the destination along the route." },
+        "etaS": { "$ref": "#/$defs/seconds" }
+      }
+    },
+    "end": {
+      "description": "Phone -> watch, the session is over; the phone stops sending. `arrived` after `arrive`, `stopped` when the user (phone or watch `stop`) ended it, `error` when the phone could not go on (location lost for good, route unusable).",
+      "required": ["why"],
+      "properties": {
+        "t": { "const": "end" },
+        "why": { "enum": ["arrived", "stopped", "error"] }
+      }
+    },
+    "hello": {
+      "description": "Watch -> phone when the watch app opens. A navigating phone answers with `start`, the current `turn` and a `prog`; a phone that is not navigating does not answer (the P2P layer still acknowledges with 0xcf).",
+      "required": ["app"],
+      "properties": {
+        "t": { "const": "hello" },
+        "app": { "type": "string", "maxLength": 24, "description": "Watch app version name, e.g. `1.0.0`." }
+      }
+    }
+  },
+  "x-joyofit": {
+    "maxBytes": 1000,
+    "heartbeatS": 30,
+    "watchLostAfterS": 75,
+    "phonePackage": "com.joyodigitama.joyofit",
+    "watchBundle": "com.joyodigitama.navi",
+    "pauseResume": "`pause` stops `turn`/`prog`/`off` from the phone (`hb` goes on every 30 s, the engine keeps tracking); `resume` makes the phone send `start`, the current `turn` and a `prog` again. `stop` ends the session: the phone answers `end {why:\"stopped\"}`.",
+    "offRoute": "`off` once when the wearer has been more than 40 m from the route for 10 s; then `reroute` when the phone asks OSRM for a new line (only with network), followed by a fresh `turn`. Back on the route without a reroute: a fresh `turn`."
+  }
+}
