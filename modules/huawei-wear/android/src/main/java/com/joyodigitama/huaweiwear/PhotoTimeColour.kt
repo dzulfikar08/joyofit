@@ -3,16 +3,18 @@
 // order (no pow outside the 256-entry table, whose entries are at least 0.0016 away from a rounding edge), so they pick the same colour.
 //
 // The rule:
-// 1. The area is the time rect cut to the photo, or the whole photo when nothing of it is left.
-// 2. Its mean colour in linear-light sRGB: fully transparent pixels are skipped, a semi-transparent one counts as composited over black.
-//    Linear light because that is how the eye mixes a busy area seen from arm's length; averaging the gamma-encoded values makes a
-//    70 % black / 30 % white area look much darker than it is.
-// 3. Its WCAG 2 relative luminance L, and four candidates: white #FFFFFF, near-black #111111 (softer than pure black on an OLED face,
-//    still above 18:1 on white), and two that keep the area's hue: a light tint HSV(H, 0.25, 0.95) and a dark shade HSV(H, 0.60, 0.25).
-//    The tint and shade constants are our own choice: pale and deep enough to stay readable, saturated enough that the hue shows.
-// 4. The winner is the candidate with the highest WCAG contrast ratio against L, except that a hue-keeping candidate whose contrast is
-//    at least 4.5 (WCAG AA for text) and within 1.0 of the best is preferred: a colour that matches the photo beats a slightly harder
-//    black or white. A grey area (HSV saturation of its mean below 0.08) has no hue worth keeping and gets only white or near-black.
+// 1. The area is the time rect cut to the photo, or the whole photo when nothing of it is left. It is sampled on a grid of at most 4096
+//    pixels (every s-th column and row from the area's corner, s as small as allows). Fully transparent pixels are skipped; a
+//    semi-transparent one counts as composited over black. Each sample's WCAG 2 relative luminance is taken in linear-light sRGB.
+// 2. Four candidates: white #FFFFFF, near-black #111111 (softer than pure black on an OLED face, still above 18:1 on white), and two that
+//    keep the hue of the samples' linear mean: a light tint HSV(H, 0.25, 0.95) and a dark shade HSV(H, 0.60, 0.25). A grey area (HSV
+//    saturation of that mean below 0.08) has no hue worth keeping and gets only white and near-black.
+// 3. A candidate's score is its 20th-percentile WCAG contrast ratio over the samples: the contrast it reaches on at least 80 % of the area.
+//    Scoring against the mean instead lets a few bright highlights lift a mostly dark area into "light", so near-black digits end up on
+//    dark ground; the percentile follows what most of the area looks like.
+// 4. The best score wins, white on a tie (light digits read best on photos). A hue-keeping candidate whose score is at least 3.0 and within
+//    0.5 of the best is preferred: a colour that matches the photo beats a slightly harder black or white. An area with no visible pixel
+//    gets white.
 package com.joyodigitama.huaweiwear
 
 import kotlin.math.abs
@@ -36,35 +38,35 @@ internal object PhotoTimeColour {
       x1 = width
       y1 = height
     }
-    var n = 0L
+    val stride = gridStep(x1 - x0, y1 - y0)
+    val luminances = DoubleArray(MAX_SAMPLES)
+    var n = 0
     var sumR = 0L
     var sumG = 0L
     var sumB = 0L
-    for (y in y0 until y1) {
-      for (x in x0 until x1) {
+    for (y in y0 until y1 step stride) {
+      for (x in x0 until x1 step stride) {
         val p = argb[y * width + x]
         val a = p ushr 24
         if (a == 0) continue
-        n++
-        sumR += LINEAR[(p shr 16) and 0xFF].toLong() * a
-        sumG += LINEAR[(p shr 8) and 0xFF].toLong() * a
-        sumB += LINEAR[p and 0xFF].toLong() * a
+        val r = (LINEAR[(p shr 16) and 0xFF] * a + 127) / 255
+        val g = (LINEAR[(p shr 8) and 0xFF] * a + 127) / 255
+        val b = (LINEAR[p and 0xFF] * a + 127) / 255
+        sumR += r
+        sumG += g
+        sumB += b
+        luminances[n++] = luminance(r, g, b)
       }
     }
-    // Mean linear channels (0..65535), rounded; an area with no visible pixel is black.
-    val d = n * 255
-    val r = if (n == 0L) 0 else ((sumR + d / 2) / d).toInt()
-    val g = if (n == 0L) 0 else ((sumG + d / 2) / d).toInt()
-    val b = if (n == 0L) 0 else ((sumB + d / 2) / d).toInt()
-    val area = luminance(r, g, b)
+    if (n == 0) return WHITE
 
     val candidates = ArrayList<Int>(4)
     candidates.add(WHITE)
     candidates.add(NEAR_BLACK)
-    // Hue and saturation of the mean, back in 8-bit sRGB.
-    val r8 = encode(r)
-    val g8 = encode(g)
-    val b8 = encode(b)
+    // Hue and saturation of the samples' linear mean, back in 8-bit sRGB.
+    val r8 = encode(((sumR + n / 2) / n).toInt())
+    val g8 = encode(((sumG + n / 2) / n).toInt())
+    val b8 = encode(((sumB + n / 2) / n).toInt())
     val max = maxOf(r8, g8, b8)
     val delta = max - minOf(r8, g8, b8)
     val grey = max == 0 || delta * 100 < GREY_SATURATION_PERCENT * max
@@ -79,15 +81,28 @@ internal object PhotoTimeColour {
       candidates.add(hsv(hue, SHADE_SATURATION, SHADE_VALUE))
     }
 
-    val contrasts = DoubleArray(candidates.size) { contrast(luminanceOf(candidates[it]), area) }
+    val contrasts = DoubleArray(n)
+    val scores = DoubleArray(candidates.size) { i ->
+      val candidate = luminanceOf(candidates[i])
+      for (k in 0 until n) contrasts[k] = contrast(candidate, luminances[k])
+      contrasts.sort()
+      contrasts[n / 5]
+    }
     var best = 0
-    for (i in 1 until candidates.size) if (contrasts[i] > contrasts[best]) best = i
+    for (i in 1 until candidates.size) if (scores[i] > scores[best]) best = i
     var keep = -1
     for (i in 2 until candidates.size) {
-      val c = contrasts[i]
-      if (c >= MIN_HUE_CONTRAST && c >= contrasts[best] - HUE_PREFERENCE && (keep < 0 || c > contrasts[keep])) keep = i
+      val s = scores[i]
+      if (s >= MIN_HUE_SCORE && s >= scores[best] - HUE_PREFERENCE && (keep < 0 || s > scores[keep])) keep = i
     }
     return candidates[if (keep >= 0) keep else best]
+  }
+
+  /** The smallest grid step that samples at most [MAX_SAMPLES] pixels of a [w] x [h] area. */
+  private fun gridStep(w: Int, h: Int): Int {
+    var s = 1
+    while (((w + s - 1) / s).toLong() * ((h + s - 1) / s) > MAX_SAMPLES) s++
+    return s
   }
 
   /** sRGB channel (0..255) to linear light scaled to 0..65535, rounded. */
@@ -135,6 +150,7 @@ internal object PhotoTimeColour {
 
   private fun byte(channel: Double): Int = floor(channel * 255.0 + 0.5).toInt()
 
+  private const val MAX_SAMPLES = 4096
   private const val OPAQUE = -0x1000000 // 0xFF000000
   private const val WHITE = -0x1 // 0xFFFFFFFF
   private const val NEAR_BLACK = -0xeeeeef // 0xFF111111
@@ -143,6 +159,6 @@ internal object PhotoTimeColour {
   private const val SHADE_SATURATION = 0.60
   private const val SHADE_VALUE = 0.25
   private const val GREY_SATURATION_PERCENT = 8
-  private const val MIN_HUE_CONTRAST = 4.5
-  private const val HUE_PREFERENCE = 1.0
+  private const val MIN_HUE_SCORE = 3.0
+  private const val HUE_PREFERENCE = 0.5
 }

@@ -775,14 +775,15 @@ index takes the table's, as a new photo) and its colour (JoyoFit cannot read pho
 `18`…`1b` are never written, as in Huawei Health.
 
 **JoyoFit's time colour** (`PhotoTimeColour.kt` / `.swift`; JoyoFit's own rule; not derived from Huawei code): the time area cut to the photo,
-or the whole photo when nothing of it is left. Its mean colour in linear-light sRGB (fully transparent pixels skipped, semi-transparent ones
-composited over black), because the eye mixes a busy area in linear light and a gamma-space mean makes it look darker than it is. Against that
-mean's WCAG 2 relative luminance, four candidates: white `#FFFFFF`, near-black `#111111` (softer than pure black, still above 18:1 on white),
-and two that keep the area's hue, a light tint HSV(H, 0.25, 0.95) and a dark shade HSV(H, 0.60, 0.25) (our own constants: readable, with the
-hue still visible). The highest WCAG contrast ratio wins, except that a hue-keeping candidate with a contrast of at least 4.5 (WCAG AA) and
-within 1.0 of the best is preferred, so the digits match the photo when that costs little readability. A grey area (saturation of the mean
-below 0.08) gets only white or near-black. The same integer and double arithmetic on both platforms (sRGB to linear through a 256-entry
-table), so they pick the same colour; tests on synthetic pictures.
+or the whole photo when nothing of it is left, sampled on a grid of at most 4096 pixels (fully transparent pixels skipped, semi-transparent
+ones composited over black), each sample's WCAG 2 relative luminance in linear-light sRGB. Four candidates: white `#FFFFFF`, near-black
+`#111111` (softer than pure black, still above 18:1 on white), and two that keep the hue of the samples' mean, a light tint HSV(H, 0.25, 0.95)
+and a dark shade HSV(H, 0.60, 0.25). Each is scored by its 20th-percentile WCAG contrast over the samples, the contrast it reaches on 80 % of
+the area: scoring against the area's mean let a few bright highlights make a mostly dark photo count as light, and near-black digits came out
+on dark ground on the Fit 4 Pro (2026-10-26). The best score wins, white on a tie (light digits read best on photos); a hue-keeping candidate
+with a score of at least 3.0 and within 0.5 of the best is preferred. A grey area (saturation of the mean below 0.08) gets only white or
+near-black. The same integer and double arithmetic on both platforms (sRGB to linear through a 256-entry table), so they pick the same colour;
+tests on synthetic pictures. The log names the time area it used (`time area for position 1: (68,18,406,182) of <width>x<height>`).
 
 **Device result (2026-10-14 23:10, first upload, before the echo and the apply).** JoyoFit sent `01=01 82{83{04=01 05="1791994229644.png"}} 06=02 07=01
 09=00`; the watch answered `08=01`, asked for the file, took the 585551-byte RGB24 `.bin` and reported `27/05` type 4 with 0 failed. It then

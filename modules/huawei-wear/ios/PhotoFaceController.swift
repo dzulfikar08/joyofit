@@ -192,6 +192,8 @@ public final class PhotoFaceController: @unchecked Sendable {
         var colours = [String: String]()
         if state.screen.aestheticAlbumColour == 1 {
             let rect = config.positionRects[config.timePosition]
+            let area = rect.map { "(" + $0.map(String.init).joined(separator: ",") + ")" } ?? "none"
+            events.info("Photo face: time area for position \(config.timePosition): \(area) of \(state.width)x\(state.height)")
             for (name, pixels) in newPixels {
                 if let r = rect, let picked = PhotoTimeColour.pick(pixels, width: state.width, height: state.height, left: r[0], top: r[1], right: r[2], bottom: r[3]) {
                     colours[name] = PhotoFaceCodec.smartColour(picked)

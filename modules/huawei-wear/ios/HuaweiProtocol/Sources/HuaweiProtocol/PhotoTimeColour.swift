@@ -3,19 +3,22 @@
 // (no pow outside the 256-entry table, whose entries are at least 0.0016 away from a rounding edge), so they pick the same colour.
 //
 // The rule:
-// 1. The area is the time rect cut to the photo, or the whole photo when nothing of it is left.
-// 2. Its mean colour in linear-light sRGB: fully transparent pixels are skipped, a semi-transparent one counts as composited over black.
-//    Linear light because that is how the eye mixes a busy area seen from arm's length; averaging the gamma-encoded values makes a
-//    70 % black / 30 % white area look much darker than it is.
-// 3. Its WCAG 2 relative luminance L, and four candidates: white #FFFFFF, near-black #111111 (softer than pure black on an OLED face, still
-//    above 18:1 on white), and two that keep the area's hue: a light tint HSV(H, 0.25, 0.95) and a dark shade HSV(H, 0.60, 0.25). The tint
-//    and shade constants are our own choice: pale and deep enough to stay readable, saturated enough that the hue shows.
-// 4. The winner is the candidate with the highest WCAG contrast ratio against L, except that a hue-keeping candidate whose contrast is at
-//    least 4.5 (WCAG AA for text) and within 1.0 of the best is preferred: a colour that matches the photo beats a slightly harder black or
-//    white. A grey area (HSV saturation of its mean below 0.08) has no hue worth keeping and gets only white or near-black.
+// 1. The area is the time rect cut to the photo, or the whole photo when nothing of it is left. It is sampled on a grid of at most 4096 pixels
+//    (every s-th column and row from the area's corner, s as small as allows). Fully transparent pixels are skipped; a semi-transparent one
+//    counts as composited over black. Each sample's WCAG 2 relative luminance is taken in linear-light sRGB.
+// 2. Four candidates: white #FFFFFF, near-black #111111 (softer than pure black on an OLED face, still above 18:1 on white), and two that keep
+//    the hue of the samples' linear mean: a light tint HSV(H, 0.25, 0.95) and a dark shade HSV(H, 0.60, 0.25). A grey area (HSV saturation
+//    of that mean below 0.08) has no hue worth keeping and gets only white and near-black.
+// 3. A candidate's score is its 20th-percentile WCAG contrast ratio over the samples: the contrast it reaches on at least 80 % of the area.
+//    Scoring against the mean instead lets a few bright highlights lift a mostly dark area into "light", so near-black digits end up on dark
+//    ground; the percentile follows what most of the area looks like.
+// 4. The best score wins, white on a tie (light digits read best on photos). A hue-keeping candidate whose score is at least 3.0 and within
+//    0.5 of the best is preferred: a colour that matches the photo beats a slightly harder black or white. An area with no visible pixel gets
+//    white.
 import Foundation
 
 public enum PhotoTimeColour {
+    private static let maxSamples = 4096
     private static let white: UInt32 = 0xFFFF_FFFF
     private static let nearBlack: UInt32 = 0xFF11_1111
     private static let tintSaturation = 0.25
@@ -23,8 +26,8 @@ public enum PhotoTimeColour {
     private static let shadeSaturation = 0.60
     private static let shadeValue = 0.25
     private static let greySaturationPercent = 8
-    private static let minHueContrast = 4.5
-    private static let huePreference = 1.0
+    private static let minHueScore = 3.0
+    private static let huePreference = 0.5
 
     /// The time colour (0xFFRRGGBB) for the rect (left, top, right, bottom) of `argb` (0xAARRGGBB, row by row); the whole photo when the rect
     /// has nothing inside it. Nil only for an empty photo or pixels that do not match the size.
@@ -35,28 +38,30 @@ public enum PhotoTimeColour {
         if x1 <= x0 || y1 <= y0 {
             (x0, y0, x1, y1) = (0, 0, width, height)
         }
-        var n = 0, sumR = 0, sumG = 0, sumB = 0
-        for y in y0..<y1 {
-            for x in x0..<x1 {
+        let step = gridStep(x1 - x0, y1 - y0)
+        var luminances = [Double]()
+        luminances.reserveCapacity(maxSamples)
+        var sumR = 0, sumG = 0, sumB = 0
+        for y in stride(from: y0, to: y1, by: step) {
+            for x in stride(from: x0, to: x1, by: step) {
                 let p = argb[y * width + x]
                 let a = Int(p >> 24)
                 if a == 0 { continue }
-                n += 1
-                sumR += linear[Int((p >> 16) & 0xFF)] * a
-                sumG += linear[Int((p >> 8) & 0xFF)] * a
-                sumB += linear[Int(p & 0xFF)] * a
+                let r = (linear[Int((p >> 16) & 0xFF)] * a + 127) / 255
+                let g = (linear[Int((p >> 8) & 0xFF)] * a + 127) / 255
+                let b = (linear[Int(p & 0xFF)] * a + 127) / 255
+                sumR += r
+                sumG += g
+                sumB += b
+                luminances.append(luminance(r, g, b))
             }
         }
-        // Mean linear channels (0...65535), rounded; an area with no visible pixel is black.
-        let d = n * 255
-        let r = n == 0 ? 0 : (sumR + d / 2) / d
-        let g = n == 0 ? 0 : (sumG + d / 2) / d
-        let b = n == 0 ? 0 : (sumB + d / 2) / d
-        let area = luminance(r, g, b)
+        let n = luminances.count
+        if n == 0 { return white }
 
         var candidates: [UInt32] = [white, nearBlack]
-        // Hue and saturation of the mean, back in 8-bit sRGB.
-        let r8 = encode(r), g8 = encode(g), b8 = encode(b)
+        // Hue and saturation of the samples' linear mean, back in 8-bit sRGB.
+        let r8 = encode((sumR + n / 2) / n), g8 = encode((sumG + n / 2) / n), b8 = encode((sumB + n / 2) / n)
         let maxC = max(r8, g8, b8)
         let delta = maxC - min(r8, g8, b8)
         let grey = maxC == 0 || delta * 100 < greySaturationPercent * maxC
@@ -74,15 +79,28 @@ public enum PhotoTimeColour {
             candidates.append(hsv(hue, shadeSaturation, shadeValue))
         }
 
-        let contrasts = candidates.map { contrast(luminance(of: $0), area) }
+        var contrasts = [Double](repeating: 0, count: n)
+        let scores: [Double] = candidates.map { c in
+            let candidate = luminance(of: c)
+            for k in 0..<n { contrasts[k] = contrast(candidate, luminances[k]) }
+            contrasts.sort()
+            return contrasts[n / 5]
+        }
         var best = 0
-        for i in 1..<candidates.count where contrasts[i] > contrasts[best] { best = i }
+        for i in 1..<candidates.count where scores[i] > scores[best] { best = i }
         var keep = -1
         for i in stride(from: 2, to: candidates.count, by: 1) {
-            let c = contrasts[i]
-            if c >= minHueContrast && c >= contrasts[best] - huePreference && (keep < 0 || c > contrasts[keep]) { keep = i }
+            let s = scores[i]
+            if s >= minHueScore && s >= scores[best] - huePreference && (keep < 0 || s > scores[keep]) { keep = i }
         }
         return candidates[keep >= 0 ? keep : best]
+    }
+
+    /// The smallest grid step that samples at most `maxSamples` pixels of a `w` x `h` area.
+    private static func gridStep(_ w: Int, _ h: Int) -> Int {
+        var s = 1
+        while ((w + s - 1) / s) * ((h + s - 1) / s) > maxSamples { s += 1 }
+        return s
     }
 
     /// sRGB channel (0...255) to linear light scaled to 0...65535, rounded.

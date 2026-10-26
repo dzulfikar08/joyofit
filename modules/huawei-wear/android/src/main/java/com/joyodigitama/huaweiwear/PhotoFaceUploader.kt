@@ -341,6 +341,7 @@ internal class PhotoFaceController(
     val colours = HashMap<String, String>()
     if (state.screen.aestheticAlbumColour == 1) {
       val rect = config.positionRects[config.timePosition]
+      log("time area for position ${config.timePosition}: ${rect?.joinToString(",", "(", ")") ?: "none"} of ${state.width}x${state.height}")
       for ((name, pixels) in newPixels) {
         val picked = rect?.let {
           withContext(Dispatchers.Default) { PhotoTimeColour.pick(pixels, state.width, state.height, it[0], it[1], it[2], it[3]) }
