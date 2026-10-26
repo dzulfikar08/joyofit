@@ -130,4 +130,87 @@ class LiveWorkoutPolicyTest {
     assertFalse(LiveWorkoutPolicy.watchFedEnds(preparing = true, idleAnswers = 9, msSinceFrame = 120_000L))
     assertTrue(LiveWorkoutPolicy.watchFedEnds(preparing = true, idleAnswers = 9, msSinceFrame = 301_000L))
   }
+
+  @Test
+  fun statusPhasesAsTheFit4ProAnswered() {
+    // 2026-10-25 17:43, Outdoor walk on a Fit 4 Pro 6.1.0.117: GO at once, pause, resume after 20 s, finish (owner's times;
+    // `Workout link: workout status {tag: 81 - Value: ...}`).
+    assertEquals(WatchPhase.OPEN, WatchPhase.of(trainMonitorState = 0, operator = 1)) // 020100030101 17:43:44, pre-start screen
+    assertEquals(WatchPhase.RUNNING, WatchPhase.of(trainMonitorState = 1, operator = 3)) // 020101030103 17:43:50, GO
+    assertEquals(WatchPhase.PAUSED, WatchPhase.of(trainMonitorState = 1, operator = 4)) // 020101030104 17:44:50, pause
+    assertEquals(WatchPhase.RUNNING, WatchPhase.of(trainMonitorState = 1, operator = 5)) // 020101030105 17:45:10, resume
+    assertEquals(WatchPhase.IDLE, WatchPhase.of(trainMonitorState = 0, operator = 0)) // 020100030100 17:45:40, after the finish
+    // Not seen, read safely: a pause in the 17/02 numbering, an answer without an operator.
+    assertEquals(WatchPhase.PAUSED, WatchPhase.of(trainMonitorState = 1, operator = 2))
+    assertEquals(WatchPhase.OPEN, WatchPhase.of(trainMonitorState = 1, operator = 1))
+    assertEquals(WatchPhase.IDLE, WatchPhase.of(trainMonitorState = 1, operator = 0))
+    assertEquals(WatchPhase.IDLE, WatchPhase.of(trainMonitorState = 0, operator = null))
+    // A watch that sends no tag 02: the 17/02 operators, as before.
+    assertEquals(WatchPhase.RUNNING, WatchPhase.of(trainMonitorState = null, operator = 1))
+    assertEquals(WatchPhase.RUNNING, WatchPhase.of(trainMonitorState = null, operator = 3))
+    assertEquals(WatchPhase.PAUSED, WatchPhase.of(trainMonitorState = null, operator = 2))
+    assertEquals(WatchPhase.IDLE, WatchPhase.of(trainMonitorState = null, operator = 4))
+    assertEquals(WatchPhase.IDLE, WatchPhase.of(trainMonitorState = null, operator = null))
+  }
+
+  /** The phone-side session states a run of status answers leads to, from a session the GPS request opened (preparing). */
+  private fun follow(vararg phases: WatchPhase): List<LiveWorkout.Status> {
+    var status = LiveWorkout.Status.PREPARING
+    return phases.map { phase ->
+      LiveWorkoutPolicy.statusTarget(status, phase)?.let { status = it }
+      status
+    }
+  }
+
+  @Test
+  fun theGoScreenDoesNotStartTheClockGoDoes() {
+    val s = LiveWorkout.Status.PREPARING
+    val r = LiveWorkout.Status.RUNNING
+    val p = LiveWorkout.Status.PAUSED
+    // The 17:43 probe, polled: pre-start screen, GO, running, pause, resume (05). Before this change the first OPEN answer started
+    // the clock, and the pause (04) and resume (05) counted as "no workout": the session ended 20 s into the pause.
+    assertEquals(
+      listOf(s, r, r, p, p, r),
+      follow(WatchPhase.OPEN, WatchPhase.RUNNING, WatchPhase.RUNNING, WatchPhase.PAUSED, WatchPhase.PAUSED, WatchPhase.RUNNING),
+    )
+    // A watch that stops counting but keeps its workout screen open (a pause told only by tag 02) pauses the phone too.
+    assertEquals(listOf(r, p, r), follow(WatchPhase.RUNNING, WatchPhase.OPEN, WatchPhase.RUNNING))
+    // Idle answers move nothing here: the end is idleVerdict's.
+    assertNull(LiveWorkoutPolicy.statusTarget(LiveWorkout.Status.RUNNING, WatchPhase.IDLE))
+  }
+
+  @Test
+  fun aClosedWorkoutScreenEndsOnTheFirstIdleAnswer() {
+    // Finish on the Fit 4 Pro: 18/08 {01: 0} at 17:45:33, then 17/03 idle at 17:45:40. One answer is enough.
+    assertEquals(Verdict.END, LiveWorkoutPolicy.idleVerdict(preparing = false, confirmed = true, idleAnswers = 1, msSinceGps = 5_000L, screenClosed = true))
+    // The person left the GO screen without starting: ends too, even with a GPS request seconds ago.
+    assertEquals(Verdict.END, LiveWorkoutPolicy.idleVerdict(preparing = true, confirmed = false, idleAnswers = 1, msSinceGps = 1_000L, screenClosed = true))
+    // Without the close, one idle answer is not enough.
+    assertEquals(Verdict.KEEP, LiveWorkoutPolicy.idleVerdict(preparing = false, confirmed = true, idleAnswers = 1, msSinceGps = 5_000L))
+    assertEquals(Verdict.END, LiveWorkoutPolicy.idleVerdict(preparing = false, confirmed = true, idleAnswers = 3, msSinceGps = 5_000L))
+  }
+
+  @Test
+  fun leavingTheGoScreenAndComingBackIsNoStraggler() {
+    // open -> close (18/08 {01: 0}) -> one idle answer ends the preparing session -> open again 20 s later: a new session, so GO is
+    // seen at the 2 s poll and not only at the 30 s idle one.
+    val closed = LiveWorkoutPolicy.idleVerdict(preparing = true, confirmed = false, idleAnswers = 1, msSinceGps = 1_000L, screenClosed = true)
+    assertEquals(Verdict.END, closed)
+    assertTrue(LiveWorkoutPolicy.gpsReopens(msSinceEnd = 20_000L, endedRan = false, screenReopened = false))
+    // Then the status sequence of the new session: GO screen, GO.
+    assertEquals(listOf(LiveWorkout.Status.PREPARING, LiveWorkout.Status.RUNNING), follow(WatchPhase.OPEN, WatchPhase.RUNNING))
+    // A workout that ran and just ended: a late request is a straggler, unless the watch opened its workout screen again.
+    assertFalse(LiveWorkoutPolicy.gpsReopens(msSinceEnd = 20_000L, endedRan = true, screenReopened = false))
+    assertTrue(LiveWorkoutPolicy.gpsReopens(msSinceEnd = 20_000L, endedRan = true, screenReopened = true))
+    assertTrue(LiveWorkoutPolicy.gpsReopens(msSinceEnd = LiveWorkoutPolicy.RESTART_GUARD_MS, endedRan = true, screenReopened = false))
+  }
+
+  @Test
+  fun theStatusIsAskedFastWhileWaitingForGo() {
+    assertEquals(LiveWorkoutPolicy.PREPARING_POLL_MS, LiveWorkoutPolicy.pollEveryMs(LiveWorkout.Status.PREPARING))
+    assertEquals(LiveWorkoutPolicy.LIVE_POLL_MS, LiveWorkoutPolicy.pollEveryMs(LiveWorkout.Status.RUNNING))
+    assertEquals(LiveWorkoutPolicy.LIVE_POLL_MS, LiveWorkoutPolicy.pollEveryMs(LiveWorkout.Status.PAUSED))
+    assertEquals(LiveWorkoutPolicy.IDLE_POLL_MS, LiveWorkoutPolicy.pollEveryMs(LiveWorkout.Status.ENDED))
+    assertEquals(LiveWorkoutPolicy.IDLE_POLL_MS, LiveWorkoutPolicy.pollEveryMs(null))
+  }
 }

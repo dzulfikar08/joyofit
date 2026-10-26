@@ -95,7 +95,7 @@ export type StepCounterPermission = 'granted' | 'denied' | 'undetermined' | 'una
 export interface StepsEvent {
   /** Milliseconds since the epoch of the counter reading itself. */
   ts: number;
-  /** Steps counted since the workout session started (cumulative, it only goes up). The first reading of a session may be 0. */
+  /** Steps counted since the counter started (cumulative, it only goes up; the session's for `onSteps`, `startLiveSteps` for `onLiveSteps`). The first reading may be 0. */
   steps: number;
 }
 
@@ -224,6 +224,8 @@ export type BleSensorsModuleEvents = {
   onLocation: (event: LocationEvent) => void;
   /** Only while a workout session runs with `steps`. */
   onSteps: (event: StepsEvent) => void;
+  /** Only while `startLiveSteps` runs (the live screen of a workout started on the watch). */
+  onLiveSteps: (event: StepsEvent) => void;
   onBluetoothState: (event: { state: BluetoothState }) => void;
   /** Android: a button of the recording notification was pressed (only with `WorkoutSessionOptions.controls`). */
   onWorkoutAction: (event: { action: WorkoutAction }) => void;

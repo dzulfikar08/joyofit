@@ -78,6 +78,14 @@ describe('deriveSportKind', () => {
     expect(deriveSportKind(live({ source: 'gps' }), 'ride')).toEqual({ kind: 'ride', inferred: false });
     expect(deriveSportKind(live({ sportType: 1 }), 'hike')).toEqual({ kind: 'hike', inferred: false });
   });
+
+  test('an unnamed outdoor workout guesses the last pick, still as a guess; a tag or a pick wins over it', () => {
+    // The Fit 4 Pro opened on Outdoor walk sends no sport tag (2026-10-25): the person who picked walk last time sees walk.
+    expect(deriveSportKind(live({ source: 'gps' }), null, 'walk')).toEqual({ kind: 'walk', inferred: true });
+    expect(deriveSportKind(live({ sportType: 1 }), null, 'walk')).toEqual({ kind: 'run', inferred: false });
+    expect(deriveSportKind(live({ source: 'gps' }), 'ride', 'walk')).toEqual({ kind: 'ride', inferred: false });
+    expect(deriveSportKind(live({ source: 'manual' }), null, 'walk')).toEqual({ kind: null, inferred: false });
+  });
 });
 
 describe('isGpsSport (never offer strength for these)', () => {

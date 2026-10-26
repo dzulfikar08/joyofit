@@ -86,17 +86,21 @@ internal object WatchWorkoutWire {
     return tlv.getBytes(0x7F, null)?.let { LiveWorkoutWire.signedWhenFour(it) }
   }
 
-  /** What `17/03` or `17/02` says about the watch's workout. [operator]: 1 start, 2 pause, 3 resume, 4 stop. */
-  class WatchOperator(val operator: Int?, val sportType: Int?, val workoutType: Int?) {
-    val running: Boolean get() = operator == OP_START || operator == OP_RESUME
+  /**
+   * What `17/03` or `17/02` says about the watch's workout. [operator]: 1 start, 2 pause, 3 resume, 4 stop. [trainMonitorState] (`17/03`
+   * tag 02): non-zero while the watch counts a workout; 0 with operator 1 is its GO screen ([WatchPhase]).
+   */
+  class WatchOperator(val operator: Int?, val sportType: Int?, val workoutType: Int?, val trainMonitorState: Int? = null) {
+    val phase: WatchPhase get() = WatchPhase.of(trainMonitorState, operator)
+    val running: Boolean get() = phase == WatchPhase.RUNNING
   }
 
-  /** `17/03` answer (`81{02 state, 03 operator, 04 sport, 06 workout type}`) or `17/02` notice (`81{02 operator, 03 sport, 05 workout type}`). */
+  /** `17/03` answer (`81{02 trainMonitorState, 03 operator, 04 sport, 06 workout type}`) or `17/02` notice (`81{02 operator, 03 sport, 05 workout type}`). */
   fun parseStatus(tlv: HuaweiTLV?): WatchOperator? {
     if (tlv == null || !tlv.contains(0x81)) return null
     val body = tlv.getObject(0x81)
     fun int(tag: Int) = body.getBytes(tag, null)?.let { LiveWorkoutWire.unsigned(it)?.toInt() }
-    return WatchOperator(operator = int(0x03), sportType = int(0x04), workoutType = int(0x06) ?: int(0x04))
+    return WatchOperator(operator = int(0x03), sportType = int(0x04), workoutType = int(0x06) ?: int(0x04), trainMonitorState = int(0x02))
   }
 
   fun parseNotice(tlv: HuaweiTLV?): WatchOperator? {
@@ -344,7 +348,10 @@ internal class WatchWorkoutControl(
     }
   }
 
-  /** `17/03` once, a moment after a start: true when the watch reports a running workout, false when it reports none, null without an answer. */
+  /**
+   * `17/03` once, a moment after a start: true when the watch reports its workout open (its GO screen, [WatchPhase.OPEN]) or running,
+   * false when it reports none, null without an answer.
+   */
   private suspend fun verifyRunning(): Boolean? {
     delay(VERIFY_DELAY_MS)
     val handle = link.handle() ?: return null
@@ -352,7 +359,7 @@ internal class WatchWorkoutControl(
       val answer = handle.session.request(WatchWorkoutWire.statusRequest(handle.session.params), REQUEST_MS, "workout status after start")
       val tlv = answer.getTlv()
       log("Watch workout: status after the start ${WatchWorkoutWire.plain(tlv)}")
-      WatchWorkoutWire.parseStatus(tlv)?.running ?: false
+      (WatchWorkoutWire.parseStatus(tlv)?.phase ?: WatchPhase.IDLE) != WatchPhase.IDLE
     } catch (e: CancellationException) {
       throw e
     } catch (e: Exception) {

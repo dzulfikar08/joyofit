@@ -288,6 +288,8 @@ public enum WorkoutLinkWire {
     public static let gpsParameters: UInt8 = 0x01
     public static let gpsStatus: UInt8 = 0x02
     public static let gpsData: UInt8 = 0x03
+    /// `18/08`: the watch's workout screen opened or closed (Huawei Health's activity-recognition switch).
+    public static let workoutScreen: UInt8 = 0x08
     public static let workoutService: UInt8 = 0x17
     public static let status: UInt8 = 0x03
     public static let reportData: UInt8 = 0x11
@@ -364,6 +366,14 @@ public enum WorkoutLinkWire {
         return HuaweiPacket(serviceId: gpsService, commandId: gpsStatus, tlv: tlv)
     }
 
+    /// `18/08 {7F: 100000}`: the answer to the watch's workout screen opening or closing (Huawei Health
+    /// `HwActivityRecognitionManager.notifyDeviceReceiveSuccess`).
+    public static func workoutScreenAnswer() -> HuaweiPacket {
+        var tlv = HuaweiTLV()
+        tlv.put(0x7F, int: ok)
+        return HuaweiPacket(serviceId: gpsService, commandId: workoutScreen, tlv: tlv)
+    }
+
     /// `18/01 {81}`: which GPS fields the watch wants.
     public static func gpsParametersRequest() -> HuaweiPacket {
         var tlv = HuaweiTLV()
@@ -371,10 +381,16 @@ public enum WorkoutLinkWire {
         return HuaweiPacket(serviceId: gpsService, commandId: gpsParameters, tlv: tlv)
     }
 
-    /// The bitmap of the `18/01` answer (`81{02: bitmap}`), nil when it is missing.
+    /// The bitmap of the `18/01` answer (`81{02: bitmap}`), nil when it is missing (Kotlin `WorkoutLink.gpsBitmap`).
     public static func parseGpsParams(_ tlv: HuaweiTLV?) -> GpsParams? {
-        guard let sub = try? tlv?.object(0x81), let first = sub.bytes(0x02, default: nil)?.first else { return nil }
-        return GpsParams(bitmap: Int(first))
+        gpsBitmap(tlv).map { GpsParams(bitmap: $0) }
+    }
+
+    /// All bytes of the `18/01` bitmap, big-endian (Huawei Health reads an int). The Fit 4 Pro sends two, `01 DF` (2026-10-25): its first
+    /// byte alone (GB's `getByte`) is 0x01, speed only, and the watch never got the position, altitude, bearing and accuracy it asks for.
+    public static func gpsBitmap(_ tlv: HuaweiTLV?) -> Int? {
+        guard let sub = try? tlv?.object(0x81), let bytes = sub.bytes(0x02, default: nil), !bytes.isEmpty, bytes.count <= 4 else { return nil }
+        return bytes.reduce(0) { ($0 << 8) | Int($1) }
     }
 
     /// Kotlin `Float.toInt()` / `Double.toInt()`: truncates, saturates, NaN is 0.
