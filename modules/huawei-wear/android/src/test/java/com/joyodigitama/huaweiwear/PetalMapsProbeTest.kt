@@ -24,8 +24,8 @@ class PetalMapsProbeTest {
     override fun log(message: String) = Unit
   }
 
-  private class Rig(now: Long = 0L) {
-    var now = now
+  private class Rig(start: Long = 0L) {
+    var now = start
     val transport = FakeTransport()
     val manager = HuaweiP2PManager(transport)
     val logs: MutableList<String> = Collections.synchronizedList(ArrayList())
@@ -146,7 +146,7 @@ class PetalMapsProbeTest {
 
   @Test
   fun framesNothingHandlesAreLoggedOnlyInThe30sAfterAPing() {
-    val rig = Rig(now = 1_000L)
+    val rig = Rig(start = 1_000L)
     rig.probe.register()
     rig.logs.clear()
     rig.probe.onUnhandled(0x27, 0x05, "0101AA".hexToBytes(), ByteArray(20))
