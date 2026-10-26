@@ -1,6 +1,7 @@
 import { useEventListener } from 'expo';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { ButtonRow } from '@/components/ButtonRow';
@@ -12,6 +13,7 @@ import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage, formatDateTime } from '@/format';
 import { fmtInt, fmtNumber } from '@/i18n';
 import { HuaweiWear, hasNative, type OfflineMapLabStatus, type OfflineMapList, type OfflineMapSendResult } from '@/wear';
+import { spacing } from '@/theme';
 
 import { phoneState, watchState, type CatalogMap, type StoredMap } from './catalog';
 import { mapTypeKey, rateKbps, seconds, sendVerdict } from './labText';
@@ -122,6 +124,10 @@ export function OfflineMapLabScreen() {
   const send = (map: CatalogMap) =>
     run(`send:${map.id}`, async () => {
       setResult(null);
+      // The file itself, not the record of the download, decides: a copy that is gone turns the row back to "Unduh".
+      const copy = storedMap(map.id);
+      setStored((s) => ({ ...s, [map.id]: copy }));
+      if (copy === null) throw new Error(t('offlineMapLab.missingFile', { name: map.name }));
       const { uri, name } = localFile(map.id);
       const sent = await HuaweiWear.sendOfflineMap(uri, name);
       setResult({ name: map.name, sent });
@@ -161,57 +167,63 @@ export function OfflineMapLabScreen() {
           const watch = watchState(map, list?.maps ?? null);
           const onWatch = list?.maps.find((m) => m.mapId === map.id && m.mapType === 0);
           return (
-            <PairGrid key={map.id}>
-              <Pair label={t('offlineMapLab.region')} value={map.name} wide />
-              <Pair label={t('offlineMapLab.size')} value={t('offlineMapLab.sizeValue', { mb: mb(map.sizeBytes) })} />
-              <Pair label={t('offlineMapLab.osmDate')} value={map.osmDate ? formatDateTime(Date.parse(map.osmDate) / 1000) : null} />
-              <Pair label={t('offlineMapLab.onPhone')} value={t(`offlineMapLab.phone.${phone}`)} />
-              <Pair label={t('offlineMapLab.onWatch')} value={watch === null ? null : t(`offlineMapLab.watchState.${watch}`)} />
-              {busy === `download:${map.id}` && progress ? (
-                <Pair label={t('offlineMapLab.downloading')} value={t('offlineMapLab.progress', { done: mb(progress.done), total: mb(progress.total) })} wide />
-              ) : null}
-              {busy === `send:${map.id}` ? (
-                <Pair
-                  label={t('offlineMapLab.sending')}
-                  value={progress ? t('offlineMapLab.progress', { done: mb(progress.done), total: mb(progress.total) }) : t('offlineMapLab.preparing')}
-                  wide
+            <View key={map.id} style={styles.map}>
+              <PairGrid>
+                <Pair label={t('offlineMapLab.region')} value={map.name} wide />
+                <Pair label={t('offlineMapLab.size')} value={t('offlineMapLab.sizeValue', { mb: mb(map.sizeBytes) })} />
+                <Pair label={t('offlineMapLab.osmDate')} value={map.osmDate ? formatDateTime(Date.parse(map.osmDate) / 1000) : null} />
+                <Pair label={t('offlineMapLab.onPhone')} value={t(`offlineMapLab.phone.${phone}`)} />
+                <Pair label={t('offlineMapLab.onWatch')} value={watch === null ? null : t(`offlineMapLab.watchState.${watch}`)} />
+                {busy === `download:${map.id}` && progress ? (
+                  <Pair label={t('offlineMapLab.downloading')} value={t('offlineMapLab.progress', { done: mb(progress.done), total: mb(progress.total) })} wide />
+                ) : null}
+                {busy === `send:${map.id}` ? (
+                  <Pair
+                    label={t('offlineMapLab.sending')}
+                    value={progress ? t('offlineMapLab.progress', { done: mb(progress.done), total: mb(progress.total) }) : t('offlineMapLab.preparing')}
+                    wide
+                  />
+                ) : null}
+              </PairGrid>
+              {/* Buttons sit below the grid, never in it: the grid is a wrapping row, where a row of flex:1 buttons gets no width (lab.8). */}
+              {phone === 'current' ? (
+                <Button
+                  label={t('offlineMapLab.send')}
+                  icon="send"
+                  variant="primary"
+                  disabled={!idle || !watchReady}
+                  loading={busy === `send:${map.id}`}
+                  onPress={() => void send(map)}
                 />
+              ) : (
+                <Button
+                  label={t(phone === 'outdated' ? 'offlineMapLab.update' : 'offlineMapLab.download')}
+                  icon="download"
+                  variant="primary"
+                  disabled={!idle}
+                  loading={busy === `download:${map.id}`}
+                  onPress={() => void download(map)}
+                />
+              )}
+              {phone !== 'none' || onWatch ? (
+                <ButtonRow>
+                  {phone !== 'none' ? (
+                    <Button label={t('offlineMapLab.deletePhone')} icon="trash" lines={2} disabled={!idle} onPress={() => removeLocal(map)} />
+                  ) : null}
+                  {onWatch ? (
+                    <Button
+                      label={t('offlineMapLab.deleteWatch')}
+                      icon="trash"
+                      variant="destructive"
+                      lines={2}
+                      disabled={!idle}
+                      loading={busy === `delete:${map.id}`}
+                      onPress={() => void removeFromWatch(onWatch.mapId, onWatch.mapType)}
+                    />
+                  ) : null}
+                </ButtonRow>
               ) : null}
-              <ButtonRow>
-                {phone === 'current' ? (
-                  <Button
-                    label={t('offlineMapLab.send')}
-                    icon="send"
-                    variant="primary"
-                    disabled={!idle || !watchReady}
-                    loading={busy === `send:${map.id}`}
-                    onPress={() => void send(map)}
-                  />
-                ) : (
-                  <Button
-                    label={t(phone === 'outdated' ? 'offlineMapLab.update' : 'offlineMapLab.download')}
-                    icon="download"
-                    variant="primary"
-                    disabled={!idle}
-                    loading={busy === `download:${map.id}`}
-                    onPress={() => void download(map)}
-                  />
-                )}
-                {phone !== 'none' ? (
-                  <Button label={t('offlineMapLab.deletePhone')} icon="trash" disabled={!idle} onPress={() => removeLocal(map)} />
-                ) : null}
-                {onWatch ? (
-                  <Button
-                    label={t('offlineMapLab.deleteWatch')}
-                    icon="trash"
-                    variant="destructive"
-                    disabled={!idle}
-                    loading={busy === `delete:${map.id}`}
-                    onPress={() => void removeFromWatch(onWatch.mapId, onWatch.mapType)}
-                  />
-                ) : null}
-              </ButtonRow>
-            </PairGrid>
+            </View>
           );
         })}
         {result && verdict ? (
@@ -261,9 +273,11 @@ export function OfflineMapLabScreen() {
         </ButtonRow>
         {list && list.maps.length === 0 ? <Notice>{list.complete ? t('offlineMapLab.empty') : t('offlineMapLab.noList')}</Notice> : null}
         {others.map((map) => (
-          <PairGrid key={`${map.mapId}:${map.mapType}`}>
-            <Pair label={t(`offlineMapLab.mapType.${mapTypeKey(map.mapType)}`)} value={map.mapId} wide />
-            <Pair label={t('offlineMapLab.version')} value={map.version === null ? null : String(map.version)} />
+          <View key={`${map.mapId}:${map.mapType}`} style={styles.map}>
+            <PairGrid>
+              <Pair label={t(`offlineMapLab.mapType.${mapTypeKey(map.mapType)}`)} value={map.mapId} wide />
+              <Pair label={t('offlineMapLab.version')} value={map.version === null ? null : String(map.version)} />
+            </PairGrid>
             <Button
               label={t('offlineMapLab.deleteWatch')}
               icon="trash"
@@ -272,10 +286,14 @@ export function OfflineMapLabScreen() {
               loading={busy === `delete:${map.mapId}`}
               onPress={() => void removeFromWatch(map.mapId, map.mapType)}
             />
-          </PairGrid>
+          </View>
         ))}
         <Details>{t('offlineMapLab.details')}</Details>
       </Section>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  map: { gap: spacing.sm },
+});

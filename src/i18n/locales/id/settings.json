@@ -1169,6 +1169,7 @@
     "update": "Perbarui",
     "deletePhone": "Hapus dari HP",
     "deleteWatch": "Hapus dari jam",
-    "downloaded": "{{name}} sudah diunduh dan diperiksa (SHA-256)."
+    "downloaded": "{{name}} sudah diunduh dan diperiksa (SHA-256).",
+    "missingFile": "{{name}} sudah tidak ada di HP ini. Unduh lagi."
   }
 }
