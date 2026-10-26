@@ -333,14 +333,15 @@ export class Recorder {
   }
 
   /**
-   * A reading of the phone's step counter: `count` steps counted since the workout session started (cumulative), `tsMs` the instant of
-   * the reading. Only foot sports use it. The steps counted between two readings are added to the workout's total while it records;
-   * the ones of a pause are skipped (`PhoneStepCount`). Readings before `start` and after `finish` are ignored.
+   * A reading of the phone's step counter: `count` steps counted since the workout session started (cumulative), `tsMs` the sensor's
+   * instant of the reading, `atMs` when it reached the app, `spm` the pedometer's own cadence when it gives one (iOS). Only foot sports
+   * use it. The steps counted between two readings are added to the workout's total while it records; the ones of a pause are skipped
+   * (`PhoneStepCount`). Readings before `start` and after `finish` are ignored.
    */
-  steps(count: number, tsMs: number): void {
+  steps(count: number, tsMs: number, atMs: number = tsMs, spm: number | null = null): void {
     if (!FOOT_SPORTS.includes(this.config.sport)) return;
     if (this.status !== 'recording' && this.status !== 'paused') return;
-    this.phoneSteps.reading(count, tsMs, this.status === 'recording');
+    this.phoneSteps.reading(count, tsMs, this.status === 'recording', atMs, spm);
   }
 
   /** A raw characteristic value from a connected sensor; true when the tracker used it. `ts` is the radio timestamp in ms. */

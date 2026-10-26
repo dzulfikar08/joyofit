@@ -80,10 +80,10 @@ export class LiveExtrasSession {
     this.distanceM = distanceM;
   }
 
-  /** A reading of the phone's step counter (cumulative since it started). */
-  stepReading(count: number, tsMs: number): void {
+  /** A reading of the phone's step counter (cumulative since it started), when it reached the app, and the pedometer's cadence (iOS). */
+  stepReading(count: number, tsMs: number, atMs: number = tsMs, spm: number | null = null): void {
     if (!this.steps.started) this.distanceAtFirstStep = this.distanceM ?? 0;
-    this.steps.reading(count, tsMs, this.running);
+    this.steps.reading(count, tsMs, this.running, atMs, spm);
   }
 
   figures(nowMs: number): LiveExtraFigures {

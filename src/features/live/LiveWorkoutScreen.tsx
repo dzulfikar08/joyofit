@@ -158,7 +158,8 @@ function LiveBody({ session, title }: { session: LiveSession; title: string }) {
   }, [hold]);
 
   // The watch's own numbers win when it sends them (a `17/11` report); else the phone's step counter fills cadence, steps and stride.
-  const watchCadence = metrics.cadence ?? live.stepRate;
+  // A watch's 0 cadence comes last: it must not hide the steps the phone counts.
+  const watchCadence = metrics.cadence;
   const watchSteps = live.steps !== null && live.steps > 0 ? live.steps : null;
   const values: RunMetricValues = {
     duration: showsClock(live) ? elapsedSec(live, nowMs) : null,
@@ -170,7 +171,7 @@ function LiveBody({ session, title }: { session: LiveSession; title: string }) {
     avgHr: extras.figures.avgHr,
     maxHr: extras.figures.maxHr,
     calories: metrics.calories,
-    cadence: watchCadence ?? extras.figures.cadence,
+    cadence: watchCadence ?? extras.figures.cadence ?? live.stepRate,
     steps: watchSteps ?? extras.figures.steps,
     stride: watchSteps === null ? extras.figures.strideM : null,
     elevationGain: metrics.elevationGainM,

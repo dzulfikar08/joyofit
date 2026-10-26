@@ -142,7 +142,7 @@ public final class BleSensorsModule: Module {
 
         // The live screen of a workout started on the watch: the phone's pedometer alone, counted from now. False without it or its permission.
         AsyncFunction("startLiveSteps") { () async -> Bool in
-            liveSteps.start { ts, count in central.emit("onLiveSteps", ["ts": ts, "steps": count]) }
+            liveSteps.start { central.emit("onLiveSteps", $0) }
         }
 
         AsyncFunction("stopLiveSteps") { () async -> Void in
@@ -162,7 +162,7 @@ public final class BleSensorsModule: Module {
             }
             // The phone's step counter is optional: without it (not requested, refused, no sensor) the workout just has no steps.
             if options["steps"] as? Bool ?? false {
-                _ = steps.start { ts, count in central.emit("onSteps", ["ts": ts, "steps": count]) }
+                _ = steps.start { central.emit("onSteps", $0) }
             } else {
                 steps.stop()
             }

@@ -93,10 +93,16 @@ export type LocationPermission = 'granted' | 'denied' | 'undetermined';
 export type StepCounterPermission = 'granted' | 'denied' | 'undetermined' | 'unavailable';
 
 export interface StepsEvent {
-  /** Milliseconds since the epoch of the counter reading itself. */
+  /**
+   * Milliseconds since the epoch of the newest step of this reading, on the sensor's own clock (Android: the event's elapsed-realtime
+   * timestamp; iOS: the pedometer data's end date), never before the counter started and never going back. A phone that holds its steps
+   * back delivers them later than this.
+   */
   ts: number;
   /** Steps counted since the counter started (cumulative, it only goes up; the session's for `onSteps`, `startLiveSteps` for `onLiveSteps`). The first reading may be 0. */
   steps: number;
+  /** iOS: the pedometer's own steps per minute at this reading (`CMPedometerData.currentCadence`), absent when it gives none. Android never sends it. */
+  cadence?: number;
 }
 
 export interface WorkoutSessionOptions {
