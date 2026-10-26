@@ -14,14 +14,14 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * The offline-map lab (docs/offline-maps.md, "Lab"): sends an OSM-built `offvmp` map file the user picked to the watch over the mapkit P2P
+ * The offline-map lab (docs/offline-maps.md, "Lab"): sends an OSM-built `offvmp` map file (downloaded by the app from JoyoFit's server) to the watch over the mapkit P2P
  * module, the way Huawei Health does with its own maps, and lists and deletes maps on the watch. Behind the experimental switch
  * [P2pSettings.offlineMapLab] (off by default); with it off nothing registers and every call refuses. Every step and frame is logged
  * (`Mapkit:` lines, also in logcat under the `JoyoFit` tag). Twin: `OfflineMapLab.swift`.
  *
  * The send: ping `in.huawei.mapkit` (0xca = there) → `01` free space → `03` list (update flag when the id is already there) → `04` handshake
  * (size MB, type, update, msgId) and its `0C` code → the file over FileUpload 28 as P2P file type 7 named `<id>.bin` (the watch checks the
- * SHA-256) → the watch's `08` parse result within Huawei Health's budget (5 s per MB + 30 s).
+ * SHA-256) → the watch's `08` parse result, or the map in its `03` list (the Fit 4 Pro sends no `08`), within Huawei Health's budget (5 s per MB + 30 s).
  */
 internal class OfflineMapLab(
   context: Context,
@@ -207,10 +207,12 @@ internal class OfflineMapLab(
       }
       val uploadMs = System.currentTimeMillis() - started
       val rate = if (uploadMs > 0) bytes.size * 1000L / uploadMs else null
-      log("upload finished in ${uploadMs / 1000} s (${rate ?: "?"} B/s), 28/07 status ${uploaded.resultStatus ?: "none"}; waiting for the watch's parse result (budget ${budget / 1000} s)")
+      log("upload finished in ${uploadMs / 1000} s (${rate ?: "?"} B/s), 28/07 status ${uploaded.resultStatus ?: "none"}; waiting for the watch's parse result (08) or the map in its list (03), budget ${budget / 1000} s")
 
-      val parseStart = System.currentTimeMillis()
-      val parsed = withTimeoutOrNull(budget) {
+      // The Fit 4 Pro (6.1.0.117, run of 2026-10-26) sent no 08 but listed the map (id, and the header's version) in 03 afterwards. So the list is
+      // the confirmation: it is asked every LIST_POLL_MS until the budget ends; an 08 is still taken whenever it comes, and after a listing it
+      // gets PARSE_GRACE_MS more.
+      suspend fun awaitParsed(ms: Long): MapkitMessage.Parsed? = withTimeoutOrNull(ms) {
         var found: MapkitMessage.Parsed? = null
         for (message in parsedInbox) {
           if (message.mapId == null || message.mapId == file.mapId) {
@@ -220,10 +222,35 @@ internal class OfflineMapLab(
         }
         found
       }
-      val parseMs = System.currentTimeMillis() - parseStart
+
+      val confirmStart = System.currentTimeMillis()
+      val deadline = confirmStart + budget
+      var parsed: MapkitMessage.Parsed? = null
+      var listed: MapkitMap? = null
+      var parseMs: Long? = null
+      var listedMs: Long? = null
+      while (parsed == null && listed == null) {
+        val remaining = deadline - System.currentTimeMillis()
+        if (remaining <= 0) break
+        parsed = awaitParsed(minOf(LIST_POLL_MS, remaining))
+        if (parsed != null) {
+          parseMs = System.currentTimeMillis() - confirmStart
+          break
+        }
+        listed = queryList(service).maps.firstOrNull { it.id == file.mapId && it.type == file.mapType }
+        if (listed != null) {
+          listedMs = System.currentTimeMillis() - confirmStart
+          log("the watch lists map ${listed.id} type ${listed.type} version ${listed.version ?: "?"} after ${listedMs / 1000} s (file version ${header.version}${if (listed.version == header.version) ", same" else ", DIFFERENT"}); waiting ${PARSE_GRACE_MS / 1000} s more for an 08")
+          parsed = awaitParsed(PARSE_GRACE_MS)
+          if (parsed != null) parseMs = System.currentTimeMillis() - confirmStart
+        }
+      }
       log(
-        if (parsed == null) "no parse result (08) within ${budget / 1000} s"
-        else "parse result after ${parseMs / 1000} s: map ${parsed.mapId} type ${parsed.mapType} code ${parsed.code} (${if (parsed.code == 0) "the watch took the map" else "the watch could not read the map"})",
+        when {
+          parsed != null -> "parse result after ${parseMs!! / 1000} s: map ${parsed.mapId} type ${parsed.mapType} code ${parsed.code} (${if (parsed.code == 0) "the watch took the map" else "the watch could not read the map"})"
+          listed != null -> "no parse result (08), but the watch lists the map: taken as accepted"
+          else -> "no parse result (08) and the map is not in the watch's list within ${budget / 1000} s"
+        },
       )
       mapOf(
         "file" to info,
@@ -234,7 +261,10 @@ internal class OfflineMapLab(
         "uploadMs" to uploadMs,
         "bytesPerSecond" to rate,
         "parsed" to parsed?.let { parsedJs(it) },
-        "parseMs" to if (parsed != null) parseMs else null,
+        "parseMs" to parseMs,
+        "listed" to (listed != null),
+        "listedVersion" to listed?.version,
+        "listedMs" to listedMs,
         "parseBudgetMs" to budget,
       )
     } finally {
@@ -310,6 +340,11 @@ internal class OfflineMapLab(
     const val LIST_WAIT_MS = 10_000L
     const val HANDSHAKE_WAIT_MS = 15_000L
     const val PROGRESS_LOG_MS = 10_000L
+    /** After the upload, how often the watch's list is asked while no 08 came. */
+    const val LIST_POLL_MS = 10_000L
+
+    /** How long an 08 is still awaited once the list shows the map. */
+    const val PARSE_GRACE_MS = 5_000L
     const val MAX_FILE_BYTES = 64 * 1024 * 1024
 
     /** GB uses file type 7 for every P2P file. */

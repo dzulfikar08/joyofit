@@ -3,7 +3,7 @@
 A small backend for the JoyoFit app: it accepts JoyoRogo sign-ins and stores what the app uploads in
 D1, with a raw-file endpoint into R2 for the future Huawei-export importer.
 
-- Hono + TypeScript on Workers, D1 (`DB`), R2 (`IMPORTS`).
+- Hono + TypeScript on Workers, D1 (`DB`), R2 (`IMPORTS`, and `MAPS` for the public offline maps).
 - Auth: the app sends its JoyoRogo better-auth session cookies; the Worker asks
   `${JOYOROGO_AUTH_URL}/api/auth/get-session` who they belong to. See
   [`JOYOROGO_PATCH.md`](JOYOROGO_PATCH.md) for the one change JoyoRogo needs and why.
@@ -37,6 +37,8 @@ a guess. Deploy JoyoRogo with `fitness.cloudAccess` before this Worker.
 | `POST /v1/waitlist` | Public (no session, CORS for `https://fit.joyorogo.com`): the /strava and /iphone invite forms. Body `{ kind: "strava" \| "iphone", email, stravaProfile?, watchModel?, note?, website? }`; `website` is a honeypot (filled = `200`, nothing stored). Upserts by `(kind, email)` (status and `created_at` kept), at most 5 submissions per IP per hour (`429` + `Retry-After`; only a one-hour salted hash of the IP is stored, table `waitlist_rate`). Table `waitlist` ([`migrations/0003_waitlist.sql`](migrations/0003_waitlist.sql)). |
 | `GET /v1/app-config` | Public (no session), `Cache-Control: public, max-age=60`. The launch-time update gate: `{ android: { minBuild, latestBuild, storeUrl }, ios: { ... }, message }`, read from table `app_config` ([`migrations/0011_app_config.sql`](migrations/0011_app_config.sql)); an empty table means every `minBuild` is 0 (gate off). Set it with `scripts/app-min-build.sh`; see [`../docs/force-update.md`](../docs/force-update.md). |
 | `GET /v1/agps/hw-agnss` | Public (no session, no parameters), `Cache-Control: public, max-age=900`. The experimental `HW_AGNSS_RTCM_33` satellite file (RTCM 3 frames 1019/1020/1042/1046): fetched from BKG's `BRDC00WRD_S_...rnx.gz` (today's, plus yesterday's in the first 4 h of the UTC day), built with `../packages/agps-rtcm`, checked (CRC-24Q of every frame, 512 B to 16 KiB, at least 20 satellites) and kept in the Cache API for 15 minutes; `Last-Modified` is the build time. `503 { error: "agps_unavailable" }` (`no-store`, `Retry-After: 60`) when no valid file can be built; the failure is remembered in the Cache API for 60 s so BKG is not asked again by every caller. See [`../docs/agps.md`](../docs/agps.md). |
+| `GET /v1/maps` | Public (no session, no parameters), `Cache-Control: public, max-age=300`. Lab offline watch maps (docs/offline-maps.md "Lab"): the entries of `watch/catalog.json` in the R2 bucket `MAPS` (`joyofit-maps`, shared with the bike computer's PMTiles) (`id` decimal u64 string, `name`, `bbox` [west,south,east,north], `sizeBytes`, `sha256`, `version`, `builtAt`, `osmDate`), each plus `attribution: "© OpenStreetMap contributors, ODbL 1.0"`. Invalid entries are dropped and logged; a missing or broken catalog is `[]`. |
+| `GET /v1/maps/:id.bin` | Public. The `offvmp` file `watch/<id>.bin` streamed from `MAPS`: `application/octet-stream`, `Content-Length`, `ETag`, `Cache-Control: public, max-age=3600`; `If-None-Match` → `304`. Unknown or malformed id → `404 { error: "not_found" }`. |
 | `GET /v1/waitlist?kind=&status=` | Owner only: `Authorization: Bearer $WAITLIST_ADMIN_TOKEN` (Worker secret, `503` when unset). Easiest: `scripts/waitlist.sh [strava\|iphone]` from the repo root, which reads the token from `~/.config/joyofit/waitlist-admin-token`. |
 
 Strava needs the `STRAVA_CLIENT_ID` var (in `wrangler.jsonc`) and two secrets, `STRAVA_CLIENT_SECRET` (the same value as on
@@ -221,6 +223,7 @@ bun install
 # 1. D1 + R2
 bunx wrangler d1 create joyofit          # prints database_id
 bunx wrangler r2 bucket create joyofit-imports
+# joyofit-maps (MAPS) already exists: the bike computer's PMTiles (docs/bike-computer.md) and the watch maps under watch/ (docs/offline-maps.md)
 ```
 
 Edit `wrangler.jsonc`: put the printed `database_id` in `d1_databases[0].database_id` (the

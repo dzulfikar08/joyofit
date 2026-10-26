@@ -90,8 +90,8 @@
     "details": "Running courses: unverified, the course format comes from static analysis of Huawei Health. The watch may refuse it.",
     "detailsDev": "Running courses: unverified, the course format comes from static analysis of Huawei Health. The watch may refuse it. Bluetooth LE link: connect over Bluetooth LE GATT (service FE86) instead of the watch's own link. Disconnect and connect again to apply. Steps go to logcat tag JoyoFitBle.",
     "offlineMapLab": "Offline maps on the watch (lab test)",
-    "offlineMapLabSubtitle": "Send a map file built from OpenStreetMap to the watch",
-    "offlineMapLabRisk": "Off by default. When on, JoyoFit talks to the watch's offline-map app (the way the watch maker's app sends its maps) and can send a map file you built from OpenStreetMap with JoyoFit's tools. The map format comes from public research, not from the watch maker; the watch may refuse the file or its map app may misbehave. Delete the map from here to undo. Unproven on any watch: turn it on only to test."
+    "offlineMapLabSubtitle": "Download maps built from OpenStreetMap and send them to the watch",
+    "offlineMapLabRisk": "Off by default. When on, JoyoFit talks to the watch's offline-map app (the way the watch maker's app sends its maps). The lab screen downloads map files that JoyoFit builds from OpenStreetMap from JoyoFit's server (api.fit.joyorogo.com; the request carries no location, ID or account, the server sees your IP address) and sends them to the watch. The map format comes from public research, not from the watch maker; the watch may refuse a file or its map app may misbehave. Delete the map from the lab screen to undo. Unproven on any watch: turn it on only to test."
   },
   "log": {
     "filters": {
@@ -1147,25 +1147,20 @@
     "empty": "No maps on the watch.",
     "noList": "The watch did not answer the list.",
     "version": "Version",
-    "delete": "Delete",
     "deleteAnswer": "Delete {{id}}: watch answered code {{code}} (0 = deleted).",
     "deleteNoAnswer": "Delete {{id}}: no answer from the watch.",
-    "file": "Map file",
-    "pick": "Choose .bin",
     "send": "Send to watch",
     "region": "Region",
-    "fileName": "Name on the watch",
     "size": "Size",
-    "sizeValue": "{{kb}} KB ({{mb}} MB announced)",
-    "zooms": "Zoom levels",
+    "sizeValue": "{{mb}} MB",
     "preparing": "Asking the watch…",
-    "uploading": "Sending {{done}} of {{total}} KB…",
     "verdict": {
       "parsedOk": "The watch read the map (code 0). Open a map view on the watch to check it draws.",
       "parsedFailed": "The file arrived but the watch could not read it (code {{code}}).",
-      "noParse": "The file arrived but the watch sent no parse result within {{budget}} s."
+      "noParse": "The file arrived but the watch neither reported it read nor listed it within {{budget}} s.",
+      "listed": "The watch took the map: it is in the watch’s map list. Open a map view on the watch to check it draws."
     },
-    "timing": "Upload {{upload}} s at {{rate}} kB/s, parse {{parse}} s, update {{update}}.",
+    "timing": "Upload {{upload}} s at {{rate}} kB/s, update {{update}}.",
     "mapType": {
       "region": "Region map",
       "contour": "Contour lines",
@@ -1173,8 +1168,31 @@
       "ski": "Ski map",
       "other": "Map"
     },
-    "details": "The map id comes from the file name (<id>.bin). Build the file with tools/offline-maps in the JoyoFit repository. Every message with the watch is in the log (Mapkit lines).",
+    "details": "Maps are built by JoyoFit from OpenStreetMap (tools/offline-maps) and downloaded from JoyoFit’s server into this app. The map id is the file name on the watch. Every message with the watch is in the log (Mapkit lines).",
     "attribution": "Map data © OpenStreetMap contributors, available under the Open Database License (ODbL).",
-    "sha256": "SHA-256"
+    "maps": "Maps from JoyoFit",
+    "reload": "Load the map list",
+    "noMaps": "The server offers no maps yet.",
+    "osmDate": "OpenStreetMap data of",
+    "onPhone": "On this phone",
+    "onWatch": "On the watch",
+    "phone": {
+      "none": "not downloaded",
+      "current": "downloaded",
+      "outdated": "older version"
+    },
+    "watchState": {
+      "none": "no",
+      "same": "yes",
+      "other": "other version"
+    },
+    "downloading": "Downloading",
+    "sending": "Sending to the watch",
+    "progress": "{{done}} of {{total}} MB",
+    "download": "Download",
+    "update": "Update",
+    "deletePhone": "Delete from phone",
+    "deleteWatch": "Delete from watch",
+    "downloaded": "{{name}} downloaded and checked (SHA-256)."
   }
 }

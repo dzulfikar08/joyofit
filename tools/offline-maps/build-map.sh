@@ -77,10 +77,11 @@ bin="$out/$id.bin"
 python3 "$converter/build_country.py" "$work/area.geojson" --out "$bin" --country "$name" \
   --zooms 10,12,14,16 --langs id,en --default-lang id
 
-# 5. What the app's lab screen will show.
-python3 - "$bin" <<'PY'
-import hashlib, struct, sys
-path = sys.argv[1]
+# 5. What the app's lab screen will show, and the catalog entry `publish.sh` uploads (`<id>.json`, the server's `GET /v1/maps` shape).
+osm_date="$(osmium fileinfo -g header.option.osmosis_replication_timestamp "$pbf" 2>/dev/null || true)"
+python3 - "$bin" "$id" "$bbox" "$osm_date" <<'PY'
+import datetime, hashlib, json, struct, sys
+path, map_id, bbox, osm_date = sys.argv[1:5]
 data = open(path, "rb").read()
 assert data[:6] == b"offvmp", "no offvmp header"
 version, index = struct.unpack_from("<II", data, 6)
@@ -88,7 +89,22 @@ region = data[0x3F:0x3F + 511].split(b"\0", 1)[0].decode()
 flags = struct.unpack_from("<I", data, index)[0]
 zooms = [z for z in range(32) if flags >> z & 1]
 size = len(data)
+sha = hashlib.sha256(data).hexdigest().upper()
 print(f"{path}: {size} bytes ({-(-size // 1048576)} MB announced), offvmp version {version}, region {region!r}, zooms {zooms}")
-print(f"sha256 {hashlib.sha256(data).hexdigest().upper()}")
+print(f"sha256 {sha}")
+entry = {
+    "id": map_id,
+    "name": region,
+    "bbox": [float(v) for v in bbox.split(",")],
+    "sizeBytes": size,
+    "sha256": sha,
+    "version": version,
+    "builtAt": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "osmDate": osm_date,
+}
+with open(path[:-4] + ".json", "w") as f:
+    json.dump(entry, f, indent=1)
+    f.write("\n")
+print(f"catalog entry {path[:-4]}.json")
 PY
 echo "build-map: done. Data © OpenStreetMap contributors (ODbL)."

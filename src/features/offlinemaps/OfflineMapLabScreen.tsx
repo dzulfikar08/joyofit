@@ -1,6 +1,5 @@
-import * as DocumentPicker from 'expo-document-picker';
 import { useEventListener } from 'expo';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/Button';
@@ -11,17 +10,12 @@ import { Notice } from '@/components/States';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage, formatDateTime } from '@/format';
-import { fmtInt } from '@/i18n';
-import {
-  HuaweiWear,
-  hasNative,
-  type OfflineMapFile,
-  type OfflineMapLabStatus,
-  type OfflineMapList,
-  type OfflineMapSendResult,
-} from '@/wear';
+import { fmtInt, fmtNumber } from '@/i18n';
+import { HuaweiWear, hasNative, type OfflineMapLabStatus, type OfflineMapList, type OfflineMapSendResult } from '@/wear';
 
+import { phoneState, watchState, type CatalogMap, type StoredMap } from './catalog';
 import { mapTypeKey, rateKbps, seconds, sendVerdict } from './labText';
+import { downloadMap, fetchCatalog, localFile, removeFromPhone, storedMap } from './mapStore';
 
 function read(): OfflineMapLabStatus | null {
   if (!hasNative('getOfflineMapLab')) return null;
@@ -32,22 +26,26 @@ function read(): OfflineMapLabStatus | null {
   }
 }
 
-type Busy = 'pick' | 'send' | 'list' | 'space' | `delete:${string}` | null;
+/** What runs now: `<action>:<map id>` for per-map actions. */
+type Busy = 'catalog' | 'list' | 'space' | `download:${string}` | `send:${string}` | `delete:${string}` | null;
+
+const mb = (bytes: number) => fmtNumber(bytes / 1_048_576, 1);
 
 /**
- * The offline-map lab (Settings → About & advanced → Experimental → Offline maps): pick an OSM-built `<id>.bin` from the phone, check it, send it
- * over the mapkit P2P module, read the watch's parse result; list and delete maps on the watch. Every frame is in the log (`Mapkit:` lines).
- * See docs/offline-maps.md, "Lab".
+ * The offline-map lab (Settings → About & advanced → Experimental → Offline maps): the maps JoyoFit's server offers (built from OpenStreetMap
+ * with tools/offline-maps), downloaded into the app and checked (SHA-256), sent to the watch over the mapkit P2P module; the watch's list and
+ * delete. Every frame is in the log (`Mapkit:` lines). See docs/offline-maps.md, "Lab".
  */
 export function OfflineMapLabScreen() {
   const { t } = useTranslation('settings');
   const [status, setStatus] = useState<OfflineMapLabStatus | null>(read);
-  const [picked, setPicked] = useState<{ uri: string; name: string; file: OfflineMapFile } | null>(null);
-  const [result, setResult] = useState<OfflineMapSendResult | null>(null);
+  const [catalog, setCatalog] = useState<CatalogMap[] | null>(null);
+  const [stored, setStored] = useState<Record<string, StoredMap | null>>({});
   const [list, setList] = useState<OfflineMapList | null>(null);
   const [space, setSpace] = useState<number | null | undefined>(undefined);
-  const [deleted, setDeleted] = useState<string | null>(null);
-  const [progress, setProgress] = useState<{ bytes: number; total: number } | null>(null);
+  const [result, setResult] = useState<{ name: string; sent: OfflineMapSendResult } | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,52 +53,90 @@ export function OfflineMapLabScreen() {
   useNativeRefresh(refresh);
 
   useEventListener(HuaweiWear, 'onUploadProgress', (event) => {
-    if (busy === 'send') setProgress({ bytes: event.bytes, total: event.total });
+    if (busy?.startsWith('send:')) setProgress({ done: event.bytes, total: event.total });
   });
 
-  const run = async (what: Exclude<Busy, null>, action: () => Promise<void>) => {
-    setError(null);
-    setBusy(what);
-    try {
-      await action();
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setBusy(null);
-      refresh();
-    }
-  };
-
-  const pick = () =>
-    run('pick', async () => {
-      const chosen = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
-      if (chosen.canceled || chosen.assets.length === 0) return;
-      const asset = chosen.assets[0];
-      setPicked(null);
-      setResult(null);
-      const file = await HuaweiWear.inspectOfflineMap(asset.uri, asset.name);
-      setPicked({ uri: asset.uri, name: asset.name, file });
-    });
-
-  const send = () => {
-    if (!picked) return;
-    return run('send', async () => {
-      setResult(null);
+  const run = useCallback(
+    async (what: Exclude<Busy, null>, action: () => Promise<void>) => {
+      setError(null);
+      setNotice(null);
       setProgress(null);
-      const sent = await HuaweiWear.sendOfflineMap(picked.uri, picked.name);
-      setResult(sent);
-      setList(await HuaweiWear.listOfflineMaps());
-    });
-  };
+      setBusy(what);
+      try {
+        await action();
+      } catch (e) {
+        setError(errorMessage(e));
+      } finally {
+        setBusy(null);
+        setProgress(null);
+        refresh();
+      }
+    },
+    [refresh],
+  );
+
+  const showCatalog = useCallback((maps: CatalogMap[]) => {
+    setCatalog(maps);
+    setStored(Object.fromEntries(maps.map((m) => [m.id, storedMap(m.id)])));
+  }, []);
+
+  const loadCatalog = () => run('catalog', async () => showCatalog(await fetchCatalog()));
+
+  const enabled = status?.enabled === true;
+  const linked = status?.registered === true;
+  // The first load of the catalog and of the watch's list: state is set only when the answer arrives (and the screen is still there).
+  useEffect(() => {
+    if (!enabled) return;
+    let live = true;
+    fetchCatalog().then(
+      (maps) => live && showCatalog(maps),
+      (e: unknown) => live && setError(errorMessage(e)),
+    );
+    return () => {
+      live = false;
+    };
+  }, [enabled, showCatalog]);
+  useEffect(() => {
+    if (!linked) return;
+    let live = true;
+    HuaweiWear.listOfflineMaps().then(
+      (maps) => live && setList(maps),
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, [linked]);
 
   const listMaps = () => run('list', async () => setList(await HuaweiWear.listOfflineMaps()));
 
   const freeSpace = () => run('space', async () => setSpace((await HuaweiWear.offlineMapFreeSpace()).value));
 
-  const remove = (mapId: string, mapType: number) =>
+  const download = (map: CatalogMap) =>
+    run(`download:${map.id}`, async () => {
+      const copy = await downloadMap(map, (done, total) => setProgress({ done, total }));
+      setStored((s) => ({ ...s, [map.id]: copy }));
+      setNotice(t('offlineMapLab.downloaded', { name: map.name }));
+    });
+
+  const send = (map: CatalogMap) =>
+    run(`send:${map.id}`, async () => {
+      setResult(null);
+      const { uri, name } = localFile(map.id);
+      const sent = await HuaweiWear.sendOfflineMap(uri, name);
+      setResult({ name: map.name, sent });
+      setList(await HuaweiWear.listOfflineMaps());
+    });
+
+  const removeLocal = (map: CatalogMap) => {
+    removeFromPhone(map.id);
+    setStored((s) => ({ ...s, [map.id]: null }));
+  };
+
+  const removeFromWatch = (mapId: string, mapType: number) =>
     run(`delete:${mapId}`, async () => {
       const answer = await HuaweiWear.deleteOfflineMap(mapId, mapType);
-      setDeleted(
+      setNotice(
         answer.answered ? t('offlineMapLab.deleteAnswer', { id: mapId, code: answer.code ?? '—' }) : t('offlineMapLab.deleteNoAnswer', { id: mapId }),
       );
       setList(await HuaweiWear.listOfflineMaps());
@@ -110,10 +146,89 @@ export function OfflineMapLabScreen() {
   if (!status.enabled) return <Notice>{t('offlineMapLab.off')}</Notice>;
 
   const idle = busy === null;
-  const verdict = result ? sendVerdict(result) : null;
+  const watchReady = status.p2p && status.gateMap;
+  const verdict = result ? sendVerdict(result.sent) : null;
+  const catalogIds = new Set(catalog?.map((m) => m.id) ?? []);
+  const others = list?.maps.filter((m) => !catalogIds.has(m.mapId)) ?? [];
 
   return (
     <>
+      <Section title={t('offlineMapLab.maps')} icon="map" tint="workouts">
+        {catalog === null && busy !== 'catalog' ? <Button label={t('offlineMapLab.reload')} icon="refresh" onPress={() => void loadCatalog()} /> : null}
+        {catalog !== null && catalog.length === 0 ? <Notice>{t('offlineMapLab.noMaps')}</Notice> : null}
+        {catalog?.map((map) => {
+          const phone = phoneState(map, stored[map.id] ?? null);
+          const watch = watchState(map, list?.maps ?? null);
+          const onWatch = list?.maps.find((m) => m.mapId === map.id && m.mapType === 0);
+          return (
+            <PairGrid key={map.id}>
+              <Pair label={t('offlineMapLab.region')} value={map.name} wide />
+              <Pair label={t('offlineMapLab.size')} value={t('offlineMapLab.sizeValue', { mb: mb(map.sizeBytes) })} />
+              <Pair label={t('offlineMapLab.osmDate')} value={map.osmDate ? formatDateTime(Date.parse(map.osmDate) / 1000) : null} />
+              <Pair label={t('offlineMapLab.onPhone')} value={t(`offlineMapLab.phone.${phone}`)} />
+              <Pair label={t('offlineMapLab.onWatch')} value={watch === null ? null : t(`offlineMapLab.watchState.${watch}`)} />
+              {busy === `download:${map.id}` && progress ? (
+                <Pair label={t('offlineMapLab.downloading')} value={t('offlineMapLab.progress', { done: mb(progress.done), total: mb(progress.total) })} wide />
+              ) : null}
+              {busy === `send:${map.id}` ? (
+                <Pair
+                  label={t('offlineMapLab.sending')}
+                  value={progress ? t('offlineMapLab.progress', { done: mb(progress.done), total: mb(progress.total) }) : t('offlineMapLab.preparing')}
+                  wide
+                />
+              ) : null}
+              <ButtonRow>
+                {phone === 'current' ? (
+                  <Button
+                    label={t('offlineMapLab.send')}
+                    icon="send"
+                    variant="primary"
+                    disabled={!idle || !watchReady}
+                    loading={busy === `send:${map.id}`}
+                    onPress={() => void send(map)}
+                  />
+                ) : (
+                  <Button
+                    label={t(phone === 'outdated' ? 'offlineMapLab.update' : 'offlineMapLab.download')}
+                    icon="download"
+                    variant="primary"
+                    disabled={!idle}
+                    loading={busy === `download:${map.id}`}
+                    onPress={() => void download(map)}
+                  />
+                )}
+                {phone !== 'none' ? (
+                  <Button label={t('offlineMapLab.deletePhone')} icon="trash" disabled={!idle} onPress={() => removeLocal(map)} />
+                ) : null}
+                {onWatch ? (
+                  <Button
+                    label={t('offlineMapLab.deleteWatch')}
+                    icon="trash"
+                    variant="destructive"
+                    disabled={!idle}
+                    loading={busy === `delete:${map.id}`}
+                    onPress={() => void removeFromWatch(onWatch.mapId, onWatch.mapType)}
+                  />
+                ) : null}
+              </ButtonRow>
+            </PairGrid>
+          );
+        })}
+        {result && verdict ? (
+          <Notice tone={verdict === 'parsedOk' || verdict === 'listed' ? 'info' : 'danger'}>
+            {result.name}: {t(`offlineMapLab.verdict.${verdict}`, { code: result.sent.parsed?.code ?? '?', budget: seconds(result.sent.parseBudgetMs) })}{' '}
+            {t('offlineMapLab.timing', {
+              upload: seconds(result.sent.uploadMs),
+              rate: rateKbps(result.sent.bytesPerSecond) ?? '?',
+              update: result.sent.update ? t('offlineMapLab.yes') : t('offlineMapLab.no'),
+            })}
+          </Notice>
+        ) : null}
+        {notice ? <Notice>{notice}</Notice> : null}
+        {error ? <Notice tone="danger">{error}</Notice> : null}
+        <Notice>{t('offlineMapLab.attribution')}</Notice>
+      </Section>
+
       <Section title={t('offlineMapLab.watch')} icon="watch" tint="workouts">
         <PairGrid>
           <Pair label={t('offlineMapLab.gate')} value={status.gateMap ? t('offlineMapLab.yes') : t('offlineMapLab.no')} />
@@ -141,75 +256,25 @@ export function OfflineMapLabScreen() {
         {!status.p2p ? <Notice tone="danger">{t('offlineMapLab.notConnected')}</Notice> : null}
         {status.p2p && !status.gateMap ? <Notice tone="danger">{t('offlineMapLab.noGate')}</Notice> : null}
         <ButtonRow>
-          <Button label={t('offlineMapLab.list')} icon="list" disabled={!idle} loading={busy === 'list'} onPress={() => void listMaps()} />
-          <Button label={t('offlineMapLab.space')} icon="server" disabled={!idle} loading={busy === 'space'} onPress={() => void freeSpace()} />
+          <Button label={t('offlineMapLab.list')} icon="list" disabled={!idle || !watchReady} loading={busy === 'list'} onPress={() => void listMaps()} />
+          <Button label={t('offlineMapLab.space')} icon="server" disabled={!idle || !watchReady} loading={busy === 'space'} onPress={() => void freeSpace()} />
         </ButtonRow>
-        {list ? (
-          list.maps.length === 0 ? (
-            <Notice>{list.complete ? t('offlineMapLab.empty') : t('offlineMapLab.noList')}</Notice>
-          ) : (
-            list.maps.map((map) => (
-              <PairGrid key={`${map.mapId}:${map.mapType}`}>
-                <Pair label={t(`offlineMapLab.mapType.${mapTypeKey(map.mapType)}`)} value={map.mapId} wide />
-                <Pair label={t('offlineMapLab.version')} value={map.version === null ? null : String(map.version)} />
-                <Button
-                  label={t('offlineMapLab.delete')}
-                  icon="trash"
-                  variant="destructive"
-                  disabled={!idle}
-                  loading={busy === `delete:${map.mapId}`}
-                  onPress={() => void remove(map.mapId, map.mapType)}
-                />
-              </PairGrid>
-            ))
-          )
-        ) : null}
-        {deleted ? <Notice>{deleted}</Notice> : null}
-      </Section>
-
-      <Section title={t('offlineMapLab.file')} icon="map" tint="workouts">
-        <ButtonRow>
-          <Button label={t('offlineMapLab.pick')} icon="folder-open" disabled={!idle} loading={busy === 'pick'} onPress={() => void pick()} />
-          <Button
-            label={t('offlineMapLab.send')}
-            icon="send"
-            variant="primary"
-            disabled={!idle || picked === null}
-            loading={busy === 'send'}
-            onPress={() => void send()}
-          />
-        </ButtonRow>
-        {picked ? (
-          <PairGrid>
-            <Pair label={t('offlineMapLab.region')} value={picked.file.region} />
-            <Pair label={t('offlineMapLab.fileName')} value={picked.file.fileName} wide />
-            <Pair label={t('offlineMapLab.size')} value={t('offlineMapLab.sizeValue', { kb: fmtInt(Math.round(picked.file.bytes / 1024)), mb: picked.file.sizeMb })} />
-            <Pair label={t('offlineMapLab.zooms')} value={picked.file.zooms.join(', ')} />
-            <Pair label={t('offlineMapLab.version')} value={String(picked.file.formatVersion)} />
-            <Pair label={t('offlineMapLab.sha256')} value={picked.file.sha256} wide />
+        {list && list.maps.length === 0 ? <Notice>{list.complete ? t('offlineMapLab.empty') : t('offlineMapLab.noList')}</Notice> : null}
+        {others.map((map) => (
+          <PairGrid key={`${map.mapId}:${map.mapType}`}>
+            <Pair label={t(`offlineMapLab.mapType.${mapTypeKey(map.mapType)}`)} value={map.mapId} wide />
+            <Pair label={t('offlineMapLab.version')} value={map.version === null ? null : String(map.version)} />
+            <Button
+              label={t('offlineMapLab.deleteWatch')}
+              icon="trash"
+              variant="destructive"
+              disabled={!idle}
+              loading={busy === `delete:${map.mapId}`}
+              onPress={() => void removeFromWatch(map.mapId, map.mapType)}
+            />
           </PairGrid>
-        ) : null}
-        {busy === 'send' ? (
-          <Notice>
-            {progress
-              ? t('offlineMapLab.uploading', { done: fmtInt(Math.round(progress.bytes / 1024)), total: fmtInt(Math.round(progress.total / 1024)) })
-              : t('offlineMapLab.preparing')}
-          </Notice>
-        ) : null}
-        {result && verdict ? (
-          <Notice tone={verdict === 'parsedOk' ? 'info' : 'danger'}>
-            {t(`offlineMapLab.verdict.${verdict}`, { code: result.parsed?.code ?? '?', budget: seconds(result.parseBudgetMs) })}{' '}
-            {t('offlineMapLab.timing', {
-              upload: seconds(result.uploadMs),
-              rate: rateKbps(result.bytesPerSecond) ?? '?',
-              parse: seconds(result.parseMs) ?? '—',
-              update: result.update ? t('offlineMapLab.yes') : t('offlineMapLab.no'),
-            })}
-          </Notice>
-        ) : null}
-        {error ? <Notice tone="danger">{error}</Notice> : null}
+        ))}
         <Details>{t('offlineMapLab.details')}</Details>
-        <Notice>{t('offlineMapLab.attribution')}</Notice>
       </Section>
     </>
   );

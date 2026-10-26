@@ -5,12 +5,15 @@ export function mapTypeKey(type: number): 'region' | 'contour' | 'global' | 'ski
   return (['region', 'contour', 'global', 'ski'] as const)[type] ?? 'other';
 }
 
-/** The verdict of a send (`settings:offlineMapLab.verdict.<key>`): the watch's parse result decides; no result within the budget is its own case. */
-export type SendVerdict = 'parsedOk' | 'parsedFailed' | 'noParse';
+/**
+ * The verdict of a send (`settings:offlineMapLab.verdict.<key>`): the watch's parse result (`08`) decides when it sent one; otherwise the map in
+ * the watch's list counts as accepted (the Fit 4 Pro sends no `08`); neither is its own case.
+ */
+export type SendVerdict = 'parsedOk' | 'parsedFailed' | 'listed' | 'noParse';
 
 export function sendVerdict(result: OfflineMapSendResult): SendVerdict {
-  if (result.parsed === null) return 'noParse';
-  return result.parsed.code === 0 ? 'parsedOk' : 'parsedFailed';
+  if (result.parsed !== null) return result.parsed.code === 0 ? 'parsedOk' : 'parsedFailed';
+  return result.listed ? 'listed' : 'noParse';
 }
 
 /** kB/s with one decimal below 10, whole above; null when unknown. */

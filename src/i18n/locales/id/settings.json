@@ -90,8 +90,8 @@
     "details": "Rute lari: belum terverifikasi, format rute berasal dari analisis statis Huawei Health. Jam bisa saja menolaknya.",
     "detailsDev": "Rute lari: belum terverifikasi, format rute berasal dari analisis statis Huawei Health. Jam bisa saja menolaknya. Tautan Bluetooth LE: terhubung lewat Bluetooth LE GATT (layanan FE86), bukan tautan bawaan jam. Putuskan lalu hubungkan lagi agar berlaku. Langkahnya masuk ke logcat dengan tag JoyoFitBle.",
     "offlineMapLab": "Peta offline di jam (uji lab)",
-    "offlineMapLabSubtitle": "Kirim file peta dari OpenStreetMap ke jam",
-    "offlineMapLabRisk": "Mati secara bawaan. Saat menyala, JoyoFit berbicara dengan aplikasi peta offline di jam (seperti aplikasi pembuat jam mengirim petanya) dan bisa mengirim file peta yang kamu buat dari OpenStreetMap dengan alat JoyoFit. Format petanya berasal dari riset publik, bukan dari pembuat jam; jam bisa menolak file itu atau aplikasi petanya bisa bermasalah. Hapus peta dari sini untuk membatalkan. Belum terbukti di jam mana pun: nyalakan hanya untuk menguji."
+    "offlineMapLabSubtitle": "Unduh peta dari OpenStreetMap dan kirim ke jam",
+    "offlineMapLabRisk": "Mati secara bawaan. Saat menyala, JoyoFit berbicara dengan aplikasi peta offline di jam (seperti aplikasi pembuat jam mengirim petanya). Layar lab mengunduh file peta yang dibuat JoyoFit dari OpenStreetMap dari server JoyoFit (api.fit.joyorogo.com; permintaannya tidak membawa lokasi, ID, atau akun, server melihat alamat IP-mu) lalu mengirimnya ke jam. Format petanya berasal dari riset publik, bukan dari pembuat jam; jam bisa menolak file atau aplikasi petanya bisa bermasalah. Hapus peta dari layar lab untuk membatalkan. Belum terbukti di jam mana pun: nyalakan hanya untuk menguji."
   },
   "log": {
     "filters": {
@@ -1123,25 +1123,20 @@
     "empty": "Tidak ada peta di jam.",
     "noList": "Jam tidak menjawab daftar peta.",
     "version": "Versi",
-    "delete": "Hapus",
     "deleteAnswer": "Hapus {{id}}: jam menjawab kode {{code}} (0 = terhapus).",
     "deleteNoAnswer": "Hapus {{id}}: jam tidak menjawab.",
-    "file": "File peta",
-    "pick": "Pilih .bin",
     "send": "Kirim ke jam",
     "region": "Wilayah",
-    "fileName": "Nama di jam",
     "size": "Ukuran",
-    "sizeValue": "{{kb}} KB ({{mb}} MB diumumkan)",
-    "zooms": "Tingkat zoom",
+    "sizeValue": "{{mb}} MB",
     "preparing": "Menanyai jam…",
-    "uploading": "Mengirim {{done}} dari {{total}} KB…",
     "verdict": {
       "parsedOk": "Jam berhasil membaca peta (kode 0). Buka tampilan peta di jam untuk memastikan peta tergambar.",
       "parsedFailed": "File sampai, tetapi jam tidak bisa membacanya (kode {{code}}).",
-      "noParse": "File sampai, tetapi jam tidak mengirim hasil baca dalam {{budget}} detik."
+      "noParse": "File sampai, tetapi dalam {{budget}} detik jam tidak melaporkan hasil baca maupun mencantumkannya di daftar.",
+      "listed": "Jam menerima peta: peta ada di daftar peta jam. Buka tampilan peta di jam untuk memastikan peta tergambar."
     },
-    "timing": "Kirim {{upload}} detik, {{rate}} kB/s, baca {{parse}} detik, pembaruan {{update}}.",
+    "timing": "Kirim {{upload}} detik, {{rate}} kB/s, pembaruan {{update}}.",
     "mapType": {
       "region": "Peta wilayah",
       "contour": "Garis kontur",
@@ -1149,8 +1144,31 @@
       "ski": "Peta ski",
       "other": "Peta"
     },
-    "details": "ID peta diambil dari nama file (<id>.bin). Buat file dengan tools/offline-maps di repositori JoyoFit. Setiap pesan dengan jam tercatat di log (baris Mapkit).",
+    "details": "Peta dibuat JoyoFit dari OpenStreetMap (tools/offline-maps) dan diunduh dari server JoyoFit ke aplikasi ini. ID peta adalah nama file di jam. Setiap pesan dengan jam tercatat di log (baris Mapkit).",
     "attribution": "Data peta © kontributor OpenStreetMap, tersedia di bawah Open Database License (ODbL).",
-    "sha256": "SHA-256"
+    "maps": "Peta dari JoyoFit",
+    "reload": "Muat daftar peta",
+    "noMaps": "Server belum menyediakan peta.",
+    "osmDate": "Data OpenStreetMap per",
+    "onPhone": "Di HP ini",
+    "onWatch": "Di jam",
+    "phone": {
+      "none": "belum diunduh",
+      "current": "sudah diunduh",
+      "outdated": "versi lama"
+    },
+    "watchState": {
+      "none": "tidak",
+      "same": "ya",
+      "other": "versi lain"
+    },
+    "downloading": "Mengunduh",
+    "sending": "Mengirim ke jam",
+    "progress": "{{done}} dari {{total}} MB",
+    "download": "Unduh",
+    "update": "Perbarui",
+    "deletePhone": "Hapus dari HP",
+    "deleteWatch": "Hapus dari jam",
+    "downloaded": "{{name}} sudah diunduh dan diperiksa (SHA-256)."
   }
 }

@@ -90,10 +90,17 @@ export interface OfflineMapSendResult {
   /** From the handshake to the end of the upload. */
   uploadMs: number;
   bytesPerSecond: number | null;
-  /** The watch's parse result (`08`); null when none arrived within `parseBudgetMs`. */
+  /** The watch's parse result (`08`); null when none arrived (the Fit 4 Pro sent none on 2026-10-26). */
   parsed: OfflineMapParsed | null;
+  /** From the end of the upload to the `08`; null without one. */
   parseMs: number | null;
-  /** Huawei Health's wait for the parse: 5 s per MB + 30 s. */
+  /** After the upload the watch's list (`03`) showed this map: taken as accepted when no `08` comes. */
+  listed: boolean;
+  /** The version the watch lists for it (the file header's version when it read the header); null when not listed or not said. */
+  listedVersion: number | null;
+  /** From the end of the upload to the listing; null when not listed. */
+  listedMs: number | null;
+  /** How long the app waits after the upload: Huawei Health's parse budget, 5 s per MB + 30 s. */
   parseBudgetMs: number;
 }
 

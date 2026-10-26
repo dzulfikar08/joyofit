@@ -1010,15 +1010,15 @@ the lab switch on and bit 201 set.
 | Type | Direction | Body | JoyoFit |
 |---|---|---|---|
 | `01` | phone → watch | `01`=`00` | `01 01 01 00` |
-| `01` | watch → phone | `01` free space (big-endian; KiB per huac, MB per Huawei Health; UNVERIFIED) | logged raw |
+| `01` | watch → phone | `01` free space (big-endian, 8 bytes on the Fit 4 Pro; **KiB**: 1,557,376 on 2026-10-26, as MB it would be 1.5 TB) | logged raw |
 | `02` | phone → watch | `02` political view (ASCII), `14` review number (empty), `13` msgId (shortest big-endian) | on registration, view `ID`: `02 02 02 49 44 14 00 13 01 <id>` |
 | `02` | watch → phone | `02` `"0"` ok / `"1"` failed, `13`, `14` | "1": resent after 3 s, at most 3 times |
 | `03` | phone → watch | `13` msgId (shortest) | before every send and on "Maps on the watch" |
-| `03` | watch → phone | `04` frames, `05` frame index, `06` count, `13`, `87{88{09 id u64, 0A type, 0B version u32, 16 download type}}` (several frames for long lists) | collected until `06` maps or 10 s |
+| `03` | watch → phone | `04` frames, `05` frame index, `06` count, `13`, `87{88{09 id u64, 0A type, 0B version u32 (the file header's version), 16 download type}}` (several frames for long lists; an empty list is `04=00 05=00 06=00000000 87{}`) | collected until `06` maps or 10 s |
 | `04` | phone → watch | `02` view, `14` (empty), `0D` size MB (u16, rounded up), `0A` map type, `0E` 0 new / 1 update, `13` msgId (u32), `16` 0 (the user asked) | `update` = the id and type are already listed |
 | `04` | watch → phone | `0C` 0 go on, 1 no space, 2 has this version, 3 map in use, 4 device error; `13` | anything but 0 rejects (ERR_UPLOAD_REJECTED) |
 | file | phone → watch | FileUpload `28`, P2P file type 7, source `hw.unitedevice.mapkit` / `UniteDeviceManagement`, destination `in.huawei.mapkit` / `SystemApp`, name `<id>.bin`, `<id>_contour.bin` or `global.bin`; `28/03` SHA-256, `28/07` result | as courses and routes (`FileUploader`) |
-| `08` | watch → phone | `09` map id u64, `0A` type, `15` code (0 = parsed) | awaited for `5 s × MB + 30 s` (Huawei Health's budget) |
+| `08` | watch → phone | `09` map id u64, `0A` type, `15` code (0 = parsed). **The Fit 4 Pro (6.1.0.117) sent none** after a 9.6 MB map it accepted (2026-10-26) | within `5 s × MB + 30 s` (Huawei Health's budget) the app asks `03` every 10 s; the map listed with its id (and the header's version in `0B`) counts as accepted, an `08` still wins |
 | `05` | phone → watch | `04` frames, `05` index (from 0), `06` count u32, `13` msgId u32, `90{91{09 id u64, 0A type, 0B 04}}` (at most 40 per frame) | one map per delete |
 | `05` | watch → phone | the same frame fields, `90{91{09, 0A, 12 result (0 deleted)}}` | |
 | `07` | watch → phone | asks for the political view again | answered with `02` |

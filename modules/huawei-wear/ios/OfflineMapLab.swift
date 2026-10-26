@@ -1,10 +1,10 @@
-// The offline-map lab (docs/offline-maps.md, "Lab"): sends an OSM-built `offvmp` map file the user picked to the watch over the mapkit P2P module,
+// The offline-map lab (docs/offline-maps.md, "Lab"): sends an OSM-built `offvmp` map file (downloaded by the app from JoyoFit's server) to the watch over the mapkit P2P module,
 // the way Huawei Health does with its own maps, and lists and deletes maps on the watch. Behind the experimental switch `P2pSettings.offlineMapLab`
 // (off by default); with it off nothing registers and every call refuses. Every step and frame is logged (`Mapkit:` lines). Port of OfflineMapLab.kt.
 //
 // The send: ping `in.huawei.mapkit` (0xca = there) → `01` free space → `03` list (update flag when the id is already there) → `04` handshake
 // (size MB, type, update, msgId) and its `0C` code → the file over FileUpload 28 as P2P file type 7 named `<id>.bin` (the watch checks the
-// SHA-256) → the watch's `08` parse result within Huawei Health's budget (5 s per MB + 30 s).
+// SHA-256) → the watch's `08` parse result, or the map in its `03` list (the Fit 4 Pro sends no `08`), within Huawei Health's budget (5 s per MB + 30 s).
 import Foundation
 #if canImport(HuaweiProtocol)
 import HuaweiProtocol
@@ -23,6 +23,10 @@ public final class OfflineMapLab: @unchecked Sendable {
     public static let listWaitMs = 10_000
     public static let handshakeWaitMs = 15_000
     public static let progressLogMs: Int64 = 10_000
+    /// After the upload, how often the watch's list is asked while no 08 came.
+    public static let listPollMs: Int64 = 10_000
+    /// How long an 08 is still awaited once the list shows the map.
+    public static let parseGraceMs: Int64 = 5_000
     public static let maxFileBytes = 64 * 1024 * 1024
     /// GB uses file type 7 for every P2P file.
     public static let fileTypeP2P: UInt8 = 7
@@ -233,6 +237,25 @@ public final class OfflineMapLab: @unchecked Sendable {
 
     private static func nowMs() -> Int64 { Int64(Date().timeIntervalSince1970 * 1000) }
 
+    /// The watch's `08` frames of one send, kept until taken (an `AsyncStream` ends when one waiting task is cancelled, and the send waits many times).
+    private final class ParsedInbox: @unchecked Sendable {
+        private let lock = NSLock()
+        private var pending: [MapkitParsed] = []
+
+        func add(_ parsed: MapkitParsed) { lock.locked { pending.append(parsed) } }
+
+        /// The first frame for `mapId` (or without an id); frames for other maps are dropped.
+        func take(_ mapId: UInt64) -> MapkitParsed? {
+            lock.locked {
+                while !pending.isEmpty {
+                    let message = pending.removeFirst()
+                    if message.mapId == nil || message.mapId == mapId { return message }
+                }
+                return nil
+            }
+        }
+    }
+
     public func send(uri: String, name: String) async throws -> [String: Any] {
         try await exclusive {
             let loaded = try load(uri: uri, name: name)
@@ -253,14 +276,11 @@ public final class OfflineMapLab: @unchecked Sendable {
             let budget = MapkitWire.parseBudgetMs(sizeMb)
 
             // The parse result can arrive right after the upload: listen from the handshake on.
-            let (parsedInbox, parsedContinuation) = AsyncStream.makeStream(of: MapkitParsed.self)
+            let parsedInbox = ParsedInbox()
             let token = service.subscribe { message in
-                if case .parsed(let parsed) = message { parsedContinuation.yield(parsed) }
+                if case .parsed(let parsed) = message { parsedInbox.add(parsed) }
             }
-            defer {
-                service.unsubscribe(token)
-                parsedContinuation.finish()
-            }
+            defer { service.unsubscribe(token) }
             let started = OfflineMapLab.nowMs()
             let events = self.events
             let progress = ParsedBox()
@@ -301,22 +321,56 @@ public final class OfflineMapLab: @unchecked Sendable {
             let uploadMs = OfflineMapLab.nowMs() - started
             let rate: Int64? = uploadMs > 0 ? Int64(bytes.count) * 1000 / uploadMs : nil
             log(
-                "upload finished in \(uploadMs / 1000) s (\(rate.map { String($0) } ?? "?") B/s), 28/07 status \(outcome.resultStatus.map(String.init) ?? "none"); waiting for the watch's parse result (budget \(budget / 1000) s)"
+                "upload finished in \(uploadMs / 1000) s (\(rate.map { String($0) } ?? "?") B/s), 28/07 status \(outcome.resultStatus.map(String.init) ?? "none"); waiting for the watch's parse result (08) or the map in its list (03), budget \(budget / 1000) s"
             )
 
-            let parseStart = OfflineMapLab.nowMs()
+            // The Fit 4 Pro (6.1.0.117, run of 2026-10-26) sent no 08 but listed the map (id, and the header's version) in 03 afterwards. So the list is
+            // the confirmation: it is asked every listPollMs until the budget ends; an 08 is still taken whenever it comes, and after a listing it
+            // gets parseGraceMs more.
             let mapId = file.mapId
-            let parsed: MapkitParsed? = await p2pWithTimeout(ms: Int(budget)) { () -> MapkitParsed? in
-                for await message in parsedInbox where message.mapId == nil || message.mapId == mapId { return message }
-                return nil
-            } ?? nil
-            let parseMs = OfflineMapLab.nowMs() - parseStart
+            func awaitParsed(_ ms: Int64) async -> MapkitParsed? {
+                let until = OfflineMapLab.nowMs() + ms
+                while true {
+                    if let found = parsedInbox.take(mapId) { return found }
+                    let left = until - OfflineMapLab.nowMs()
+                    if left <= 0 || Task.isCancelled { return nil }
+                    try? await Task.sleep(nanoseconds: UInt64(min(left, 100)) * 1_000_000)
+                }
+            }
+
+            let confirmStart = OfflineMapLab.nowMs()
+            let deadline = confirmStart + budget
+            var parsed: MapkitParsed?
+            var listed: MapkitMap?
+            var parseMs: Int64?
+            var listedMs: Int64?
+            while parsed == nil && listed == nil {
+                let remaining = deadline - OfflineMapLab.nowMs()
+                if remaining <= 0 { break }
+                parsed = await awaitParsed(min(OfflineMapLab.listPollMs, remaining))
+                if parsed != nil {
+                    parseMs = OfflineMapLab.nowMs() - confirmStart
+                    break
+                }
+                listed = await queryList(service).maps.first { $0.id == file.mapId && $0.type == file.mapType }
+                if let listed {
+                    let ms = OfflineMapLab.nowMs() - confirmStart
+                    listedMs = ms
+                    log(
+                        "the watch lists map \(listed.id) type \(listed.type) version \(listed.version.map { String($0) } ?? "?") after \(ms / 1000) s (file version \(header.version)\(listed.version == header.version ? ", same" : ", DIFFERENT")); waiting \(OfflineMapLab.parseGraceMs / 1000) s more for an 08"
+                    )
+                    parsed = await awaitParsed(OfflineMapLab.parseGraceMs)
+                    if parsed != nil { parseMs = OfflineMapLab.nowMs() - confirmStart }
+                }
+            }
             if let parsed {
                 log(
-                    "parse result after \(parseMs / 1000) s: map \(parsed.mapId.map { String($0) } ?? "null") type \(parsed.mapType.map(String.init) ?? "null") code \(parsed.code.map(String.init) ?? "null") (\(parsed.code == 0 ? "the watch took the map" : "the watch could not read the map"))"
+                    "parse result after \((parseMs ?? 0) / 1000) s: map \(parsed.mapId.map { String($0) } ?? "null") type \(parsed.mapType.map(String.init) ?? "null") code \(parsed.code.map(String.init) ?? "null") (\(parsed.code == 0 ? "the watch took the map" : "the watch could not read the map"))"
                 )
+            } else if listed != nil {
+                log("no parse result (08), but the watch lists the map: taken as accepted")
             } else {
-                log("no parse result (08) within \(budget / 1000) s")
+                log("no parse result (08) and the map is not in the watch's list within \(budget / 1000) s")
             }
             return [
                 "file": info,
@@ -327,7 +381,10 @@ public final class OfflineMapLab: @unchecked Sendable {
                 "uploadMs": uploadMs,
                 "bytesPerSecond": OfflineMapLab.nullable(rate),
                 "parsed": parsed.map { OfflineMapLab.parsedJS($0) as Any } ?? NSNull(),
-                "parseMs": parsed != nil ? parseMs as Any : NSNull(),
+                "parseMs": OfflineMapLab.nullable(parseMs),
+                "listed": listed != nil,
+                "listedVersion": OfflineMapLab.nullable(listed?.version),
+                "listedMs": OfflineMapLab.nullable(listedMs),
                 "parseBudgetMs": budget,
             ]
         }

@@ -183,43 +183,59 @@ does not draw it.
 
 ## Lab (JRG-426)
 
-Branch `lab/jrg-426-offline-map` (draft PR, not to be merged) adds what the spike needs, nothing more:
+Branch `lab/jrg-426-offline-map` (draft PR #25, not to be merged) adds what the spike needs, nothing more:
 
-- **The map.** `tools/offline-maps/build-map.sh` (README next to it): Geofabrik extract → `osmium extract -b <box>` → HDataResearch's converter
+- **The maps.** `tools/offline-maps/build-map.sh` (README next to it): Geofabrik extract → `osmium extract -b <box>` → HDataResearch's converter
   (MIT, pinned `c736a1a`) with zooms 10/12/14/16, labels Indonesian (language id `0x20`) then English, the region name in the header, header
-  version = build time `YYMMDDHH`, tiles with the default political region. The lab map is **Malang (lab)**, box `112.50,-8.05,112.72,-7.88` (Kota
-  Malang and Kecamatan Dau, where the owner runs), from the Geofabrik Java extract of 2026-10-24T20:20Z: `2000000000000003573.bin`, **9,616,061
-  bytes** (9.2 MiB; the handshake announces 10 MB, so the parse wait is 80 s), header version `26102522`, SHA-256 `3DD25836…C1E99E`; built in 34 s. Not committed
-  (over 5 MB); the README has the one command that rebuilds it.
+  version = build time `YYMMDDHH`, tiles with the default political region; it also writes the catalog entry `<id>.json`. Both maps come from the
+  Geofabrik Java extract of 2026-10-24T20:20Z:
+
+  | Map | Id | Box (W,S,E,N) | File | Header version | SHA-256 |
+  |---|---|---|---|---|---|
+  | Malang (lab): Kota Malang and Kecamatan Dau, where the owner runs | `2000000000000003573` | `112.50,-8.05,112.72,-7.88` | 9,616,061 bytes (announced 10 MB, parse wait 80 s), built in 34 s | `26102522` | `3DD25836…C1E99E` |
+  | Surabaya (lab): Kota Surabaya plus about 2 km | `2000000000000003578` | `112.57,-7.37,112.87,-7.17` | 47,244,748 bytes (announced 46 MB, wait 260 s; about 10 min of upload at the measured rate), built in 4 min | `26102611` | `CC4743B4…AF5CE9` |
+
+  Surabaya is five times Malang for a similar area: about 1 million features at zoom 16 against 290,000. Neither file is committed (over 5 MB).
+- **Hosting.** `tools/offline-maps/publish.sh <id>…` uploads `<id>.bin` to the R2 bucket `joyofit-maps` under `watch/` (the bucket also holds the
+  bike computer's PMTiles) and rewrites `watch/catalog.json` last. JoyoFit's Worker serves them (`server/src/maps.ts`): `GET
+  https://api.fit.joyorogo.com/v1/maps` (the catalog: id, name, bbox, size, SHA-256, version, build and OSM dates, attribution; cached 5 min) and
+  `GET /v1/maps/<id>.bin` (streamed from R2, `ETag`, cached 1 h). Plain GETs with no session or parameter; the server sees the IP address
+  (privacy page and `docs/play-store.md` updated). Never Huawei's or Petal's servers.
 - **The map id.** The watch takes the id from the file name only. Huawei's 2,275 known ids (HDataResearch `docs/filenames.md`) are all below
-  2^60 and look random; JoyoFit uses **2,000,000,000,000,000,000 + the BPS region code** (3573 = Kota Malang): above 2^60, so it can never
-  collide with a Huawei id, below 2^63, readable. Fallbacks for the lab: the same file renamed `1000000000000003573.bin` (below 2^60, not in
-  Huawei's list) answers "does the watch refuse ids at or above 2^60?", and an Andorra map under Huawei's own Andorra id `446513991765216720`
-  (3.1 MB, `--region europe/andorra --bbox 1.40,42.42,1.79,42.66`) answers "is it the id or the file?".
+  2^60 and look random; JoyoFit uses **2,000,000,000,000,000,000 + the BPS region code** (3573 = Kota Malang, 3578 = Kota Surabaya): above 2^60, so
+  it can never collide with a Huawei id, below 2^63, readable. **The Fit 4 Pro accepted it** (run 1 below), so the fallback files
+  (`1000000000000003573.bin`, the Andorra control under Huawei's id `446513991765216720`) were not needed.
 - **The app.** Settings → About & advanced → Experimental → **Offline maps on the watch (lab test)** (Indonesian: Pengaturan → Tentang & lanjutan →
   Eksperimental → **Peta offline di jam (uji lab)**), off by default. When on, and the watch sets ExpandCapability 201, JoyoFit registers the
   mapkit module on every connect (ping, political view `ID`) and answers the watch's own asks as huac does (`07` → `02`, `09` → size 0,
-  `0B` → "no network"). A row under the switch opens the lab screen: **Peta di jam** (list `03`, with **Hapus** = delete `05` per map),
-  **Ruang kosong** (`01`), **Pilih .bin** (the picker; the file is checked for the `<id>.bin` name and the `offvmp` header and shown: region,
-  zooms, size, SHA-256) and **Kirim ke jam**: free space → list (update flag when the id is there) → handshake `04` → the file over `28` as
-  P2P file type 7 named `<id>.bin` → the watch's `08`, awaited for 5 s per MB + 30 s. Frames: `protocol/README.md`, P2P "(e) Offline maps".
-  Code: `MapkitWire`, `MapkitService`, `OfflineMapLab` (Kotlin and Swift twins, frames tested against `Fixtures/mapkit.json` on both).
-  Limit: the upload holds the file in memory (`FileUploader`), so the lab takes files up to 64 MiB; a real feature needs the streaming upload.
+  `0B` → "no network"). A row under the switch opens the lab screen:
+  - **Peta dari JoyoFit**: the server's catalog, one row per map with its size, OSM date, "Di HP ini" (not downloaded / downloaded / older version)
+    and "Di jam" (from the watch's `03` list: no / yes / other version). **Unduh** downloads into the app's own storage
+    (`<documents>/offline-maps/<id>.bin` via a `.part` file, with progress), then the native side reads it back (`offvmp` header, size,
+    SHA-256) and it is kept only when all three match the catalog. **Kirim ke jam** sends it, **Hapus dari HP** deletes the phone copy,
+    **Hapus dari jam** sends delete `05`. The OSM credit ("© OpenStreetMap contributors", ODbL) is shown under the list.
+  - **Jam**: gates, ping, political-view answer, **Peta di jam** (list `03`; maps not in the catalog get their own **Hapus dari jam**),
+    **Ruang kosong** (`01`).
+  - The send: free space → list (update flag when the id is there) → handshake `04` → the file over `28` as P2P file type 7 named `<id>.bin`
+    → confirmation. **The Fit 4 Pro sends no `08`** (run 1), so after the upload the app asks for the list every 10 s within Huawei Health's
+    budget (5 s per MB + 30 s): the map listed with its id is taken as accepted (and the listed version is compared with the file's), an `08`
+    is still taken whenever it comes (5 s more after the listing).
+  - The file picker of the first lab build is gone. Frames: `protocol/README.md`, P2P "(e) Offline maps". Code: `MapkitWire`, `MapkitService`,
+    `OfflineMapLab` (Kotlin and Swift twins, frames tested against `Fixtures/mapkit.json` on both), `src/features/offlinemaps/`.
+  - Limit: the upload holds the file in memory (`FileUploader`), so the lab takes files up to 64 MiB; a real feature needs the streaming upload.
 
 ### Lab procedure (Android, watch bound to JoyoFit; do not rebind to Huawei Health)
 
-1. Build the map (or take the copies in `~/re/offmaps/out/` on the build machine) and put it on the phone:
-   `adb push tools/offline-maps/out/2000000000000003573.bin /sdcard/Download/` (and, for the fallbacks, `1000000000000003573.bin` and
-   `446513991765216720.bin`).
-2. Install the lab APK, connect the watch (the normal link, not the developer LE switch), clear the log: `adb logcat -c`.
-3. Pengaturan → Tentang & lanjutan → Eksperimental → switch **Peta offline di jam (uji lab)** on, then tap the **Peta offline di jam (uji lab)** row.
-4. Tap **Peta di jam**, then **Ruang kosong**. Then **Pilih .bin** → Download → `2000000000000003573.bin`; the screen shows "Malang (lab)",
-   zooms 10, 12, 14, 16. Tap **Kirim ke jam** and wait for the result notice (upload plus parse; minutes).
-5. `adb logcat -d -s JoyoFit:V | grep -E "Mapkit|Upload:" > mapkit_lab.txt`
-6. On the watch: start an Outdoor run (or open the map view from the workout's pre-start settings / swipe to the map page during the run) in
-   Malang and photograph the map at two zoom levels: roads, rivers, land use, Indonesian labels. Then stop the workout without saving.
-7. Back in the lab screen: **Peta di jam** (the id should be listed), **Kirim ke jam** again (update path, `0E=01`), then **Hapus** (`12=00`).
-8. Only if step 4 failed: send `1000000000000003573.bin`, then `446513991765216720.bin` (Andorra, parse result only; the watch is not in Andorra).
+1. Install the lab APK, connect the watch (the normal link, not the developer LE switch), clear the log: `adb logcat -c`. The phone needs internet.
+2. Pengaturan → Tentang & lanjutan → Eksperimental → switch **Peta offline di jam (uji lab)** on, then tap the **Peta offline di jam (uji lab)** row.
+3. The screen loads the catalog (Malang, Surabaya) and the watch's list: Malang should show "Di jam: ya" (from run 1).
+4. Surabaya: **Unduh** (47 MB; progress, then "sudah diunduh dan diperiksa"), then **Kirim ke jam**; wait for the notice (about 10 min upload, then
+   the list check).
+5. Malang: **Unduh**, then **Kirim ke jam** once more (the update path, `0E=01`), to see whether an update gets an `08`.
+6. `adb logcat -d -s JoyoFit:V | grep -E "Mapkit|Upload:" > mapkit_lab2.txt`
+7. On the watch: open the map of an Outdoor run (map page during the run, or pre-start settings) in Malang (and in Surabaya if possible) and
+   photograph two zoom levels: roads, rivers, land use, Indonesian labels. Note the watch's storage screen next to the `01` value.
+8. Delete test: **Hapus dari jam** on one map (expect `12=00` and the row back to "Di jam: tidak"), **Hapus dari HP** on the other.
 
 ### What to look for (log lines, in order)
 
@@ -228,22 +244,34 @@ Branch `lab/jrg-426-offline-map` (draft PR, not to be merged) adds what the spik
 | connect | `Mapkit: ExpandCapability 201 (offline map)=true 202 (contour)=true 284 (auto download)=true 317 (ski)=false`, `Mapkit: registered hw.unitedevice.mapkit -> in.huawei.mapkit; political view ID`, `Mapkit: tx 02 political view: 02="ID" 14=() 13=…` | no `registered` line: the switch is off or bit 201 unset |
 | ping | `Mapkit: ping of in.huawei.mapkit answered 0xca` | another code: the map app is not there; stop |
 | political view | `Mapkit: rx 02 political view: 02=30 …` (`30` = "0", ok) | `02=31` ("1") three times: the watch refuses view `ID`; try `CN` (Huawei Health's fallback) |
-| free space | `Mapkit: rx 01 free space: 01=…` | note the number next to the watch's storage screen (settles KiB vs MB) |
-| list | `Mapkit: rx 03 map list: 04=01 05=00 06=00 …` (no maps yet) | |
-| handshake | `Mapkit: tx 04 transfer handshake: 02="ID" 14=() 0D=00NN 0A=00 0E=00 13=… 16=00`, `Mapkit: handshake (…) -> 0C=0 (go on)` | `0C=1` no space, `0C=4` device error: stop and report |
-| file | `Upload: start 2000000000000003573.bin: type=7 size=…`, `Upload: FileInfoSend: watch answered 100000`, `Mapkit: upload … bytes after … s`, `Upload: complete … result status=1`, `Mapkit: upload finished in S s (R B/s)` | a `28/02` refusal: the watch's file service refuses the P2P file (the log has its code) |
-| parse | `Mapkit: rx 08 parse result: 09=1BC16D674EC80DF5 0A=00 15=00`, `Mapkit: parse result after X s: map 2000000000000003573 type 0 code 0 (the watch took the map)` | `15` ≠ 0: the watch could not read it; no `08`: inconclusive |
+| free space | `Mapkit: rx 01 free space: 01=…` | |
+| list | `Mapkit: rx 03 map list: … 87{88{09=1BC16D674EC80DF5 0B=018E4AFA 0A=00 16=00}}` (Malang from run 1) | |
+| handshake | `Mapkit: tx 04 transfer handshake: 02="ID" 14=() 0D=002E 0A=00 0E=00 13=… 16=00`, `Mapkit: handshake (…) -> 0C=0 (go on)` | `0C=1` no space, `0C=4` device error: stop and report |
+| file | `Upload: start 2000000000000003578.bin: type=7 size=47244748 …`, `Upload: FileInfoSend: watch answered 100000`, `Mapkit: upload … bytes after … s`, `Upload: complete … result status=1`, `Mapkit: upload finished in S s (R B/s)` | a `28/02` refusal: the watch's file service refuses the P2P file (the log has its code) |
+| confirmation | `Mapkit: the watch lists map 2000000000000003578 type 0 version 26102611 after N s (file version 26102611, same)`, `Mapkit: no parse result (08), but the watch lists the map: taken as accepted` (or an `rx 08 parse result: … 15=00`) | `no parse result (08) and the map is not in the watch's list`: the watch dropped the file |
 
-**Go / no-go.** Go: `08` code 0 **and** the watch draws the Malang map. Id problem: our id fails but `1000000000000003573` or Andorra parses
-→ use ids below 2^60. No-go for now: every file fails to parse, or parses but nothing is drawn (then the converter's tile encoding does
-not fit this firmware; report upstream with the log). Also record: throughput (B/s from the `upload finished` line) and parse time, which
-size the per-province maps.
+**Go / no-go.** Go: the watch takes the map (listed, or `08` code 0) **and** draws it. No-go for now: it is listed but nothing is drawn (then
+the converter's tile encoding does not fit this firmware; report upstream with the log).
 
 ### Results
 
-Pending device run. The owner runs it with the other open watch tests in one session (decision 2026-10-25); the steps and expected
-lines are above, the three files are in `~/re/offmaps/out/` on the build machine. Results go on JRG-426 and here: the handshake code, the
-`08` code, throughput (B/s) and parse time, the `01` free-space value next to the watch's storage screen, and photos of the map at two zooms.
+**Run 1, 2026-10-26, lab build v1.1-lab.7 (master + #24 + #22 + this branch at `461a3a9`), owner's Fit 4 Pro (firmware 6.1.0.117), Malang
+over the normal link** (log `~/re/agps/logcat_lab7.txt`, 10:59 to 11:07):
+
+| Step | Seen |
+|---|---|
+| connect | ExpandCapability 201, 202, 284 set, 317 not; mapkit registered; ping `0xca` |
+| political view | `ID` answered `02=30` ("0", ok) at once |
+| list before | `13=00000002 06=00000000 04=00 05=00 87{}`: no maps (an empty list has 0 frames) |
+| free space | `01=000000000017C380` = 1,557,376: as KiB that is 1.49 GiB free, as MB it would be 1.5 TB, so the unit is **KiB** (huac is right) [INFERENCE from the magnitude; the watch's storage screen was not read] |
+| handshake | `0D=000A 0A=00 0E=00 13=4 16=00` → the watch echoed the request with `0C=00` (go on) after 0.15 s |
+| file | `2000000000000003573.bin`, file id 7, 1,286 chunk requests, **126 s, 76,246 B/s** (about 75 kB/s), `28/07` status 1 |
+| `08` | **none** within the 80 s budget (nor any other mapkit frame) |
+| list after | `06=00000001 04=01 05=00 87{88{09=1BC16D674EC80DF5 0B=018E4AFA 0A=00 16=00}}`: **the map is listed with our id and version 26102522, the header's version**, so the watch read the header |
+
+**Accepted: yes** (an id above 2^60 too). **Drawn: pending** (the owner is checking the watch's map). Throughput 75 kB/s sizes the maps: a
+city like Malang (9 MB) in about 2 minutes, Surabaya (47 MB) in about 10, a 200 MB province in about 45. The missing `08` is now handled
+(list confirmation, above). Run 2 (Surabaya, update path, delete) follows the procedure above.
 
 ## Evidence index (decompile paths are under `~/re/agps/jadx/`)
 

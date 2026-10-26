@@ -8,7 +8,9 @@ offline-map lab (Settings → About & advanced → Experimental → "Offline map
 brew install osmium-tool        # or: apt install osmium-tool
 tools/offline-maps/build-map.sh --region asia/indonesia/java --bbox 112.50,-8.05,112.72,-7.88 \
     --id 2000000000000003573 --name "Malang (lab)"
-# → tools/offline-maps/out/2000000000000003573.bin, plus its size, header and SHA-256
+# → tools/offline-maps/out/2000000000000003573.bin and .json (catalog entry), plus its size, header and SHA-256
+tools/offline-maps/build-map.sh --region asia/indonesia/java --bbox 112.57,-7.37,112.87,-7.17 \
+    --id 2000000000000003578 --name "Surabaya (lab)"
 ```
 
 What it does:
@@ -24,22 +26,38 @@ What it does:
 
 `.cache/` and `out/` are git-ignored.
 
+## Publishing (what the app downloads)
+
+```
+tools/offline-maps/publish.sh 2000000000000003573 2000000000000003578
+curl -s https://api.fit.joyorogo.com/v1/maps
+```
+
+`publish.sh` uploads `out/<id>.bin` to the R2 bucket `joyofit-maps` at `watch/<id>.bin` (`wrangler r2 object put --remote`, account
+`b7e6f845…`), then merges `out/<id>.json` (written by `build-map.sh`: id, name, bbox, size, SHA-256, header version, build time, OSM extract
+time) into `watch/catalog.json` and uploads it last. JoyoFit's Worker serves the catalog at `GET /v1/maps` and the files at
+`GET /v1/maps/<id>.bin` (`server/src/maps.ts`); the app's lab screen downloads from there and checks size and SHA-256 before it keeps a file.
+The bucket also holds the bike computer's PMTiles (`docs/bike-computer.md`); this script only writes under `watch/`.
+
 ## Map ids
 
 The watch takes the map id from the file name only (`<id>.bin`, `<id>_contour.bin`, `global.bin`). Huawei's ids come from Huawei's
 map server; the 2,275 ids listed in HDataResearch's `offvmp/docs/filenames.md` are all below 2^60 (1,152,921,504,606,846,976) and look
 random. JoyoFit's ids are **2,000,000,000,000,000,000 + the BPS region code** (Kementerian Dalam Negeri / BPS kode wilayah): above 2^60, so
-they cannot collide with a Huawei id, still below 2^63 (a signed 64-bit long), and readable. The lab map is `2000000000000003573`
-(3573 = Kota Malang; the box also covers Kecamatan Dau of Kabupaten Malang). If the watch refuses ids at or above 2^60, rename the same
+they cannot collide with a Huawei id, still below 2^63 (a signed 64-bit long), and readable. The lab maps are `2000000000000003573`
+(3573 = Kota Malang; the box also covers Kecamatan Dau of Kabupaten Malang), `2000000000000003578` (3578 = Kota Surabaya). The Fit 4 Pro
+accepted an id above 2^60 on 2026-10-26 (docs/offline-maps.md, "Results").
+Had the watch refused ids at or above 2^60, the fallback was to rename the same
 file to `1000000000000003573.bin` (below 2^60 and not in Huawei's list) and send it again: the content does not depend on the id.
 
 ## Sample
 
-The lab map is not committed (above the 5 MB limit for files in this repository); rebuild it with the command above.
+The lab maps are not committed (above the 5 MB limit for files in this repository); rebuild them with the commands in the table.
 
 | Map | Id | Box (W,S,E,N) | Size | Notes |
 |---|---|---|---|---|
 | Malang (lab) | `2000000000000003573` | `112.50,-8.05,112.72,-7.88` | 9.2 MiB (9,616,061 bytes) | Java extract of 2026-10-24T20:20Z; 34 s to build |
+| Surabaya (lab) | `2000000000000003578` | `112.57,-7.37,112.87,-7.17` | 45 MiB (47,244,748 bytes) | Java extract of 2026-10-24T20:20Z; 4 min to build; about 10 min to send at 75 kB/s |
 | Andorra (control) | `446513991765216720` | `1.40,42.42,1.79,42.66` | 3.1 MB | `--region europe/andorra`; an id Huawei issued, to tell "id refused" from "file refused" |
 
 ## Licence

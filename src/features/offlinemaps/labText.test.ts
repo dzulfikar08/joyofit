@@ -24,6 +24,9 @@ const RESULT: OfflineMapSendResult = {
   bytesPerSecond: 29_166,
   parsed: { mapId: '2000000000000003573', mapType: 0, code: 0 },
   parseMs: 12_000,
+  listed: false,
+  listedVersion: null,
+  listedMs: null,
   parseBudgetMs: 50_000,
 };
 
@@ -40,6 +43,9 @@ describe('offline map lab text', () => {
     expect(sendVerdict(RESULT)).toBe('parsedOk');
     expect(sendVerdict({ ...RESULT, parsed: { mapId: null, mapType: 0, code: 3 } })).toBe('parsedFailed');
     expect(sendVerdict({ ...RESULT, parsed: null })).toBe('noParse');
+    // The Fit 4 Pro sends no 08 but lists the map: accepted.
+    expect(sendVerdict({ ...RESULT, parsed: null, listed: true, listedVersion: 26102521, listedMs: 10_000 })).toBe('listed');
+    expect(sendVerdict({ ...RESULT, listed: true, parsed: { mapId: null, mapType: 0, code: 3 } })).toBe('parsedFailed');
   });
 
   test('rates and seconds', () => {
