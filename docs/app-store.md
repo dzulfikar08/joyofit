@@ -78,8 +78,7 @@ Open source (AGPL-3.0): https://github.com/dzulfikar08/joyofit
 ```
 JoyoFit is an independent, open-source app that syncs a compatible smartwatch with the iPhone over Bluetooth (tested with the Huawei Watch Fit 4 Pro). It is not made, endorsed or sponsored by Huawei.
 
-DEMO VIDEO: <link will be added before submission>
-The video is recorded on a physical iPhone with a Huawei Watch Fit 4 Pro and this build. It shows launch, the Bluetooth, Location, Apple Health and Motion permission requests, pairing (the watch is filmed), the first sync and the synced data, alarms and watch faces on the watch, and Settings.
+DEMO VIDEO (physical iPhone, iOS 27, build 1.1 202610260531, Huawei Watch Fit 4 Pro, the watch filmed with a second camera during pairing): https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-202610260531.mp4. It shows pairing and the confirmation on the watch, the first sync, the Apple Health and Location permission requests, and the synced data.
 
 NO SIGN-IN, NO DEMO ACCOUNT. Watch sync and every screen in the video work without an account. Signing in with a JoyoRogo account only adds the optional cloud backup, Strava upload and the JoyoRogo Pro features (Coach, family sharing), which are bought in the JoyoRogo app; JoyoFit has no in-app purchases, no prices and no links to a web checkout.
 
@@ -205,7 +204,7 @@ Thank you for the review. We have addressed the three issues.
 
 2. Guideline 4.1(b): JoyoFit is an independent, open-source app (AGPL-3.0, https://github.com/dzulfikar08/joyofit). It is not made, endorsed or sponsored by Huawei and does not claim to be. Its name, icon, screenshots and interface use no Huawei logo, product image, watch-face artwork or trade dress; the icon and design are our own. The word "Huawei" appears only where a user needs it to know which watches the app works with and which steps to take (for example, unpairing the watch from the user's existing app first), which is a factual, nominative reference. We have reduced it further: the promotional text and the first lines of the description no longer mention Huawei, the brand now appears only in a compatibility note with a clear non-affiliation statement, and the permission prompts describe the device generically. JoyoFit has no business relationship with Huawei to document. If you still need changes, please tell us which content you consider to resemble Huawei and we will change it.
 
-3. Guideline 2.1, demo video: a recording on a physical iPhone with a Huawei Watch Fit 4 Pro, showing launch, every permission request, pairing, syncing and the main features, is at VIDEO_URL (also in the App Review Information notes).
+3. Guideline 2.1, demo video: a recording on a physical iPhone (iOS 27, build 1.1 202610260531) with a Huawei Watch Fit 4 Pro, the watch filmed with a second camera during pairing, is at https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-202610260531.mp4 . It shows pairing and the confirmation on the watch, the first sync, the Apple Health and Location permission requests, and the synced data. The same link is in the App Review Information notes.
 
 Best regards,
 Dzulfikar Ats Tsauri
@@ -213,7 +212,7 @@ Dzulfikar Ats Tsauri
 
 ### 3. Demo video (2.1 Information Needed)
 
-The notes in App Store Connect already point to `https://fit.joyorogo.com/review/joyofit-ios-demo.mp4`, which returns **404**: that is why Apple asked. Record with the build you submit, after deleting the app (so every prompt appears) and unbinding the watch from Huawei Health off camera. Use the iPhone's Screen Recording (Control Center) for the phone, and film the watch with a second phone where the watch matters (00:25 to 00:45, 01:40); or film both devices side by side from above for the whole take. Keep it under 3 minutes, no cuts inside the pairing.
+The notes of the rejected submission pointed to `https://fit.joyorogo.com/review/joyofit-ios-demo.mp4`, which returned **404**: that is why Apple asked. The shot list below was the plan; what was recorded is under "Recorded" after it.
 
 | Time | Shot | What must be visible |
 |---|---|---|
@@ -230,9 +229,11 @@ The notes in App Store Connect already point to `https://fit.joyorogo.com/review
 | 02:35 to 02:50 | Workouts, record a workout on the phone, Start: **Motion & Fitness prompt**, then stop and discard | Prompt text |
 | 02:50 to 03:00 | Settings: background sync, About with the privacy policy link | End |
 
-Hosting: **unlisted YouTube** (no size limit, plays on any device; Apple accepts unlisted links), or the site at `site/public/review/joyofit-ios-demo.mp4` if the file stays under 25 MiB (the Workers static-asset limit per file; H.264 720p at about 1 Mbit/s fits 3 minutes). Test the link in a private window before submitting.
+**Recorded (2026-10-26).** 2:17, H.264 720p, about 9 MB, on build 1.1 (202610260531), an iPhone on iOS 27 and the Huawei Watch Fit 4 Pro, the watch filmed with a second camera during pairing. It shows the setup guide's pair step, the watch accepting the pairing (one failed try and a look at the iOS Bluetooth settings first), the first sync and Connected, the notifications step, the Apple Health permission sheet, the Location permission request (weather), the JoyoRogo cloud step (skipped), and Today, sleep and workouts with the watch's data. Bluetooth was already allowed before recording, so its prompt is not in the video; the notes and the reply do not claim it.
 
-**App Review notes:** entered in App Store Connect on 2026-10-26; the text is the "App Review notes" section above. Its `DEMO VIDEO: <link will be added before submission>` line is where the owner pastes the video link.
+**Hosting.** `https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-202610260531.mp4`, an object in the R2 bucket `joyofit-maps` under `review/`, not in `site/public/`, so a site deploy cannot drop it. It answers 200, and 206 to range requests (checked 2026-10-26). Leave it in place until the version is approved, and upload a new file with a new name for a later video rather than overwriting this one.
+
+**App Review notes:** entered in App Store Connect on 2026-10-26; the text is the "App Review notes" section above, with the video link in its DEMO VIDEO line.
 
 ### Other things found while checking
 
@@ -242,9 +243,8 @@ Hosting: **unlisted YouTube** (no size limit, plays on any device; Apple accepts
 
 ### Owner checklist
 
-Done on 2026-10-26: PR #27 merged, build 1.1 (202610260531) attached, version record renamed to 1.1, promotional text and description replaced in both locales, App Review notes replaced. Left:
+Done on 2026-10-26: PR #27 merged, build 1.1 (202610260531) attached, version record renamed to 1.1, promotional text and description replaced in both locales, App Review notes replaced, demo video recorded and its link in the notes. Left:
 
-1. Download the App Review crash logs (path above) and confirm they show `NoSceneLifecycleAdoption`.
-2. Install 1.1 (202610260531) from TestFlight on an iOS 27 iPhone, record the video with it, upload it (unlisted YouTube), check the link, and replace `<link will be added before submission>` in the App Review notes.
-3. Reply in the Resolution Center with the text above (fill VIDEO_URL).
-4. Submit for review.
+1. Optional: download the App Review crash logs (path above) and confirm they show `NoSceneLifecycleAdoption`.
+2. Reply in the Resolution Center with the text above.
+3. Submit for review.
