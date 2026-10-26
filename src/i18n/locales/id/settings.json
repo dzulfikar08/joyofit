@@ -91,6 +91,8 @@
     "detailsDev": "Rute lari: belum terverifikasi, format rute berasal dari analisis statis Huawei Health. Jam bisa saja menolaknya. Tautan Bluetooth LE: terhubung lewat Bluetooth LE GATT (layanan FE86), bukan tautan bawaan jam. Putuskan lalu hubungkan lagi agar berlaku. Langkahnya masuk ke logcat dengan tag JoyoFitBle.",
     "offlineMapLab": "Peta offline di jam (uji lab)",
     "offlineMapLabSubtitle": "Unduh peta dari OpenStreetMap dan kirim ke jam",
+    "petalMapsProbe": "Uji Petal Maps di jam (lab)",
+    "petalMapsProbeRisk": "Mati secara bawaan. Uji lab: saat menyala, JoyoFit menjawab aplikasi Petal Maps bawaan jam seolah aplikasi ponselnya terpasang, lalu mencatat semua yang dikirim aplikasi itu ke log (tag JoyoFit), untuk mengetahui apa yang diharapkannya dari ponsel. JoyoFit tidak mengirim apa pun lainnya ke aplikasi itu dan tidak menghubungi server Petal atau Huawei. Aplikasi di jam bisa tetap menampilkan layar unduhnya atau bermasalah; matikan jika begitu.",
     "offlineMapLabRisk": "Mati secara bawaan. Saat menyala, JoyoFit berbicara dengan aplikasi peta offline di jam (seperti aplikasi pembuat jam mengirim petanya). Layar lab mengunduh file peta yang dibuat JoyoFit dari OpenStreetMap dari server JoyoFit (api.fit.joyorogo.com; permintaannya tidak membawa lokasi, ID, atau akun, server melihat alamat IP-mu) lalu mengirimnya ke jam. Format petanya berasal dari riset publik, bukan dari pembuat jam; jam bisa menolak file atau aplikasi petanya bisa bermasalah. Hapus peta dari layar lab untuk membatalkan. Belum terbukti di jam mana pun: nyalakan hanya untuk menguji."
   },
   "log": {

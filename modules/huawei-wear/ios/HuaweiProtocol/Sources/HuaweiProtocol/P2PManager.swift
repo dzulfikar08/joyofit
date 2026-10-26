@@ -1,6 +1,7 @@
 // Port of HuaweiP2PManager.java, HuaweiBaseP2PService.java and HuaweiP2PSubMsg.java (Gadgetbridge, AGPL-3.0-or-later), the layer every P2P module
 // of service 0x34 sits on. As in the Kotlin port the support provider is a small `P2PTransport` seam, and the wake-app links are all answered
-// with GB's "not supported" code 0xd2 (GB's handlers for them are not ported).
+// with GB's "not supported" code 0xd2 (GB's handlers for them are not ported); a lab listener hears the packets no service claims, and one
+// service can be unregistered by module.
 import Foundation
 
 /// What GB takes from HuaweiSupportProvider / HuaweiState / SendP2PCommand.
@@ -20,10 +21,16 @@ public final class P2PManager: @unchecked Sendable {
     private let lock = NSRecursiveLock()
     private var services: [P2PService] = []
     private var sequence: Int16 = 1
+    private var unclaimedListener: (@Sendable (P2P.P2PCommand.Response) -> Void)?
     public let transport: P2PTransport
 
     public init(transport: P2PTransport) {
         self.transport = transport
+    }
+
+    /// Hears a watch packet no registered service claims (no service has its source package; wake-app pings excluded). Lab logging only.
+    public func setUnclaimedListener(_ listener: (@Sendable (P2P.P2PCommand.Response) -> Void)?) {
+        lock.p2pLocked { unclaimedListener = listener }
     }
 
     /// GB `getNextSequence`: `(sequence + 1) % (Short.MAX_VALUE - 1)`.
@@ -52,6 +59,14 @@ public final class P2PManager: @unchecked Sendable {
         lock.p2pLocked {
             for service in services { service.unregister() }
             services.removeAll()
+        }
+    }
+
+    /// Unregisters the service of `module`, if one is registered.
+    public func unregisterService(_ module: String) {
+        lock.p2pLocked {
+            for service in services where service.module == module { service.unregister() }
+            services.removeAll { $0.module == module }
         }
     }
 
@@ -99,7 +114,12 @@ public final class P2PManager: @unchecked Sendable {
                 return
             }
         }
-        for service in snapshot() where service.package == packet.srcPackage { try service.handlePacket(packet) }
+        var claimed = false
+        for service in snapshot() where service.package == packet.srcPackage {
+            claimed = true
+            try service.handlePacket(packet)
+        }
+        if !claimed, let listener = lock.p2pLocked({ unclaimedListener }) { listener(packet) }
     }
 }
 

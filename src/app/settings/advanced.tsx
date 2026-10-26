@@ -47,6 +47,16 @@ function readOfflineMapLab(): boolean | null {
   }
 }
 
+/** The Petal Maps probe switch (lab, JRG-434), or null on a binary without it or when it cannot be read. */
+function readPetalMapsProbe(): boolean | null {
+  if (!hasNative('setPetalMapsProbe')) return null;
+  try {
+    return HuaweiWear.getPetalMapsProbe();
+  } catch {
+    return null;
+  }
+}
+
 export default function AdvancedScreen() {
   const { t } = useTranslation('settings');
   const theme = useTheme();
@@ -65,6 +75,8 @@ export default function AdvancedScreen() {
   const [pgnssLabError, setPgnssLabError] = useState<string | null>(null);
   const [mapLab, setMapLab] = useState(readOfflineMapLab);
   const [mapLabError, setMapLabError] = useState<string | null>(null);
+  const [petalProbe, setPetalProbe] = useState(readPetalMapsProbe);
+  const [petalProbeError, setPetalProbeError] = useState<string | null>(null);
 
   useNativeRefresh(
     useCallback(() => {
@@ -73,6 +85,7 @@ export default function AdvancedScreen() {
       setAgpsLab(readAgpsLab());
       setPgnssLab(readAgpsPgnssLab());
       setMapLab(readOfflineMapLab());
+      setPetalProbe(readPetalMapsProbe());
     }, []),
   );
 
@@ -133,6 +146,17 @@ export default function AdvancedScreen() {
       setMapLabError(errorMessage(e));
     } finally {
       setMapLab(readOfflineMapLab());
+    }
+  };
+
+  const togglePetalProbe = async (enabled: boolean) => {
+    setPetalProbeError(null);
+    try {
+      await HuaweiWear.setPetalMapsProbe(enabled);
+    } catch (e) {
+      setPetalProbeError(errorMessage(e));
+    } finally {
+      setPetalProbe(readPetalMapsProbe());
     }
   };
 
@@ -200,6 +224,13 @@ export default function AdvancedScreen() {
               <SwitchRow label={t('advanced.offlineMapLab')} value={mapLab} onValueChange={(enabled) => void toggleMapLab(enabled)} />
               <Notice tone={mapLab ? 'danger' : 'info'}>{t('advanced.offlineMapLabRisk')}</Notice>
               {mapLabError ? <Notice tone="danger">{mapLabError}</Notice> : null}
+            </>
+          ) : null}
+          {petalProbe !== null ? (
+            <>
+              <SwitchRow label={t('advanced.petalMapsProbe')} value={petalProbe} onValueChange={(enabled) => void togglePetalProbe(enabled)} />
+              <Notice tone={petalProbe ? 'danger' : 'info'}>{t('advanced.petalMapsProbeRisk')}</Notice>
+              {petalProbeError ? <Notice tone="danger">{petalProbeError}</Notice> : null}
             </>
           ) : null}
           {__DEV__ ? (

@@ -71,6 +71,7 @@ public actor HuaweiSession {
     private var waiters: [Waiter] = []
     private var subscriptions: [Subscription] = []
     private var nextSubscriptionId = 0
+    private var unhandledObservers: [(id: Int, observer: UnhandledObserver)] = []
     private var closedBy: WearError?
     private var assembler = PacketAssembler()
     /// Raw wire bytes of the frame(s) being reassembled, for the rx log only.
@@ -173,6 +174,18 @@ public actor HuaweiSession {
 
     public func unsubscribe(_ id: Int) {
         subscriptions.removeAll { $0.id == id }
+        unhandledObservers.removeAll { $0.id == id }
+    }
+
+    /// What `observeUnhandled` hands over: service, command, the decoded TLV bytes (nil when undecodable) and the raw frame.
+    public typealias UnhandledObserver = @Sendable (_ service: Int, _ command: Int, _ tlv: Bytes?, _ raw: Bytes) -> Void
+
+    /// A lab hook: `observer` also hears every complete packet that no request waits for and no subscriber takes (the ones logged as
+    /// "asynchronous") until the returned id is passed to `unsubscribe`. It runs on the session's executor and must not block.
+    public func observeUnhandled(_ observer: @escaping UnhandledObserver) -> Int {
+        nextSubscriptionId += 1
+        unhandledObservers.append((id: nextSubscriptionId, observer: observer))
+        return nextSubscriptionId
     }
 
     /// Fails everything in flight and rejects new requests. Idempotent; the first cause wins.
@@ -282,6 +295,7 @@ public actor HuaweiSession {
         } else {
             let tlv = packet.tlv.map { "\($0)" } ?? "none"
             log(LogEntry(.rx, service: service, command: command, hex: raw.hexUpper, "asynchronous (no pending request) tlv=\(tlv)"))
+            for entry in unhandledObservers { entry.observer(service, command, packet.tlv?.serialize(), raw) }
         }
     }
 }

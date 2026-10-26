@@ -120,4 +120,22 @@ class HuaweiSessionTest {
     assertEquals(0x51, pending.await())
     assertTrue(events.logs.any { it.first == LogDirection.RX && it.second.startsWith("asynchronous") })
   }
+
+  @Test
+  fun unhandledObserverHearsOnlyPacketsNobodyTakesUntilClosed() = runBlocking {
+    val sink = RecordingSink()
+    val session = session(sink, RecordingEvents())
+    val heard = Collections.synchronizedList(ArrayList<String>())
+    val handle = session.observeUnhandled { service, command, tlv, raw -> heard += "%02x/%02x ${tlv?.toHex()} ${raw.size}".format(service, command) }
+
+    session.onData(batteryFrame(0x50))
+    val pending = async { session.battery() }
+    awaitWrites(sink, 1)
+    session.onData(batteryFrame(0x51))
+    assertEquals(0x51, pending.await())
+    handle.close()
+    session.onData(batteryFrame(0x52))
+
+    assertEquals(listOf("01/08 010150 11"), heard.toList())
+  }
 }

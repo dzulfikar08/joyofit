@@ -340,3 +340,37 @@ final class P2PStackTests: XCTestCase {
         XCTAssertEqual(p2p(h).count, before)
     }
 }
+
+extension P2PStackTests {
+    /// The Petal Maps probe (lab, PetalMapsProbe.swift) on a real stack: the watch app's ping is answered 0xca, a frame of a service nothing
+    /// handles is dumped inside the window, and once unregistered the ping goes unanswered.
+    func testThePetalMapsProbeAnswersTheMapsAppAndHearsWhatNothingHandles() async throws {
+        let h = harness(expand: [])
+        await h.stack.start()
+        h.stack.registerServices()
+        await h.stack.registerPetalProbe()
+        XCTAssertNotNil(h.stack.petalProbe)
+        XCTAssertTrue(h.logs.contains("PetalProbe: registered for the watch app com.huawei.ohos.maps.app"))
+
+        h.session.onData(h.script.frame(1, 90, PetalProbeWire.watchPackage, PetalProbeWire.phonePackage))
+        let isAnswer: (UploadFakeWatch.Msg) -> Bool = { (try? $0.tlv?.byte(0x01)) == 3 && (try? $0.tlv?.string(0x04)) == PetalProbeWire.watchPackage }
+        await waitFor("the 0xca answer") { self.p2p(h).contains(where: isAnswer) }
+        let ack = try XCTUnwrap(p2p(h).first(where: isAnswer))
+        XCTAssertEqual(try ack.tlv?.short(0x02), 90)
+        XCTAssertEqual(try ack.tlv?.string(0x03), PetalProbeWire.phonePackage)
+        XCTAssertEqual(try ack.tlv?.int(0x08), 0xCA)
+
+        var unknown = HuaweiTLV()
+        unknown.put(0x01, byte: 0xAA)
+        h.session.onData(UploadFakeWatch.tlvFrame(0x27, 0x05, unknown))
+        await waitFor("the unhandled frame") { h.logs.contains("PetalProbe: unhandled svc=27 cmd=05 tlv 01 len=1: AA = 170") }
+
+        h.stack.unregisterPetalProbe()
+        XCTAssertNil(h.stack.petalProbe)
+        let before = p2p(h).count
+        h.session.onData(h.script.frame(1, 91, PetalProbeWire.watchPackage, PetalProbeWire.phonePackage))
+        try await Task.sleep(nanoseconds: 100_000_000)
+        XCTAssertEqual(p2p(h).count, before, "unregistered: the ping goes unanswered")
+        h.stack.close()
+    }
+}

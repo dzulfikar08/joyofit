@@ -606,6 +606,13 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   getOfflineMapLab(): OfflineMapLabStatus;
   /** Off by default. On: registers the mapkit module now when connected (and on every connect); off: every map call rejects at once. */
   setOfflineMapLab(enabled: boolean): Promise<void>;
+  /** Lab (JRG-434): the Petal Maps companion probe switch. Synchronous; off by default. */
+  getPetalMapsProbe(): boolean;
+  /**
+   * On: answers the watch's Petal Maps app (`com.huawei.ohos.maps.app`) ping with 0xca, acknowledges its messages and logs everything it sends
+   * (`PetalProbe:` lines); applied now when connected and on every connect. Off: unregistered at once. Sends nothing else, no network.
+   */
+  setPetalMapsProbe(enabled: boolean): Promise<void>;
   /** The watch's `01` free space (raw value; KiB per huac, unverified). Rejects with ERR_UNSUPPORTED while the switch is off or bit 201 is unset. */
   offlineMapFreeSpace(): Promise<{ value: number | null }>;
   /** The maps on the watch (`03`). */

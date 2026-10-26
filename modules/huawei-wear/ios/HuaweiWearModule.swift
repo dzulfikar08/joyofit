@@ -639,6 +639,11 @@ public final class HuaweiWearModule: Module {
         AsyncFunction("setOfflineMapLab") { (enabled: Bool) async throws -> Void in
             try await wearCall { runtime.p2p.offlineMaps.setEnabled(enabled) }
         }
+        // Lab (JRG-434): the Petal Maps companion probe switch (PetalMapsProbe.swift).
+        Function("getPetalMapsProbe") { () -> Bool in runtime.p2p.settings.petalMapsProbe }
+        AsyncFunction("setPetalMapsProbe") { (enabled: Bool) async throws -> Void in
+            try await wearCall { await runtime.p2p.setPetalMapsProbe(enabled) }
+        }
         AsyncFunction("offlineMapFreeSpace") { () async throws -> [String: Any] in
             try await wearCall { try await runtime.p2p.offlineMaps.freeSpace() }
         }

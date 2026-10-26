@@ -7,6 +7,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiPacket
+import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiTLV
 
 /**
  * Request/response layer over a [FrameSink]. Owns the [HuaweiPacket.ParamsProvider] shared by every
@@ -35,6 +36,7 @@ internal class HuaweiSession(
   private val waiters = ArrayList<Waiter>()
   private var closedBy: WearException? = null
   private val subscriptions = ArrayList<Subscription>()
+  private val unhandledObservers = ArrayList<UnhandledObserver>()
 
   // Reassembly state (ResponseManager.receivedPackets for the single main channel).
   private var received: HuaweiPacket? = null
@@ -110,6 +112,16 @@ internal class HuaweiSession(
     val subscription = Subscription(serviceId, commandId, label, handler)
     synchronized(lock) { subscriptions.add(subscription) }
     return AutoCloseable { synchronized(lock) { subscriptions.remove(subscription) } }
+  }
+
+  /**
+   * A lab hook: [observer] also hears every complete packet that no request waits for and no [subscribe]r takes (the ones logged as
+   * "asynchronous"), with its decoded TLV bytes (null when undecodable) and the raw frame, until the returned handle is closed. It runs on
+   * the read thread under the session lock and must not block.
+   */
+  fun observeUnhandled(observer: UnhandledObserver): AutoCloseable {
+    synchronized(lock) { unhandledObservers.add(observer) }
+    return AutoCloseable { synchronized(lock) { unhandledObservers.remove(observer) } }
   }
 
   private fun serialize(packet: HuaweiPacket, label: String): List<ByteArray> = try {
@@ -226,13 +238,23 @@ internal class HuaweiSession(
       }
     } else {
       // The frame is encrypted on most commands; the decoded TLV is what a reader of the log needs.
+      var decoded: HuaweiTLV? = null
       val tlv = try {
         packet.parseTlv()
+        decoded = packet.tlv
         packet.tlv?.toString()
       } catch (e: Exception) {
         "undecodable: ${e.message}"
       }
       events.log(LogDirection.RX, service, command, raw.toHex(), "asynchronous (no pending request) tlv=$tlv")
+      if (unhandledObservers.isNotEmpty()) {
+        val bytes = try {
+          decoded?.serialize()
+        } catch (e: Exception) {
+          null
+        }
+        for (observer in unhandledObservers.toList()) observer.onUnhandled(service, command, bytes, raw)
+      }
     }
   }
 
@@ -253,4 +275,9 @@ internal class HuaweiSession(
       offset = end
     }
   }
+}
+
+/** See [HuaweiSession.observeUnhandled]. */
+internal fun interface UnhandledObserver {
+  fun onUnhandled(service: Int, command: Int, tlv: ByteArray?, raw: ByteArray)
 }

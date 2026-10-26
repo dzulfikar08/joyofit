@@ -434,6 +434,25 @@ final class P2pControllerTests: XCTestCase {
         XCTAssertEqual(h.controller.healthLivingStatus()["registered"] as? Bool, false)
     }
 
+    func testThePetalMapsProbeSwitchIsOffByDefaultAndRegistersAtOnceAndOnConnect() async throws {
+        let h = Harness(expand: [235])
+        XCTAssertFalse(h.controller.settings.petalMapsProbe)
+        await connect(h)
+        XCTAssertNil(h.controller.stack?.petalProbe, "off by default: nothing registered")
+
+        await h.controller.setPetalMapsProbe(true)
+        XCTAssertTrue(h.controller.settings.petalMapsProbe)
+        XCTAssertNotNil(h.controller.stack?.petalProbe)
+        await h.controller.setPetalMapsProbe(false)
+        XCTAssertNil(h.controller.stack?.petalProbe)
+
+        await h.controller.setPetalMapsProbe(true)
+        h.controller.linkDisconnected()
+        await h.controller.linkConnected(h.link.handleValue)
+        XCTAssertNotNil(h.controller.stack?.petalProbe, "registered on every connect while on")
+        await h.controller.setPetalMapsProbe(false)
+    }
+
     func testHealthyLivingAnswersTheWatchAndPushNeedsItsRequest() async throws {
         let h = Harness(expand: [37])
         await connect(h)

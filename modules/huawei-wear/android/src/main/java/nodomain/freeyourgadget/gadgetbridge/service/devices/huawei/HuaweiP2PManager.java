@@ -16,7 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 // Modified for watch-fit (AGPL-3.0-or-later): HuaweiSupportProvider is replaced by the small Transport interface (the session layer
 // implements it); the wake-app screenshot route (HuaweiP2PWakeAppScreenshot, android.net.Uri) is not ported, so every wake-app link is
-// answered with GB's "not supported" code 0xd2; packets and files are routed by the same source package GB uses.
+// answered with GB's "not supported" code 0xd2; packets and files are routed by the same source package GB uses; a lab listener hears the
+// packets no service claims, and one service can be unregistered by module.
 package nodomain.freeyourgadget.gadgetbridge.service.devices.huawei;
 
 import org.slf4j.Logger;
@@ -48,6 +49,12 @@ public class HuaweiP2PManager {
         void log(String message);
     }
 
+    /** Hears a watch packet no registered service claims (no service has its source package; wake-app pings excluded). Lab logging only. */
+    public interface UnclaimedListener {
+        void onUnclaimed(P2P.P2PCommand.Response packet);
+    }
+
+    private volatile UnclaimedListener unclaimedListener;
     private final Transport transport;
 
     private final List<HuaweiBaseP2PService> registeredServices;
@@ -66,6 +73,10 @@ public class HuaweiP2PManager {
 
     public Transport getTransport() {
         return transport;
+    }
+
+    public void setUnclaimedListener(UnclaimedListener listener) {
+        this.unclaimedListener = listener;
     }
 
     public synchronized void registerService(HuaweiBaseP2PService service) {
@@ -94,6 +105,16 @@ public class HuaweiP2PManager {
             svr.unregister();
         }
         registeredServices.clear();
+    }
+
+    /** Unregisters the service of {@code module}, if one is registered. */
+    public synchronized void unregisterService(String module) {
+        for (HuaweiBaseP2PService svr : new ArrayList<>(registeredServices)) {
+            if (svr.getModule().equals(module)) {
+                svr.unregister();
+                registeredServices.remove(svr);
+            }
+        }
     }
 
     private synchronized List<HuaweiBaseP2PService> snapshot() {
@@ -160,10 +181,16 @@ public class HuaweiP2PManager {
                 return;
             }
         }
+        boolean claimed = false;
         for (HuaweiBaseP2PService service : snapshot()) {
             if (service.getPackage().equals(packet.srcPackage)) {
+                claimed = true;
                 service.handlePacket(packet);
             }
+        }
+        UnclaimedListener listener = unclaimedListener;
+        if (!claimed && listener != null) {
+            listener.onUnclaimed(packet);
         }
     }
 }

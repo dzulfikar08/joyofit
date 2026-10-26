@@ -56,6 +56,11 @@ internal class P2pSettings(context: Context) : HealthLivingState {
     get() = prefs.getBoolean(KEY_OFFLINE_MAP_LAB, false)
     set(value) = prefs.edit().putBoolean(KEY_OFFLINE_MAP_LAB, value).apply()
 
+  /** Lab (JRG-434): answer the watch's Petal Maps app and log what it sends ([PetalProbeWire]). Off by default. */
+  var petalMapsProbe: Boolean
+    get() = prefs.getBoolean(KEY_PETAL_MAPS_PROBE, false)
+    set(value) = prefs.edit().putBoolean(KEY_PETAL_MAPS_PROBE, value).apply()
+
   /** The quick replies the user chose (one per line); null until the app sent a list. Never contains a newline inside a reply. */
   var quickReplies: List<String>?
     get() = prefs.getString(KEY_QUICK, null)?.split('\n')
@@ -78,5 +83,6 @@ internal class P2pSettings(context: Context) : HealthLivingState {
     const val KEY_HL_SUMMARY = "hl_summary"
     const val KEY_COURSES = "courses_experimental"
     const val KEY_OFFLINE_MAP_LAB = "offline_map_lab"
+    const val KEY_PETAL_MAPS_PROBE = "petal_maps_probe"
   }
 }

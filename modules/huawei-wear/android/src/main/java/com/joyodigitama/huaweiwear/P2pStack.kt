@@ -64,6 +64,12 @@ internal class P2pStack(
   var dictionaryPing: Int? = null
     private set
 
+  /** The Petal Maps companion probe (lab, [PetalProbeWire]); null unless its switch is on. */
+  @Volatile
+  var petalProbe: PetalMapsProbeService? = null
+    private set
+  private var petalProbeHook: AutoCloseable? = null
+
   fun start() {
     subscription = session.subscribe(P2P.id, P2P.P2PCommand.id, "P2P") { inbound.trySend(it) }
     scope.launch {
@@ -148,12 +154,40 @@ internal class P2pStack(
     service.register()
   }
 
+  /** Registers the Petal Maps companion probe and its listeners for unhandled frames; [P2pController] checks the lab switch. */
+  @Synchronized
+  fun registerPetalProbe() {
+    if (petalProbe != null) return
+    if (!DeviceCaps.supports(0x34, 0x01)) {
+      log("${PetalProbeWire.TAG} the watch does not list the P2P service (34/01); probe not registered")
+      return
+    }
+    val service = PetalMapsProbeService(manager, { log(it) })
+    petalProbe = service
+    manager.setUnclaimedListener { service.onUnclaimed(it) }
+    petalProbeHook = session.observeUnhandled { s, c, tlv, raw -> service.onUnhandled(s, c, tlv, raw) }
+    service.register()
+  }
+
+  @Synchronized
+  fun unregisterPetalProbe() {
+    if (petalProbe == null) return
+    petalProbeHook?.close()
+    petalProbeHook = null
+    manager.setUnclaimedListener(null)
+    manager.unregisterService(PetalProbeWire.PHONE_PACKAGE)
+    petalProbe = null
+    log("${PetalProbeWire.TAG} unregistered")
+  }
+
   /** Re-sends the zones after the profile age or the zone configuration changed; false when nothing went out (another way, or invalid). */
   fun resendHeartRateZones(): Boolean = trackService?.resend() ?: false
 
   fun close() {
     subscription?.close()
     subscription = null
+    petalProbeHook?.close()
+    petalProbeHook = null
     manager.unregisterAllService()
     inbound.close()
     outbound.close()
