@@ -40,7 +40,7 @@ const PREFIX = /^(?:kabupaten|kab|kotamadya|kota)(?: administrasi| adm)? /;
 /** What a query's first word says about the kind, when it is one of the prefixes. */
 const PREFIX_KIND: Record<string, RegionKind> = { kabupaten: 'kabupaten', kab: 'kabupaten', kota: 'kota', kotamadya: 'kota' };
 
-/** A normalised name without its kind prefix: "Kota Malang" and "Kabupaten Malang" are both "malang". */
+/** A normalised name without its kind prefix: Kota Malang and Kabupaten Malang both become `malang`. */
 export function baseName(name: string): string {
   return normalize(name).replace(PREFIX, '');
 }
