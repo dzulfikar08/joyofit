@@ -16,9 +16,8 @@ the watch (lab test)"; protocol, findings and the pipeline's numbers in `docs/of
 
 ## Setup
 
-Tested on macOS 15 (arm64) with osmium-tool 1.19.1, Python 3.14, shapely 2.2.0, bun 1.4.3, wrangler 4.151.0. The scripts use nothing
-Mac-specific (POSIX shell, `osmium`, Python's standard library and shapely); the full build is meant for the owner's Linux box. On
-Ubuntu 24.04 / Debian 12:
+Tested on macOS 26 (arm64) with osmium-tool 1.19.1, Python 3.14, shapely 2.2.0, bun 1.4.3, wrangler 4.151.0, and in CI on Ubuntu 24.04
+with osmium-tool 1.16.0 and Python 3.12.3 (below). The full build is meant for the owner's Linux box. On Ubuntu 24.04 / Debian 12:
 
 ```
 sudo apt install osmium-tool python3 python3-venv git curl     # osmium-tool 1.16 (Ubuntu 24.04) / 1.15 (Debian 12) is fine
@@ -73,11 +72,18 @@ Smoke test (2026-10-26, on the Mac: 8 GB, 8 cores; Geofabrik Indonesia of 2026-1
 in all (19 s boundaries, 35 s cutting, the rest converting); Kota Batu 2.2 MiB in 8 s, Kota Malang 7.1 MiB in 26 s, Kabupaten Sidoarjo
 21.1 MiB in 71 s; peak RSS 2.4 GB. A second run skipped all three in 0.3 s. The split path was checked with `--max-mib 3
 --split-pbf-mib 5` on Kota Malang: 3 parts of 2.2 to 2.6 MiB, ids `2000000000000013573` to `…033573`, headers "Kota Malang 1/3" to "3/3".
+On Linux, `.github/workflows/offline-maps.yml` builds Kota Ambon (8171) from Geofabrik's Maluku extract on every pull request that touches
+this folder (Ubuntu 24.04, osmium 1.16.0, Python 3.12.3: 14.1 MiB in 36 s) and checks that a second run skips it.
 
-### Monthly refresh on the Linux box (systemd timer)
+Expected for all 514 regions (from cutting every region on 2026-10-25, see `docs/offline-maps.md`, "Size, time and cost"): about 2.0 to
+2.6 GiB of maps, about 2 to 2.5 CPU hours, so 40 to 60 minutes with `--jobs 6`.
 
-The run takes hours of CPU and a few GB of RAM and disk, and `out/` must persist between runs (that is what makes it incremental), so it
-runs on the owner's Linux box rather than a GitHub-hosted runner. `~/.config/systemd/user/joyofit-maps.service`:
+### Monthly refresh
+
+Two ways; use one. **GitHub Actions**: the same workflow's `monthly` job rebuilds everything on the 2nd of each month (about 1 to 1.5 hours
+on the 4-CPU runner, inside the 6-hour limit) and publishes when the repository secret `CLOUDFLARE_R2_TOKEN` (an API token with "Workers R2
+Storage: Edit" on the JoyoFit account) is set; "Run workflow" with "full" starts it by hand. **The owner's Linux box**, where `out/` persists
+(a stopped run resumes there), with a systemd timer. `~/.config/systemd/user/joyofit-maps.service`:
 
 ```
 [Unit]
