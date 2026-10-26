@@ -99,7 +99,7 @@
     "title": "Rekam data timbangan",
     "body": "Timbanganmu belum dikenali? Pilih perangkatnya di daftar pencarian, mulai merekam, lalu naik ke timbangan. JoyoFit mencatat semua yang dikirim timbangan ke log aplikasi. Salin atau bagikan hasilnya supaya dukungannya bisa ditambahkan.",
     "connect": "Sambungkan juga ke perangkatnya",
-    "connectHint": "Ikut mencatat data yang dikirim lewat sambungan. Tidak ada yang dikirim ke timbangan.",
+    "connectHint": "Ikut mencatat data yang dikirim lewat sambungan. Tidak ada yang dikirim ke timbangan, kecuali satu pertanyaan yang tidak mengubah apa pun ke timbangan Huawei (menanyakan pengaturan sambungannya).",
     "start": "Mulai merekam",
     "stop": "Berhenti merekam",
     "recording": "Merekam {{count}} perangkat…",

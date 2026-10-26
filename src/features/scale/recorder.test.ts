@@ -82,4 +82,68 @@ describe('ScaleRecorder', () => {
     expect(lines.some((l) => l.direction === 'error' && l.message.includes('connect'))).toBe(true);
     recorder.stop();
   });
+
+  describe('Huawei link probe (fe86)', () => {
+    /** The answer of our own Fit 4 Pro to the same question (Fixtures/real-ble-frames.txt of modules/huawei-wear). */
+    const REPLY =
+      '5a0035000101010102020203fe030202020402000005120001a307c9871921bef4d039a123fc542d330701040901000d01000f0101100100d50f';
+    const services = [
+      { uuid: '180a', characteristics: [{ uuid: '2a29', properties: ['read'] }] },
+      { uuid: 'fe86', characteristics: [{ uuid: 'fe01', properties: ['writeNoResponse'] }, { uuid: 'fe02', properties: ['notify'] }] },
+      { uuid: 'fff0', characteristics: [{ uuid: 'fff1', properties: ['write', 'indicate'] }] },
+    ];
+
+    async function connected() {
+      const s = setup();
+      await s.recorder.start([ID], { connect: true });
+      s.native.emit('onScaleAdvertisement', ad({}));
+      await tick();
+      s.native.emit('onScaleLink', { id: ID, state: 'connected', error: null, services });
+      for (let i = 0; i < 5; i++) await tick();
+      return s;
+    }
+
+    it('subscribes fe02 and asks the link params first, then records the rest without subscribing fe02 twice', async () => {
+      const { native, lines, recorder } = await connected();
+      expect(native.calls.filter((c) => !c.startsWith('scan') && !c.startsWith('connect'))).toEqual([
+        'subscribe fe86/fe02', 'write fe86/fe01 5a000b0001010100020003000400f13b', 'read 180a/2a29', 'subscribe fff0/fff1',
+      ]);
+      expect(native.writes).toEqual([{ service: 'fe86', characteristic: 'fe01', hex: '5a000b0001010100020003000400f13b', withResponse: false }]);
+      expect(lines.find((l) => l.direction === 'tx')).toMatchObject({ message: `${RECORD_PREFIX}huawei-link ${ID} fe86/fe01 link params request`, hex: '5a000b0001010100020003000400f13b' });
+      recorder.stop();
+    });
+
+    it('logs each notification raw and the answer decoded once its pieces are in', async () => {
+      const { native, lines, recorder } = await connected();
+      native.emit('onScaleValue', { id: ID, ts: 1, service: 'fe86', characteristic: 'fe02', value: REPLY.slice(0, 40) });
+      expect(lines.some((l) => l.message.includes('link params:'))).toBe(false);
+      native.emit('onScaleValue', { id: ID, ts: 2, service: 'fe86', characteristic: 'fe02', value: REPLY.slice(40) });
+      expect(lines.filter((l) => l.direction === 'rx' && l.message.includes('fe86/fe02')).map((l) => l.hex)).toEqual([REPLY.slice(0, 40), REPLY.slice(40)]);
+      const decoded = lines.find((l) => l.message.includes('link params:'));
+      expect(decoded?.direction).toBe('info');
+      expect(decoded?.message).toContain('protocolVersion=2 authVersion=1 bondState=0 mtu=514 sliceSize=1022');
+      recorder.stop();
+      expect(lines.some((l) => l.message.includes('no answer'))).toBe(false);
+    });
+
+    it('says so when the link closes without an answer', async () => {
+      const { native, lines, recorder } = await connected();
+      native.emit('onScaleLink', { id: ID, state: 'disconnected', error: 'timeout', services: [] });
+      expect(lines.at(-1)?.message).toBe(`${RECORD_PREFIX}huawei-link ${ID}: no answer to the link params request`);
+      recorder.stop();
+    });
+
+    it('falls back to the plain recording when fe02 cannot be subscribed', async () => {
+      const s = setup();
+      await s.recorder.start([ID], { connect: true });
+      s.native.emit('onScaleAdvertisement', ad({}));
+      await tick();
+      s.native.failing.add('subscribe');
+      s.native.emit('onScaleLink', { id: ID, state: 'connected', error: null, services });
+      for (let i = 0; i < 5; i++) await tick();
+      expect(s.native.writes).toHaveLength(0);
+      expect(s.native.calls.filter((c) => c === 'subscribe fe86/fe02')).toHaveLength(2);
+      s.recorder.stop();
+    });
+  });
 });

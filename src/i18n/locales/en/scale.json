@@ -99,7 +99,7 @@
     "title": "Record scale data",
     "body": "Scale not recognised? Pick its device in the search list, start recording, then step on the scale. JoyoFit writes everything the scale sends to the app log. Copy or share the result so support for it can be added.",
     "connect": "Also connect to the device",
-    "connectHint": "Also records the data sent over a connection. Nothing is sent to the scale.",
+    "connectHint": "Also records the data sent over a connection. Nothing is sent to the scale, except one read-only question to a Huawei scale (its connection settings).",
     "start": "Start recording",
     "stop": "Stop recording",
     "recording": "Recording {{count}} devices…",
