@@ -78,7 +78,7 @@ Open source (AGPL-3.0): https://github.com/dzulfikar08/joyofit
 ```
 JoyoFit is an independent, open-source app that syncs a compatible smartwatch with the iPhone over Bluetooth (tested with the Huawei Watch Fit 4 Pro). It is not made, endorsed or sponsored by Huawei.
 
-DEMO VIDEO (physical iPhone, iOS 27, build 1.1 202610260531, Huawei Watch Fit 4 Pro, the watch filmed with a second camera during pairing): https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-202610260531.mp4. It shows pairing and the confirmation on the watch, the first sync, the Apple Health and Location permission requests, and the synced data.
+DEMO VIDEO (physical iPhone, iOS 27, build 1.1 202610260531, Huawei Watch Fit 4 Pro, the watch filmed with a second camera during pairing): https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-202610260531.mp4 . It shows pairing and the confirmation on the watch, the first sync, the Apple Health and Location permission requests, and the synced data.
 
 NO SIGN-IN, NO DEMO ACCOUNT. Watch sync and every screen in the video work without an account. Signing in with a JoyoRogo account only adds the optional cloud backup, Strava upload and the JoyoRogo Pro features (Coach, family sharing), which are bought in the JoyoRogo app; JoyoFit has no in-app purchases, no prices and no links to a web checkout.
 
@@ -243,8 +243,7 @@ The notes of the rejected submission pointed to `https://fit.joyorogo.com/review
 
 ### Owner checklist
 
-Done on 2026-10-26: PR #27 merged, build 1.1 (202610260531) attached, version record renamed to 1.1, promotional text and description replaced in both locales, App Review notes replaced, demo video recorded and its link in the notes. Left:
+Done on 2026-10-26: PR #27 merged, build 1.1 (202610260531) attached, version record renamed to 1.1, promotional text and description replaced in both locales, App Review notes replaced, demo video recorded and its link in the notes, the reply above posted in the Resolution Center, the version updated (**Update Review**) and **resubmitted** (status Waiting for Review, 2026-10-26 18:02). Left:
 
 1. Optional: download the App Review crash logs (path above) and confirm they show `NoSceneLifecycleAdoption`.
-2. Reply in the Resolution Center with the text above.
-3. Submit for review.
+2. Wait for App Review's answer.
