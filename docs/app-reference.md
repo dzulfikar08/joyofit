@@ -208,9 +208,10 @@ are in [`docs/strava.md`](strava.md) section 1.
   locks the session's keychain item while the phone is locked); the connect page is an `ASWebAuthenticationSession`.
 - **Description.** Off by default: **Add fit.joyorogo.com to the description** puts that text (plain, never the title)
   in the activity description.
-- **Without the connection (manual upload).** The shared Strava application has room for a limited number of athletes, so the
-  workout menu (⋮) always offers **Upload to Strava (manual)**, and the Strava card offers it while the API upload cannot run
-  (not connected, not signed in, or Strava refused the file). It writes the same FIT file as `joyofit-<start>.fit` and opens
+- **Without the connection (manual upload).** While the Worker's switch is on (`manualUpload` in the status, Worker var
+  `STRAVA_MANUAL_UPLOAD`; last value kept on the phone, on by default) the workout menu (⋮) offers **Upload to Strava
+  (manual)**, and the Strava card offers it while the API upload cannot run (not connected, not signed in, or Strava refused
+  the file). It is a workaround for everyone while the shared Strava application is short of athletes. It writes the same FIT file as `joyofit-<start>.fit` and opens
   `strava.com/upload/select` (desktop site) in an in-app web view (`modules/strava-upload-web`, Kotlin + Swift, needs a new
   binary). The person logs in to Strava there (email and password: Google blocks its sign-in in embedded web views) and taps
   Strava's own **Choose files**; the app answers that file request with the workout's file (Android `onShowFileChooser`, iOS 18.4+

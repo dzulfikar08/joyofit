@@ -20,9 +20,9 @@ import { OPEN_IN_STACK } from '@/components/navigation';
 
 /**
  * "Send to Strava" for one workout, and where it ended up. Sending is also allowed for workouts that ended before
- * the account connected (and for imported ones): only the automatic upload is limited to new workouts. When the API upload
- * cannot run (not connected, not signed in, or Strava turned the file away) the manual upload on Strava's own page is offered
- * (`app/workouts/strava-upload.tsx`); the workout menu always offers it.
+ * the account connected (and for imported ones): only the automatic upload is limited to new workouts. While the Worker's
+ * manual upload switch is on, and the API upload cannot run (not connected, not signed in, or Strava turned the file away), the
+ * manual upload on Strava's own page is offered (`app/workouts/strava-upload.tsx`); the workout menu offers it whenever the switch is on.
  */
 export function StravaWorkoutSection({ workout }: { workout: WorkoutRow }) {
   const { t } = useTranslation('sharing');
@@ -70,8 +70,14 @@ export function StravaWorkoutSection({ workout }: { workout: WorkoutRow }) {
   }, [db, workout.id, strava]);
 
   const done = row?.status === 'done' && row.activityId !== null;
-  // Without the API upload, or when Strava turns the upload away, the person can still upload the file on Strava's own page.
-  const offerManual = !done && markedAt === null && workout.complete && (!connected || !strava.signedIn || row?.status === 'rejected' || row?.status === 'failed');
+  // Without the API upload, or when Strava turns the upload away, the person can still upload the file on Strava's own page, while
+  // the Worker's switch says Strava capacity is short (`StravaSettings.manualUpload`).
+  const offerManual =
+    strava.settings.manualUpload &&
+    !done &&
+    markedAt === null &&
+    workout.complete &&
+    (!connected || !strava.signedIn || row?.status === 'rejected' || row?.status === 'failed');
 
   const unmark = useCallback(() => {
     clearManualUploadMark(db, workout.start).then(

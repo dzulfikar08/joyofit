@@ -3,6 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { t } from '@/i18n';
 import { CloudHttpError, cloudRequest } from '@/cloud/api';
 import {
+  applyManualUploadSwitch,
   applyStravaConnection,
   getStravaSettings,
   getStravaUpload,
@@ -99,6 +100,7 @@ export async function syncStravaStatus(db: SQLiteDatabase): Promise<StravaStatus
   try {
     const status = await fetchStravaStatus();
     await applyStravaConnection(db, status);
+    await applyManualUploadSwitch(db, status.manualUpload);
     if (!status.connected) token = null;
     return status;
   } catch (error) {

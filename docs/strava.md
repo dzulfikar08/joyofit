@@ -366,8 +366,16 @@ screenshots and how athlete data is handled). Before sending:
 The shared Strava API application has room for a limited number of athletes until Strava approves it for more (section 1),
 so not everyone can connect. **Upload to Strava (manual)** puts one workout on Strava without the connection: it is the
 upload a person does on a computer at `https://www.strava.com/upload/select`, made as close to one tap as Strava's rules
-allow. It is offered on the workout screen's Strava card whenever the API upload cannot run (not connected, not signed in
-to JoyoRogo, or Strava refused the file) and always in the workout menu (⋮).
+allow. It is a workaround for everyone while capacity is short, with no plan difference. It is offered on the workout
+screen's Strava card whenever the API upload cannot run (not connected, not signed in to JoyoRogo, or Strava refused the
+file) and in the workout menu (⋮), both only while the Worker's switch is on.
+
+**Switch.** The Worker var `STRAVA_MANUAL_UPLOAD` (`on` by default, `off`) is sent as `manualUpload` in every
+`GET /v1/strava` answer. The phone keeps the last value in `cloud_state.strava_manual_upload` (`applyManualUploadSwitch`,
+read as `StravaSettings.manualUpload`), so signed out and offline use the last known value; a phone that never heard it, or a
+Worker that does not send it, shows the option. Set it `off` once Strava grants the application enough athletes (9,999),
+back `on` if the slots are ever full again; the card button and the ⋮ entry go with it, and a workout already marked as
+uploaded keeps showing its mark.
 
 **Flow.** The app builds the same FIT file the API upload sends (`buildWorkoutFit`, `manualUploadFile`), writes it to the
 cache as `joyofit-<workout start>.fit` (`fitFileName`, the API upload's file name too) and opens

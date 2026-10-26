@@ -41,6 +41,12 @@ export interface StravaSettings {
   addDevice: boolean;
   /** The grant has `profile:read_all` (the athlete agreed to let JoyoFit list their Strava shoes and bikes). */
   gearScope: boolean;
+  /**
+   * Offer the manual upload on Strava's own page (`features/strava/manualUpload.ts`): the Worker's `manualUpload` switch, on while
+   * the shared Strava application is short of athlete capacity. The last value the Worker gave, so signed out and offline keep it;
+   * on until the Worker has said otherwise.
+   */
+  manualUpload: boolean;
 }
 
 export async function getStravaSettings(db: SQLiteDatabase): Promise<StravaSettings> {
@@ -54,6 +60,7 @@ export async function getStravaSettings(db: SQLiteDatabase): Promise<StravaSetti
     addLink: map.get('strava_add_link') === '1',
     addDevice: map.get('strava_add_device') !== '0',
     gearScope: map.get('strava_gear_scope') === '1',
+    manualUpload: map.get('strava_manual_upload') !== '0',
   };
 }
 
@@ -63,6 +70,11 @@ export function setStravaAddLink(db: SQLiteDatabase, on: boolean): Promise<void>
 
 export function setStravaAddDevice(db: SQLiteDatabase, on: boolean): Promise<void> {
   return setCloudState(db, { strava_add_device: on ? '1' : '0' });
+}
+
+/** Keeps the Worker's manual upload switch; a Worker that does not send it (`undefined`) leaves the last value. */
+export async function applyManualUploadSwitch(db: SQLiteDatabase, manualUpload: boolean | undefined): Promise<void> {
+  if (manualUpload !== undefined) await setCloudState(db, { strava_manual_upload: manualUpload ? '1' : '0' });
 }
 
 /**

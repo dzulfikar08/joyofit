@@ -2,7 +2,14 @@ import { describe, expect, it } from 'bun:test';
 
 import { openMemoryDb } from '@/cloud/syncTestKit';
 import { ensureGearSchema } from '@/features/gear/store';
-import { applyStravaConnection, getStravaUpload, listAutoUploadCandidates, saveStravaUpload } from '@/db/strava';
+import {
+  applyManualUploadSwitch,
+  applyStravaConnection,
+  getStravaSettings,
+  getStravaUpload,
+  listAutoUploadCandidates,
+  saveStravaUpload,
+} from '@/db/strava';
 
 import { clearManualUploadMark, ensureStravaManualSchema, getManualUploadMark, markManualUpload } from './manualStore';
 
@@ -50,5 +57,26 @@ describe('manual upload mark', () => {
     await applyStravaConnection(db, { connected: false });
     expect(await getStravaUpload(db, START)).toBeNull();
     expect(await getManualUploadMark(db, START)).toBe(100);
+  });
+});
+
+describe('manual upload switch', () => {
+  it('is on until the Worker says otherwise, follows it, and keeps the last value when the Worker sends none', async () => {
+    const { db } = await open();
+    expect((await getStravaSettings(db)).manualUpload).toBe(true);
+    await applyManualUploadSwitch(db, false);
+    expect((await getStravaSettings(db)).manualUpload).toBe(false);
+    await applyManualUploadSwitch(db, undefined);
+    expect((await getStravaSettings(db)).manualUpload).toBe(false);
+    await applyManualUploadSwitch(db, true);
+    expect((await getStravaSettings(db)).manualUpload).toBe(true);
+  });
+
+  it('survives a disconnect, which forgets only the connection', async () => {
+    const { db } = await open();
+    await applyStravaConnection(db, { connected: true, athleteId: 7, connectedAt: START });
+    await applyManualUploadSwitch(db, false);
+    await applyStravaConnection(db, { connected: false });
+    expect(await getStravaSettings(db)).toMatchObject({ connectedAt: null, manualUpload: false });
   });
 });

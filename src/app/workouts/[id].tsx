@@ -79,6 +79,7 @@ import { sportKind } from '@/features/workouts/analysis/sport';
 import { errorMessage, formatCount, formatDateTime } from '@/format';
 import { fmtDecimal, fmtInt, t as translate } from '@/i18n';
 import { spacing, useColors } from '@/theme';
+import { useStrava } from '@/state/StravaProvider';
 import type { StepSample } from '@/wear';
 
 interface Loaded {
@@ -149,6 +150,7 @@ type AnalysisState =
 export default function WorkoutDetailScreen() {
   const db = useSQLiteContext();
   const router = useRouter();
+  const { manualUpload } = useStrava().settings;
   const { id } = useLocalSearchParams<{ id: string }>();
   const [menuOpen, setMenuOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -299,8 +301,8 @@ export default function WorkoutDetailScreen() {
           } satisfies MenuItem,
         ]
       : []),
-    // Always offered, connected or not: the upload on Strava's own page, without the API (`StravaWorkoutSection` explains).
-    ...(loaded && exporter.available.fit
+    // Offered connected or not while the Worker's switch is on (Strava capacity is short): the upload on Strava's own page.
+    ...(manualUpload && loaded && exporter.available.fit
       ? [
           {
             key: 'strava-manual',

@@ -46,7 +46,7 @@ export interface StravaContextValue {
   refresh: () => Promise<void>;
 }
 
-const EMPTY: StravaSettings = { connectedAt: null, athleteId: null, addLink: false, addDevice: true, gearScope: false };
+const EMPTY: StravaSettings = { connectedAt: null, athleteId: null, addLink: false, addDevice: true, gearScope: false, manualUpload: true };
 
 /** Strava capacity for a user who is not connected (the shared Strava application has a fixed number of athletes). */
 export interface StravaSlots {
