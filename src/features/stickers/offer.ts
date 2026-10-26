@@ -63,6 +63,14 @@ export function offerGroups(subject: StickerSubject, templates: readonly Templat
   return [...groups.values()];
 }
 
+/**
+ * The group the sheet opens on: the subject's `defaultGroup` (the card that fits the sport, `data/sportMetrics.ts`) when the
+ * groups hold it, else the first group; null without groups.
+ */
+export function initialGroup(groups: readonly TemplateGroup[], subject: Pick<StickerSubject, 'defaultGroup'>): TemplateGroup | null {
+  return groups.find((g) => g.key === subject.defaultGroup) ?? groups[0] ?? null;
+}
+
 /** The template of a group for the wanted canvas; a style that only has the other canvas keeps its own. */
 export function pickVariant(group: TemplateGroup, wanted: Exclude<Canvas, 'sticker' | 'portrait'>): Template {
   const variant = group.variants[wanted] ?? group.variants.story ?? group.variants.square ?? group.variants.portrait ?? group.variants.sticker;

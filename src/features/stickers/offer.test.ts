@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { parseTemplate } from './core/parse';
 import type { Template } from './core/schema';
-import { availableFilters, canvasOf, filterGroups, hasCanvasChoice, offerGroups, pickVariant } from './offer';
+import { availableFilters, canvasOf, filterGroups, hasCanvasChoice, initialGroup, offerGroups, pickVariant } from './offer';
 import type { StickerSubject } from './subject';
 import { kit, template } from './templates/dsl';
 
@@ -84,6 +84,21 @@ describe('pickVariant and canvas choice', () => {
     expect(canvasOf(TEMPLATES[0]!)).toBe('story');
     expect(canvasOf(TEMPLATES[1]!)).toBe('square');
     expect(canvasOf(TEMPLATES[2]!)).toBe('sticker');
+  });
+});
+
+describe('initialGroup', () => {
+  const groups = offerGroups(subject(['run', 'badge'], { run: {} }), TEMPLATES);
+
+  test('opens on the default group of the subject when it is offered', () => {
+    expect(initialGroup(groups, { defaultGroup: 'badge.medal' })?.key).toBe('badge.medal');
+  });
+
+  test('falls back to the first group without a default, or with one the subject cannot show', () => {
+    expect(initialGroup(groups, {})?.key).toBe('run.bold');
+    // A route sticker needs a route; this subject has none.
+    expect(initialGroup(groups, { defaultGroup: 'run.route' })?.key).toBe('run.bold');
+    expect(initialGroup([], { defaultGroup: 'run.bold' })).toBeNull();
   });
 });
 

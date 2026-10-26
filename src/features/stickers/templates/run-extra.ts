@@ -2,8 +2,8 @@
  * Run templates, second set: the two transparent stickers (route, watch-face stats), the thermal receipt, the route-focus map
  * story and the two chart cards (km splits, heart-rate zones). `run.ts` holds the other five styles.
  */
-import { all, footer, has, lacks, sportGlyph, statRow, tl } from './blocks';
-import { kit, template, type Expr, type Kit, type LayerJson } from './dsl';
+import { all, footer, has, is, lacks, not, sportGlyph, statRow, tl } from './blocks';
+import { kit, template, type Expr, type Kit, type LayerJson, type TextOpts } from './dsl';
 import { INK, PAPER, STICKER, VOLT } from './palette';
 
 // ----------------------------------------------------------------------------------------------------------- shared
@@ -12,6 +12,17 @@ import { INK, PAPER, STICKER, VOLT } from './palette';
 const atLeast = (path: string, n: number) => has(`${path}.${n - 1}`);
 const atMost = (path: string, n: number) => lacks(`${path}.${n}`);
 const countIn = (path: string, lo: number, hi?: number) => (hi === undefined ? atLeast(path, lo) : all(atLeast(path, lo), atMost(path, hi)));
+
+/** Sport families with their own receipt sign-off; a run, or a workout from before families, keeps "Thanks for running". */
+const THANKS_FAMILIES = ['walk', 'ride', 'swim', 'gym', 'cardio', 'flow', 'court', 'other'];
+
+/** The receipt's last line, one text per family; exactly one passes its `when`. */
+function thanks(k: Kit, o: TextOpts): LayerJson[] {
+  return [
+    k.text({ w: 'fill' }, tl('tpl.run.text.thanks'), { ...o, when: not({ bind: 'run.category', in: THANKS_FAMILIES }) }),
+    ...THANKS_FAMILIES.map((family) => k.text({ w: 'fill' }, tl(`tpl.run.text.thanksBy.${family}`), { ...o, when: is('run.category', family) })),
+  ];
+}
 
 /** Sport glyph disc, sport name, date: the top line of the cards. */
 function header(k: Kit, size = 96): LayerJson {
@@ -39,9 +50,11 @@ function runRouteSticker() {
   const line = k.group(
     { w: 'auto', h: 'auto' },
     [
-      k.stat({ w: 'auto' }, '{run.distanceM|km}', { unit: tl('unit.km'), size: 112, unitSize: 44, weight: 800, color: '$fg', labelPos: 'none', shadow: true, when: has('run.distanceM') }),
+      k.stat({ w: 'auto' }, '{run.distanceM|km}', { unit: tl('unit.km'), size: 112, unitSize: 44, weight: 800, color: '$fg', labelPos: 'none', shadow: true, when: all(has('run.distanceM'), not(is('run.category', 'swim'))) }),
+      k.stat({ w: 'auto' }, '{run.distanceM|int}', { unit: tl('unit.m'), size: 112, unitSize: 44, weight: 800, color: '$fg', labelPos: 'none', shadow: true, when: all(has('run.distanceM'), is('run.category', 'swim')) }),
       k.stat({ w: 'auto' }, '{run.paceSecKm|pace}', { unit: tl('unit.perKm'), size: 64, unitSize: 30, weight: 700, color: '$accent', labelPos: 'none', shadow: true, when: has('run.paceSecKm') }),
       k.stat({ w: 'auto' }, '{run.speedKmh|num:1}', { unit: tl('unit.kmh'), size: 64, unitSize: 30, weight: 700, color: '$accent', labelPos: 'none', shadow: true, when: has('run.speedKmh') }),
+      k.stat({ w: 'auto' }, '{run.pace100Sec|pace}', { unit: tl('unit.per100m'), size: 64, unitSize: 30, weight: 700, color: '$accent', labelPos: 'none', shadow: true, when: has('run.pace100Sec') }),
       k.stat({ w: 'auto' }, '{run.movingSec|dur}', { size: 64, weight: 700, color: '$accent', labelPos: 'none', shadow: true, when: all(lacks('run.distanceM')) }),
     ],
     { dir: 'row', gap: 48, align: 'end' },
@@ -79,10 +92,12 @@ function runStatsSticker() {
   const stack = k.group(
     { w: 'auto', h: 'auto' },
     [
-      cell('{run.distanceM|km}', 'label.distance', { unit: tl('unit.km'), size: 168, color: '$accent', when: has('run.distanceM') }),
+      cell('{run.distanceM|km}', 'label.distance', { unit: tl('unit.km'), size: 168, color: '$accent', when: all(has('run.distanceM'), not(is('run.category', 'swim'))) }),
+      cell('{run.distanceM|int}', 'label.distance', { unit: tl('unit.m'), size: 168, color: '$accent', when: all(has('run.distanceM'), is('run.category', 'swim')) }),
       cell('{run.movingSec|dur}', 'label.time', { size: 120 }),
       cell('{run.paceSecKm|pace}', 'label.pace', { unit: tl('unit.perKm'), size: 120, when: has('run.paceSecKm') }),
       cell('{run.speedKmh|num:1}', 'label.speed', { unit: tl('unit.kmh'), size: 120, when: has('run.speedKmh') }),
+      cell('{run.pace100Sec|pace}', 'label.pace', { unit: tl('unit.per100m'), size: 120, when: has('run.pace100Sec') }),
       cell('{run.hrAvg|int}', 'label.hr', { unit: tl('unit.bpm'), size: 120, when: has('run.hrAvg') }),
     ],
     { dir: 'column', gap: 40, align: 'start' },
@@ -185,20 +200,32 @@ function runReceiptSticker() {
       k.text({ w: 'fill' }, '{run.sport|upper}', { ...mono, size: 30, weight: 700, color: '$accent', align: 'center', ls: 2, minSize: 22 }),
       k.text({ w: 'fill' }, '{run.startedAt|date:medium}', { ...mono, size: 26, weight: 500, color: '$fgMuted', align: 'center', ls: 1 }),
       dash(),
-      row('label.distance', '{run.distanceM|km}', tl('unit.km'), has('run.distanceM')),
+      row('label.distance', '{run.distanceM|km}', tl('unit.km'), all(has('run.distanceM'), not(is('run.category', 'swim')))),
+      row('label.distance', '{run.distanceM|int}', tl('unit.m'), all(has('run.distanceM'), is('run.category', 'swim'))),
       row('label.time', '{run.movingSec|dur}', undefined, has('run.movingSec')),
       row('label.pace', '{run.paceSecKm|pace}', tl('unit.perKm'), has('run.paceSecKm')),
+      row('label.pace', '{run.pace100Sec|pace}', tl('unit.per100m'), has('run.pace100Sec')),
       row('label.speed', '{run.speedKmh|num:1}', tl('unit.kmh'), has('run.speedKmh')),
+      row('label.laps', '{run.laps|int}', undefined, has('run.laps')),
+      row('label.swolf', '{run.swolf|int}', undefined, has('run.swolf')),
+      row('label.sets', '{run.sets|int}', undefined, has('run.sets')),
+      row('label.reps', '{run.reps|int}', undefined, has('run.reps')),
+      row('label.volume', '{run.volumeKg|int}', tl('unit.kg'), has('run.volumeKg')),
+      row('label.jumps', '{run.jumps|int}', undefined, has('run.jumps')),
       row('label.avgHr', '{run.hrAvg|int}', tl('unit.bpm'), has('run.hrAvg')),
       row('label.maxHr', '{run.hrMax|int}', tl('unit.bpm'), has('run.hrMax')),
       row('label.elevation', '{run.elevGainM|int}', tl('unit.m'), has('run.elevGainM')),
-      row('label.cadence', '{run.cadence|int}', tl('unit.spm'), has('run.cadence')),
+      row('label.cadence', '{run.cadence|int}', tl('unit.spm'), all(has('run.cadence'), not(is('run.category', 'ride')))),
+      row('label.cadence', '{run.cadence|int}', tl('unit.rpm'), all(has('run.cadence'), is('run.category', 'ride'))),
+      row('label.power', '{run.power|int}', tl('unit.watt'), has('run.power')),
+      row('label.steps', '{run.steps|int}', undefined, has('run.steps')),
       row('label.kcal', '{run.kcal|int}', tl('unit.kcal'), has('run.kcal')),
       dash(),
-      total('{run.distanceM|km}', tl('unit.km'), has('run.distanceM')),
+      total('{run.distanceM|km}', tl('unit.km'), all(has('run.distanceM'), not(is('run.category', 'swim')))),
+      total('{run.distanceM|int}', tl('unit.m'), all(has('run.distanceM'), is('run.category', 'swim'))),
       total('{run.movingSec|dur}', undefined, lacks('run.distanceM')),
       k.shape({ w: 'fill', h: 96 }, 'path', { d: barcode(PAPER_W - 88, 96), viewBox: [PAPER_W - 88, 96], fill: '$fg' }),
-      k.text({ w: 'fill' }, tl('tpl.run.text.thanks'), { ...mono, size: 26, weight: 700, color: '$fg', align: 'center', upper: true, ls: 2, fit: 'wrap', maxLines: 2 }),
+      ...thanks(k, { ...mono, size: 26, weight: 700, color: '$fg', align: 'center', upper: true, ls: 2, fit: 'wrap', maxLines: 2 }),
       k.text({ w: 'fill' }, '{app.link}', { ...mono, size: 26, weight: 500, color: '$fgMuted', align: 'center', role: 'watermark', minSize: 22 }),
     ],
     { dir: 'column', gap: 22, align: 'stretch', padding: 44, fill: '$bg' },
@@ -218,6 +245,8 @@ function runReceiptSticker() {
     style: 'receipt',
     aspect: 'free',
     height: 1160,
+    // One row per number any sport family has, most of them hidden for a given workout.
+    constraints: { maxLayers: 140 },
     background: { kind: 'transparent' },
     dark: RECEIPT.dark,
     light: RECEIPT.light,
@@ -267,7 +296,8 @@ function runMapStory() {
   const headline = k.group(
     { w: 'fill', h: 'auto' },
     [
-      k.stat({ w: 'fill' }, '{run.distanceM|km}', { unit: tl('unit.km'), size: 210, unitSize: 60, weight: 800, color: '$accent', labelPos: 'none', minSize: 120, when: has('run.distanceM') }),
+      k.stat({ w: 'fill' }, '{run.distanceM|km}', { unit: tl('unit.km'), size: 210, unitSize: 60, weight: 800, color: '$accent', labelPos: 'none', minSize: 120, when: all(has('run.distanceM'), not(is('run.category', 'swim'))) }),
+      k.stat({ w: 'fill' }, '{run.distanceM|int}', { unit: tl('unit.m'), size: 210, unitSize: 60, weight: 800, color: '$accent', labelPos: 'none', minSize: 120, when: all(has('run.distanceM'), is('run.category', 'swim')) }),
       k.stat({ w: 'fill' }, '{run.movingSec|dur}', { size: 210, weight: 800, color: '$accent', labelPos: 'none', minSize: 120, when: lacks('run.distanceM') }),
       k.group(
         { w: 'auto', h: 'auto' },
@@ -472,7 +502,8 @@ function runZones(canvas: Canvas) {
       [
         { value: '{run.hrMax|int}', label: tl('label.maxHr'), unit: tl('unit.bpm'), when: has('run.hrMax') },
         { value: '{run.movingSec|dur}', label: tl('label.time') },
-        { value: '{run.distanceM|km}', label: tl('label.distance'), unit: tl('unit.km'), when: has('run.distanceM') },
+        { value: '{run.distanceM|km}', label: tl('label.distance'), unit: tl('unit.km'), when: all(has('run.distanceM'), not(is('run.category', 'swim'))) },
+        { value: '{run.distanceM|int}', label: tl('label.distance'), unit: tl('unit.m'), when: all(has('run.distanceM'), is('run.category', 'swim')) },
       ],
       { size, labelSize: 26, color: '$fg', labelColor: '$fgMuted', unitSize: 28, weight: 800 },
     );

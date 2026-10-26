@@ -197,7 +197,16 @@
     },
     "metronome": {
       "title": "Metronom",
-      "hint": "Getar di setiap ketukan langkah",
+      "hint": {
+        "vibration": "Getar di setiap ketukan langkah",
+        "sound": "Klik di setiap ketukan langkah, berbarengan dengan musikmu",
+        "both": "Klik dan getar di setiap ketukan langkah"
+      },
+      "mode": {
+        "vibration": "Getar",
+        "sound": "Bunyi",
+        "both": "Keduanya"
+      },
       "slower": "Lebih lambat",
       "faster": "Lebih cepat",
       "value": "{{bpm}} ketukan per menit"

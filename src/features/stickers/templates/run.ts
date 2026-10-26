@@ -1,4 +1,4 @@
-import { all, footer, has, lacks, sportGlyph, tl } from './blocks';
+import { all, footer, has, is, lacks, not, sportGlyph, tl } from './blocks';
 import { kit, template } from './dsl';
 import type { Cond, Dim, Expr, Kit, LayerJson } from './dsl';
 import { GLASS, INK, PAPER, VOLT } from './palette';
@@ -101,21 +101,24 @@ interface HeroLook {
   gap?: number;
 }
 
-/** The distance as the hero; with no distance (a sparse workout) the moving time takes its place. */
+/** The distance as the hero (metres for a swim); with no distance (a sparse workout) the moving time takes its place. */
 function hero(k: Kit, w: Dim, look: HeroLook): LayerJson {
   const common = { size: look.size, unitSize: look.unitSize, weight: look.weight ?? 800, color: look.color, shadow: look.shadow, align: look.align, minSize: look.minSize ?? 120, gap: look.gap };
+  const distance = (value: string, unit: string, when: Cond) =>
+    k.stat({ w: 'fill' }, value, {
+      ...common,
+      unit: look.unit === false ? undefined : tl(unit),
+      label: look.label ? tl('label.distance') : undefined,
+      labelSize: look.labelSize,
+      labelColor: look.labelColor,
+      labelPos: look.label ? 'above' : 'none',
+      when,
+    });
   return k.group(
     { w, h: 'auto' },
     [
-      k.stat({ w: 'fill' }, '{run.distanceM|km}', {
-        ...common,
-        unit: look.unit === false ? undefined : tl('unit.km'),
-        label: look.label ? tl('label.distance') : undefined,
-        labelSize: look.labelSize,
-        labelColor: look.labelColor,
-        labelPos: look.label ? 'above' : 'none',
-        when: has('run.distanceM'),
-      }),
+      distance('{run.distanceM|km}', 'unit.km', all(has('run.distanceM'), not(is('run.category', 'swim')))),
+      distance('{run.distanceM|int}', 'unit.m', all(has('run.distanceM'), is('run.category', 'swim'))),
       k.stat({ w: 'fill' }, '{run.movingSec|dur}', {
         ...common,
         size: look.timeSize ?? look.size * 0.7,
@@ -178,6 +181,8 @@ function build(spec: Spec) {
     dark: spec.palette.dark,
     light: spec.palette.light,
     layers: spec.layers,
+    // The sport glyph is one layer per family and kind (most of them hidden): the poster draws it twice.
+    constraints: { maxLayers: 80 },
     meta: { tags: spec.tags, ...(spec.photo ? { needsPhoto: true } : {}) },
   });
 }
@@ -259,16 +264,20 @@ function runPoster(canvas: Canvas) {
     { dir: 'row', gap: 20, align: 'center' },
   );
 
-  const caption = (key: string, when: Cond, unit: boolean) =>
+  const caption = (key: string, when: Cond, unit?: string) =>
     k.group(
       { w: W, h: 'auto' },
       [
         k.text({ w: 'fill' }, tl(key), { size: 26, weight: 700, upper: true, ls: 6, color: '$fgMuted' }),
-        ...(unit ? [k.text({ w: 'auto' }, tl('unit.km'), { size: 34, weight: 800, upper: true, ls: 6, color: '$accent', align: 'right' })] : []),
+        ...(unit ? [k.text({ w: 'auto' }, tl(unit), { size: 34, weight: 800, upper: true, ls: 6, color: '$accent', align: 'right' })] : []),
       ],
       { dir: 'row', align: 'center', when },
     );
-  const captions = [caption('label.distance', has('run.distanceM'), true), caption('label.time', lacks('run.distanceM'), false)];
+  const captions = [
+    caption('label.distance', all(has('run.distanceM'), not(is('run.category', 'swim'))), 'unit.km'),
+    caption('label.distance', all(has('run.distanceM'), is('run.category', 'swim')), 'unit.m'),
+    caption('label.time', lacks('run.distanceM')),
+  ];
 
   // 1032 wide: the numerals run closer to the canvas edge than the 72 px text margin.
   const heroLayer = hero(k, 1032, { size: story ? 700 : 470, unitSize: 1, unit: false, timeSize: story ? 460 : 330, color: '$fg', minSize: 120 });

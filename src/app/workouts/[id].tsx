@@ -430,6 +430,7 @@ export default function WorkoutDetailScreen() {
               route={route}
               analysis={analysisState.status === 'ready' ? analysisState.analysis : null}
               ride={rideData.ride}
+              strength={loaded.strength}
               variant="primary"
               style={styles.shareMain}
             />

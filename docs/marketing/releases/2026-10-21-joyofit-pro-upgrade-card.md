@@ -16,4 +16,4 @@ atur: JRG-350
 
 **Bukti visual:** Screenshot kartu di layar Tanya coach dan di Pengaturan, Sinkron cloud, dengan akun gratis (data demo; build APK untuk versi dengan harga).
 
-**Jangan klaim:** Belum tersedia untuk pengguna sampai update OTA dipublikasikan. Di build Play dan iOS kartu tidak menampilkan harga dan tidak menautkan checkout web, jadi jangan menulis harga di post yang mengutip layar itu; pembelian ada di aplikasi JoyoRogo. Halaman App Store JoyoRogo baru aktif setelah versi 1.0.0 disetujui. Jangan tulis 'tersedia di Play Store/App Store'.
+**Jangan klaim:** Belum tersedia untuk pengguna sampai update OTA dipublikasikan. Di build Play dan iOS kartu tidak menampilkan harga dan tidak menautkan checkout web, jadi jangan menulis harga di post yang mengutip layar itu; pembelian ada di aplikasi JoyoRogo. Halaman App Store JoyoRogo aktif sejak 26 Okt 2026 (versi 1.0.0 disetujui), jadi tombol di iPhone kini membuka halaman itu. Jangan tulis bahwa JoyoFit 'tersedia di Play Store/App Store'.

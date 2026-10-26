@@ -1,11 +1,13 @@
 import type { WorkoutRow } from '@/db/queries';
+import { workoutTotals } from '@/features/strength/calc';
+import type { StrengthWorkout } from '@/features/strength/types';
 import { getT, type Locale } from '@/i18n';
-import { effortKind } from '@/features/share/shareStats';
 import { downsample, formatElapsed, kmSplits, type RoutePoint, type WorkoutSummary } from '@/features/workouts/summary';
 import { sportLabel } from '@/features/workouts/sportLabel';
 import { averagePaceSec, averageSpeedMs, workoutTimes } from '@/features/workouts/times';
 import { summaryCadence } from '@/features/workouts/analysis/cadence';
 import { sportKind, hasPace } from '@/features/workouts/analysis/sport';
+import { isCardioMachine, sportCategory, type SportCategory } from '@/features/workouts/sportCategory';
 import {
   BEST_EFFORT_DISTANCES,
   type AnalysisBestEffort,
@@ -13,7 +15,8 @@ import {
   type SportKind,
   type WorkoutAnalysis,
 } from '@/features/workouts/analysis/types';
-import type { JsonObject, StickerSubject } from '../subject';
+import type { JsonObject, StickerKind, StickerSubject } from '../subject';
+import { CATEGORY_KIND, DEFAULT_GROUP, dropInapplicable, metricApplies } from './sportMetrics';
 
 export interface RunSubjectInput {
   workout: WorkoutRow;
@@ -21,6 +24,8 @@ export interface RunSubjectInput {
   analysis: WorkoutAnalysis | null;
   route: readonly RoutePoint[];
   gearLine: string | null;
+  /** The strength log merged with this watch workout, when there is one: its sets, reps and volume go on the gym cards. */
+  strength?: Pick<StrengthWorkout, 'exercises'> | null;
 }
 
 export const ROUTE_MAX_POINTS = 500;
@@ -84,13 +89,15 @@ export function speedFromPace(pace: number | null | undefined): number | null {
   return pos(pace) && pace <= MAX_PACE_SEC ? 3600 / pace : null;
 }
 
+/** Pace per km on foot (run, walk, orienteering, obstacle race), per 100 m in the pool, speed for the rest. */
 function paceFields(
   workout: WorkoutRow,
   summary: WorkoutSummary,
   movingSec: number,
+  category: SportCategory,
   out: JsonObject,
 ): void {
-  const kind = effortKind(workout.sportName);
+  const kind = category === 'swim' ? 'pace100m' : category === 'run' || category === 'walk' ? 'paceKm' : 'speed';
   const derivable = movingSec >= MIN_DERIVED_SECONDS;
   if (kind === 'speed') {
     const ms = (derivable ? averageSpeedMs(workout.distance, movingSec) : null) ?? summary.avgSpeed;
@@ -134,15 +141,37 @@ function rankOne(analysis: WorkoutAnalysis | null): AnalysisBestEffort[] {
     .sort((a, b) => BEST_EFFORT_DISTANCES[b.key] - BEST_EFFORT_DISTANCES[a.key]);
 }
 
+/** Laps, strokes, SWOLF and pool length of a swim, as the watch summed them up. */
+function swimFields(summary: WorkoutSummary, out: JsonObject): void {
+  const swim = summary.swim;
+  if (!swim) return;
+  if (pos(swim.laps)) out.laps = Math.round(swim.laps);
+  if (pos(swim.strokes)) out.strokes = Math.round(swim.strokes);
+  if (pos(swim.avgSwolf)) out.swolf = Math.round(swim.avgSwolf);
+  if (pos(swim.avgStrokeRate)) out.strokeRate = Math.round(swim.avgStrokeRate);
+  if (pos(swim.poolLengthCm)) out.poolM = Math.round(swim.poolLengthCm / 100);
+}
+
+/** Working sets, reps and volume of the strength log merged with the workout (warm-up sets do not count). */
+function liftFields(strength: Pick<StrengthWorkout, 'exercises'>, out: JsonObject): void {
+  const totals = workoutTotals(strength);
+  if (pos(totals.volume)) out.volumeKg = round1(totals.volume);
+  if (pos(totals.sets)) out.sets = totals.sets;
+  if (pos(totals.reps)) out.reps = totals.reps;
+  if (pos(totals.exercises)) out.exercises = totals.exercises;
+}
+
 export function buildRunSubject(input: RunSubjectInput, locale: 'id' | 'en' | Locale): StickerSubject {
-  const { workout, summary, analysis, route, gearLine } = input;
+  const { workout, summary, analysis, route, gearLine, strength } = input;
   const t = getT(locale as Locale, 'stickerdata');
   const run: JsonObject = {};
 
   const kind: SportKind = analysis?.sport.kind ?? sportKind(workout.sportName, summary.kind);
+  const category = sportCategory(workout.sportName, summary.kind, kind);
   const sport = cleanText(sportLabel(workout.sportName));
   if (sport) run.sport = sport;
   run.kind = kind;
+  run.category = category;
   run.startedAt = workout.start * 1000;
 
   const { elapsedSec, movingSec } = workoutTimes(workout);
@@ -150,7 +179,7 @@ export function buildRunSubject(input: RunSubjectInput, locale: 'id' | 'en' | Lo
   if (Number.isFinite(elapsedSec) && elapsedSec - movingSec >= 60) run.elapsedSec = elapsedSec;
   const distance = pos(workout.distance) ? workout.distance : (analysis?.distanceM ?? null);
   if (pos(distance)) run.distanceM = distance;
-  paceFields(workout, summary, movingSec, run);
+  paceFields(workout, summary, movingSec, category, run);
 
   const hrAvg = pos(workout.avgHr) ? workout.avgHr : analysis?.stats.avgHr;
   const hrMax = pos(workout.maxHr) ? workout.maxHr : analysis?.stats.maxHr;
@@ -165,7 +194,13 @@ export function buildRunSubject(input: RunSubjectInput, locale: 'id' | 'en' | Lo
   if (pos(cadence)) run.cadence = Math.round(cadence);
   const power = analysis?.stats.avgPower ?? summary.avgPower;
   if (pos(power)) run.power = Math.round(power);
-  if (pos(workout.steps)) run.steps = Math.round(workout.steps);
+  // A jump rope session counts jumps; the watch stores them as its steps when the summary has no jump count of its own.
+  const jumpRope = summary.kind === 'JUMP_ROPING' || /jump(?:ing)? rop|skipping/i.test(workout.sportName);
+  const jumps = pos(summary.jumps) ? summary.jumps : jumpRope ? workout.steps : null;
+  if (pos(jumps)) run.jumps = Math.round(jumps);
+  if (pos(workout.steps) && !jumpRope) run.steps = Math.round(workout.steps);
+  swimFields(summary, run);
+  if (strength) liftFields(strength, run);
 
   const points = route.filter((p) => num(p.lat) && num(p.lon));
   if (points.length >= 2) run.route = downsample(points, ROUTE_MAX_POINTS).map((p) => [p.lat, p.lon]);
@@ -221,12 +256,17 @@ export function buildRunSubject(input: RunSubjectInput, locale: 'id' | 'en' | Lo
     run.effortLabel = t(`run.effort.${effort.band}`);
   }
 
-  const prs = rankOne(analysis);
+  // What the sport family has no use for goes before any template sees it, so the running cards hide it too.
+  const machine = isCardioMachine(workout.sportName);
+  dropInapplicable(run, category, machine);
+  const prs = metricApplies(category, 'records', machine) ? rankOne(analysis) : [];
   const gear = cleanText(gearLine);
   if (gear) run.gear = gear;
 
   const data: JsonObject = { run };
-  const kinds: StickerSubject['kinds'] = prs.length > 0 ? ['run', 'badge'] : ['run'];
+  const family = CATEGORY_KIND[category];
+  const kinds: StickerKind[] = family ? [family, 'run'] : ['run'];
+  if (prs.length > 0) kinds.push('badge');
   if (prs.length > 0) {
     const top = prs[0]!;
     const label = t(PR_KEYS[top.key]);
@@ -246,6 +286,7 @@ export function buildRunSubject(input: RunSubjectInput, locale: 'id' | 'en' | Lo
   return {
     id: `run:${workout.start}`,
     kinds,
+    defaultGroup: DEFAULT_GROUP[category],
     heading: sharing('share.workout.heading'),
     caption: sharing('share.caption'),
     date: workout.start * 1000,

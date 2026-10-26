@@ -21,7 +21,13 @@
     "sets": "Sets",
     "duration": "Duration",
     "workouts": "Workouts",
-    "activeDays": "Active days"
+    "activeDays": "Active days",
+    "laps": "Laps",
+    "strokes": "Strokes",
+    "swolf": "SWOLF",
+    "pool": "Pool",
+    "power": "Power",
+    "jumps": "Jumps"
   },
   "unit": {
     "perKm": "/km",
@@ -32,7 +38,9 @@
     "m": "m",
     "spm": "spm",
     "kg": "kg",
-    "km": "km"
+    "km": "km",
+    "rpm": "rpm",
+    "watt": "W"
   },
   "ui": {
     "filter": {
@@ -162,9 +170,66 @@
       "text": {
         "total": "Total",
         "thanks": "Thanks for running",
+        "thanksBy": {
+          "walk": "Thanks for walking",
+          "ride": "Thanks for riding",
+          "swim": "Thanks for swimming",
+          "gym": "Thanks for lifting",
+          "cardio": "Thanks for sweating it out",
+          "flow": "Thanks for slowing down",
+          "court": "Thanks for the game",
+          "other": "Thanks for moving"
+        },
         "splits": "Per km",
         "zones": "Heart rate zones"
       }
+    },
+    "sport": {
+      "text": {
+        "effort": "Effort: {{effort}}"
+      }
+    },
+    "walk": {
+      "bold": "Walk · Bold",
+      "poster": "Walk · Poster",
+      "minimal": "Walk · Minimal",
+      "stats": "Walk · Stats"
+    },
+    "ride": {
+      "bold": "Ride · Bold",
+      "poster": "Ride · Poster",
+      "minimal": "Ride · Minimal",
+      "stats": "Ride · Stats"
+    },
+    "swim": {
+      "bold": "Swim · Bold",
+      "poster": "Swim · Poster",
+      "minimal": "Swim · Minimal",
+      "stats": "Swim · Stats"
+    },
+    "gym": {
+      "bold": "Gym · Bold",
+      "poster": "Gym · Poster",
+      "minimal": "Gym · Minimal",
+      "stats": "Gym · Stats"
+    },
+    "cardio": {
+      "bold": "Cardio · Bold",
+      "poster": "Cardio · Poster",
+      "minimal": "Cardio · Minimal",
+      "stats": "Cardio · Stats"
+    },
+    "flow": {
+      "bold": "Yoga · Bold",
+      "poster": "Yoga · Poster",
+      "minimal": "Yoga · Minimal",
+      "stats": "Yoga · Stats"
+    },
+    "court": {
+      "bold": "Court · Bold",
+      "poster": "Court · Poster",
+      "minimal": "Court · Minimal",
+      "stats": "Court · Stats"
     },
     "sleep": {
       "ring": "Score ring",

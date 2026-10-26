@@ -136,6 +136,26 @@ A refusal is not remembered between runs: every start is one command and one ans
 
 After the app was killed mid-run the recording comes back paused. A band workout still open in the same process (a JS reload) is taken over (`adopt`) and paused; after a real restart the native side has forgotten it (`owned` is in memory) and the band keeps running on its own: stop it on the band.
 
+## Metronome (`src/features/metronome/`)
+
+On both live screens (band-started live screen, Run recorder): a switch, the tempo (120 to 200 beats per minute, steps of 5) and
+what a beat does: **Vibration** (default), **Sound** or **Both**. Tempo and mode are kept (`joyofit.metronome.bpm`,
+`joyofit.metronome.mode` in the KV store); the switch is not.
+
+- **Timing.** JS timers on a fixed grid (`nextBeatAt`): a late timer does not shift the next beat; a suspension longer than a beat
+  restarts the grid instead of firing a burst.
+- **Sound.** `modules/metronome-click` (Kotlin + Swift twins) synthesizes a 35 ms tick (`ClickSound.kt` / `ClickSound.swift`, same
+  samples, checked by `ClickSoundTest` and `ClickLogicTests`) and plays it as media audio. Android: `SoundPool`, `USAGE_MEDIA` /
+  `CONTENT_TYPE_SONIFICATION`, no audio focus and **no MediaSession**, so music keeps playing at full volume and earbud buttons and
+  the watch's music control (`MediaSessionTracker`, which also skips JoyoFit's own sessions) stay with the music app. iOS:
+  `AVAudioPlayer` in a `.playback` + `.mixWithOthers` session (a mixable session never becomes Now Playing), deactivated with
+  `.notifyOthersOnDeactivation`. The click goes to the connected Bluetooth headset, also with the ringer on silent. The sound is
+  loaded (and the iOS session active) only while the metronome runs in Sound or Both; `start`, `click` and `stop` run in call order
+  on one native thread, so a quick off after on cannot leave it loaded. A click while the sound still loads is skipped, never late.
+  The next beat is booked before the vibration and the click, so a failing one skips a beat and never stops the metronome.
+- **Screen off.** Android: the recording's foreground service keeps JS running (Run recorder); the band-started live screen holds
+  the screen on while the metronome runs. iOS: `audio` in `UIBackgroundModes` (a background app is muted without it).
+
 ## OTA or store build
 
 | Part | OTA (JS only) | Needs a store build (native) |
@@ -152,6 +172,7 @@ After the app was killed mid-run the recording comes back paused. A band workout
 | JRG-418 full live metrics: grid pages (4 to 12 fields), the new run/walk default, average and maximum heart rate, HR zone field, recorder average/maximum heart rate, steps and stride | yes | nothing |
 | JRG-418 phone cadence, steps and stride on the watch-started screen | no: an older binary has no `startLiveSteps`, the fields stay `--` | `startLiveSteps` / `stopLiveSteps` / `onLiveSteps` (`ble-sensors`, Kotlin and Swift); the motion usage text (iOS) |
 | JRG-418 phone cadence over a late or bursty counter (hold, 20 s window on the sensor's times; a watch's 0 no longer hides it) | yes, on a binary with `startLiveSteps` (lab 9 included) | the detector, no batching asked, the `Phone steps` log lines and the iOS pedometer cadence (`WorkoutSteps.kt`, `StepCounterLogic.kt`, `StepLog.kt`, `WorkoutSteps.swift`) |
+| Metronome sound mode (Sound / Both) | no: `modules/metronome-click` is a new native module (the fingerprint changes, so an OTA never reaches an older binary) | `MetronomeClick` (Kotlin, Swift), iOS `audio` background mode |
 
 ## Unverifiable without a Band 11
 

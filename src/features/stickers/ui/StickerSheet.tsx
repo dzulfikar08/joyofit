@@ -25,7 +25,7 @@ import type { Scene } from '../core/scene';
 import { sceneFor, type Mode } from '../engine';
 import { FIT_FONTS } from '../fonts';
 import { ensureStickerFonts } from '../fontLoader';
-import { availableFilters, filterGroups, hasCanvasChoice, offerGroups, pickVariant, type OfferFilter, type TemplateGroup } from '../offer';
+import { availableFilters, filterGroups, hasCanvasChoice, initialGroup, offerGroups, pickVariant, type OfferFilter, type TemplateGroup } from '../offer';
 import { pickStickerPhoto, type PhotoSource } from '../photo';
 import {
   PhotosDeniedError,
@@ -220,7 +220,7 @@ export function StickerSheet({
     void ensureStickerFonts().then(() => setFontsReady(true));
   }, [visible]);
 
-  // A new subject (another workout) starts from its first template; a filter that no longer has the chosen group moves on.
+  // A new subject (another workout) starts from the card that fits its sport; a filter that no longer has the chosen group moves on.
   useEffect(() => {
     setGroupKey(null);
     setFilter('all');
@@ -228,7 +228,7 @@ export function StickerSheet({
     setFeedback(null);
   }, [subject.id]);
 
-  const group = visibleGroups.find((g) => g.key === groupKey) ?? visibleGroups[0] ?? groups[0] ?? null;
+  const group = visibleGroups.find((g) => g.key === groupKey) ?? initialGroup(visibleGroups, subject) ?? groups[0] ?? null;
   const template = group ? pickVariant(group, canvas) : null;
   const mode: Mode = modePick ?? scheme;
   const hasRoute = !isMissing(lookupPath(subject.data, 'run.route'));

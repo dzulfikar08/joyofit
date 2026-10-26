@@ -189,6 +189,116 @@ const WATCH_FULL: JsonObject = {
   rhr: 54,
 };
 
+const ZONES = (sec: number[]): JsonObject => {
+  const total = sec.reduce((a, b) => a + b, 0);
+  return { hrZoneSec: sec, hrZonePct: sec.map((s) => s / total), hrZoneLabels: ['Z1', 'Z2', 'Z3', 'Z4', 'Z5'], hrZoneColors: HR_ZONE_COLORS, hrZoneTop: sec.indexOf(Math.max(...sec)) + 1 };
+};
+
+/**
+ * The sport families (`walk` ... `court` kinds): the `run.*` data `buildRunSubject` leaves for each family once the numbers
+ * that sport does not have are dropped (see `testing/sportWorkouts.ts` for the watch workouts they come from).
+ */
+const FAMILY_FIXTURES: readonly Fixture[] = [
+  {
+    key: 'walk.hike',
+    kind: 'walk',
+    label: 'Hike with route, climb and steps',
+    data: {
+      run: { sport: 'Hiking', kind: 'walk', category: 'walk', startedAt: Date.UTC(2026, 9, 25, 23, 0), movingSec: 10_840, distanceM: 9240, paceSecKm: 1173, hrAvg: 121, hrMax: 158, kcal: 1010, elevGainM: 642, steps: 14_210, route: lineRoute(480, 9240), altSeries: wave(48, 900, 180, 21) },
+    },
+  },
+  {
+    key: 'walk.indoor',
+    kind: 'walk',
+    label: 'Indoor walk: steps, no route, no HR',
+    data: { run: { sport: 'Jalan dalam ruangan', kind: 'walk', category: 'walk', startedAt: Date.UTC(2026, 9, 24, 11, 0), movingSec: 1500, distanceM: 1820, paceSecKm: 824, kcal: 88, steps: 2460 } },
+  },
+  {
+    key: 'ride.outdoor',
+    kind: 'ride',
+    label: 'Outdoor ride with route, climb, cadence and power',
+    data: {
+      run: { sport: 'Bersepeda', kind: 'ride', category: 'ride', startedAt: Date.UTC(2026, 9, 21, 22, 0), movingSec: 5410, distanceM: 38_700, speedKmh: 25.8, hrAvg: 141, hrMax: 172, kcal: 960, elevGainM: 412, cadence: 84, power: 168, route: loopRoute(520, 2600, 3), altSeries: wave(48, 60, 28, 8) },
+    },
+  },
+  {
+    key: 'ride.indoor',
+    kind: 'ride',
+    label: 'Indoor ride: no route, heart rate trace',
+    data: { run: { sport: 'Bersepeda dalam ruangan', kind: 'ride', category: 'ride', startedAt: Date.UTC(2026, 9, 27, 23, 0), movingSec: 2700, distanceM: 18_100, speedKmh: 24.1, hrAvg: 138, hrMax: 166, kcal: 420, cadence: 88, power: 182, hrSeries: wave(48, 138, 14, 22) } },
+  },
+  {
+    key: 'swim.pool',
+    kind: 'swim',
+    label: 'Pool swim with laps, strokes and SWOLF',
+    data: { run: { sport: 'Berenang di kolam', kind: 'swim', category: 'swim', startedAt: Date.UTC(2026, 9, 20, 23, 0), movingSec: 2460, distanceM: 1500, pace100Sec: 164, hrAvg: 134, hrMax: 161, kcal: 402, laps: 60, strokes: 1020, swolf: 38, strokeRate: 26, poolM: 25 } },
+  },
+  {
+    key: 'swim.open',
+    kind: 'swim',
+    label: 'Open water swim with a route, no pool numbers',
+    data: { run: { sport: 'Berenang (perairan terbuka)', kind: 'swim', category: 'swim', startedAt: Date.UTC(2026, 9, 19, 22, 30), movingSec: 3120, distanceM: 2050, pace100Sec: 152, kcal: 520, route: loopRoute(300, 380, 17) } },
+  },
+  {
+    key: 'gym.watch',
+    kind: 'gym',
+    label: 'Watch strength session: duration, heart rate, zones, effort',
+    data: { run: { sport: 'Latihan kekuatan', kind: 'other', category: 'gym', startedAt: Date.UTC(2026, 9, 19, 23, 0), movingSec: 3120, hrAvg: 118, hrMax: 158, kcal: 318, ...ZONES([420, 1260, 980, 380, 80]), strain: 9.6, strainPct: 9.6 / 21, effortLabel: 'Sedang' } },
+  },
+  {
+    key: 'gym.logged',
+    kind: 'gym',
+    label: 'Watch session merged with a strength log: volume, sets, reps',
+    data: {
+      run: { sport: 'Latihan kekuatan', kind: 'other', category: 'gym', startedAt: Date.UTC(2026, 9, 17, 23, 0), movingSec: 3480, hrAvg: 112, hrMax: 151, kcal: 344, volumeKg: 8420, sets: 18, reps: 142, exercises: 6, hrSeries: wave(48, 112, 20, 23) },
+    },
+  },
+  {
+    key: 'cardio.hiit',
+    kind: 'cardio',
+    label: 'HIIT: duration, heart rate, zones, hard effort',
+    data: { run: { sport: 'Latihan interval intensitas tinggi', kind: 'other', category: 'cardio', startedAt: Date.UTC(2026, 9, 22, 23, 0), movingSec: 1820, hrAvg: 149, hrMax: 182, kcal: 312, ...ZONES([120, 240, 520, 640, 300]), strain: 13.1, strainPct: 13.1 / 21, effortLabel: 'Berat' } },
+  },
+  {
+    key: 'cardio.rope',
+    kind: 'cardio',
+    label: 'Jump rope: jumps as the hero, no zones',
+    data: { run: { sport: 'Lompat tali', kind: 'other', category: 'cardio', startedAt: Date.UTC(2026, 9, 26, 23, 0), movingSec: 900, hrAvg: 156, hrMax: 179, kcal: 168, jumps: 1420 } },
+  },
+  {
+    key: 'cardio.rower',
+    kind: 'cardio',
+    label: 'Rowing machine: metres, watts and stroke rate',
+    data: { run: { sport: 'Mesin dayung', kind: 'other', category: 'cardio', startedAt: Date.UTC(2026, 9, 15, 23, 0), movingSec: 1500, distanceM: 5000, power: 150, cadence: 26, hrAvg: 146, hrMax: 171, kcal: 290 } },
+  },
+  {
+    key: 'flow.yoga',
+    kind: 'flow',
+    label: 'Yoga with a heart rate trace',
+    data: { run: { sport: 'Yoga', kind: 'other', category: 'flow', startedAt: Date.UTC(2026, 9, 23, 23, 0), movingSec: 3600, hrAvg: 92, hrMax: 118, kcal: 176, hrSeries: wave(48, 92, 8, 24), ...ZONES([2400, 900, 300, 0, 0]), strain: 3.2, strainPct: 3.2 / 21, effortLabel: 'Ringan' } },
+  },
+  {
+    key: 'flow.sparse',
+    kind: 'flow',
+    label: 'Stretching: only a duration',
+    data: { run: { sport: 'Peregangan', kind: 'other', category: 'flow', startedAt: Date.UTC(2026, 9, 18, 13, 0), movingSec: 900 } },
+  },
+  {
+    key: 'court.badminton',
+    kind: 'court',
+    label: 'Badminton: duration, heart rate, zones, steps and distance covered',
+    data: {
+      run: { sport: 'Bulu tangkis', kind: 'other', category: 'court', startedAt: Date.UTC(2026, 9, 24, 12, 0), movingSec: 4260, distanceM: 3120, hrAvg: 141, hrMax: 176, kcal: 548, steps: 5240, ...ZONES([300, 900, 1500, 1260, 300]), strain: 12.4, strainPct: 12.4 / 21, effortLabel: 'Berat' },
+    },
+  },
+  {
+    key: 'court.nohr',
+    kind: 'court',
+    label: 'Futsal without heart rate',
+    data: { run: { sport: 'Sepak bola', kind: 'other', category: 'court', startedAt: Date.UTC(2026, 9, 16, 12, 0), movingSec: 3600, kcal: 610, steps: 7400 } },
+  },
+];
+
 export const FIXTURES: readonly Fixture[] = [
   { key: 'run.full', kind: 'run', label: 'GPS run with analysis', data: { run: RUN_FULL, milestone: MILESTONE_PR } },
   {
@@ -559,6 +669,7 @@ export const FIXTURES: readonly Fixture[] = [
     label: 'First workout',
     data: { milestone: { kind: 'workouts', title: 'Latihan pertama', subtitle: 'Awal yang bagus', value: 1, valueText: '1 latihan', unit: 'latihan' } },
   },
+  ...FAMILY_FIXTURES,
   // The Threads carousel: each fixture is a whole subject; the slides are drawn from it as the sheet would (slide 2 of 6).
   ...THREADS_FIXTURES.map((f): Fixture => ({ key: f.key, kind: 'threads', label: f.label, data: slideData(f.subject(), { n: 2, total: 6 }) })),
 ];

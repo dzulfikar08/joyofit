@@ -51,9 +51,16 @@ export function usePhotoFace() {
 
   const activate = useCallback(() => run('activate', async () => setFace(await HuaweiWear.setPhotoFaceActive())), [run]);
 
+  /** Shows the face an add or delete returned; a refused apply afterwards (the photos are saved) is shown as the error. */
+  const showSaved = useCallback((result: PhotoFace, success: string | null) => {
+    setFace(result);
+    if (result.applyError) setError(t('watch:photo.notApplied', { reason: result.applyError }));
+    else if (success) setNotice(success);
+  }, []);
+
   const remove = useCallback(
-    (name: string) => run({ name }, async () => setFace(await HuaweiWear.deletePhoto(name))),
-    [run],
+    (name: string) => run({ name }, async () => showSaved(await HuaweiWear.deletePhoto(name), null)),
+    [run, showSaved],
   );
 
   /** Opens the gallery and hands the pick to the crop screen, with its orientation applied and its size capped. */
@@ -79,8 +86,7 @@ export function usePhotoFace() {
         setProgress({ bytes: 0, total: 0 });
         try {
           const png = await rendered.saveAsync({ format: SaveFormat.PNG });
-          setFace(await HuaweiWear.addPhoto(png.uri));
-          setNotice(t('watch:photo.added'));
+          showSaved(await HuaweiWear.addPhoto(png.uri), t('watch:photo.added'));
         } finally {
           setProgress(null);
         }
@@ -89,7 +95,7 @@ export function usePhotoFace() {
       const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.95 });
       setCropSource({ uri: saved.uri, width: saved.width, height: saved.height });
     });
-  }, [face, run]);
+  }, [face, run, showSaved]);
 
   const sendCrop = useCallback(
     async (rect: CropRect) => {
@@ -102,15 +108,15 @@ export function usePhotoFace() {
             .resize({ width: face.width, height: face.height })
             .renderAsync();
           const png = await cut.saveAsync({ format: SaveFormat.PNG });
-          setFace(await HuaweiWear.addPhoto(png.uri));
+          const result = await HuaweiWear.addPhoto(png.uri);
           setCropSource(null);
-          setNotice(t('watch:photo.added'));
+          showSaved(result, t('watch:photo.added'));
         } finally {
           setProgress(null);
         }
       });
     },
-    [cropSource, face, run],
+    [cropSource, face, run, showSaved],
   );
 
   useFocusEffect(

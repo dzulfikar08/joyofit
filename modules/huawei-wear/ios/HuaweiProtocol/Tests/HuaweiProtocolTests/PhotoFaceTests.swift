@@ -162,22 +162,63 @@ final class PhotoFaceCodecTests: XCTestCase {
         XCTAssertEqual(info.photos, [PhotoSlot(index: 0, name: "n.png")])
     }
 
-    func testSaveKeepsTheWatchSettingsAndNumbersFromZero() throws {
-        let info = try PhotoFaceCodec.parseInfo(try captured())
-        let request = PhotoFace.SaveRequest.request(PhotoFaceCodec.saveTlv(info, ["1791994229644.png", "new.png"]))
+    /// The Fit 4 Pro photo face's new-photo values, as in `PhotoFaceCodec.knownFaceConfigs`: position 1, time style 2, font 1.
+    let fitConfig = PhotoFaceCodec.faceConfig("2180736265")
+
+    func testSaveMatchesTheBytesReconstructedFromHuaweiHealthsCapturedAlbumJson() throws {
+        // Huawei Health 17.0.8.300, Fit 4 Pro, 2026-10-25 21:10:47 (after which the watch's "add photo" prompt went away): the watch's 27/08
+        // answer before, and the album the page handed to makeNewPhotoInfoCommand (see the Kotlin PhotoFaceTest for the JSON). The expected
+        // bytes are reconstructed from that captured album JSON via the encoder (not a capture of the 27/09 on the wire).
+        let before = try HuaweiTLV(parsing: Bytes(hex: "01011402010103010284000801020901010A01000B010111010012010093001701009F00")!)
+        let info = try PhotoFaceCodec.parseInfo(before)
+        let fields = PhotoSaveFields(
+            config: fitConfig, gaussSwitch: PhotoFaceCodec.gaussSwitch(1), timeColours: ["20261025211044440.png": PhotoFaceCodec.smartColour(0xFFFF_E7D8)]
+        )
+        let request = PhotoFace.SaveRequest.request(PhotoFaceCodec.saveTlv(info, ["20261025211044440.png"], fields))
         XCTAssertEqual(request.commandId, 0x09)
-        // The known photo goes back with its 0c/0d/0e/0f/10 as 0a/0b/0c/0d/0e; the new one has index and name only. Then 06/07/09 from 08/09/0a,
-        // 0f/10 from 11/12, 91{92{13,14}} from 93{94{15,16}}, 9d{9e{1f}} from 9f{a0{21}}.
-        let expected = "010102824583350401000511313739313939343232393634342e706e670a01020b01000c01010d092330303030303030300e09233030303030303030"
-            + "830c04010105076e65772e706e67" + "060102070101090100" + "0f0100100100" + "9130" + String(repeating: "9206130100140100", count: 6) + "9d0a"
-            + String(repeating: "9e031f0100", count: 2)
+        let expected = "010101824a8348040100051532303236313032353231313034343434302e706e670a01010b01000c01020d092330316666653764380e09233030303030303030"
+            + "2901001501021601011701011c0100" + "0601010701020901000f0100100100" + "1c0100" + "9d0a9e031f01009e031f0100"
         XCTAssertEqual(hex(request.tlv!.serialize()), expected)
     }
 
-    func testSavingNoPhotosSendsACountOfZeroAndNoList() throws {
-        let tlv = PhotoFaceCodec.saveTlv(try PhotoFaceCodec.parseInfo(try captured()), [])
-        XCTAssertEqual(tlv.asInteger(0x01, default: -1), 0)
-        XCTAssertFalse(tlv.contains(0x82))
+    func testAPhotoOnTheWatchKeepsItsValuesAndMissingOnesComeFromTheConfig() throws {
+        let info = try PhotoFaceCodec.parseInfo(try captured())
+        let fields = PhotoSaveFields(config: fitConfig, gaussSwitch: 0, timeColours: ["new.png": "#01123456"])
+        let expected = "01010282810283440401000511313739313939343232393634342e706e670a01020b01000c01010d092330303030303030300e09233030303030303030"
+            + "2901001501011601011701021c0100"
+            + "833a04010105076e65772e706e670a01010b01000c01020d092330313132333435360e092330303030303030302901001501021601011701011c0100"
+            + "0601010701020901000f0100100100" + "9130" + String(repeating: "9206130100140100", count: 6) + "1c0100" + "9d0a"
+            + String(repeating: "9e031f0100", count: 2)
+        XCTAssertEqual(hex(PhotoFaceCodec.saveTlv(info, ["1791994229644.png", "new.png"], fields).serialize()), expected)
+    }
+
+    func testWithoutTheGaussianTagThereAreNoSmartFieldsAndTheSwitchIsMinusOne() throws {
+        let info = try PhotoFaceCodec.parseInfo(try captured())
+        let tlv = PhotoFaceCodec.saveTlv(info, [], PhotoSaveFields(config: fitConfig, gaussSwitch: PhotoFaceCodec.gaussSwitch(-1)))
+        let expected = "010100" + "0601010701020901000f0100100100" + "9130" + String(repeating: "9206130100140100", count: 6) + "1c01ff" + "9d0a"
+            + String(repeating: "9e031f0100", count: 2)
+        XCTAssertEqual(hex(tlv.serialize()), expected)
+        let one = try PhotoFaceCodec.saveTlv(info, ["a.png"], PhotoSaveFields(config: fitConfig, gaussSwitch: -1)).object(0x82).object(0x83)
+        XCTAssertFalse(one.contains(0x15))
+        XCTAssertFalse(one.contains(0x1c))
+    }
+
+    func testTheSmartColourIsHuaweiHealthsMarkerAndTheRgb() {
+        XCTAssertEqual(PhotoFaceCodec.smartColour(0xFFFF_E7D8), "#01ffe7d8")
+        XCTAssertEqual(PhotoFaceCodec.smartColour(0xFF00_0000), "#01000000")
+        XCTAssertEqual(PhotoFaceCodec.gaussSwitch(1), 0)
+        XCTAssertEqual(PhotoFaceCodec.gaussSwitch(0), 0)
+        XCTAssertEqual(PhotoFaceCodec.gaussSwitch(-1), -1)
+    }
+
+    func testTheKnownFaceHasItsValuesAndAnUnknownOneHuaweiHealthsFallbacks() {
+        let fit = PhotoFaceCodec.faceConfig("2180736265")
+        XCTAssertEqual([fit.timePosition, fit.timeStyle, fit.font, fit.positionIndex, fit.styleIndex], [1, 2, 1, 1, 2])
+        XCTAssertEqual(fit.positionRects[1], [68, 18, 406, 182])
+        XCTAssertEqual(Set(fit.positionRects.keys), Set(1...9))
+        let unknown = PhotoFaceCodec.faceConfig("123")
+        XCTAssertEqual([unknown.timePosition, unknown.timeStyle, unknown.font, unknown.positionIndex, unknown.styleIndex], [1, 2, 1, 1, 2])
+        XCTAssertTrue(unknown.positionRects.isEmpty)
     }
 
     func testSaveStatusReadsCodeAndTransferCount() {
@@ -378,8 +419,9 @@ final class PhotoFaceOpsTests: XCTestCase {
         let sent = try XCTUnwrap(watch.all(0x27, 0x09).first?.tlv)
         XCTAssertEqual(try sent.byte(0x01), 1)
         XCTAssertEqual(try sent.object(0x82).objects(0x83).first?.string(0x05), "a.png")
+        // Huawei Health writes 06 / 07 from the face config (fallbacks 1 / 2 here), not the watch's 08 / 09.
         XCTAssertEqual(try sent.byte(0x06), 1)
-        XCTAssertFalse(sent.contains(0x07))
+        XCTAssertEqual(try sent.byte(0x07), 2)
         XCTAssertTrue(watch.all(0x28, 0x01).isEmpty && watch.all(0x28, 0x02).isEmpty, "no file traffic")
     }
 

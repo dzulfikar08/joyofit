@@ -1,0 +1,9 @@
+{
+  "platforms": ["android", "ios"],
+  "android": {
+    "modules": ["com.joyodigitama.metronomeclick.MetronomeClickModule"]
+  },
+  "ios": {
+    "modules": ["MetronomeClickModule"]
+  }
+}

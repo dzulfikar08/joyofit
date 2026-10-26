@@ -11,6 +11,7 @@ import { buildRunSubject } from '@/features/stickers/data/run';
 import { StickerSheet } from '@/features/stickers/ui/StickerSheet';
 import { ThreadsSheet } from '@/features/stickers/ui/ThreadsSheet';
 import { useThreadsRunSubject } from '@/features/stickers/ui/useThreadsSubject';
+import type { StrengthWorkout } from '@/features/strength/types';
 import type { WorkoutAnalysis } from '@/features/workouts/analysis/types';
 import type { RoutePoint, WorkoutSummary } from '@/features/workouts/summary';
 import { useLocale } from '@/i18n';
@@ -22,13 +23,15 @@ interface Props {
   analysis: WorkoutAnalysis | null;
   /** The cycling metrics when the workout is a ride (`useRideData`); they feed the power, climbs and splits slides of Threads. */
   ride?: RideAnalysis | null;
+  /** The strength log merged with this watch workout: its sets, reps and volume go on the gym cards. */
+  strength?: StrengthWorkout | null;
   /** The look of the button; the host lays it out (a primary button that fills an action row, say). */
   variant?: ComponentProps<typeof Button>['variant'];
   style?: ComponentProps<typeof Button>['style'];
 }
 
 /** The "Share" button of a workout, the sticker sheet it opens and, from there, the Threads carousel sheet. */
-export function ShareRunButton({ workout, summary, route, analysis, ride = null, variant, style }: Props) {
+export function ShareRunButton({ workout, summary, route, analysis, ride = null, strength = null, variant, style }: Props) {
   const { t } = useTranslation('common');
   const locale = useLocale();
   const db = useSQLiteContext();
@@ -51,8 +54,8 @@ export function ShareRunButton({ workout, summary, route, analysis, ride = null,
   }, [db, open, threadsOpen, workout.start, locale]);
 
   const subject = useMemo(
-    () => buildRunSubject({ workout, summary, analysis, route, gearLine }, locale),
-    [workout, summary, analysis, route, gearLine, locale],
+    () => buildRunSubject({ workout, summary, analysis, route, gearLine, strength }, locale),
+    [workout, summary, analysis, route, gearLine, strength, locale],
   );
   const threadsSubject = useThreadsRunSubject({ workout, summary, route, analysis, ride, gearLine }, threadsOpen);
 

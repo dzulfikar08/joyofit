@@ -21,7 +21,13 @@
     "sets": "Set",
     "duration": "Durasi",
     "workouts": "Latihan",
-    "activeDays": "Hari aktif"
+    "activeDays": "Hari aktif",
+    "laps": "Lap",
+    "strokes": "Ayunan",
+    "swolf": "SWOLF",
+    "pool": "Kolam",
+    "power": "Daya",
+    "jumps": "Lompatan"
   },
   "unit": {
     "perKm": "/km",
@@ -32,7 +38,9 @@
     "m": "m",
     "spm": "spm",
     "kg": "kg",
-    "km": "km"
+    "km": "km",
+    "rpm": "rpm",
+    "watt": "W"
   },
   "ui": {
     "filter": {
@@ -159,9 +167,66 @@
       "text": {
         "total": "Total",
         "thanks": "Makasih sudah lari",
+        "thanksBy": {
+          "walk": "Makasih sudah jalan",
+          "ride": "Makasih sudah gowes",
+          "swim": "Makasih sudah berenang",
+          "gym": "Makasih sudah angkat beban",
+          "cardio": "Makasih sudah berkeringat",
+          "flow": "Makasih sudah meluangkan napas",
+          "court": "Makasih untuk pertandingannya",
+          "other": "Makasih sudah bergerak"
+        },
         "splits": "Per km",
         "zones": "Zona detak jantung"
       }
+    },
+    "sport": {
+      "text": {
+        "effort": "Beban: {{effort}}"
+      }
+    },
+    "walk": {
+      "bold": "Jalan · Tebal",
+      "poster": "Jalan · Poster",
+      "minimal": "Jalan · Minimal",
+      "stats": "Jalan · Statistik"
+    },
+    "ride": {
+      "bold": "Gowes · Tebal",
+      "poster": "Gowes · Poster",
+      "minimal": "Gowes · Minimal",
+      "stats": "Gowes · Statistik"
+    },
+    "swim": {
+      "bold": "Renang · Tebal",
+      "poster": "Renang · Poster",
+      "minimal": "Renang · Minimal",
+      "stats": "Renang · Statistik"
+    },
+    "gym": {
+      "bold": "Gym · Tebal",
+      "poster": "Gym · Poster",
+      "minimal": "Gym · Minimal",
+      "stats": "Gym · Statistik"
+    },
+    "cardio": {
+      "bold": "Kardio · Tebal",
+      "poster": "Kardio · Poster",
+      "minimal": "Kardio · Minimal",
+      "stats": "Kardio · Statistik"
+    },
+    "flow": {
+      "bold": "Yoga · Tebal",
+      "poster": "Yoga · Poster",
+      "minimal": "Yoga · Minimal",
+      "stats": "Yoga · Statistik"
+    },
+    "court": {
+      "bold": "Lapangan · Tebal",
+      "poster": "Lapangan · Poster",
+      "minimal": "Lapangan · Minimal",
+      "stats": "Lapangan · Statistik"
     },
     "sleep": {
       "ring": "Cincin skor",

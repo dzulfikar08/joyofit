@@ -69,11 +69,18 @@ export function PhotoFaceScreen() {
   const percent = progress && progress.total > 0 ? Math.min(100, Math.round((progress.bytes / progress.total) * 100)) : 0;
   const link = tintColors(colors, 'link');
 
-  const confirmDelete = (photo: PhotoFacePhoto) =>
-    Alert.alert(t('watch:photo.deleteTitle'), t('watch:photo.deleteMessage', { n: photo.index }), [
-      { text: t('common:actions.cancel'), style: 'cancel' },
-      { text: t('common:actions.delete'), style: 'destructive', onPress: () => void remove(photo.name) },
-    ]);
+  // Deleting re-applies the photo face (it becomes the watch's face) unless that empties a face that is not on the screen.
+  const confirmDelete = (photo: PhotoFacePhoto) => {
+    const switches = face !== null && !face.face.active && face.photos.length > 1;
+    Alert.alert(
+      t('watch:photo.deleteTitle'),
+      t(switches ? 'watch:photo.deleteMessageSwitch' : 'watch:photo.deleteMessage', { n: photo.index }),
+      [
+        { text: t('common:actions.cancel'), style: 'cancel' },
+        { text: t('common:actions.delete'), style: 'destructive', onPress: () => void remove(photo.name) },
+      ],
+    );
+  };
 
   return (
     <>
