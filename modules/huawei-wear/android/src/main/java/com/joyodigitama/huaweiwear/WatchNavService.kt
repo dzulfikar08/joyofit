@@ -89,6 +89,7 @@ internal class WatchNavService(
       val c = code and 0xFF
       lastCode = c
       lastHeardAt = now()
+      if (c == WatchNavWire.ACK_RECEIVED) ackedCount.incrementAndGet()
       presence(if (c == WatchNavWire.ACK_RECEIVED) PRESENT else ABSENT, c)
       log(if (c == WatchNavWire.ACK_RECEIVED) "tx $summary acknowledged 0xcf" else "tx $summary answered 0x%02x".format(c))
     }

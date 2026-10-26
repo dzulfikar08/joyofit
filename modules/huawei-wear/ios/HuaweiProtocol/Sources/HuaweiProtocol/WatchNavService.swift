@@ -27,9 +27,8 @@ public enum WatchNavWire {
     private static func text(_ value: Any?) -> String {
         switch value {
         case let s as String: return s
-        case let n as NSNumber where CFGetTypeID(n) != CFBooleanGetTypeID():
-            let d = n.doubleValue
-            return d == d.rounded() && abs(d) < 1e15 ? String(Int64(d)) : "\(d)"
+        case let n as Int: return String(n)
+        case let d as Double: return d == d.rounded() && abs(d) < 1e15 ? String(Int64(d)) : "\(d)"
         default: return "?"
         }
     }
