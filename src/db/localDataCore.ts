@@ -44,6 +44,7 @@ export const USER_DATA_TABLES = [
   'rri_samples',
   'hrv_readings',
   'strava_upload',
+  'strava_manual_upload',
   'strength_record',
   'strength_exercise_use',
   'strength_meta',

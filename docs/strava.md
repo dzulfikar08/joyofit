@@ -9,7 +9,7 @@ changes any Strava behaviour or wording):
 - Anyone may connect while a slot is free. An account whose Strava connection has not been used for a while is
   released automatically to give the slot back (JoyoRogo's rule).
 - A user who cannot connect (or was released) is pointed to the manual upload on the workout page ('Unggah ke Strava
-  (manual)'), which needs no slot.
+  (manual)'), which needs no slot (section 7).
 
 JoyoRogo's Worker enforces it (it owns the tokens); JoyoFit's Worker only passes the result on (section 2a).
 
@@ -356,3 +356,74 @@ screenshots and how athlete data is handled). Before sending:
 - `cd server && bun run test`: `server/test/strava.test.ts` (signed state, authorize URL with the granted scope, code hand-off
   and the error reasons, status and token mapping, disconnect, webhook validation and forwarding; JoyoRogo's grant API is
   faked in `test/helpers.ts`). The grant logic itself is tested in the joyorogo repo, `packages/api/src/lib/strava-grant.test.ts`.
+- Manual upload (section 7): `src/features/strava/manualUpload.test.ts` (the file is the API upload's FIT byte for byte under the
+  API upload's name, which requests get the file, waiting for the file, the screen's state), `manualStore.test.ts` (the mark, and
+  that the API flow and the mark leave each other alone), the web view's navigation rule in `WebPolicyTest.kt` (with the desktop
+  user agent) and its Swift twin `modules/strava-upload-web/ios/WebLogicTests` (`swift test`).
+
+## 7. Manual upload (no API connection)
+
+The shared Strava API application has room for a limited number of athletes until Strava approves it for more (section 1),
+so not everyone can connect. **Upload to Strava (manual)** puts one workout on Strava without the connection: it is the
+upload a person does on a computer at `https://www.strava.com/upload/select`, made as close to one tap as Strava's rules
+allow. It is offered on the workout screen's Strava card whenever the API upload cannot run (not connected, not signed in
+to JoyoRogo, or Strava refused the file) and always in the workout menu (⋮).
+
+**Flow.** The app builds the same FIT file the API upload sends (`buildWorkoutFit`, `manualUploadFile`), writes it to the
+cache as `joyofit-<workout start>.fit` (`fitFileName`, the API upload's file name too) and opens
+`app/workouts/strava-upload.tsx`: Strava's upload page in a web view (`modules/strava-upload-web`), requested as the desktop
+site because Strava offers the file upload only there. The person logs in to Strava there themselves and taps Strava's own
+**Choose files**. When the page's file input asks the browser for a file, the app answers that request with the workout's
+file instead of opening a picker; the person then finishes on Strava. Taps with a Strava login in place: **Upload to Strava
+(manual)**, **Choose files**, then whatever Strava asks to confirm the activity (its "Save & View"); **Already uploaded**
+marks it on the phone.
+
+| Platform | How the file reaches the page |
+|---|---|
+| Android | `WebChromeClient.onShowFileChooser` (API 21): every file request goes to JS (`onFileRequest`), which answers with the file's `file://` URI (`answerFileRequest`). No system picker. |
+| iOS 18.4 and later | `WKUIDelegate.webView(_:runOpenPanelWith:initiatedByFrame:completionHandler:)`, available on iOS since 18.4 (<https://developer.apple.com/documentation/webkit/wkuidelegate/webview(_:runopenpanelwith:initiatedbyframe:completionhandler:)>, WebKit commit 284471@main). Same as Android. |
+| iOS 16.4 to 18.3 | WebKit always shows its own picker and gives the app no say. The screen says so and offers **Save to Files** (the share sheet); the person picks `joyofit-<start>.fit` from Files in Strava's picker. A "Files › JoyoFit" folder is not offered: it would need `UIFileSharingEnabled`, which shows the whole Documents folder, and expo-sqlite keeps `joyofit.db` there. |
+
+Only a request from `https://(www.)strava.com/upload…` whose input is not a photo, video or audio picker gets the file
+(`takesWorkoutFile`); any other is cancelled. A request that comes before the file is written waits for it.
+
+**Strava's terms.** The Terms of Service (<https://www.strava.com/legal/terms>, the version of 2026-09-28) say: "Automated
+access to or collection of data from the Services—by any means, including data mining, robots, screen scraping, scripts, or
+similar data-gathering tools or software such as browser extensions and crawlers—is prohibited." So the web view is a plain
+browser for the person:
+
+- JoyoFit injects no JavaScript, presses nothing, fills nothing in, and reads nothing from Strava's pages (no status, no
+  activity id, no HTML). The page's own scripts run, as in any browser.
+- The only hook is the browser's file request, answered with the person's own file after the person tapped Strava's own
+  **Choose files**: the same file a computer's file dialog would give.
+- The login happens on Strava's page; its cookies stay in the web view's own store (Android `CookieManager`, iOS the default
+  `WKWebsiteDataStore`). JoyoFit never sees or stores the Strava password or cookies.
+- Asking for the desktop site (Android: the user agent Chrome sends with "Desktop site" ticked, `WebPolicy.desktopUserAgent`;
+  iOS: `WKWebpagePreferences.preferredContentMode = .desktop`, Safari's "Request Desktop Website") is what the person would
+  otherwise have to switch on in their browser.
+- Links to other apps (`strava:`, `intent:`, `mailto:`) do not open from the web view (`WebPolicy.opensInWebView`).
+- No Strava logo: the entry is plain text ("Upload to Strava (manual)"), as the brand guidelines allow (`docs/brand-marks.md`).
+
+**Login.** Google does not allow its sign-in in embedded web views (Google OAuth 2.0 Policies,
+<https://developers.google.com/identity/protocols/oauth2/policies>, "Use secure browsers"; blocked since 30 September 2021),
+so **Sign in with Google** on Strava's page fails inside the app. The screen says to log in with email and password. Apple and
+Facebook sign-in were not tested in the web view and are not promised. Someone with a Google-only Strava account uses **Open
+in browser**: it saves the file (Android: the export folder picker, remembered like the Export card's Save; iOS: the share
+sheet, "Save to Files"), then opens `strava.com/upload/select` in the phone's browser with a note to switch on its desktop
+site and pick the file.
+
+**State.** Nothing is read back from Strava. **Already uploaded** stores the time in `strava_manual_upload`
+(`workout_start`, `marked_at`; `src/features/strava/manualStore.ts`), shown on the workout's Strava card with **Not uploaded
+after all** to undo it. It is apart from `strava_upload` on purpose: that table is the API upload's own state, emptied when the
+connection goes or changes athlete, and its rows decide what the automatic upload sends. A workout uploaded by hand and later
+sent through the API (the button, or the automatic upload of a workout that ended after connecting) gets Strava's duplicate
+answer, which the API flow already turns into `done` with a link to the existing activity. Strava itself also refuses a second
+upload of the same file on its upload page. The mark is user data (`USER_DATA_TABLES`) and, like `strava_upload`, stays when
+the workout is deleted.
+
+Differences from the API upload: Strava names the activity itself and takes the sport from the file (`session.sport`), and no
+description, gear or `external_id` is set (those are API form fields, not in the file).
+
+**Build.** `modules/strava-upload-web` is a native module (Kotlin + Swift), so this needs a new binary; the fingerprint
+runtime (`docs/ota.md`) keeps an OTA of it away from older binaries. Nothing new leaves the phone toward JoyoFit's or
+JoyoRogo's servers: the file goes from the phone to Strava, sent by the person.

@@ -18,6 +18,7 @@ import {
 } from '@/db/cloud';
 import { ensureCoachSchema } from '@/features/coach/store';
 import { ensureGearSchema, saveGear } from '@/features/gear/store';
+import { ensureStravaManualSchema } from '@/features/strava/manualStore';
 import { ensureRogoImportQueueSchema } from '@/features/huaweiimport/rogoQueue';
 import { ensureDeletedSchema } from '@/features/workouts/deleteCore';
 import { ensureStrengthSchema, putRecord, setStrengthMeta, listDirty } from '@/features/strength/store';
@@ -33,6 +34,7 @@ interface Phone {
 async function phone(): Promise<Phone> {
   const { raw, db } = openMemoryDb();
   await ensureGearSchema(db);
+  await ensureStravaManualSchema(db);
   await ensureStrengthSchema(db);
   await ensureCoachSchema(db);
   await ensureSyncItemSchema(db);

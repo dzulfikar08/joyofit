@@ -9,7 +9,7 @@ import type { MenuItem } from '@/features/strength/ui/Sheet';
 import type { WorkoutExport } from './useWorkoutExport';
 import { saveFlow } from './workoutExport';
 
-/** The sheet's entries: save, upload by hand on strava.com (unless the workout already went there), share, save elsewhere. */
+/** The sheet's entries: save, share, save elsewhere. The manual Strava upload has its own menu entry (`StravaWorkoutSection`). */
 export function useExportItems(exporter: WorkoutExport): MenuItem[] {
   const { t } = useTranslation('workouts');
   const files = saveFlow(Platform.OS) === 'files';
@@ -27,9 +27,6 @@ export function useExportItems(exporter: WorkoutExport): MenuItem[] {
       );
   return [
     ...item('save'),
-    ...(exporter.available.fit && !exporter.sentToStrava
-      ? [{ key: 'strava', label: t('export.strava'), hint: t(files ? 'export.stravaHintFiles' : 'export.stravaHint'), icon: 'open-outline', onPress: exporter.openStrava } satisfies MenuItem]
-      : []),
     ...item('share'),
     ...(saved ? [{ key: 'folder', label: t('export.otherFolder'), icon: 'folder-open-outline', onPress: () => exporter.run(saved.format, 'save', true) } satisfies MenuItem] : []),
   ];

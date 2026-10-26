@@ -3,7 +3,7 @@ import { describe, expect, it } from 'bun:test';
 import { buildFit, type StravaPoint, type StravaWorkout } from '@/features/strava/activityFile';
 import { decodeFit } from '@/features/strava/testDecode';
 
-import { buildGpx, canExportFit, canExportGpx, exportEntries, exportFile, exportFileName, exportLabelKey, saveFlow, STRAVA_UPLOAD_URL, type ExportIo } from './workoutExport';
+import { buildGpx, canExportFit, canExportGpx, exportEntries, exportFile, exportFileName, exportLabelKey, saveFlow, type ExportIo } from './workoutExport';
 
 const START = 1_792_058_016;
 const workout: StravaWorkout = {
@@ -151,12 +151,6 @@ describe('exportEntries', () => {
     expect(exportLabelKey('android', { format: 'fit', action: 'save' })).toBe('export.save.fit');
     expect(exportLabelKey('ios', { format: 'gpx', action: 'save' })).toBe('export.saveFiles.gpx');
     expect(exportLabelKey('android', { format: 'gpx', action: 'share' })).toBe('export.share.gpx');
-  });
-});
-
-describe('strava upload page', () => {
-  it('is the file upload page', () => {
-    expect(STRAVA_UPLOAD_URL).toBe('https://www.strava.com/upload/select');
   });
 });
 

@@ -741,9 +741,6 @@
       "fit": "Share .fit file",
       "gpx": "Share GPX file"
     },
-    "strava": "Upload on strava.com",
-    "stravaHint": "On your phone, switch the browser to Desktop site, then pick the .fit file from Downloads.",
-    "stravaHintFiles": "On your phone, switch the browser to Desktop site, then pick the .fit file from Files.",
     "saved": "Saved to {{folder}}",
     "otherFolder": "Save to another folder"
   },

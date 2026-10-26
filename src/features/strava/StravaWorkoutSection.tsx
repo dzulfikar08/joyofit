@@ -11,14 +11,18 @@ import { Notice } from '@/components/States';
 import { AppText } from '@/components/AppText';
 import { getStravaUpload, type StravaUploadRow } from '@/db/strava';
 import type { WorkoutRow } from '@/db/queries';
+import { clearManualUploadMark, getManualUploadMark } from '@/features/strava/manualStore';
 import { ViewOnStrava } from '@/features/strava/StravaLink';
+import { fmtDate } from '@/i18n/format';
 import { errorMessage } from '@/format';
 import { useStrava } from '@/state/StravaProvider';
 import { OPEN_IN_STACK } from '@/components/navigation';
 
 /**
  * "Send to Strava" for one workout, and where it ended up. Sending is also allowed for workouts that ended before
- * the account connected (and for imported ones): only the automatic upload is limited to new workouts.
+ * the account connected (and for imported ones): only the automatic upload is limited to new workouts. When the API upload
+ * cannot run (not connected, not signed in, or Strava turned the file away) the manual upload on Strava's own page is offered
+ * (`app/workouts/strava-upload.tsx`); the workout menu always offers it.
  */
 export function StravaWorkoutSection({ workout }: { workout: WorkoutRow }) {
   const { t } = useTranslation('sharing');
@@ -26,6 +30,7 @@ export function StravaWorkoutSection({ workout }: { workout: WorkoutRow }) {
   const router = useRouter();
   const strava = useStrava();
   const [row, setRow] = useState<StravaUploadRow | null>(null);
+  const [markedAt, setMarkedAt] = useState<number | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const connected = strava.settings.connectedAt !== null;
@@ -36,6 +41,12 @@ export function StravaWorkoutSection({ workout }: { workout: WorkoutRow }) {
       getStravaUpload(db, workout.start).then(
         (found) => {
           if (live) setRow(found);
+        },
+        () => {},
+      );
+      getManualUploadMark(db, workout.start).then(
+        (at) => {
+          if (live) setMarkedAt(at);
         },
         () => {},
       );
@@ -59,8 +70,15 @@ export function StravaWorkoutSection({ workout }: { workout: WorkoutRow }) {
   }, [db, workout.id, strava]);
 
   const done = row?.status === 'done' && row.activityId !== null;
-  // Without a connection, or when Strava turns the upload away, the .fit file can still be uploaded by hand on strava.com.
-  const fileHint = !connected || row?.status === 'rejected' || row?.status === 'failed';
+  // Without the API upload, or when Strava turns the upload away, the person can still upload the file on Strava's own page.
+  const offerManual = !done && markedAt === null && workout.complete && (!connected || !strava.signedIn || row?.status === 'rejected' || row?.status === 'failed');
+
+  const unmark = useCallback(() => {
+    clearManualUploadMark(db, workout.start).then(
+      () => setMarkedAt(null),
+      (e) => setError(errorMessage(e)),
+    );
+  }, [db, workout.start]);
 
   return (
     <Section title={t('strava.title')} icon="share-social" tint="workouts">
@@ -97,10 +115,25 @@ export function StravaWorkoutSection({ workout }: { workout: WorkoutRow }) {
           ) : null}
         </>
       )}
-      {fileHint ? (
-        <AppText variant="caption" muted>
-          {t('strava.fileHint')}
-        </AppText>
+      {markedAt !== null && !done ? (
+        <>
+          <KeyValue icon="checkmark-done-outline" label={t('strava.manual.status')} value={t('strava.manual.markedOn', { date: fmtDate(markedAt, 'medium') })} />
+          <Button label={t('strava.manual.unmark')} variant="ghost" icon="arrow-undo-outline" onPress={unmark} />
+        </>
+      ) : null}
+      {!connected && error ? <Notice tone="danger">{error}</Notice> : null}
+      {offerManual ? (
+        <>
+          <Button
+            label={t('strava.manual.action')}
+            variant="secondary"
+            icon="open-outline"
+            onPress={() => router.push({ pathname: '/workouts/strava-upload', params: { id: String(workout.id) } })}
+          />
+          <AppText variant="caption" muted>
+            {t('strava.manual.actionHint')}
+          </AppText>
+        </>
       ) : null}
     </Section>
   );

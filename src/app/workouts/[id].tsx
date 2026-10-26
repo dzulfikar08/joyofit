@@ -299,6 +299,17 @@ export default function WorkoutDetailScreen() {
           } satisfies MenuItem,
         ]
       : []),
+    // Always offered, connected or not: the upload on Strava's own page, without the API (`StravaWorkoutSection` explains).
+    ...(loaded && exporter.available.fit
+      ? [
+          {
+            key: 'strava-manual',
+            label: t('strava.manual.action', { ns: 'sharing' }),
+            icon: 'cloud-upload-outline',
+            onPress: () => router.push({ pathname: '/workouts/strava-upload', params: { id: String(loaded.workout.id) } }),
+          } satisfies MenuItem,
+        ]
+      : []),
     { key: 'delete', label: t('delete.action'), icon: 'trash-outline', danger: true, onPress: () => setDeleteOpen(true) },
   ];
 

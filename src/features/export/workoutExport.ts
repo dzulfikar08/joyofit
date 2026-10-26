@@ -126,9 +126,6 @@ export function exportLabelKey(os: string, { format, action }: ExportEntry): `ex
   return saveFlow(os) === 'files' ? `export.saveFiles.${format}` : `export.save.${format}`;
 }
 
-/** Where a Strava user uploads a file by hand. Neither the Strava nor the Garmin Connect app takes a file from the share sheet. */
-export const STRAVA_UPLOAD_URL = 'https://www.strava.com/upload/select';
-
 /** The phone side of an export, injected so the logic is testable. */
 export interface ExportIo {
   /** Writes the file into the cache directory and returns its `file://` URI. */

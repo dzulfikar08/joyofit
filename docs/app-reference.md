@@ -157,7 +157,7 @@ flowchart LR
 
 Workout screen → ⋮ → **Hapus latihan**, or a long press on a card in the Workouts list (also offered as a screen reader action). A dialog says what goes and that the activity on Strava stays; when the workout was shared to the JoyoRogo feed it asks whether the post goes too (the person's newest 200 posts are searched for `stats.startedAt`). After **Hapus** the workout leaves the list at once and a snackbar offers **Urungkan** for 5 s; only then is it deleted (`features/workouts/pendingDelete.ts`; leaving the app commits at once, another delete commits the waiting one).
 
-- **Local.** The `workouts` row, its `workout_points`, `workout_sensor`, `cloud_workout`, `workout_gear`, `strava_gear_sent`, `ride_metrics`, `watch_kcal_sent` and `phone_kcal_sent` rows, the heart-rate minutes a phone recording wrote to `step_samples`, the e-bike mark, the replay video cache, the Coach plan link (the session is open again) and the strength record stored as it (a tombstone; strength sync tells the cloud). `strava_upload` stays on purpose, so the workout is never uploaded to Strava twice (`features/workouts/deleteCore.ts`, `deleteWorkout.ts`).
+- **Local.** The `workouts` row, its `workout_points`, `workout_sensor`, `cloud_workout`, `workout_gear`, `strava_gear_sent`, `ride_metrics`, `watch_kcal_sent` and `phone_kcal_sent` rows, the heart-rate minutes a phone recording wrote to `step_samples`, the e-bike mark, the replay video cache, the Coach plan link (the session is open again) and the strength record stored as it (a tombstone; strength sync tells the cloud). `strava_upload` stays on purpose, so the workout is never uploaded to Strava twice (`features/workouts/deleteCore.ts`, `deleteWorkout.ts`); so does the manual upload mark (`strava_manual_upload`).
 - **Never comes back.** `workout_deleted` (created from JS) keeps the start of every deleted workout. The native watch sync re-downloads everything after the newest workout it knows of, so the deleted one is written again by the next sync; `purgeDeletedWatchRows` removes that copy (only `imported = 0` rows) at start, when the app returns, after every sync and ahead of every push. The cloud pull never restores a deleted start, and a tombstone pulled from the cloud (a delete on another phone or the web) is recorded the same way.
 - **Account.** What the account has to be told is stored in the tombstone and retried at every sync (and by the diary push) until it is sent: `watchWorkout.remove` (the cloud tombstone, which other phones pull and answer by deleting their copy; a phone that uploads it later gets `410`), `exercise.removeJoyofit` for `watch:<start>`, `phone:<start>` and `strength:<id>`, and `social.deletePost` for the posts the person agreed to remove. Nothing is sent while nobody is signed in or sync is paused, and a tombstone made under another account waits for that account. A workout JoyoRogo's server absorbed into a Health Connect / Apple Health row has no `joyofit` row to remove.
 - **Strava** is left alone.
@@ -208,6 +208,16 @@ are in [`docs/strava.md`](strava.md) section 1.
   locks the session's keychain item while the phone is locked); the connect page is an `ASWebAuthenticationSession`.
 - **Description.** Off by default: **Add fit.joyorogo.com to the description** puts that text (plain, never the title)
   in the activity description.
+- **Without the connection (manual upload).** The shared Strava application has room for a limited number of athletes, so the
+  workout menu (⋮) always offers **Upload to Strava (manual)**, and the Strava card offers it while the API upload cannot run
+  (not connected, not signed in, or Strava refused the file). It writes the same FIT file as `joyofit-<start>.fit` and opens
+  `strava.com/upload/select` (desktop site) in an in-app web view (`modules/strava-upload-web`, Kotlin + Swift, needs a new
+  binary). The person logs in to Strava there (email and password: Google blocks its sign-in in embedded web views) and taps
+  Strava's own **Choose files**; the app answers that file request with the workout's file (Android `onShowFileChooser`, iOS 18.4+
+  `runOpenPanelWith`), with no picker. On iOS before 18.4 the person saves the file to Files first and picks it there. JoyoFit
+  runs no script in Strava's pages and reads nothing from them (Strava's terms forbid automated access); **Already uploaded**
+  marks it on the phone (`strava_manual_upload`), **Open in browser** saves the file and opens the page in the browser. Details
+  and the terms reasoning: [`docs/strava.md`](strava.md) section 7.
 - **Strava's API Agreement.** The only Strava data JoyoFit reads is the status of its own upload and, once the athlete allows `profile:read_all`, their list of shoes and bikes to link gear; that list is shown only to its owner, and only the linked gear's id (and its name on the phone) is kept. Nothing is used for analytics or AI; JoyoRogo's
   database holds only the athlete id and tokens on its behalf. A workout uploaded here is not imported again by JoyoRogo's Strava
   sync (its `external_id` starts with `joyofit-`); JoyoRogo gets it through Health Connect / Apple Health. Owner setup and

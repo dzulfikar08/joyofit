@@ -151,11 +151,11 @@ jobs:
       - run: bun install --frozen-lockfile
       # android/ is generated (gitignored); the module tests need the Gradle project.
       - run: bunx expo prebuild -p android --no-install
-      - run: ./gradlew :huawei-wear:testDebugUnitTest :ble-sensors:testDebugUnitTest :replay-encoder:testDebugUnitTest :metronome-click:testDebugUnitTest
+      - run: ./gradlew :huawei-wear:testDebugUnitTest :ble-sensors:testDebugUnitTest :replay-encoder:testDebugUnitTest :metronome-click:testDebugUnitTest :strava-upload-web:testDebugUnitTest
         working-directory: android
       # NewApi only (modules/newapi-lint.gradle): a call newer than minSdk 29 outside a Build.VERSION.SDK_INT check
       # compiles and then throws NoSuchMethodError on an older phone. Findings print to the log.
-      - run: ./gradlew :huawei-wear:lintDebug :ble-sensors:lintDebug :replay-encoder:lintDebug :metronome-click:lintDebug
+      - run: ./gradlew :huawei-wear:lintDebug :ble-sensors:lintDebug :replay-encoder:lintDebug :metronome-click:lintDebug :strava-upload-web:lintDebug
         working-directory: android
 
   swift-protocol:
@@ -249,4 +249,8 @@ jobs:
       # The metronome click's synthesized samples and WAV header; the AVFoundation player cannot build on Linux.
       - name: Click logic tests (metronome-click)
         working-directory: modules/metronome-click/ios/ClickLogicTests
+        run: swift test
+      # The manual Strava upload web view's navigation rule; the WebKit view cannot build on Linux.
+      - name: Web logic tests (strava-upload-web)
+        working-directory: modules/strava-upload-web/ios/WebLogicTests
         run: swift test

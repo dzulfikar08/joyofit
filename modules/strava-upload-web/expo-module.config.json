@@ -1,0 +1,9 @@
+{
+  "platforms": ["android", "ios"],
+  "android": {
+    "modules": ["com.joyodigitama.stravauploadweb.StravaUploadWebModule"]
+  },
+  "ios": {
+    "modules": ["StravaUploadWebModule"]
+  }
+}

@@ -9,6 +9,7 @@ import { ensureRecordingSchema } from '@/features/record/journal';
 import { ensureScaleSchema } from '@/features/scale/store';
 import { ensureSensorSchema } from '@/features/sensors/store';
 import { ensureEnvSchema } from '@/features/thermometer/store';
+import { ensureStravaManualSchema } from '@/features/strava/manualStore';
 import { ensureStrengthSchema } from '@/features/strength/store';
 
 /** The database file in expo-sqlite's folder. The native writer (`SyncStore.kt`, `SyncStore.swift`) opens the same name. */
@@ -29,4 +30,5 @@ export async function buildAppSchema(db: SQLiteDatabase): Promise<void> {
   await ensureCyclingSchema(db);
   await ensureRecordingSchema(db);
   await ensureRogoImportQueueSchema(db);
+  await ensureStravaManualSchema(db);
 }

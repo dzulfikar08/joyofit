@@ -734,9 +734,6 @@
       "fit": "Bagikan file .fit",
       "gpx": "Bagikan file GPX"
     },
-    "strava": "Upload di strava.com",
-    "stravaHint": "Di HP, pakai mode Situs desktop di browser, lalu pilih file .fit dari Unduhan.",
-    "stravaHintFiles": "Di HP, pakai mode Situs desktop di browser, lalu pilih file .fit dari Files.",
     "saved": "Tersimpan di {{folder}}",
     "otherFolder": "Simpan di folder lain"
   },

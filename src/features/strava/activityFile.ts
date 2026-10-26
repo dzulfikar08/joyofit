@@ -214,6 +214,11 @@ export function externalId(start: number): string {
   return `joyofit-${start}`;
 }
 
+/** The file name Strava sees, `joyofit-<start>.fit`: the API upload and the manual upload on strava.com both send this name. */
+export function fitFileName(start: number): string {
+  return `${externalId(start)}.fit`;
+}
+
 interface Sample {
   ts: number;
   lat: number | null;
@@ -910,7 +915,7 @@ export function buildUploadForm(
     head += `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`;
   }
   head +=
-    `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${externalId(workout.start)}.fit"\r\n` +
+    `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${fitFileName(workout.start)}"\r\n` +
     'Content-Type: application/octet-stream\r\n\r\n';
   const encoder = new TextEncoder();
   const headBytes = encoder.encode(head);

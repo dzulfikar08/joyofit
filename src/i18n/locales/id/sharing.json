@@ -50,7 +50,28 @@
     "check": "Cek Strava",
     "send": "Kirim ke Strava",
     "signIn": "Masuk dengan JoyoRogo (Lainnya, Kesehatan dan cloud) untuk mengirim.",
-    "fileHint": "Bisa juga: simpan file .fit dari kartu Ekspor di atas, lalu upload di strava.com → Upload activity."
+    "manual": {
+      "action": "Unggah ke Strava (manual)",
+      "actionHint": "Di halaman unggah Strava sendiri, tanpa sambungan. Kamu masuk ke Strava di sana sendiri.",
+      "title": "Unggah ke Strava",
+      "preparing": "Menyiapkan file .fit…",
+      "loginHint": "Masuk ke Strava pakai email dan kata sandi. Login Google tidak bisa di sini: Google memblokirnya di dalam aplikasi.",
+      "direct": "Ketuk Choose files di Strava: JoyoFit langsung memberi file {{file}}. Lalu selesaikan di Strava.",
+      "files": "iPhone ini belum bisa memberi file langsung ke Strava. Simpan dulu {{file}} ke Files, lalu ketuk Choose files di Strava dan pilih file itu dari Files.",
+      "saveToFiles": "Simpan ke Files",
+      "handedOver": "{{file}} sudah masuk ke Strava. Setelah Strava menampilkan aktivitasnya, ketuk Sudah diunggah.",
+      "loadError": "Halaman Strava tidak terbuka: {{error}}",
+      "retry": "Coba lagi",
+      "markDone": "Sudah diunggah",
+      "openBrowser": "Buka di browser",
+      "browserTitle": "Unggah lewat browser",
+      "browserFolder": "{{file}} tersimpan di {{folder}}. Di browser, nyalakan Situs desktop, masuk ke Strava, ketuk Choose files, lalu pilih file itu.",
+      "browserFiles": "Di browser, nyalakan situs desktop (Safari: aA, Minta Situs Web Desktop), masuk ke Strava, ketuk Choose files, lalu pilih {{file}} dari Files.",
+      "browserConfirm": "Buka browser",
+      "status": "Diunggah manual",
+      "markedOn": "Ditandai {{date}}",
+      "unmark": "Ternyata belum diunggah"
+    }
   },
   "fitImport": {
     "sports": {

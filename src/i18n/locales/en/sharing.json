@@ -50,7 +50,28 @@
     "check": "Check Strava",
     "send": "Send to Strava",
     "signIn": "Sign in with JoyoRogo (More, Health and cloud) to send.",
-    "fileHint": "You can also save the .fit file from the Export card above and upload it at strava.com → Upload activity."
+    "manual": {
+      "action": "Upload to Strava (manual)",
+      "actionHint": "On Strava's own upload page, no connection needed. You log in to Strava there yourself.",
+      "title": "Upload to Strava",
+      "preparing": "Preparing the .fit file…",
+      "loginHint": "Log in to Strava with your email and password. Google login does not work here: Google blocks it inside apps.",
+      "direct": "Tap Choose files on Strava: JoyoFit gives it {{file}} straight away. Then finish on Strava.",
+      "files": "This iPhone cannot hand Strava the file. Save {{file}} to Files first, then tap Choose files on Strava and pick it from Files.",
+      "saveToFiles": "Save to Files",
+      "handedOver": "{{file}} went to Strava. Once Strava shows the activity, tap Already uploaded.",
+      "loadError": "Strava's page did not load: {{error}}",
+      "retry": "Try again",
+      "markDone": "Already uploaded",
+      "openBrowser": "Open in browser",
+      "browserTitle": "Upload in the browser",
+      "browserFolder": "{{file}} is saved in {{folder}}. In the browser, turn on Desktop site, log in to Strava, tap Choose files and pick the file there.",
+      "browserFiles": "In the browser, turn on the desktop website (Safari: aA, Request Desktop Website), log in to Strava, tap Choose files and pick {{file}} from Files.",
+      "browserConfirm": "Open browser",
+      "status": "Uploaded by hand",
+      "markedOn": "Marked on {{date}}",
+      "unmark": "Not uploaded after all"
+    }
   },
   "fitImport": {
     "sports": {
