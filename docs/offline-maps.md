@@ -1,7 +1,8 @@
-# Offline maps on the watch: feasibility (JRG-425) and lab (JRG-426)
+# Offline maps on the watch: feasibility (JRG-425), lab (JRG-426), every Kabupaten/Kota (JRG-433)
 
 Status: **feasibility study 2026-10-25 (JRG-425; no request was sent to Huawei's map servers), then a lab build (JRG-426, section "Lab")
-that sends an OSM-built map to the owner's Fit 4 Pro; its result is under "Lab", "Results".** Question: Huawei Health (HH) 17.0.8.300 offers
+that sends an OSM-built map to the owner's Fit 4 Pro (result under "Lab", "Results"), then the pipeline and catalog for all 514 Kabupaten/Kota
+(JRG-433, section "Every Kabupaten/Kota").** Question: Huawei Health (HH) 17.0.8.300 offers
 "Offline maps" for the Watch Fit 4 Pro (firmware 6.1.0.117): Petal Maps data downloaded on the phone and sent to the watch, so workouts and
 routes show a map. Can JoyoFit offer the same?
 
@@ -196,8 +197,8 @@ Branch `lab/jrg-426-offline-map` (draft PR #25, not to be merged) adds what the 
   | Surabaya (lab): Kota Surabaya plus about 2 km | `2000000000000003578` | `112.57,-7.37,112.87,-7.17` | 47,244,748 bytes (announced 46 MB, wait 260 s; about 10 min of upload at the measured rate), built in 4 min | `26102611` | `CC4743B4…AF5CE9` |
 
   Surabaya is five times Malang for a similar area: about 1 million features at zoom 16 against 290,000. Neither file is committed (over 5 MB).
-- **Hosting.** `tools/offline-maps/publish.sh <id>…` uploads `<id>.bin` to the R2 bucket `joyofit-maps` under `watch/` (the bucket also holds the
-  bike computer's PMTiles) and rewrites `watch/catalog.json` last. JoyoFit's Worker serves them (`server/src/maps.ts`): `GET
+- **Hosting.** `tools/offline-maps/publish.py <id>…` (first `publish.sh`) uploads `<id>.bin` to the R2 bucket `joyofit-maps` under `watch/` (the
+  bucket also holds the bike computer's PMTiles) and rewrites `watch/catalog.json` last. JoyoFit's Worker serves them (`server/src/maps.ts`): `GET
   https://api.fit.joyorogo.com/v1/maps` (the catalog: id, name, bbox, size, SHA-256, version, build and OSM dates, attribution; cached 5 min) and
   `GET /v1/maps/<id>.bin` (streamed from R2, `ETag`, cached 1 h). Plain GETs with no session or parameter; the server sees the IP address
   (privacy page and `docs/play-store.md` updated). Never Huawei's or Petal's servers.
@@ -269,9 +270,77 @@ over the normal link** (log `~/re/agps/logcat_lab7.txt`, 10:59 to 11:07):
 | `08` | **none** within the 80 s budget (nor any other mapkit frame) |
 | list after | `06=00000001 04=01 05=00 87{88{09=1BC16D674EC80DF5 0B=018E4AFA 0A=00 16=00}}`: **the map is listed with our id and version 26102522, the header's version**, so the watch read the header |
 
-**Accepted: yes** (an id above 2^60 too). **Drawn: pending** (the owner is checking the watch's map). Throughput 75 kB/s sizes the maps: a
-city like Malang (9 MB) in about 2 minutes, Surabaya (47 MB) in about 10, a 200 MB province in about 45. The missing `08` is now handled
-(list confirmation, above). Run 2 (Surabaya, update path, delete) follows the procedure above.
+**Accepted: yes** (an id above 2^60 too). **Drawn: yes**: the owner saw Malang (`…3573`) and Surabaya (`…3578`) drawn on the Fit 4 Pro (2026-10-26).
+Throughput 75 kB/s sizes the maps: a city like Malang (9 MB) in about 2 minutes, Surabaya (47 MB) in about 10, a 200 MB province in about 45.
+The missing `08` is now handled (list confirmation, above).
+
+## Every Kabupaten/Kota (JRG-433)
+
+Branch `feat/jrg-433-all-city-maps` (on top of the lab branch). How to run everything: `tools/offline-maps/README.md`.
+
+- **Regions.** `tools/offline-maps/regions.json`: all **514** Kabupaten/Kota (416 kabupaten, 98 kota) in 38 provinces, one line each: BPS code,
+  map id, name ("Kota Malang", "Kabupaten Malang"), province, kind, Wikidata item, OSM relation, bbox. Codes, Indonesian names and provinces come
+  from Wikidata (CC0; P1588 "Statistics Indonesia area code", P131 a "province of Indonesia"), the boundaries from OpenStreetMap (ODbL, the same
+  licence as the maps): the `boundary=administrative` `admin_level=5` relation of each region in the Geofabrik extract, found by Wikidata's OSM
+  relation id (P402) or the relation's `wikidata` tag. All 514 matched (extract of 2026-10-25T21:21Z); Kabupaten Nunukan's relation does not
+  close at the Malaysian border in the extract, so its map uses the box around its members. Polygons are not in git: each run rebuilds them from
+  its extract. Papua's regions keep their pre-2022 BPS codes (91xx, 94xx; Wikidata has no newer ones) with the new provinces (Papua Selatan,
+  Papua Tengah, Papua Pegunungan, Papua Barat Daya), which keeps their ids stable.
+- **Ids.** `2·10^18 + part·10^4 + BPS code`: part 0 for a whole region (`2000000000000003573` = Kota Malang, as in the lab), 1 to 16 for the parts
+  of a region split to stay under the size cap (`2000000000000013201` = Kabupaten Bogor 1/N, if it ever needs splitting).
+- **Build.** `build-all.sh` (Linux or macOS): the Geofabrik Indonesia extract (1.7 GB) once per run → each region's polygon plus 1 km →
+  `osmium extract` 16 regions per pass → the pinned converter (HDataResearch `c736a1a`), `--jobs` at once → `out/<id>.bin` + catalog entry +
+  state. Resumable (state per region), skips regions built from the same extract with the same recipe, splits a region in halves across its
+  longer side while its cut is above 40 MiB or its map above 64 MiB (the app's limit while the upload holds the file in memory), flags parts
+  still above the cap, writes `out/report.json`.
+- **Publish.** `publish.py --all`: uploads only maps whose SHA-256 the catalog does not have, writes `watch/catalog.json` last, deletes files
+  that left the catalog.
+- **Server.** `GET /v1/maps` serves the catalog with `code`, `province`, `kind`, `part`, an `ETag` (`304` on `If-None-Match`), and optional
+  `province`, `q` and `limit` (`server/README.md`); no position filter, because Workers Logs records request URLs. The Worker keeps the
+  parsed catalog per isolate and re-reads R2 only when the object's etag changes. `GET /v1/maps/<id>.bin` is unchanged.
+- **App.** The lab screen's map list is one virtualised list with a search box (name, province or BPS code), province chips and **Urutkan dari
+  yang terdekat**: when location access is already granted the list is sorted by distance at once, otherwise the button asks first. The phone
+  reads its own position and sorts the catalog itself; **the position never leaves the phone** (the server has no position filter, so
+  no coordinates can reach Cloudflare's request logs). So the privacy texts stay as they are: the map requests
+  still carry no location.
+
+### Smoke runs
+
+| Where | Regions | Result |
+|---|---|---|
+| Mac (8 GB, 8 cores), Indonesia extract of 2026-10-25T21:21Z, `--jobs 3` | 3573, 3515, 3579 | 117 s in all: boundaries 19 s, one cut pass 35 s; **Kota Batu** 2,321,107 bytes in 8 s, **Kota Malang** 7,463,489 bytes in 26 s (the polygon replaces the lab's box with Dau), **Kabupaten Sidoarjo** 22,082,623 bytes in 71 s; peak RSS 2.4 GB; a second run skipped all three in 0.3 s |
+| Mac, same extract, `--jobs 1` | 3507 | **Kabupaten Malang** (Dau, where the owner runs, is in it) 20,919,310 bytes in 56 s, 88 s in all |
+| Mac, `--max-mib 3 --split-pbf-mib 5` | 3573 | split path: 3 parts of 2.2 to 2.6 MiB, ids `…013573` to `…033573`, headers "Kota Malang 1/3" to "3/3" |
+| GitHub Actions, Ubuntu 24.04, osmium 1.16.0, Python 3.12.3 (`.github/workflows/offline-maps.yml`, every PR touching the tools) | 8171 | **Kota Ambon** from the Maluku extract: 14,796,767 bytes in 36 s; a second run skips it |
+
+Published 2026-10-26 (Worker version `d819c2be-e04d-4bad-b319-a5ffac154c9b`): Kota Malang, Kota Batu, Kabupaten Sidoarjo, Kabupaten Malang (all
+from the extract of 2026-10-25T21:21Z) and the lab's Surabaya (unchanged file, catalog entry given code/province/kind); every download's SHA-256
+matched the catalog.
+
+### Size, time and cost for all 514
+
+Measured by cutting every region (polygon + 1 km) from the 2026-10-25 extract, without converting: **1,905 MiB of cut OSM data** in all; median
+region 2.0 MiB; 408 regions at most 5 MiB, 464 at most 10, 507 at most 20, none above 40. Largest: Kabupaten Bandung 32.2 MiB, Kabupaten
+Bogor 29.6, Kabupaten Bekasi 24.4, Kota Jakarta Timur 22.3, Kota Surabaya 22.1, Kabupaten Sleman 21.5, Kabupaten Tangerang 21.4. By province:
+Jawa Barat 316 MiB, Jawa Timur 260, Jawa Tengah 252, Sumatera Utara 88, Sulawesi Selatan 82, Jakarta 78.
+
+- **Maps.** The converter wrote 1.06 to 1.33 times the cut's size in the smoke runs (1.76 for the lab's Surabaya box), so all maps together come
+  to about **2.0 to 2.6 GiB** (at most about 3.3 GiB at Surabaya's ratio). Kabupaten Bandung would be about 57 MiB at the worst ratio, under
+  the 64 MiB cap, so few or no regions should need splitting. [INFERENCE from cut sizes; the full run's `report.json` has the real numbers.]
+- **The watch.** The Fit 4 Pro reported about 1.5 GB free (run 1): a province fits (Jawa Barat about 0.35 to 0.45 GB), all of Indonesia does not.
+  At 75 kB/s a median region (about 2.5 MB) sends in under a minute, the largest (about 50 MB) in about 11 minutes.
+- **Time.** About 3 to 4 s of conversion per MiB of cut (Kabupaten Malang 17.8 MiB in 56 s, Kota Malang 6.7 MiB in 26 s) plus a few seconds
+  per region: about 2 to 2.5 CPU hours for all 514, plus 33 cut passes of 35 to 60 s. With `--jobs 6` on a box with 16 GB or more that is
+  roughly 40 to 60 minutes; GitHub's 4-CPU runner about 1 to 1.5 hours, well inside its 6-hour job limit. [INFERENCE from the smoke runs]
+- **R2.** `joyofit-maps` held 599 MB on 2026-10-26 (the bike computer's PMTiles plus these maps); all maps add about 2.5 GB. R2 Standard: the
+  first 10 GB-month, 1 million writes and 10 million reads a month are free, then $0.015 per GB-month; egress is free. A monthly publish is
+  about 520 writes; each download is one read through the Worker. Expected cost **$0** inside the free tier, or about **$0.04 a month** for the
+  maps if the account's other buckets already use it up.
+- **Schedule.** `.github/workflows/offline-maps.yml` rebuilds every region on the 2nd of each month on a GitHub-hosted runner (the repository is
+  public: free minutes; 16 GB RAM, 4 CPUs, enough disk) and publishes when the secret `CLOUDFLARE_R2_TOKEN` exists; without it, it builds and
+  publishes nothing. The alternative is the owner's Linux box with a systemd timer (README). Each month's extract has a new date, so every
+  region is rebuilt and, because the header version is the build time, every map gets a new SHA-256 and is uploaded again; the app shows the
+  phone's copy as an older version until the user downloads the new one.
 
 ## Evidence index (decompile paths are under `~/re/agps/jadx/`)
 

@@ -1170,6 +1170,25 @@
     "deletePhone": "Hapus dari HP",
     "deleteWatch": "Hapus dari jam",
     "downloaded": "{{name}} sudah diunduh dan diperiksa (SHA-256).",
-    "missingFile": "{{name}} sudah tidak ada di HP ini. Unduh lagi."
+    "missingFile": "{{name}} sudah tidak ada di HP ini. Unduh lagi.",
+    "province": "Provinsi",
+    "kind": {
+      "kota": "kota",
+      "kabupaten": "kabupaten"
+    },
+    "allProvinces": "Semua provinsi",
+    "searchPlaceholder": "Cari kota, kabupaten atau provinsi",
+    "searchLabel": "Cari peta",
+    "count_other": "{{count}} peta",
+    "countOf": "{{count}} dari {{total}} peta",
+    "noMatch": "Tidak ada peta yang cocok dengan pencarian atau provinsi.",
+    "nearMe": "Urutkan dari yang terdekat",
+    "nearSorted": "Terdekat di atas. Posisi Anda tetap di HP ini: hanya untuk mengurutkan daftar ini, tidak pernah dikirim.",
+    "locating": "Mencari posisi Anda…",
+    "nearDenied": "Izin lokasi tidak diberikan. Daftar tetap sesuai urutan katalog.",
+    "noFix": "Posisi Anda tidak ditemukan. Coba lagi di luar ruangan atau nanti.",
+    "distance": "Jarak",
+    "distanceValue": "{{km}} km",
+    "inside": "Anda di wilayah ini"
   }
 }
