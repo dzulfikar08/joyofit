@@ -154,7 +154,7 @@ redirects with `reason=slots_full`. The app then shows "Slot Strava penuh" (or "
 tidak dipakai" after a release), hides the connect button and points to 'Unggah ke Strava (manual)'. An older JoyoRogo
 without these fields behaves as before.
 
-**Manual upload switch.** The manual Strava upload (the user saves a file and uploads it on strava.com) is a workaround
+**Manual upload switch.** The manual Strava upload (section 7: Strava's own upload page in the app) is a workaround
 for everyone while Strava capacity is limited, not tied to any plan. `GET /v1/strava` carries `manualUpload: boolean` in
 every shape (not configured, not connected, connected), read from the Worker var `STRAVA_MANUAL_UPLOAD` in
 `server/wrangler.jsonc`: `"on"` (the default; unset or anything else counts as on) or `"off"`. **Turn it off when Strava
@@ -370,12 +370,11 @@ allow. It is a workaround for everyone while capacity is short, with no plan dif
 screen's Strava card whenever the API upload cannot run (not connected, not signed in to JoyoRogo, or Strava refused the
 file) and in the workout menu (⋮), both only while the Worker's switch is on.
 
-**Switch.** The Worker var `STRAVA_MANUAL_UPLOAD` (`on` by default, `off`) is sent as `manualUpload` in every
-`GET /v1/strava` answer. The phone keeps the last value in `cloud_state.strava_manual_upload` (`applyManualUploadSwitch`,
-read as `StravaSettings.manualUpload`), so signed out and offline use the last known value; a phone that never heard it, or a
-Worker that does not send it, shows the option. Set it `off` once Strava grants the application enough athletes (9,999),
-back `on` if the slots are ever full again; the card button and the ⋮ entry go with it, and a workout already marked as
-uploaded keeps showing its mark.
+**Switch.** `manualUpload` in the `GET /v1/strava` answer (Worker var `STRAVA_MANUAL_UPLOAD`, how to flip it: section 2a).
+The phone keeps the last value in `cloud_state.strava_manual_upload` (`applyManualUploadSwitch`, read as
+`StravaSettings.manualUpload`), so signed out and offline use the last known value; a phone that never heard it, or a Worker
+that does not send it, shows the option. Off hides the card button and the ⋮ entry; a workout already marked as uploaded
+keeps showing its mark.
 
 **Flow.** The app builds the same FIT file the API upload sends (`buildWorkoutFit`, `manualUploadFile`), writes it to the
 cache as `joyofit-<workout start>.fit` (`fitFileName`, the API upload's file name too) and opens
