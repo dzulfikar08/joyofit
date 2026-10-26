@@ -38,7 +38,7 @@ app.route("/v1/app-config", appConfig);
 app.route("/v1/agps", agps);
 // Public, lab only: the HW_PGNSS_PRED bundle built from open orbit predictions (docs/agps.md "PGNSS lab path"); no user data either.
 app.route("/v1/agps", agpsPgnss);
-// Public, lab only: OSM-built offline watch maps from the R2 bucket MAPS (docs/offline-maps.md "Lab"); no user data either.
+// Public, lab only: OSM-built offline watch maps (every Kabupaten/Kota) from the R2 bucket MAPS (docs/offline-maps.md); no user data either.
 app.route("/v1/maps", maps);
 // Device-token auth, not a session: the monitored phone uploads from native background code.
 app.route("/v1/family", familyDevice);

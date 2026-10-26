@@ -1,0 +1,94 @@
+# Offline watch maps (tools/offline-maps/README.md, docs/offline-maps.md).
+#
+# - smoke: on pull requests that touch tools/offline-maps/, builds Kota Ambon (8171) from Geofabrik's small Maluku extract (27 MB) on
+#   Linux, checks the report and that a second run skips it. No secrets, nothing published.
+# - monthly: on the 2nd of each month (and by hand with "full"), rebuilds every Kabupaten/Kota from the Indonesia extract and publishes
+#   what changed to R2. Publishing needs the repository secret CLOUDFLARE_R2_TOKEN (an API token with "Workers R2 Storage: Edit" on the
+#   JoyoFit account); without it the job builds, prints the report and publishes nothing. The owner's Linux box with the systemd timer
+#   in the README is the alternative; run one of the two, not both.
+name: Offline maps
+
+on:
+  pull_request:
+    paths:
+      - "tools/offline-maps/**"
+      - ".github/workflows/offline-maps.yml"
+  schedule:
+    - cron: "0 19 2 * *"
+  workflow_dispatch:
+    inputs:
+      full:
+        description: "Rebuild and publish every region (as the monthly run)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: offline-maps-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Smoke build (Kota Ambon, Linux)
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && !inputs.full)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool python3-venv && osmium --version | head -1 && python3 --version
+      - run: curl -fsSL -o "$RUNNER_TEMP/maluku.osm.pbf" https://download.geofabrik.de/asia/indonesia/maluku-latest.osm.pbf
+      - name: Build Kota Ambon
+        run: tools/offline-maps/build-all.sh --pbf "$RUNNER_TEMP/maluku.osm.pbf" --only 8171 --jobs 2
+      - name: Check the map and the catalog entry
+        run: |
+          cat tools/offline-maps/out/report.json
+          python3 - <<'PY'
+          import json, sys
+          sys.path.insert(0, "tools/offline-maps")
+          import mapinfo
+          report = json.load(open("tools/offline-maps/out/report.json"))
+          assert report["built"] == 1 and report["maps"] >= 1 and not report["failed"], report
+          state = json.load(open("tools/offline-maps/out/state/8171.json"))
+          for map_id in state["ids"]:
+              path = f"tools/offline-maps/out/{map_id}.bin"
+              entry = json.load(open(path[:-4] + ".json"))
+              header = mapinfo.read_header(path)
+              assert entry["code"] == "8171" and entry["province"] == "Maluku" and entry["kind"] == "kota", entry
+              assert entry["sha256"] == mapinfo.sha256_of(path)[0] and header["zooms"] == [10, 12, 14, 16], header
+              print(map_id, entry["name"], entry["sizeBytes"], header)
+          PY
+      - name: A second run skips the region
+        run: |
+          tools/offline-maps/build-all.sh --pbf "$RUNNER_TEMP/maluku.osm.pbf" --only 8171 | tee "$RUNNER_TEMP/again.log"
+          grep -q "1 up to date, 0 to build" "$RUNNER_TEMP/again.log"
+
+  monthly:
+    name: Rebuild and publish every region
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.full)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 340
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool python3-venv
+      - run: bun install --frozen-lockfile
+        working-directory: server
+      - name: Build (4 jobs on the runner's 4 CPUs and 16 GB)
+        run: tools/offline-maps/build-all.sh --jobs 4 || echo "::warning::some regions failed; see the report"
+      - run: cat tools/offline-maps/out/report.json
+      - name: Publish what changed
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::warning::no CLOUDFLARE_R2_TOKEN secret: built, not published"
+            tools/offline-maps/publish.py --all --dry-run
+            exit 0
+          fi
+          tools/offline-maps/publish.py --all

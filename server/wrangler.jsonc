@@ -40,7 +40,7 @@
       "binding": "IMPORTS",
       "bucket_name": "joyofit-imports"
     },
-    // Public offline watch maps for the lab (src/maps.ts, docs/offline-maps.md "Lab"): watch/catalog.json + watch/<id>.bin, no user data. The same bucket holds the bike
+    // Public offline watch maps (src/maps.ts, docs/offline-maps.md; tools/offline-maps/publish.py): watch/catalog.json + watch/<id>.bin, no user data. The same bucket holds the bike
     // computer's PMTiles (docs/bike-computer.md), public at maps.fit.joyorogo.com.
     {
       "binding": "MAPS",
