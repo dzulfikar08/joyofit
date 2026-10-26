@@ -1,6 +1,6 @@
 # JoyoFit on the App Store: listing copy and answers
 
-What was entered in App Store Connect for app 6823324343 (version 1.0). Regenerate the screenshots with `node .tmp/storeframes/render.mjs` from the repo root
+What is entered in App Store Connect for app 6823324343 (version record 1.1, build 202610260531; texts updated 2026-10-26 after the rejection below). Regenerate the screenshots with `node .tmp/storeframes/render.mjs` from the repo root
 (frames in `.tmp/storeframes/frame.html`, source captures in `.tmp/storeframes/shots/`, output 1242x2688 for APP_IPHONE_65).
 
 The screenshots are real captures of the app's own screens (the JS UI is shared with Android), framed with a drawn iPhone status bar. They are not iPhone captures: replace them with real ones when convenient.
@@ -12,20 +12,20 @@ The screenshots are real captures of the app's own screens (the JS UI is shared 
 | Name | JoyoFit: Sinkron Jam Pintar | JoyoFit: Smartwatch Sync |
 | Subtitle | Langkah, tidur, olahraga | Steps, sleep, workouts |
 | Keywords | jam pintar,smartwatch,langkah,tidur,detak jantung,olahraga,strava,apple health,bluetooth,sinkron | smartwatch,steps,sleep,heart rate,workout,strava,apple health,fitness,bluetooth,sync,tracker |
-| Promotional text | Sinkron langkah, tidur, detak jantung, dan olahraga dari jam Huawei ke iPhone-mu. Datanya tetap di HP. | Sync steps, sleep, heart rate and workouts from your Huawei watch to your iPhone. Your data stays on your phone. |
+| Promotional text | Sinkron langkah, tidur, detak jantung, dan olahraga dari jam pintarmu ke iPhone lewat Bluetooth. Datanya tetap di HP. | Sync steps, sleep, heart rate and workouts from your smartwatch to your iPhone over Bluetooth. Your data stays on your phone. |
 
 Privacy policy https://fit.joyorogo.com/privasi; support and marketing URL https://fit.joyorogo.com. Category Health & Fitness. Free, all territories (base IDN). Age rating 4+ (health topics only).
-"Huawei" is kept out of the name, subtitle and keywords (guideline 5.2); the description uses it only for compatibility and says JoyoFit is not affiliated.
+"Huawei" is kept out of the name, subtitle, keywords and promotional text (guidelines 4.1(b), 5.2); the description names it only in the compatibility note and says JoyoFit is not affiliated.
 
 ## Description (id)
 
 ```
-JoyoFit menyambungkan jam Huawei langsung ke iPhone-mu lewat Bluetooth, tanpa akun Huawei dan tanpa server perantara. Data jam disimpan di iPhone-mu.
+JoyoFit menyambungkan jam pintarmu langsung ke iPhone lewat Bluetooth, tanpa akun tambahan dan tanpa server perantara. Data jam disimpan di iPhone-mu.
 
 YANG BISA DILAKUKAN
 • Sinkron langkah, jarak, kalori, detak jantung, SpO2, tidur, dan olahraga dari jam, lengkap dengan rute GPS dan tahap tidur.
 • Lihat hari ini, tidur semalam, tren 30 dan 90 hari, kesiapan, beban latihan, dan riwayat olahraga dalam satu aplikasi.
-• Simpan ke Apple Health (hanya menulis; JoyoFit tidak pernah membaca data Health-mu): langkah, jarak, energi aktif, detak jantung, SpO2, tidur, dan olahraga beserta rutenya.
+• Simpan ke Apple Health: langkah, jarak, energi aktif, detak jantung, SpO2, tidur, dan olahraga beserta rutenya. Kalau kamu ketuk Impor dari Apple Health, JoyoFit membaca riwayat Apple Health-mu sekali untuk dibawa ke JoyoFit; datanya tetap di HP.
 • Kirim olahragamu ke Strava (opsional, gratis selama slot masih ada; unggah manual selalu bisa).
 • Pasang dan ganti watch face, atur alarm, tampilkan cuaca di jam (dari Open-Meteo, opsional), dan nyalakan pengukuran detak jantung, SpO2, dan stres otomatis di jam.
 • Cadangan cloud opsional, baru aktif setelah kamu masuk dengan akun JoyoRogo.
@@ -36,10 +36,10 @@ PRIVASI
 • Kebijakan privasi: https://fit.joyorogo.com/privasi
 
 CATATAN
-• Butuh jam Huawei. Diuji dengan Huawei Watch Fit 4 Pro; jam lain belum dicoba di iPhone. Daftar jam: https://fit.joyorogo.com/jam
+• Jam yang cocok: diuji dengan Huawei Watch Fit 4 Pro; model Huawei dan Honor lain masih percobaan. Daftar lengkap: https://fit.joyorogo.com/jam
 • Karena batasan iOS, JoyoFit tidak bisa meneruskan notifikasi aplikasi lain, mencari iPhone dari jam, mengatur panggilan, atau mengirim SMS SOS. Untuk notifikasi, jam membacanya langsung dari iPhone lewat pengaturan bawaan iOS. Fitur siklus, makanan, dan beberapa lainnya belum ada di iPhone.
-• Tampilan aplikasi saat ini berbahasa Inggris.
-• JoyoFit bukan produk Huawei dan tidak berafiliasi dengan Huawei. Huawei adalah merek dagang pemiliknya.
+• Bahasa aplikasi mengikuti HP: Indonesia atau Inggris.
+• JoyoFit adalah aplikasi independen, bukan buatan Huawei, tidak didukung atau disponsori Huawei, dan tidak berafiliasi dengan Huawei. Huawei adalah merek dagang Huawei Technologies Co., Ltd.
 • JoyoFit bukan alat medis. Jangan dipakai untuk diagnosis atau pengobatan.
 
 Open source (AGPL-3.0): https://github.com/dzulfikar08/joyofit
@@ -48,12 +48,12 @@ Open source (AGPL-3.0): https://github.com/dzulfikar08/joyofit
 ## Description (en-US)
 
 ```
-JoyoFit connects your Huawei watch straight to your iPhone over Bluetooth, with no Huawei account and no middleman server. Your watch data stays on your iPhone.
+JoyoFit connects your smartwatch straight to your iPhone over Bluetooth, with no extra account and no middleman server. Your watch data stays on your iPhone.
 
 WHAT IT DOES
 • Syncs steps, distance, calories, heart rate, SpO2, sleep and workouts from the watch, with GPS routes and sleep stages.
 • Shows today, last night's sleep, 30 and 90 day trends, readiness, training strain and workout history in one app.
-• Saves to Apple Health (write only; JoyoFit never reads your Health data): steps, distance, active energy, heart rate, SpO2, sleep and workouts with their routes.
+• Saves to Apple Health: steps, distance, active energy, heart rate, SpO2, sleep and workouts with their routes. If you tap Import from Apple Health, it reads your past Apple Health data once to bring it into JoyoFit; it stays on your phone.
 • Sends your workouts to Strava (optional, free while slots are spare; manual upload always works).
 • Installs and switches watch faces, sets alarms, shows weather on the watch (from Open-Meteo, optional) and turns on automatic heart rate, SpO2 and stress measurement on the watch.
 • Optional cloud backup, which only starts after you sign in with a JoyoRogo account.
@@ -64,9 +64,10 @@ PRIVACY
 • Privacy policy: https://fit.joyorogo.com/privasi
 
 NOTES
-• You need a Huawei watch. Tested with the Huawei Watch Fit 4 Pro; other watches have not been tried on iPhone. List: https://fit.joyorogo.com/jam
-• Because of iOS limits, JoyoFit cannot forward other apps' notifications, find your iPhone from the watch, handle calls or send SOS texts. For notifications, the watch reads them from the iPhone itself through the built-in iOS setting. A few other features are not on iPhone yet.
-• JoyoFit is not a Huawei product and is not affiliated with Huawei. Huawei is a trademark of its owner.
+• Compatible watches: tested with the Huawei Watch Fit 4 Pro; other Huawei and Honor models are experimental. Full list: https://fit.joyorogo.com/jam
+• Because of iOS limits, JoyoFit cannot forward other apps' notifications, find your iPhone from the watch, handle calls or send SOS texts. For notifications, the watch reads them from the iPhone itself through the built-in iOS setting. Cycle tracking, meals and a few other features are not on iPhone yet.
+• JoyoFit is an independent app. It is not made, endorsed or sponsored by Huawei and is not affiliated with Huawei. Huawei is a trademark of Huawei Technologies Co., Ltd.
+• The app follows your phone's language: English or Indonesian.
 • JoyoFit is not a medical device. Do not use it for diagnosis or treatment.
 
 Open source (AGPL-3.0): https://github.com/dzulfikar08/joyofit
@@ -75,31 +76,32 @@ Open source (AGPL-3.0): https://github.com/dzulfikar08/joyofit
 ## App Review notes
 
 ```
-JoyoFit is a companion app for Huawei smartwatches (tested with the Huawei Watch Fit 4 Pro). Pairing and syncing need that hardware, which a reviewer normally does not have, so this note says what works without a watch.
+JoyoFit is an independent, open-source app that syncs a compatible smartwatch with the iPhone over Bluetooth (tested with the Huawei Watch Fit 4 Pro). It is not made, endorsed or sponsored by Huawei.
 
-NO SIGN-IN, NO DEMO ACCOUNT. Every feature of the app works without an account. Signing in with a JoyoRogo account (Settings, the cloud section) only turns on an optional cloud backup and the optional Strava upload. Leave both off. Nothing in the app is gated behind payment or an account; the app is free and has no in-app purchases or ads.
+DEMO VIDEO: <link will be added before submission>
+The video is recorded on a physical iPhone with a Huawei Watch Fit 4 Pro and this build. It shows launch, the Bluetooth, Location, Apple Health and Motion permission requests, pairing (the watch is filmed), the first sync and the synced data, alarms and watch faces on the watch, and Settings.
 
-WITHOUT A WATCH you can still see: the three tabs (Today, Workouts, Social) and More, with their empty states; More's "Connect a watch" prompt, the Watch screen's "Before you connect" steps and the scan, which finds nothing when no watch is in range; every Settings screen (background sync, weather, Strava, Apple Health, profile and daily step goal, About with the privacy policy link, Log). Screens for features iOS does not allow (find my phone, calls, SOS texts) explain that instead of showing controls that would fail.
+NO SIGN-IN, NO DEMO ACCOUNT. Watch sync and every screen in the video work without an account. Signing in with a JoyoRogo account only adds the optional cloud backup, Strava upload and the JoyoRogo Pro features (Coach, family sharing), which are bought in the JoyoRogo app; JoyoFit has no in-app purchases, no prices and no links to a web checkout.
+
+WITHOUT A WATCH you can still see the setup guide, the Today, Workouts and Watch screens with their empty states, the watch scan (it finds nothing without a watch in range) and every Settings screen. Screens for features iOS does not allow (find my phone, calls, SOS texts) explain that instead of showing controls.
 
 PERMISSIONS and why:
-- Bluetooth: connect to the user's own Huawei watch (prompt appears when the user taps to scan or connect on the Watch screen, More, Watch) and, optionally, to heart rate straps, cycling sensors and running pods the user pairs under More, Watch, Sensor (the prompt appears after the "Lanjut" explanation).
-- Apple Health (write only): saves steps, distance, active energy, heart rate, SpO2, sleep and workouts (with routes) recorded by the watch. JoyoFit never reads Apple Health. The prompt appears only when the user switches the export on in Settings.
-- Location (when in use): optional, for weather on the watch (coordinates are rounded to about 1 km before they go to Open-Meteo), for sending your position to the watch while a workout you started on the watch is running and the app is open, and for recording the route of an outdoor workout the user starts on the phone (Workouts, Rekam latihan). Never leaves the phone otherwise (it is part of the workout, which stays on the phone unless the user turns on the optional cloud backup or Strava upload).
-- Background mode bluetooth-central: reconnect and sync with the remembered watch when iOS wakes the app; keep receiving a paired heart rate strap or cycling sensor during a workout recorded on the phone.
-- Background mode location: only while a workout the user started on the phone with the GPS is running (the blue status-bar indicator is shown); it records the route with the screen locked. It stops when the workout is finished or discarded.
-- Background mode audio: only for the metronome's click during a workout (Workouts, Rekam latihan, start a run, Metronome switched on with "Sound" or "Both"); it keeps the click audible with the screen locked, mixed with whatever music is playing. Nothing plays when the metronome is off or set to "Vibration" (the default). The app never records audio and has no microphone access.
-- Encryption: the protocol with the watch implements AES and HMAC itself; ITSAppUsesNonExemptEncryption is false (the encryption only protects the Bluetooth link to the user's watch; it is not used for anything else).
+- Bluetooth: connect to the user's own watch (prompt when the user taps Connect) and, optionally, heart rate straps, cycling sensors, running pods and a Bluetooth scale the user pairs.
+- Location (when in use): optional; weather on the watch (rounded to about 1 km before it goes to Open-Meteo), the position for a watch workout while the app is open, and the route of a workout the user starts on the phone.
+- Motion & Fitness: steps and cadence of a run or walk the user records on the phone.
+- Apple Health: writes the watch's steps, distance, active energy, heart rate, SpO2, sleep and workouts when the user switches the export on; reads Apple Health history once, only when the user taps Import from Apple Health. Nothing read leaves the phone.
+- Camera and Photos: only when the user takes or picks a photo for a shared workout image or a watch face.
+- Background modes: bluetooth-central (reconnect and sync the remembered watch; keep a paired strap during a phone workout), location (only while a phone workout with GPS runs, blue indicator shown), audio (only the metronome click during a phone workout when the user sets it to Sound or Both; never records audio).
+- Encryption: the Bluetooth link to the watch uses AES and HMAC; ITSAppUsesNonExemptEncryption is false.
 
-TRADEMARK: JoyoFit is an independent, open-source app (AGPL-3.0, https://github.com/dzulfikar08/joyofit). It is not affiliated with Huawei; "Huawei" appears only to say which watches it works with. The app name and icon do not use Huawei marks.
+DATA FROM THE WATCH: over Bluetooth Low Energy the watch sends steps, distance, calories, heart rate (continuous and resting), SpO2, sleep with stages, stress, workouts with GPS routes and per-second heart rate, and battery level. The app stores it on the phone and shows it on the Today, Workouts and sleep screens (daily totals, charts, readiness and strain scores computed on the phone). If the user turns it on, it writes the same data to Apple Health. The app sends the watch settings, alarms, weather, goals and the user's profile (height, weight, age) so the watch can compute calories. No health data leaves the phone unless the user opts into the cloud backup or Strava upload.
 
-DEMO VIDEO: a screen recording of pairing and syncing a watch from an iPhone is available on request at dzulfikar@joyorogo.com.
+FAMILY SHARING (optional, off until used): a user can share a few daily numbers from their own watch (steps, resting heart rate, sleep, optional SpO2, watch battery) with a family member they invite. A consent screen has a switch per category; sharing can be paused or stopped at any time, and stopping deletes the shared history. It is not real-time and not an emergency or medical tool.
 
-The app UI is in English. Privacy policy: https://fit.joyorogo.com/privasi.
+The app follows the phone's language (English or Indonesian).
+
+Contact: Dzulfikar Ats Tsauri, +6285156160345, dzulfikar@joyorogo.com. Privacy policy: https://fit.joyorogo.com/privasi
 ```
-
-FAMILY MONITORING (optional, off until used): a person can share a few daily numbers from their own watch (steps, resting heart rate, last night's sleep, optional SpO2, last watch connection and battery) with a family member who has JoyoFit and signed in. The watched person gets an invite link or code, sees a consent screen with a switch per category, and can pause or stop at any time; stopping deletes the shared history at once. There is no hidden mode: the watched person always sees who can view their data and when. The screens say it is not real-time and not an emergency or medical tool, and the app makes no diagnosis. To review it: Settings, Keluarga (needs two signed-in accounts and a watch, so a screen recording is available on request).
-
-Contact: Dzulfikar Ats Tsauri, +6285156160345, dzulfikar@joyorogo.com. No demo account.
 
 ## App Privacy (published)
 
@@ -159,9 +161,7 @@ TestFlight usage of that build: 13 installs, 67 sessions, **25 crashes**. Both r
 ### Which build to resubmit
 
 - **Never 202610160830** (or any `0.1.0` / Linux build): it cannot launch on iOS 27.
-- **Recommended: a new build from master after PR #27** (the permission prompts below), made by **Release iOS** with the default Xcode 26.6, version 1.1. Install it from TestFlight on an iOS 27 iPhone, launch it, and record the demo video with that build, so what Apple sees in the video is exactly what it reviews. Master since 1.1 adds the metronome sound (`UIBackgroundModes audio`), which the review notes below already explain.
-- **Acceptable without a new build: 1.1 (202610250846).** Same toolchain as the 230-session build 202610201528, but nobody has installed it yet: open it once on the owner's iPhone before submitting.
-- In App Store Connect, rename the version record from `1.0` to `1.1` before attaching a 1.1 build (the store page shows the record's number; the rejected submission paired record 1.0 with a 0.1.0 binary).
+- **Done 2026-10-26:** build **1.1 (202610260531)**, made by Release iOS run 19 from master 7c9a0c37 (PR #27 merged, metronome `audio` background mode included), is attached; the version record was renamed from `1.0` to `1.1` (state now PREPARE_FOR_SUBMISSION). Install it from TestFlight on an iOS 27 iPhone, launch it, and record the demo video with it, so what Apple sees in the video is exactly what it reviews.
 
 ### 2. Copycats (4.1(b))
 
@@ -181,15 +181,13 @@ Apple could not get past the launch crash, so the listing and the review notes a
 | iOS permission prompts | Bluetooth: "your Huawei or Honor watch"; Apple Health read: "workouts that Huawei Health saved there" | **changed in PR #27** |
 | In-app text (en, 97 strings) | "Huawei" by name: the supported-watch list (`watchFamilies.ts`, product names), the unbind step "Release the watch from Huawei Health", "Import from Huawei Health", Family invites ("through your Huawei watch"), watch-face hints ("official Huawei face", "Huawei Theme Studio Pro"), HR zone defaults ("Huawei Health's default") | nominative, needed to use the app; keep, unless Apple insists (fallback below) |
 
-**Proposed listing text (not entered; owner enters it):**
+**Listing text (entered in App Store Connect 2026-10-26; the full texts are in "Names, URLs, keywords" and the two Description sections above):**
 
-- Promotional text en-US: `Sync steps, sleep, heart rate and workouts from your smartwatch to your iPhone over Bluetooth. Your data stays on your phone.`
-- Promotional text id: `Sinkron langkah, tidur, detak jantung, dan olahraga dari jam pintarmu ke iPhone lewat Bluetooth. Datanya tetap di HP.`
-- Description en-US, first paragraph: `JoyoFit connects your smartwatch straight to your iPhone over Bluetooth, with no extra account and no middleman server. Your watch data stays on your iPhone.`
-- Description id, first paragraph: `JoyoFit menyambungkan jam pintarmu langsung ke iPhone lewat Bluetooth, tanpa akun tambahan dan tanpa server perantara. Data jam disimpan di iPhone-mu.`
-- Description en-US, first NOTES bullet: `Compatible watches: tested with the Huawei Watch Fit 4 Pro; other Huawei and Honor models are experimental. Full list: https://fit.joyorogo.com/jam` and keep the bullet `JoyoFit is an independent app. It is not made, endorsed or sponsored by Huawei and is not affiliated with Huawei. Huawei is a trademark of Huawei Technologies Co., Ltd.`
-- Description id, first CATATAN bullet: `Jam yang cocok: diuji dengan Huawei Watch Fit 4 Pro; model Huawei dan Honor lain masih percobaan. Daftar lengkap: https://fit.joyorogo.com/jam` and `JoyoFit adalah aplikasi independen, bukan buatan Huawei, tidak didukung atau disponsori Huawei, dan tidak berafiliasi dengan Huawei. Huawei adalah merek dagang Huawei Technologies Co., Ltd.`
-- Apple Health bullet, both locales (1.1 also reads, once, on request; the current text says "write only; JoyoFit never reads"): `Saves to Apple Health: steps, distance, active energy, heart rate, SpO2, sleep and workouts with their routes. If you tap Import history, it reads your past Apple Health data once to bring it into JoyoFit; it stays on your phone.` / `Simpan ke Apple Health: langkah, jarak, energi aktif, detak jantung, SpO2, tidur, dan olahraga beserta rutenya. Kalau kamu ketuk Impor riwayat, JoyoFit membaca riwayat Apple Health-mu sekali untuk dibawa ke JoyoFit; datanya tetap di HP.`
+- Promotional text (id, en-US): no Huawei; "dari jam pintarmu" / "from your smartwatch".
+- Description, first paragraph: "jam pintarmu" / "your smartwatch", "tanpa akun tambahan" / "no extra account" instead of "no Huawei account".
+- Description, first CATATAN / NOTES bullet: the compatibility note, the only place Huawei is named ("Jam yang cocok: diuji dengan Huawei Watch Fit 4 Pro; model Huawei dan Honor lain masih percobaan" / "Compatible watches: tested with the Huawei Watch Fit 4 Pro; other Huawei and Honor models are experimental"), plus the independent / not-affiliated bullet naming Huawei Technologies Co., Ltd. as the owner of the mark.
+- Apple Health bullet: no more "write only, never reads"; it says the app reads Apple Health history once when the user taps Impor dari Apple Health / Import from Apple Health (the labels of the Settings row).
+- Language bullet: the app follows the phone's language, Indonesian or English (the old id text still said the UI is English only).
 - Screenshots: no change needed. Do not add pictures of a Huawei watch, the Huawei logo or a Huawei watch face to them.
 
 **In the app (PR #27, `fix/ios-review-copycat`).** The two Bluetooth strings now say "your smartwatch or fitness band", the Apple Health read string "workouts your watch's own app saved there". iOS only (`ios.infoPlist`); it changes the native fingerprint, so it ships with the next build, not as an OTA.
@@ -203,7 +201,7 @@ Hello,
 
 Thank you for the review. We have addressed the three issues.
 
-1. Guideline 2.1(a), crash on launch: the build you reviewed (202610160830) was made with a toolchain that linked it against the iOS 27 SDK without adopting the UIScene life cycle, so iOS 27 stopped it at launch. The new build, 1.1 (BUILD), is built with Xcode 26.6 and launches normally on iOS 27 and on iPad in iPhone compatibility mode.
+1. Guideline 2.1(a), crash on launch: the build you reviewed (202610160830) was made with a toolchain that linked it against the iOS 27 SDK without adopting the UIScene life cycle, so iOS 27 stopped it at launch. The new build, 1.1 (202610260531), is built with Xcode 26.6 and launches normally on iOS 27 and on iPad in iPhone compatibility mode.
 
 2. Guideline 4.1(b): JoyoFit is an independent, open-source app (AGPL-3.0, https://github.com/dzulfikar08/joyofit). It is not made, endorsed or sponsored by Huawei and does not claim to be. Its name, icon, screenshots and interface use no Huawei logo, product image, watch-face artwork or trade dress; the icon and design are our own. The word "Huawei" appears only where a user needs it to know which watches the app works with and which steps to take (for example, unpairing the watch from the user's existing app first), which is a factual, nominative reference. We have reduced it further: the promotional text and the first lines of the description no longer mention Huawei, the brand now appears only in a compatibility note with a clear non-affiliation statement, and the permission prompts describe the device generically. JoyoFit has no business relationship with Huawei to document. If you still need changes, please tell us which content you consider to resemble Huawei and we will change it.
 
@@ -234,43 +232,19 @@ The notes in App Store Connect already point to `https://fit.joyorogo.com/review
 
 Hosting: **unlisted YouTube** (no size limit, plays on any device; Apple accepts unlisted links), or the site at `site/public/review/joyofit-ios-demo.mp4` if the file stays under 25 MiB (the Workers static-asset limit per file; H.264 720p at about 1 Mbit/s fits 3 minutes). Test the link in a private window before submitting.
 
-**App Review notes to paste (replaces the current notes):**
+**App Review notes:** entered in App Store Connect on 2026-10-26; the text is the "App Review notes" section above. Its `DEMO VIDEO: <link will be added before submission>` line is where the owner pastes the video link.
 
-```
-JoyoFit is an independent, open-source app that syncs a compatible smartwatch with the iPhone over Bluetooth (tested with the Huawei Watch Fit 4 Pro). It is not made, endorsed or sponsored by Huawei.
+### Other things found while checking
 
-DEMO VIDEO (physical iPhone with a Huawei Watch Fit 4 Pro, this build): VIDEO_URL
-It shows launch, the Bluetooth, Location, Apple Health and Motion permission requests, pairing (the watch is filmed), the first sync and the synced data, alarms and watch faces on the watch, and Settings.
-
-NO SIGN-IN, NO DEMO ACCOUNT. Watch sync and every screen in the video work without an account. Signing in with a JoyoRogo account only adds the optional cloud backup, Strava upload and the JoyoRogo Pro features (Coach, family sharing), which are bought in the JoyoRogo app; JoyoFit has no in-app purchases, no prices and no links to a web checkout.
-
-WITHOUT A WATCH you can still see the setup guide, the Today, Workouts and Watch screens with their empty states, the watch scan (it finds nothing without a watch in range) and every Settings screen. Screens for features iOS does not allow (find my phone, calls, SOS texts) explain that instead of showing controls.
-
-PERMISSIONS and why:
-- Bluetooth: connect to the user's own watch (prompt when the user taps Connect) and, optionally, heart rate straps, cycling sensors, running pods and a Bluetooth scale the user pairs.
-- Location (when in use): optional; weather on the watch (rounded to about 1 km before it goes to Open-Meteo), the position for a watch workout while the app is open, and the route of a workout the user starts on the phone.
-- Motion & Fitness: steps and cadence of a run or walk the user records on the phone.
-- Apple Health: writes the watch's steps, distance, active energy, heart rate, SpO2, sleep and workouts when the user switches the export on; reads Apple Health history once, only when the user taps Import history. Nothing read leaves the phone.
-- Camera and Photos: only when the user takes or picks a photo for a shared workout image or a watch face.
-- Background modes: bluetooth-central (reconnect and sync the remembered watch; keep a paired strap during a phone workout), location (only while a phone workout with GPS runs, blue indicator shown), audio (only the metronome click during a phone workout when the user sets it to Sound or Both; never records audio).
-- Encryption: the Bluetooth link to the watch uses AES and HMAC; ITSAppUsesNonExemptEncryption is false.
-
-Contact: Dzulfikar Ats Tsauri, +6285156160345, dzulfikar@joyorogo.com. Privacy policy: https://fit.joyorogo.com/privasi
-```
-
-Drop the `audio` line when submitting 1.1 (202610250846), which has no audio background mode.
-
-### Other things found while checking (fix before resubmitting)
-
-- The description and the current notes say Apple Health is "write only, never reads", but 1.1 has the one-time Apple Health import and asks for read access (`NSHealthShareUsageDescription`). Use the Apple Health bullet above (guideline 2.3.1 / 5.1.1).
-- The current notes say "Nothing in the app is gated behind payment or an account", while Coach and family sharing show a JoyoRogo Pro upgrade card. The notes above describe it as it is. Unlocking in JoyoFit what was bought in another app may draw a 3.1.1 / 3.1.3(b) question [INFERENCE]; it was not part of this rejection.
-- The current notes describe four tabs (Today, Workouts, Watch, Settings) from an older build; the text above is generic on purpose. Check it against the build you submit.
+- Fixed in App Store Connect on 2026-10-26: the old description and notes said Apple Health is "write only, never reads", while 1.1 has the one-time Apple Health import and asks for read access (`NSHealthShareUsageDescription`); the old notes said "Nothing in the app is gated behind payment or an account" and described four tabs from an older build.
+- Coach and family sharing show a JoyoRogo Pro upgrade card; the notes now say so. Unlocking in JoyoFit what was bought in another app may draw a 3.1.1 / 3.1.3(b) question [INFERENCE]; it was not part of this rejection.
 - `NSFaceIDUsageDescription` is expo-secure-store's default ("Allow JoyoFit to access your Face ID biometric data."); the app never asks for Face ID. Passing `"faceIDPermission": false` to the `expo-secure-store` plugin removes the key [INFERENCE: from the plugin's source, not built].
 
 ### Owner checklist
 
+Done on 2026-10-26: PR #27 merged, build 1.1 (202610260531) attached, version record renamed to 1.1, promotional text and description replaced in both locales, App Review notes replaced. Left:
+
 1. Download the App Review crash logs (path above) and confirm they show `NoSceneLifecycleAdoption`.
-2. Merge PR #27, run **Release iOS** on master with upload on, install the build from TestFlight on an iOS 27 iPhone and open it.
-3. Record the video with that build, upload it, check the link.
-4. In App Store Connect: version record `1.0` to `1.1`, attach the new build, replace the promotional text, the description paragraphs and the notes with the texts above, paste the video link.
-5. Reply in the Resolution Center with the text above (fill BUILD and VIDEO_URL), then resubmit.
+2. Install 1.1 (202610260531) from TestFlight on an iOS 27 iPhone, record the video with it, upload it (unlisted YouTube), check the link, and replace `<link will be added before submission>` in the App Review notes.
+3. Reply in the Resolution Center with the text above (fill VIDEO_URL).
+4. Submit for review.
