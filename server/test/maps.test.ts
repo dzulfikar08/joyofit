@@ -103,17 +103,16 @@ describe("GET /v1/maps filters", () => {
     expect(await ids("/v1/maps?q=kota&province=jawa%20timur")).toEqual([ENTRY.id, SURABAYA.id, BATU.id]);
   });
 
-  it("sorts by the distance to each bbox for near, 0 inside, and limits", async () => {
-    // Alun-alun Malang: inside Kota Malang's box, 5 km from Kota Batu's corner, 69 km from Kota Surabaya's.
-    const res = await call("/v1/maps?near=-7.9826,112.6308&limit=3");
-    const body = (await res.json()) as { id: string; distanceKm: number }[];
-    expect(body.map((m) => m.id)).toEqual([ENTRY.id, BATU.id, SURABAYA.id]);
-    expect(body[0]!.distanceKm).toBe(0);
-    expect(body[1]!.distanceKm).toBeCloseTo(5, 0);
-    expect(body[2]!.distanceKm).toBeCloseTo(69, -1);
+  it("limits, and ignores a position: there is no near filter", async () => {
+    expect(await ids("/v1/maps?limit=2")).toEqual([ENTRY.id, BOGOR_1.id]);
+    const res = await call("/v1/maps?near=-7.9826,112.6308");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as Record<string, unknown>[];
+    expect(body.map((m) => m.id)).toEqual([ENTRY.id, BOGOR_1.id, SURABAYA.id, BATU.id]);
+    expect(body.every((m) => !("distanceKm" in m))).toBe(true);
   });
 
-  it.each(["near=1", "near=91,0", "near=0,181", "near=a,b", "limit=0", "limit=1001", "q=", "province="])("is 400 for %s", async (query) => {
+  it.each(["limit=0", "limit=abc", "limit=1001", "q=", "province="])("is 400 for %s", async (query) => {
     const res = await call(`/v1/maps?${query}`);
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: "invalid_query" });

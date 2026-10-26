@@ -9,9 +9,9 @@ import type { AppContext } from "./env";
  * the public R2 bucket `MAPS` (`watch/catalog.json` plus `watch/<id>.bin`, written by tools/offline-maps/publish.py; the bucket also holds
  * the bike computer's PMTiles, docs/bike-computer.md). The phone's experimental switch asks for them, and only then; no session.
  *
- * `GET /v1/maps` takes optional filters: `province` (exact, any case), `q` (part of the name, province or BPS code), `near=lat,lon`
- * (sorted by the distance to each map's bbox, 0 inside, with `distanceKm`) and `limit`. The app filters on the phone and never sends
- * `near`; this code never logs a query.
+ * `GET /v1/maps` takes optional filters: `province` (exact, any case), `q` (part of the name, province or BPS code) and `limit`. There is no
+ * position filter on purpose: Workers Logs records request URLs, so coordinates in a query would end up in Cloudflare's logs; the app sorts
+ * by distance on the phone.
  */
 export const maps = new Hono<AppContext>();
 
@@ -89,20 +89,6 @@ async function readCatalog(bucket: R2Bucket): Promise<MapEntry[]> {
   return entries;
 }
 
-const EARTH_RADIUS_KM = 6371;
-const toRad = (degrees: number) => (degrees * Math.PI) / 180;
-
-/** Kilometres from a point to a bbox: 0 inside, else the great-circle distance to the nearest point of the box. */
-export function distanceKmToBbox(lat: number, lon: number, [w, s, e, n]: MapEntry["bbox"]): number {
-  const nearestLat = Math.min(Math.max(lat, s), n);
-  const nearestLon = Math.min(Math.max(lon, w), e);
-  if (nearestLat === lat && nearestLon === lon) return 0;
-  const dLat = toRad(nearestLat - lat);
-  const dLon = toRad(nearestLon - lon);
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat)) * Math.cos(toRad(nearestLat)) * Math.sin(dLon / 2) ** 2;
-  return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(a)));
-}
-
 const fold = (text: string) =>
   text
     .normalize("NFD")
@@ -113,12 +99,6 @@ const fold = (text: string) =>
 const querySchema = z.object({
   province: z.string().trim().min(1).max(100).optional(),
   q: z.string().trim().min(1).max(100).optional(),
-  near: z
-    .string()
-    .regex(/^-?\d{1,2}(\.\d+)?,-?\d{1,3}(\.\d+)?$/)
-    .transform((value) => value.split(",").map(Number) as [number, number])
-    .refine(([lat, lon]) => Math.abs(lat) <= 90 && Math.abs(lon) <= 180)
-    .optional(),
   limit: z.coerce.number().int().min(1).max(1000).optional(),
 });
 
@@ -126,8 +106,8 @@ const querySchema = z.object({
 maps.get("/", async (c) => {
   const query = querySchema.safeParse(c.req.query());
   if (!query.success) return c.json({ error: "invalid_query" }, 400);
-  const { province, q, near, limit } = query.data;
-  let entries: (MapEntry & { distanceKm?: number })[] = await readCatalog(c.env.MAPS);
+  const { province, q, limit } = query.data;
+  let entries = await readCatalog(c.env.MAPS);
   if (province) {
     const wanted = fold(province);
     entries = entries.filter((entry) => fold(entry.province) === wanted);
@@ -135,12 +115,6 @@ maps.get("/", async (c) => {
   if (q) {
     const needle = fold(q);
     entries = entries.filter((entry) => fold(entry.name).includes(needle) || fold(entry.province).includes(needle) || entry.code === needle);
-  }
-  if (near) {
-    const [lat, lon] = near;
-    entries = entries
-      .map((entry) => ({ ...entry, distanceKm: Math.round(distanceKmToBbox(lat, lon, entry.bbox) * 10) / 10 }))
-      .sort((a, b) => a.distanceKm - b.distanceKm || a.name.localeCompare(b.name));
   }
   if (limit) entries = entries.slice(0, limit);
   const body = JSON.stringify(entries.map((entry) => ({ ...entry, attribution: MAPS_ATTRIBUTION })));

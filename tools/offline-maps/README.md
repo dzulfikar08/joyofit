@@ -131,7 +131,7 @@ tools/offline-maps/publish.py --all --dry-run               # what would change;
 `b7e6f845…`), uploads every `out/<id>.bin` whose SHA-256 differs from the catalog's, writes the new catalog last (so it never lists a
 file that is not there yet) and then deletes the files of maps that left it (a region split differently than before). Entries of
 JoyoFit ids that lack code/province/kind (maps from `build-map.sh`) get them from `regions.json`. JoyoFit's Worker serves the catalog at
-`GET /v1/maps` (filters `province`, `q`, `near`, `limit`; `server/src/maps.ts`) and the files at `GET /v1/maps/<id>.bin`; the app
+`GET /v1/maps` (filters `province`, `q`, `limit`; `server/src/maps.ts`) and the files at `GET /v1/maps/<id>.bin`; the app
 downloads from there and checks size and SHA-256 before it keeps a file. The bucket also holds the bike computer's PMTiles
 (`docs/bike-computer.md`); this only writes under `watch/`.
 

@@ -296,12 +296,12 @@ Branch `feat/jrg-433-all-city-maps` (on top of the lab branch). How to run every
 - **Publish.** `publish.py --all`: uploads only maps whose SHA-256 the catalog does not have, writes `watch/catalog.json` last, deletes files
   that left the catalog.
 - **Server.** `GET /v1/maps` serves the catalog with `code`, `province`, `kind`, `part`, an `ETag` (`304` on `If-None-Match`), and optional
-  `province`, `q`, `near=lat,lon` (bbox distance, computed in the Worker, never logged by it) and `limit` (`server/README.md`). The Worker keeps the
+  `province`, `q` and `limit` (`server/README.md`); no position filter, because Workers Logs records request URLs. The Worker keeps the
   parsed catalog per isolate and re-reads R2 only when the object's etag changes. `GET /v1/maps/<id>.bin` is unchanged.
 - **App.** The lab screen's map list is one virtualised list with a search box (name, province or BPS code), province chips and **Urutkan dari
   yang terdekat**: when location access is already granted the list is sorted by distance at once, otherwise the button asks first. The phone
-  reads its own position and sorts the catalog itself; **the position never leaves the phone** (the app does not use the server's `near`, whose
-  coordinates would land in Cloudflare's request logs, since Workers Logs records URLs). So the privacy texts stay as they are: the map requests
+  reads its own position and sorts the catalog itself; **the position never leaves the phone** (the server has no position filter, so
+  no coordinates can reach Cloudflare's request logs). So the privacy texts stay as they are: the map requests
   still carry no location.
 
 ### Smoke runs
