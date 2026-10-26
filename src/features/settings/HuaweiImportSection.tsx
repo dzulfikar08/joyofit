@@ -17,8 +17,7 @@ import { radius, spacing, useColors } from '@/theme';
 import type { RogoSendState } from '@/features/settings/useHuaweiImport';
 import type { HuaweiImportSummary } from '@/wear';
 
-const REQUEST_URL_SEA = 'https://privacy-sg.consumer.huawei.com/privacycenter';
-const REQUEST_HOST_OTHER = 'privacy.consumer.huawei.com';
+const REQUEST_URL = 'https://privacy.consumer.huawei.com/';
 const HEALTH_APP = isIos ? 'Apple Health' : 'Health Connect';
 
 /**
@@ -49,7 +48,7 @@ export function HuaweiImportSection() {
           label={t('huaweiImport.requestTitle')}
           variant="secondary"
           icon="open"
-          onPress={() => void Linking.openURL(REQUEST_URL_SEA)}
+          onPress={() => void Linking.openURL(REQUEST_URL)}
         />
         <Details title={t('huaweiImport.howTitle')}>
         <View style={styles.steps}>
@@ -62,9 +61,6 @@ export function HuaweiImportSection() {
             {isIos ? t('huaweiImport.steps.6Ios') : t('huaweiImport.steps.6Android')}
           </Step>
         </View>
-        <AppText variant="caption" muted>
-          {t('huaweiImport.otherRegion', { host: REQUEST_HOST_OTHER })}
-        </AppText>
         </Details>
       </Section>
 

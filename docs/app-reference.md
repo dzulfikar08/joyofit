@@ -240,8 +240,8 @@ Shoes, bikes and other gear with a lifetime distance and time, a retirement dist
 A one-time import of the history Huawei Health holds in your Huawei account, so you do not start from an empty
 JoyoFit after switching. It reads Huawei's own **Privacy Centre export**, on the phone, and calls no Huawei server.
 
-1. At `privacy.consumer.huawei.com` (South-East Asia accounts: `privacy-sg.consumer.huawei.com/privacycenter`; or Huawei Health →
-   Me → your account → Privacy Center) choose **Request Your Data** (the data copy), tick **Health**, set a **ZIP password**,
+1. At `privacy.consumer.huawei.com` (JoyoFit's **Request your data from Huawei** button opens it; or Huawei Health → Me → your account →
+   Privacy Center) choose **Request Your Data** (the data copy), tick **Health**, set a **ZIP password**,
    and wait for the email (up to 7 days; the link works 21 days). The file is `HUAWEI_HEALTH_<timestamp>.zip`.
 2. Before unbinding the watch from Huawei Health, sync it there once more (data only on the watch is lost on unbind).
 3. In JoyoFit pick the ZIP (or open it from the email / Files app and choose JoyoFit), type the password (kept in memory

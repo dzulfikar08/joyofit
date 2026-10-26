@@ -682,8 +682,8 @@ function Features({ lang }: { lang: Lang }) {
           id
             ? [
                 <>
-                  Minta datamu ke Huawei di <Code>privacy-sg.consumer.huawei.com/privacycenter</Code> (untuk akun Indonesia), atau
-                  di Huawei Health → Me → akunmu → Privacy Center. Pilih <B>Request Your Data</B> dan centang <B>Health</B>.
+                  Minta datamu ke Huawei di <Code>privacy.consumer.huawei.com</Code>, atau di Huawei Health → Me → akunmu →
+                  Privacy Center. Pilih <B>Request Your Data</B> dan centang <B>Health</B>.
                 </>,
                 "Buat password untuk ZIP-nya dan catat. Huawei butuh hingga 7 hari untuk menyiapkan berkas, lalu mengirim tautan unduhan lewat email. Tautannya berlaku 21 hari.",
                 "Sebelum melepas jam dari Huawei Health, sinkronkan sekali lagi di sana. Data yang hanya ada di jam hilang saat dilepas.",
@@ -693,9 +693,8 @@ function Features({ lang }: { lang: Lang }) {
               ]
             : [
                 <>
-                  Request your data from Huawei at <Code>privacy-sg.consumer.huawei.com/privacycenter</Code> (for Indonesian
-                  accounts), or in Huawei Health → Me → your account → Privacy Center. Choose <B>Request Your Data</B> and tick{" "}
-                  <B>Health</B>.
+                  Request your data from Huawei at <Code>privacy.consumer.huawei.com</Code>, or in Huawei Health → Me → your
+                  account → Privacy Center. Choose <B>Request Your Data</B> and tick <B>Health</B>.
                 </>,
                 "Set a password for the ZIP and note it down. Huawei takes up to 7 days to prepare the file, then emails a download link. The link works for 21 days.",
                 "Before unbinding the watch from Huawei Health, sync it there once more. Data only on the watch is lost when it is unbound.",

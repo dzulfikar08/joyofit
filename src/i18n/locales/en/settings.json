@@ -415,7 +415,6 @@
       "6Ios": "Download the ZIP (on iPhone it ends up in the Files app), then choose it below and enter the password.",
       "6Android": "Download the ZIP, then tap it in your email or Files app and choose JoyoFit, or choose it below. Enter the password."
     },
-    "otherRegion": "An account outside South-East Asia: use {{host}} instead. If the page fails for an Indonesian account, the button above is the one that works; the in-app Privacy Center does not.",
     "importTitle": "Import the file",
     "chooseAnother": "Choose another file",
     "choose": "Choose the ZIP file",
