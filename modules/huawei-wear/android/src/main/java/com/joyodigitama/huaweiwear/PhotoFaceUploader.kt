@@ -1,8 +1,8 @@
 // The photo ("gallery") watch face: its photos live on the watch, put there by the phone. The flow is Huawei Health 17.0.8.300's
 // (RE notes in protocol/README.md, "Photo faces"): 27/08 reads the face's settings and photo list, 27/09 sends the list the face
 // should hold, and for every photo the watch does not have yet it then asks for the file itself (28/01), after which the phone runs
-// the ordinary 28/02 .. 28/07 upload with file type 3. The watch ends with a 27/05 report (type 4, photos received).
-// No watch face signature is involved anywhere in it.
+// the ordinary 28/02 .. 28/07 upload with file type 3. The watch ends with a 27/05 report (type 4, photos received), after which the
+// face is applied again with 27/03 (operation 1), as Huawei Health's Apply does. No watch face signature is involved anywhere in it.
 package com.joyodigitama.huaweiwear
 
 import android.content.Context
@@ -71,12 +71,13 @@ internal class PhotoFaceOps(
 
   /**
    * 27/09 with [names] (every photo the face should hold, `<name>.png`), then serves every file the watch asks for from [files].
-   * [info] supplies the face's settings to write back ([PhotoFaceCodec.saveTlv]).
+   * [info] and [fields] supply the values written for each photo and the face ([PhotoFaceCodec.saveTlv]).
    */
   suspend fun save(
     info: PhotoFaceInfo,
     names: List<String>,
     files: Map<String, PhotoFiles>,
+    fields: PhotoSaveFields = PhotoSaveFields(),
     progress: (bytes: Int, total: Int) -> Unit = { _, _ -> },
   ): PhotoSaveResult {
     val incoming = Channel<HuaweiPacket>(Channel.UNLIMITED)
@@ -85,7 +86,7 @@ internal class PhotoFaceOps(
       session.subscribe(PhotoFace.watchfaceId, PhotoFace.ReportAck.id, "photo face report") { incoming.trySend(it) },
     )
     try {
-      val request = PhotoFace.SaveRequest(params, PhotoFaceCodec.saveTlv(info, names))
+      val request = PhotoFace.SaveRequest(params, PhotoFaceCodec.saveTlv(info, names, fields))
       log("PhotoSave ${names.size} photo(s) TLV before encryption: ${describeTlv(request.getTlv())}")
       val answer = session.request(request, queryMs, "PhotoSave")
       val tlv = answer.getTlv() ?: throw WearException(ErrorCodes.PROTOCOL, "PhotoSave: the watch's answer has no TLV")
@@ -187,7 +188,14 @@ internal class PhotoFaceOps(
 }
 
 /** The photo face on the watch with its settings and the screen it was read with. */
-internal class PhotoFaceState(val face: WatchfaceEntry, val info: PhotoFaceInfo, val width: Int, val height: Int, val updatedAtMs: Long)
+internal class PhotoFaceState(
+  val face: WatchfaceEntry,
+  val info: PhotoFaceInfo,
+  val width: Int,
+  val height: Int,
+  val updatedAtMs: Long,
+  val screen: WatchfaceScreen,
+)
 
 /** Photos kept on the phone for the ones JoyoFit uploaded, so the screen can show them; the watch itself offers no preview. */
 internal class PhotoStore(private val dir: File) {
@@ -253,18 +261,21 @@ internal class PhotoFaceController(
           "Photo face: adding $name (${before.width}x${before.height}, ${png.size} byte png, ${bin.size} byte ${format.name} bin)",
         )
         val names = before.info.photos.map { it.name } + name
-        val result = photos.save(before.info, names, mapOf(name to PhotoFiles(png, bin)), progress)
+        val fields = saveFields(before, mapOf(name to pixels))
+        val result = photos.save(before.info, names, mapOf(name to PhotoFiles(png, bin)), fields, progress)
         store.save(name, png)
+        val applyProblem = reapply(watchfaces, before.face)
         val after = state(watchfaces, photos)
         val failed = result.failedNum ?: 0
         val listed = after.info.photos.any { it.name == name }
         val message = when {
           !listed -> "The watch took the photo but does not list it."
           failed > 0 -> "The watch reported $failed photo(s) it could not take."
+          applyProblem != null -> "Photo added, but $applyProblem."
           else -> "Photo added."
         }
         events.uploadResult(listed && failed == 0, name, null, message)
-        after.toJs()
+        after.toJs(applyProblem)
       } catch (e: CancellationException) {
         throw e
       } catch (e: WearException) {
@@ -280,13 +291,15 @@ internal class PhotoFaceController(
       throw WearException(ErrorCodes.INVALID_ARGUMENT, "The photo face has no photo named '$name'")
     }
     val names = before.info.photos.map { it.name }.filter { it != name }
-    photos.save(before.info, names, emptyMap())
+    photos.save(before.info, names, emptyMap(), saveFields(before, emptyMap()))
     store.delete(name)
+    // An emptied face that was not on the screen stays off it: applying it would put the watch's "add photo" page up.
+    val applyProblem = if (names.isNotEmpty() || before.face.isCurrent) reapply(watchfaces, before.face) else null
     val after = state(watchfaces, photos)
     if (after.info.photos.any { it.name == name }) {
       throw WearException(ErrorCodes.UPLOAD_REJECTED, "The watch still lists the photo after it was removed.")
     }
-    after.toJs()
+    after.toJs(applyProblem)
   }
 
   /** Makes the photo face the active face (the ordinary 27/03 activation of an installed face). */
@@ -297,16 +310,64 @@ internal class PhotoFaceController(
     state(watchfaces, photos).toJs()
   }
 
+  /**
+   * 27/03 operation 1 for the photo face after a save, as Huawei Health's Apply does (protocol/README.md, "Photo faces"): the face is
+   * applied again, current or not, so the watch shows it with the new list. After a delete it is skipped when the face is emptied and
+   * was not the current one. The photos are saved already, so a refusal is reported (log, `applyError` of the result), not thrown.
+   * Null when the watch took it.
+   */
+  private suspend fun reapply(watchfaces: WatchfaceOps, face: WatchfaceEntry): String? {
+    val problem = try {
+      val code = watchfaces.apply(face)
+      if (operationAccepted(code)) null else "the watch answered $code when the photo face was applied again"
+    } catch (e: CancellationException) {
+      throw e
+    } catch (e: WearException) {
+      if (e.errorCode == ErrorCodes.DISCONNECTED) throw e
+      "applying the photo face again failed: ${e.message}"
+    }
+    if (problem != null) events.log(LogDirection.ERROR, null, null, null, "Photo face: $problem")
+    return problem
+  }
+
+  /**
+   * The values Huawei Health writes into 27/09 besides the watch's own ([PhotoFaceCodec.saveTlv]): the face's new-photo values
+   * ([PhotoFaceCodec.faceConfig]), the Gaussian switch from 27/01 tag 0x1a and, when 27/01 tag 0x1b is 1, a time colour for each photo in
+   * [newPixels] chosen for the time area of the face's selected position ([PhotoTimeColour]). Photos already on the watch keep the colour it
+   * reports; with tag 0x1b not 1 a new photo gets `#00000000`, as from Huawei Health.
+   */
+  private suspend fun saveFields(state: PhotoFaceState, newPixels: Map<String, IntArray>): PhotoSaveFields {
+    val config = PhotoFaceCodec.faceConfig(state.face.id)
+    val colours = HashMap<String, String>()
+    if (state.screen.aestheticAlbumColour == 1) {
+      val rect = config.positionRects[config.timePosition]
+      log("time area for position ${config.timePosition}: ${rect?.joinToString(",", "(", ")") ?: "none"} of ${state.width}x${state.height}")
+      for ((name, pixels) in newPixels) {
+        val picked = rect?.let {
+          withContext(Dispatchers.Default) { PhotoTimeColour.pick(pixels, state.width, state.height, it[0], it[1], it[2], it[3]) }
+        }
+        if (picked != null) colours[name] = PhotoFaceCodec.smartColour(picked)
+        log("time colour of $name: ${colours[name] ?: "none (${if (rect == null) "no time area known for face ${state.face.id}" else "the photo has no pixels"})"}")
+      }
+    }
+    val gauss = PhotoFaceCodec.gaussSwitch(state.screen.gaussianColour)
+    log("save fields: position=${config.timePosition} style=${config.timeStyle} font=${config.font} top=${config.positionIndex}/${config.styleIndex} gauss=$gauss")
+    return PhotoSaveFields(config, gauss, colours)
+  }
+
+  private fun log(message: String) = events.log(LogDirection.INFO, null, null, null, "Photo face: $message")
+
   private suspend fun state(watchfaces: WatchfaceOps, photos: PhotoFaceOps): PhotoFaceState {
     val list = watchfaces.list()
     val face = list.faces.firstOrNull { it.isPhoto } ?: throw noPhotoFace()
     val screen = list.screen ?: throw WearException(ErrorCodes.UNSUPPORTED, "The watch did not report its screen size, so photos cannot be cropped for it.")
     val info = photos.readInfo()
     store.keepOnly(info.photos.map { it.name })
-    return PhotoFaceState(face, info, screen.width, screen.height, list.updatedAtMs)
+    return PhotoFaceState(face, info, screen.width, screen.height, list.updatedAtMs, screen)
   }
 
-  private fun PhotoFaceState.toJs(): Map<String, Any?> = mapOf(
+  /** `PhotoFace` in `HuaweiWearPhotoFace.types.ts`; [applyError] is set by [add] / [delete] when the apply after the save failed. */
+  private fun PhotoFaceState.toJs(applyError: String? = null): Map<String, Any?> = mapOf(
     "face" to face.toJs(),
     "width" to width,
     "height" to height,
@@ -319,6 +380,7 @@ internal class PhotoFaceController(
     "dataIndex" to info.dataIndex,
     "photos" to info.photos.map { mapOf("index" to it.index, "name" to it.name, "uri" to store.uri(it.name)) },
     "updatedAt" to updatedAtMs,
+    "applyError" to applyError,
   )
 
   private fun noPhotoFace() = WearException(

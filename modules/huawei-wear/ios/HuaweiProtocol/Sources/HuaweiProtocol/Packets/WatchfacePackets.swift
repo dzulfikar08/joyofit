@@ -23,6 +23,10 @@ public enum Watchface {
         public var supportSync: Int32 = -1
         /// Tag 0x18 (0 = GT mode, 1 = AP mode), -1 when absent.
         public var mode: Int32 = -1
+        /// Tag 0x1a (Huawei Health `supportGaussianColor`), -1 when absent.
+        public var gaussianColor: Int32 = -1
+        /// Tag 0x1b (Huawei Health `supportAestheticAlbumColor`; 1 = a photo's time colour is picked from the photo), -1 when absent.
+        public var aestheticAlbumColor: Int32 = -1
         /// Tag 0x7f, -1 when absent.
         public var status: Int32 = -1
 
@@ -86,6 +90,8 @@ public enum Watchface {
                     p.supportCapability = tlv.asInteger(0x11, default: -1)
                     p.supportSync = tlv.asInteger(0x17, default: -1)
                     p.mode = tlv.asInteger(0x18, default: -1)
+                    p.gaussianColor = tlv.asInteger(0x1a, default: -1)
+                    p.aestheticAlbumColor = tlv.asInteger(0x1b, default: -1)
                     p.status = tlv.asInteger(0x7f, default: -1)
                     return p
                 }
