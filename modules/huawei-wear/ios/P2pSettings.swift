@@ -17,6 +17,7 @@ public final class P2pSettings: HealthLivingState, @unchecked Sendable {
         static let report = "hl_report_ms"
         static let summary = "hl_summary"
         static let courses = "courses_experimental"
+        static let offlineMapLab = "offline_map_lab"
     }
 
     public init(defaults: UserDefaults? = nil) {
@@ -61,5 +62,11 @@ public final class P2pSettings: HealthLivingState, @unchecked Sendable {
     public var experimentalCourses: Bool {
         get { defaults.bool(forKey: Key.courses) }
         set { defaults.set(newValue, forKey: Key.courses) }
+    }
+
+    /// The offline-map lab (P2P module `mapkit`, docs/offline-maps.md). Off: the module is not registered and every map call refuses.
+    public var offlineMapLab: Bool {
+        get { defaults.bool(forKey: Key.offlineMapLab) }
+        set { defaults.set(newValue, forKey: Key.offlineMapLab) }
     }
 }

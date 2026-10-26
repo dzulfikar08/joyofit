@@ -39,6 +39,12 @@
     {
       "binding": "IMPORTS",
       "bucket_name": "joyofit-imports"
+    },
+    // Public offline watch maps for the lab (src/maps.ts, docs/offline-maps.md "Lab"): watch/catalog.json + watch/<id>.bin, no user data. The same bucket holds the bike
+    // computer's PMTiles (docs/bike-computer.md), public at maps.fit.joyorogo.com.
+    {
+      "binding": "MAPS",
+      "bucket_name": "joyofit-maps"
     }
   ],
   // "Ride on the web" relay (docs/ride.md): one RideRoom per ride (hibernatable WebSockets, idle expiry by alarm), one RideIndex

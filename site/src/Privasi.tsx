@@ -3,8 +3,8 @@ import { ArrowLeft, Check } from "lucide-react";
 import { GITHUB_URL } from "./lib";
 
 const CONTACT = "dzulfikar@joyorogo.com";
-const UPDATED = "22 Oktober 2026";
-const UPDATED_EN = "22 October 2026";
+const UPDATED = "26 Oktober 2026";
+const UPDATED_EN = "26 October 2026";
 
 function Code({ children }: { children: React.ReactNode }) {
   return <code className="rounded bg-muted px-1.5 py-0.5 text-[0.85em] font-semibold">{children}</code>;
@@ -339,6 +339,7 @@ function Indonesian() {
             "Saat jam meminta data bantuan satelit (AGPS), HP mengunduh berkas publik Broadcom dari gllto.glpals.com lewat HTTPS, alamat tetap. JoyoFit tidak menambahkan lokasi atau ID apa pun, tetapi server itu melihat alamat IP-mu. JoyoFit tidak menghubungi server Huawei untuk ini; jenis data bantuan lain yang diminta jam ditolak.",
             "Eksperimen yang mati secara bawaan (Pengaturan > Tentang & lanjutan, data satelit HW_AGNSS): bila kamu menyalakannya dan jam meminta jenis HW_AGNSS, HP mengunduh berkas data satelit dari server JoyoFit (api.fit.joyorogo.com) lewat HTTPS, alamat tetap. Server membuat berkas itu dari data siaran publik IGS/BKG dan memberi berkas yang sama ke semua orang; permintaan HP tidak membawa lokasi, ID, atau akun, tetapi server melihat alamat IP-mu.",
             "Eksperimen kedua yang juga mati secara bawaan (data satelit HW_PGNSS_PRED): bila kamu menyalakannya dan jam meminta jenis HW_PGNSS_PRED, HP mengunduh satu paket berkas orbit satelit untuk tiga hari dari server JoyoFit (api.fit.joyorogo.com) lewat HTTPS, alamat tetap. Server membuatnya dari prediksi orbit publik CODE (Universitas Bern) dan data siaran BKG, dan memberi paket yang sama ke semua orang; permintaan HP tidak membawa lokasi, ID, atau akun, tetapi server melihat alamat IP-mu.",
+            "Eksperimen peta offline yang mati secara bawaan (Pengaturan > Tentang & lanjutan > Eksperimental, \"Peta offline di jam (uji lab)\"): hanya bila kamu menyalakannya lalu membuka layar uji peta atau mengetuk unduh, HP mengambil daftar peta dan berkas peta dari server JoyoFit (api.fit.joyorogo.com, GET /v1/maps dan GET /v1/maps/<id>.bin) lewat HTTPS, permintaan GET biasa tanpa sesi. Permintaan itu tidak membawa lokasi, ID, atau akun, tetapi server melihat alamat IP-mu. Berkas peta disimpan di penyimpanan aplikasi dan dikirim ke jam lewat Bluetooth; peta mana yang kamu unduh tidak dikirim ke mana pun.",
           ]}
         />
       </Block>
@@ -512,6 +513,7 @@ function Indonesian() {
             "Broadcom (glpals.com): data bantuan satelit (bagian Lokasi).",
             "IGS dan BKG (Bundesamt für Kartographie und Geodäsie): data siaran satelit publik yang diambil server JoyoFit untuk eksperimen HW_AGNSS dan HW_PGNSS_PRED (bagian Lokasi). HP tidak menghubungi mereka.",
             "CODE (Institut Astronomi, Universitas Bern): prediksi orbit satelit publik yang diambil server JoyoFit untuk eksperimen HW_PGNSS_PRED (bagian Lokasi). HP tidak menghubungi mereka.",
+            "Kontributor OpenStreetMap (ODbL): data peta untuk eksperimen peta offline, dibuat oleh JoyoFit dari ekstrak Geofabrik (bagian Lokasi). HP tidak menghubungi OpenStreetMap atau Geofabrik.",
             "FOSSGIS e.V. (OSRM) dan Nominatim (OpenStreetMap): jalur rute dan pencarian tempat untuk Loop dari rumah (bagian Loop dari rumah).",
             "Cloudflare: tempat cloud JoyoFit dan situs ini berjalan.",
             "JoyoRogo, Google dan Apple: login dan layanan JoyoRogo (bagian Cloud dan Masuk dengan Apple).",
@@ -863,7 +865,12 @@ function English() {
           sees your IP address. A second experiment, also off by default (HW_PGNSS_PRED satellite data): if you turn it on and the watch asks for
           the HW_PGNSS_PRED kind, the phone downloads one bundle of three-day satellite orbit files over HTTPS from the same address. The server
           builds it from the public orbit predictions of CODE (University of Bern) and BKG broadcast data and gives everyone the same bundle; the
-          request carries no location, ID or account, but the server sees your IP address.
+          request carries no location, ID or account, but the server sees your IP address. The offline-map experiment, also off by default
+          (Settings &gt; About &amp; advanced &gt; Experimental, &quot;Peta offline di jam (uji lab)&quot;): only when it is on and you open the
+          map lab screen or tap download, the phone fetches the map list and map files from JoyoFit&apos;s server
+          (<Code>api.fit.joyorogo.com</Code>, <Code>GET /v1/maps</Code> and <Code>GET /v1/maps/&lt;id&gt;.bin</Code>) over HTTPS as plain GET
+          requests with no session. They carry no location, ID or account, but the server sees your IP address. The map files are stored in the
+          app&apos;s own storage and sent to the watch over Bluetooth; nothing about which maps you downloaded is sent anywhere.
         </p>
       </Block>
 
@@ -1006,7 +1013,7 @@ function English() {
 
       <Block title="Third parties">
         <p>
-          Open-Meteo (weather), Broadcom (satellite-assist data), IGS and BKG (public broadcast satellite data fetched by JoyoFit&apos;s server for the HW_AGNSS and HW_PGNSS_PRED experiments; the phone does not contact them), CODE at the University of Bern (public satellite orbit predictions fetched by JoyoFit&apos;s server for the HW_PGNSS_PRED experiment; the phone does not contact it), FOSSGIS e.V. (OSRM) and Nominatim (OpenStreetMap) (route paths and place search for Loop from home), Cloudflare (hosting of the cloud and this
+          Open-Meteo (weather), Broadcom (satellite-assist data), IGS and BKG (public broadcast satellite data fetched by JoyoFit&apos;s server for the HW_AGNSS and HW_PGNSS_PRED experiments; the phone does not contact them), CODE at the University of Bern (public satellite orbit predictions fetched by JoyoFit&apos;s server for the HW_PGNSS_PRED experiment; the phone does not contact it), OpenStreetMap contributors (ODbL; map data for the offline-map experiment, built by JoyoFit from Geofabrik extracts; the phone does not contact OpenStreetMap or Geofabrik), FOSSGIS e.V. (OSRM) and Nominatim (OpenStreetMap) (route paths and place search for Loop from home), Cloudflare (hosting of the cloud and this
           site), JoyoRogo, Google and Apple (sign-in), Apple (Apple Health write and one-time import read, and place-name geocoding on iPhone), Strava (upload destination when you connect it), the AI provider you choose, for example Anthropic for Claude or OpenAI for ChatGPT (receives the data read while you ask questions, only if you connect the AI connection), the AI provider you choose for Joyo AI with your own key (OpenRouter, OpenAI, Anthropic, Google Gemini or an address you enter; your choice and your own account, not our data processor; receives your data summary and conversation only after you enter a key and consent), Expo, Google (Firebase Cloud Messaging) and Apple (APNs) (delivery of Keluarga push notifications), RevKlik (visitor
           statistics for this site). No ads and no sale of data. Data is not used for advertising or
           ad profiling. Everything the app and this site send over the internet uses HTTPS (TLS).

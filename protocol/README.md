@@ -1098,6 +1098,38 @@ the number of routes the watch holds is capped (answer code 2; the number is not
 (gear icon -> Routes -> pick the route -> workout navigation on; HarmonyOS 6 watches: swipe up on the pre-workout screen -> More -> Routes) in outdoor running, cycling and walking modes only. Routes are deleted on the watch
 (long press in Routes). **Open:** the exact route cap, the name length limit, whether the Fit 4 and Fit 4 Pro show routes in every outdoor mode; see Observations for what was seen on a real watch.
 
+### (e) Offline maps (mapkit P2P): module `hw.unitedevice.mapkit` ↔ `in.huawei.mapkit` (fingerprint `SystemApp`) — LAB, off by default
+
+Huawei Health's offline-map transfer (its map SDK `com.huawei.maps.offlinedata` 6.20.0.313, `service/device/d.java:379-566`), as Gadgetbridge (`HuaweiP2PMapkitService`) and huac (`P2PMapkitService`)
+reimplement it. JoyoFit sends maps it builds itself from OpenStreetMap (`tools/offline-maps/`); it never contacts Huawei's map servers. Code: `MapkitWire.kt` / `MapkitWire.swift` (frames, tested
+against `Fixtures/mapkit.json`), `MapkitService.kt` / `MapkitService` in `MapkitWire.swift`, `OfflineMapLab.kt` / `OfflineMapLab.swift` (the flow). Feasibility, the `offvmp` file format and the lab
+procedure: `docs/offline-maps.md`.
+
+**Gates:** ExpandCapability `201` offline map, `202` contour map, `284` the watch asks for the map around it, `317` ski map (the Fit 4 Pro sets 201, 202, 284). JoyoFit registers the module only with
+the lab switch on and bit 201 set.
+
+**Frames** (P2P data `34/01` cmd 2; payload = one type byte, then Huawei TLV: tag byte, 7-bit varint length, big-endian values). `msgId` is a counter mod 10000.
+
+| Type | Direction | Body | JoyoFit |
+|---|---|---|---|
+| `01` | phone → watch | `01`=`00` | `01 01 01 00` |
+| `01` | watch → phone | `01` free space (big-endian, 8 bytes on the Fit 4 Pro; **KiB**: 1,557,376 on 2026-10-26, as MB it would be 1.5 TB) | logged raw |
+| `02` | phone → watch | `02` political view (ASCII), `14` review number (empty), `13` msgId (shortest big-endian) | on registration, view `ID`: `02 02 02 49 44 14 00 13 01 <id>` |
+| `02` | watch → phone | `02` `"0"` ok / `"1"` failed, `13`, `14` | "1": resent after 3 s, at most 3 times |
+| `03` | phone → watch | `13` msgId (shortest) | before every send and on "Maps on the watch" |
+| `03` | watch → phone | `04` frames, `05` frame index, `06` count, `13`, `87{88{09 id u64, 0A type, 0B version u32 (the file header's version), 16 download type}}` (several frames for long lists; an empty list is `04=00 05=00 06=00000000 87{}`) | collected until `06` maps or 10 s |
+| `04` | phone → watch | `02` view, `14` (empty), `0D` size MB (u16, rounded up), `0A` map type, `0E` 0 new / 1 update, `13` msgId (u32), `16` 0 (the user asked) | `update` = the id and type are already listed |
+| `04` | watch → phone | `0C` 0 go on, 1 no space, 2 has this version, 3 map in use, 4 device error; `13` | anything but 0 rejects (ERR_UPLOAD_REJECTED) |
+| file | phone → watch | FileUpload `28`, P2P file type 7, source `hw.unitedevice.mapkit` / `UniteDeviceManagement`, destination `in.huawei.mapkit` / `SystemApp`, name `<id>.bin`, `<id>_contour.bin` or `global.bin`; `28/03` SHA-256, `28/07` result | as courses and routes (`FileUploader`) |
+| `08` | watch → phone | `09` map id u64, `0A` type, `15` code (0 = parsed). **The Fit 4 Pro (6.1.0.117) sent none** after a 9.6 MB map it accepted (2026-10-26) | within `5 s × MB + 30 s` (Huawei Health's budget) the app asks `03` every 10 s; the map listed with its id (and the header's version in `0B`) counts as accepted, an `08` still wins |
+| `05` | phone → watch | `04` frames, `05` index (from 0), `06` count u32, `13` msgId u32, `90{91{09 id u64, 0A type, 0B 04}}` (at most 40 per frame) | one map per delete |
+| `05` | watch → phone | the same frame fields, `90{91{09, 0A, 12 result (0 deleted)}}` | |
+| `07` | watch → phone | asks for the political view again | answered with `02` |
+| `09` | watch → phone | `17` longitude, `18` latitude (f64), `16` download type: the size of the map around its position | answered `0A` `0D`=`00` (none; as huac) |
+| `0B` | watch → phone | download the map around its position | answered `04` `13` msgId, `0C`=`05` (no network), `16`=`01` (as Huawei Health without network, and huac) |
+
+Every frame both ways is logged as `Mapkit: tx|rx <type> <name>: <tags>` (`MapkitWire.describe`; containers `87 88 90 91` expanded, ASCII values quoted). Map ids are u64 and travel to JS as decimal strings.
+
 ### Device test steps
 
 1. Connect, tap **Sync now** and read `adb logcat -d -s JoyoFit:V | grep -E "P2P|Health metric|Healthy Living|Courses"`. Expected: `P2P: SupportedCommands 34/01=true; registering P2P services`, `P2P dictionary sync: ping answered 0xca`,
@@ -1107,6 +1139,7 @@ the number of routes the watch holds is capped (answer code 2; the number is not
 3. Courses (Settings → Advanced → Running courses, then the editor): `Courses: gates … 41=true 169=true`, the course bytes, the `Upload:` lines of the file transfer and `Courses: upload finished, watch result status=…`.
 4. Routes (Routes library, a saved route, **Kirim ke jam**): `Routes: gates ExpandCapability 70 (deliver)=true 216 (altitude)=...`, `Routes: handshake for "<name>": ...`, `Routes: handshake answer body ... -> code 1, point limit N`,
    `Routes: <name>: N points -> M (limit L), version V, byte.bin ... bytes`, the `Upload:` lines and `Routes: upload finished, watch result status=1; file answer body ... -> code 1`. Then on the watch: Workout -> outdoor run -> gear icon -> Routes.
+5. Offline maps (lab; Settings → About & advanced → Experimental → Offline maps, then the lab screen): see `docs/offline-maps.md`, "Lab procedure" for the file, the steps and the expected `Mapkit:` lines.
 
 ## Auth decision
 

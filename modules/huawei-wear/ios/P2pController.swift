@@ -15,6 +15,8 @@ public final class P2pController: LinkObserver, @unchecked Sendable {
     private static let fileTypeP2P: UInt8 = 7
 
     public let settings: P2pSettings
+    /// The offline-map lab (P2P module `mapkit`, behind `settings.offlineMapLab`).
+    public let offlineMaps: OfflineMapLab
     private let link: LinkHandleSource
     private let wearSettings: WearSettings
     private let syncStore: SyncStore
@@ -41,8 +43,10 @@ public final class P2pController: LinkObserver, @unchecked Sendable {
         self.nowMs = nowMs
         self.pingWaitMs = pingWaitMs
         self.answerWaitMs = answerWaitMs
+        self.offlineMaps = OfflineMapLab(settings: settings, link: link, events: events)
         // The dictionary sync runs inside the activity sync, under its operation lock, after the workouts.
         addSyncExtension { [weak self] _ in try await self?.syncHealthMetrics() }
+        offlineMaps.bind { [weak self] in self?.stack }
     }
 
     /// The live stack, or nil when the watch is not connected or has no P2P service.
@@ -83,6 +87,7 @@ public final class P2pController: LinkObserver, @unchecked Sendable {
         lock.locked { _stack = created }
         await created.start()
         created.registerServices()
+        offlineMaps.attach(created)
         recordGates(created, caps: handle.caps)
     }
 

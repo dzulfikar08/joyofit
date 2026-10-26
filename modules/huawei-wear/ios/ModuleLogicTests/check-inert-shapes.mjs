@@ -36,6 +36,7 @@ const sources = {
   HuaweiImportProgressEvent: 'HuaweiWearImport.types',
   RunningCoursePushResult: 'HuaweiWearP2p.types',
   RoutesStatus: 'HuaweiWearRoutes.types',
+  OfflineMapLabStatus: 'HuaweiWearOfflineMaps.types',
   RoutePushResult: 'HuaweiWearRoutes.types',
   NotificationFilterStatus: 'HuaweiWearNotifications.types',
   NotificationFilterTest: 'HuaweiWearNotifications.types',
