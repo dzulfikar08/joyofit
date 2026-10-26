@@ -96,7 +96,7 @@
       }
     },
     "hello": {
-      "description": "Watch -> phone when the watch app opens. A navigating phone answers with `start`, the current `turn` and a `prog`; a phone that is not navigating does not answer (the P2P layer still acknowledges with 0xcf).",
+      "description": "Watch -> phone when the watch app opens (a lite-wearable app does not run in the background, so the wearer often opens it mid-route). A navigating phone answers with `start`, the current `turn` and a `prog`, then `off` when the wearer is off the route; a phone that is not navigating does not answer (the P2P layer still acknowledges with 0xcf). `resume` is answered the same way.",
       "required": ["app"],
       "properties": {
         "t": { "const": "hello" },
