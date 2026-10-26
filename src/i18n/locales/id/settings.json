@@ -1131,8 +1131,6 @@
     "deleteAnswer": "Hapus {{id}}: jam menjawab kode {{code}} (0 = terhapus).",
     "deleteNoAnswer": "Hapus {{id}}: jam tidak menjawab.",
     "send": "Kirim ke jam",
-    "region": "Wilayah",
-    "size": "Ukuran",
     "sizeValue": "{{mb}} MB",
     "preparing": "Menanyai jam…",
     "verdict": {
@@ -1154,19 +1152,7 @@
     "maps": "Peta dari JoyoFit",
     "reload": "Muat daftar peta",
     "noMaps": "Server belum menyediakan peta.",
-    "osmDate": "Data OpenStreetMap per",
-    "onPhone": "Di HP ini",
     "onWatch": "Di jam",
-    "phone": {
-      "none": "belum diunduh",
-      "current": "sudah diunduh",
-      "outdated": "versi lama"
-    },
-    "watchState": {
-      "none": "tidak",
-      "same": "ya",
-      "other": "versi lain"
-    },
     "downloading": "Mengunduh",
     "sending": "Mengirim ke jam",
     "progress": "{{done}} dari {{total}} MB",
@@ -1176,24 +1162,36 @@
     "deleteWatch": "Hapus dari jam",
     "downloaded": "{{name}} sudah diunduh dan diperiksa (SHA-256).",
     "missingFile": "{{name}} sudah tidak ada di HP ini. Unduh lagi.",
-    "province": "Provinsi",
     "kind": {
       "kota": "kota",
       "kabupaten": "kabupaten"
     },
     "allProvinces": "Semua provinsi",
-    "searchPlaceholder": "Cari kota, kabupaten atau provinsi",
+    "searchPlaceholder": "Cari wilayah, provinsi atau kode BPS",
     "searchLabel": "Cari peta",
     "count_other": "{{count}} peta",
     "countOf": "{{count}} dari {{total}} peta",
-    "noMatch": "Tidak ada peta yang cocok dengan pencarian atau provinsi.",
-    "nearMe": "Urutkan dari yang terdekat",
-    "nearSorted": "Terdekat di atas. Posisi Anda tetap di HP ini: hanya untuk mengurutkan daftar ini, tidak pernah dikirim.",
+    "noMatch": "Tidak ada wilayah yang cocok.",
     "locating": "Mencari posisi Anda…",
-    "nearDenied": "Izin lokasi tidak diberikan. Daftar tetap sesuai urutan katalog.",
-    "noFix": "Posisi Anda tidak ditemukan. Coba lagi di luar ruangan atau nanti.",
-    "distance": "Jarak",
+    "noFix": "Posisi Anda tidak ditemukan, jadi wilayah terdekat tidak ditampilkan. Buka lagi layar ini di luar ruangan atau nanti.",
     "distanceValue": "{{km}} km",
-    "inside": "Anda di wilayah ini"
+    "inside": "Anda di wilayah ini",
+    "clearFilters": "Hapus pencarian dan filter",
+    "provinceAny": "Provinsi: semua",
+    "provinceOne": "Provinsi: {{province}}",
+    "pickProvince": "Pilih provinsi",
+    "kindFilter": {
+      "all": "Semua",
+      "kabupaten": "Kabupaten",
+      "kota": "Kota"
+    },
+    "sectionNear": "Terdekat",
+    "sectionMeta_other": "{{count}} wilayah · {{mb}} MB",
+    "regions_other": "{{count}} wilayah",
+    "noProvince": "Tanpa provinsi",
+    "badgeNewer": "Versi baru",
+    "nearNote": "dihitung di HP ini, lokasi tidak dikirim",
+    "nearNotAllowed": "Wilayah terdekat muncul di sini kalau JoyoFit sudah boleh memakai lokasi. Layar ini tidak memintanya, dan lokasi tidak pernah dikirim.",
+    "attributionDated": "Data peta © kontributor OpenStreetMap, di bawah Open Database License (ODbL). Data per {{date}}."
   }
 }

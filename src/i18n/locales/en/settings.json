@@ -1155,8 +1155,6 @@
     "deleteAnswer": "Delete {{id}}: watch answered code {{code}} (0 = deleted).",
     "deleteNoAnswer": "Delete {{id}}: no answer from the watch.",
     "send": "Send to watch",
-    "region": "Region",
-    "size": "Size",
     "sizeValue": "{{mb}} MB",
     "preparing": "Asking the watch…",
     "verdict": {
@@ -1178,19 +1176,7 @@
     "maps": "Maps from JoyoFit",
     "reload": "Load the map list",
     "noMaps": "The server offers no maps yet.",
-    "osmDate": "OpenStreetMap data of",
-    "onPhone": "On this phone",
     "onWatch": "On the watch",
-    "phone": {
-      "none": "not downloaded",
-      "current": "downloaded",
-      "outdated": "older version"
-    },
-    "watchState": {
-      "none": "no",
-      "same": "yes",
-      "other": "other version"
-    },
     "downloading": "Downloading",
     "sending": "Sending to the watch",
     "progress": "{{done}} of {{total}} MB",
@@ -1200,25 +1186,39 @@
     "deleteWatch": "Delete from watch",
     "downloaded": "{{name}} downloaded and checked (SHA-256).",
     "missingFile": "{{name}} is no longer on this phone. Download it again.",
-    "province": "Province",
     "kind": {
       "kota": "city",
       "kabupaten": "regency"
     },
     "allProvinces": "All provinces",
-    "searchPlaceholder": "Search a city, regency or province",
+    "searchPlaceholder": "Search a region, province or BPS code",
     "searchLabel": "Search maps",
     "count_one": "{{count}} map",
     "count_other": "{{count}} maps",
     "countOf": "{{count}} of {{total}} maps",
-    "noMatch": "No map matches the search or province.",
-    "nearMe": "Sort by nearest",
-    "nearSorted": "Nearest first. Your position stays on this phone: it only sorts this list and is never sent.",
+    "noMatch": "No regions match.",
     "locating": "Finding your position…",
-    "nearDenied": "Location is not allowed. The list stays in catalog order.",
-    "noFix": "Your position could not be found. Try again outside or later.",
-    "distance": "Distance",
+    "noFix": "Your position could not be found, so the nearest regions are not shown. Open this screen again outside or later.",
     "distanceValue": "{{km}} km",
-    "inside": "you are in this area"
+    "inside": "you are in this area",
+    "clearFilters": "Clear search and filters",
+    "provinceAny": "Province: all",
+    "provinceOne": "Province: {{province}}",
+    "pickProvince": "Choose a province",
+    "kindFilter": {
+      "all": "All",
+      "kabupaten": "Regencies",
+      "kota": "Cities"
+    },
+    "sectionNear": "Nearest",
+    "sectionMeta_one": "{{count}} region · {{mb}} MB",
+    "sectionMeta_other": "{{count}} regions · {{mb}} MB",
+    "regions_one": "{{count}} region",
+    "regions_other": "{{count}} regions",
+    "noProvince": "No province",
+    "badgeNewer": "New version",
+    "nearNote": "worked out on this phone, your location is never sent",
+    "nearNotAllowed": "The nearest regions show here once JoyoFit may use your location. This screen does not ask for it, and the location is never sent.",
+    "attributionDated": "Map data © OpenStreetMap contributors, available under the Open Database License (ODbL). Data as of {{date}}."
   }
 }

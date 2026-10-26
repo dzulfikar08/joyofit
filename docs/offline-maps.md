@@ -210,13 +210,14 @@ Branch `lab/jrg-426-offline-map` (draft PR #25, not to be merged) adds what the 
   Eksperimental → **Peta offline di jam (uji lab)**), off by default. When on, and the watch sets ExpandCapability 201, JoyoFit registers the
   mapkit module on every connect (ping, political view `ID`) and answers the watch's own asks as huac does (`07` → `02`, `09` → size 0,
   `0B` → "no network"). A row under the switch opens the lab screen:
-  - **Peta dari JoyoFit**: the server's catalog, one row per map with its size, OSM date, "Di HP ini" (not downloaded / downloaded / older version)
-    and "Di jam" (from the watch's `03` list: no / yes / other version). **Unduh** downloads into the app's own storage
-    (`<documents>/offline-maps/<id>.bin` via a `.part` file, with progress), then the native side reads it back (`offvmp` header, size,
-    SHA-256) and it is kept only when all three match the catalog. **Kirim ke jam** sends it, **Hapus dari HP** deletes the phone copy,
-    **Hapus dari jam** sends delete `05`. The OSM credit ("© OpenStreetMap contributors", ODbL) is shown under the list.
-  - **Jam**: gates, ping, political-view answer, **Peta di jam** (list `03`; maps not in the catalog get their own **Hapus dari jam**),
-    **Ruang kosong** (`01`).
+  - **Peta dari JoyoFit**: the server's catalog, one card per map with its name, province, kind, size and distance (when known), the badges
+    **Di jam** (the watch's `03` list has it) and **Versi baru** (the watch or the phone holds another build than the catalog's). **Unduh**
+    downloads into the app's own storage (`<documents>/offline-maps/<id>.bin` via a `.part` file, with progress), then the native side reads it
+    back (`offvmp` header, size, SHA-256) and it is kept only when all three match the catalog (**Perbarui** for an older copy). **Kirim ke jam**
+    sends it, **Hapus dari HP** deletes the phone copy, **Hapus dari jam** sends delete `05`. How the list is searched and grouped: "App" under
+    "Every Kabupaten/Kota" below.
+  - **Jam** (under the list): gates, ping, political-view answer, **Peta di jam** (list `03`; maps not in the catalog get their own **Hapus dari
+    jam**), **Ruang kosong** (`01`). "Connect the watch first" and "no bit 201" show above the list.
   - The send: free space → list (update flag when the id is there) → handshake `04` → the file over `28` as P2P file type 7 named `<id>.bin`
     → confirmation. **The Fit 4 Pro sends no `08`** (run 1), so after the upload the app asks for the list every 10 s within Huawei Health's
     budget (5 s per MB + 30 s): the map listed with its id is taken as accepted (and the listed version is compared with the file's), an `08`
@@ -298,11 +299,22 @@ Branch `feat/jrg-433-all-city-maps` (on top of the lab branch). How to run every
 - **Server.** `GET /v1/maps` serves the catalog with `code`, `province`, `kind`, `part`, an `ETag` (`304` on `If-None-Match`), and optional
   `province`, `q` and `limit` (`server/README.md`); no position filter, because Workers Logs records request URLs. The Worker keeps the
   parsed catalog per isolate and re-reads R2 only when the object's etag changes. `GET /v1/maps/<id>.bin` is unchanged.
-- **App.** The lab screen's map list is one virtualised list with a search box (name, province or BPS code), province chips and **Urutkan dari
-  yang terdekat**: when location access is already granted the list is sorted by distance at once, otherwise the button asks first. The phone
-  reads its own position and sorts the catalog itself; **the position never leaves the phone** (the server has no position filter, so
-  no coordinates can reach Cloudflare's request logs). So the privacy texts stay as they are: the map requests
-  still carry no location.
+- **App.** The lab screen (`src/features/offlinemaps/`, logic in `listing.ts` with its tests) keeps a search box, filter chips, the map count and
+  the OSM credit ("© OpenStreetMap contributors", ODbL, with the extract date) fixed above one virtualised `SectionList`:
+  - **Search** matches the region name and the province, case- and accent-insensitive, without the "Kabupaten"/"Kab."/"Kota" prefix ("malang"
+    finds Kabupaten Malang and Kota Malang, "ko" does not list every kota), and the BPS code or its leading digits ("3573", "35" = Jawa Timur).
+    A query that starts with a prefix keeps to that kind ("kota malang", "kab. malang"; "kota" alone lists every kota). Best match first: the
+    name itself, then names that start with the query, then a word of the name, then the rest; nearest first within each, then by name.
+  - **Chips**: **Provinsi** (a sheet with the catalog's 38 provinces and their counts), **Semua / Kabupaten / Kota**, and **Di jam** (shown once
+    the watch's list has been read). They combine with each other and the search; a search or chip turns the list into one flat list of
+    results, with **Hapus pencarian dan filter** when nothing matches ("Tidak ada wilayah yang cocok").
+  - **Without a search or chip**: **Di jam** first (catalog maps the watch lists), then **Terdekat** (the 10 regions nearest to the phone, by
+    distance to each region's bbox, 0 inside it), then every other region by province, each province a collapsed header with its count and total
+    size that opens on tap.
+  - **Terdekat** appears only when location access is already granted: this screen never asks for it (it says where the list would be). The
+    phone reads its last known position (MapLibre's location manager, 10 s at most) and computes the distances itself; **the position never
+    leaves the phone** (the server has no position filter, so no coordinates can reach Cloudflare's request logs). So the privacy texts stay as
+    they are: the map requests still carry no location.
 
 ### Smoke runs
 

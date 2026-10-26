@@ -1,30 +1,35 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useEventListener } from 'expo';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, StyleSheet, View, type ListRenderItem } from 'react-native';
+import { SectionList, StyleSheet, View, type SectionListData, type SectionListRenderItem } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ButtonRow } from '@/components/ButtonRow';
 import { ChipRow, type ChipRowItem } from '@/components/ChipRow';
 import { Details } from '@/components/Details';
+import { InfoPill } from '@/components/InfoPill';
 import { Input } from '@/components/Input';
+import { PressableScale } from '@/components/PressableScale';
 import { Card, Section, useContentPadding } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { currentPosition } from '@/features/loops/position';
 import type { LatLon } from '@/features/routes/map/geometry';
 import { loadMapLibre } from '@/features/routes/map/maplibre';
-import { ensureLocation, locationGranted } from '@/features/sensors/permissions';
+import { locationGranted } from '@/features/sensors/permissions';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
-import { errorMessage, formatDateTime } from '@/format';
+import { errorMessage, formatDate, formatDateTime } from '@/format';
 import { fmtInt, fmtNumber } from '@/i18n';
 import { HuaweiWear, hasNative, type OfflineMapLabStatus, type OfflineMapList, type OfflineMapOnWatch, type OfflineMapSendResult } from '@/wear';
 import { spacing, useColors } from '@/theme';
 
-import { filterMaps, phoneState, provincesOf, sortByDistance, watchState, type CatalogMap, type StoredMap } from './catalog';
+import { phoneState, watchState, type CatalogMap, type StoredMap } from './catalog';
 import { mapTypeKey, rateKbps, seconds, sendVerdict } from './labText';
+import { buildListing, isFiltered, provinceKey, provinceTotals, watchIdsOf, type KindFilter, type MapSection, type MapWithDistance } from './listing';
 import { downloadMap, fetchCatalog, localFile, removeFromPhone, storedMap } from './mapStore';
+import { ProvinceSheet } from './ProvinceSheet';
 
 function read(): OfflineMapLabStatus | null {
   if (!hasNative('getOfflineMapLab')) return null;
@@ -50,10 +55,12 @@ interface Messages {
 
 const NO_MESSAGES: Messages = { about: null, result: null, notice: null, error: null };
 
-/** Where "near me" stands: the position never leaves the phone, it only orders the list. */
-type Near = 'off' | 'ask' | 'locating' | 'denied' | 'noFix';
+/** "Terdekat": the phone's position when location is already allowed. This screen never asks for it, and the position never leaves the phone. */
+type Near = 'checking' | 'notAllowed' | 'locating' | 'noFix' | 'ready';
 
-type Row = CatalogMap & { distanceKm?: number };
+type Row = MapWithDistance;
+
+const KINDS: readonly KindFilter[] = ['all', 'kabupaten', 'kota'];
 
 const mb = (bytes: number) => fmtNumber(bytes / 1_048_576, 1);
 
@@ -62,8 +69,9 @@ const mb = (bytes: number) => fmtNumber(bytes / 1_048_576, 1);
  * with tools/offline-maps, one per kabupaten/kota), downloaded into the app and checked (SHA-256), sent to the watch over the mapkit P2P module;
  * the watch's list and delete. Every frame is in the log (`Mapkit:` lines). See docs/offline-maps.md, "Lab".
  *
- * The catalog has hundreds of maps: one virtualised list, the watch section and the search above it as its header. Search, province and
- * "near me" all run on the phone; the position is read only when location is already allowed or the user asks, and is never sent.
+ * The catalog has 514 maps: search and filter chips stay above one virtualised section list (`listing.ts` decides its content). Without a search:
+ * the maps on the watch, the ten nearest regions, then every province collapsed. "Terdekat" needs location already allowed (no prompt here);
+ * the distance is computed on the phone and the position is never sent.
  */
 export function OfflineMapLabScreen() {
   const { t } = useTranslation('settings');
@@ -79,8 +87,12 @@ export function OfflineMapLabScreen() {
   const [busy, setBusy] = useState<Busy>(null);
   const [query, setQuery] = useState('');
   const [province, setProvince] = useState<string | null>(null);
+  const [kind, setKind] = useState<KindFilter>('all');
+  const [onWatchOnly, setOnWatchOnly] = useState(false);
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
+  const [pickingProvince, setPickingProvince] = useState(false);
   const [here, setHere] = useState<LatLon | null>(null);
-  const [near, setNear] = useState<Near>('off');
+  const [near, setNear] = useState<Near>('checking');
 
   const refresh = useCallback(() => setStatus(read()), []);
   useNativeRefresh(refresh);
@@ -140,43 +152,32 @@ export function OfflineMapLabScreen() {
     };
   }, [linked]);
 
-  // Near me without a prompt: only when location is already allowed. Otherwise the button asks first. No MapLibre, no position, no near me.
+  // "Terdekat" only when location is already allowed: never a prompt here. No MapLibre (it reads the position), no "Terdekat".
   useEffect(() => {
     if (!enabled) return;
     const maplibre = loadMapLibre();
-    if (maplibre === null) return;
+    if (maplibre === null) {
+      setNear('notAllowed');
+      return;
+    }
     let live = true;
     void (async () => {
       const granted = await locationGranted().catch(() => false);
       if (!live) return;
       if (!granted) {
-        setNear('ask');
+        setNear('notAllowed');
         return;
       }
       setNear('locating');
       const position = await currentPosition(maplibre);
       if (!live) return;
       setHere(position);
-      setNear(position ? 'off' : 'noFix');
+      setNear(position ? 'ready' : 'noFix');
     })();
     return () => {
       live = false;
     };
   }, [enabled]);
-
-  const nearMe = async () => {
-    const maplibre = loadMapLibre();
-    if (maplibre === null) return;
-    const granted = await ensureLocation().catch(() => 'denied' as const);
-    if (granted !== 'granted') {
-      setNear('denied');
-      return;
-    }
-    setNear('locating');
-    const position = await currentPosition(maplibre);
-    setHere(position);
-    setNear(position ? 'off' : 'noFix');
-  };
 
   const listMaps = () => run('list', null, async () => setList(await HuaweiWear.listOfflineMaps()));
 
@@ -225,25 +226,51 @@ export function OfflineMapLabScreen() {
     [run, t],
   );
 
-  const provinces = useMemo(() => provincesOf(catalog ?? []), [catalog]);
+  const toggleSection = useCallback((key: string) => {
+    setExpanded((open) => {
+      const next = new Set(open);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  }, []);
+
+  const clearFilters = () => {
+    setQuery('');
+    setProvince(null);
+    setKind('all');
+    setOnWatchOnly(false);
+  };
+
+  const watchMaps = list?.maps ?? null;
+  const watchIds = useMemo(() => watchIdsOf(watchMaps), [watchMaps]);
+  const provinces = useMemo(() => provinceTotals(catalog ?? []), [catalog]);
+  const filter = useMemo(() => ({ query, province, kind, onWatch: onWatchOnly }), [query, province, kind, onWatchOnly]);
+  const listing = useMemo(() => buildListing(catalog ?? [], { filter, watchIds, here, expanded }), [catalog, filter, watchIds, here, expanded]);
+  const catalogIds = useMemo(() => new Set(catalog?.map((m) => m.id) ?? []), [catalog]);
+  const osmDate = useMemo(() => (catalog ?? []).reduce((latest, m) => (m.osmDate > latest ? m.osmDate : latest), ''), [catalog]);
+
   const chips = useMemo<ChipRowItem[]>(
     () => [
-      { key: '', label: t('offlineMapLab.allProvinces'), selected: province === null, onPress: () => setProvince(null), role: 'radio' },
-      ...provinces.map((p) => ({ key: p, label: p, selected: province === p, onPress: () => setProvince(p), role: 'radio' as const })),
+      {
+        key: 'province',
+        label: province === null ? t('offlineMapLab.provinceAny') : t('offlineMapLab.provinceOne', { province }),
+        selected: province !== null,
+        onPress: () => setPickingProvince(true),
+        role: 'button',
+      },
+      ...KINDS.map((k) => ({ key: `kind:${k}`, label: t(`offlineMapLab.kindFilter.${k}`), selected: kind === k, onPress: () => setKind(k), role: 'radio' as const })),
+      // The watch's list is read when the screen opens; until it answers there is nothing to keep.
+      ...(watchMaps !== null
+        ? [{ key: 'watch', label: t('offlineMapLab.onWatch'), selected: onWatchOnly, onPress: () => setOnWatchOnly((on) => !on), role: 'checkbox' as const }]
+        : []),
     ],
-    [provinces, province, t],
+    [province, kind, onWatchOnly, watchMaps, t],
   );
-  const rows = useMemo<Row[]>(() => {
-    const shown = filterMaps(catalog ?? [], { province, query });
-    return here ? sortByDistance(shown, here) : shown;
-  }, [catalog, province, query, here]);
-  const catalogIds = useMemo(() => new Set(catalog?.map((m) => m.id) ?? []), [catalog]);
 
   const idle = busy === null;
   const watchReady = status?.p2p === true && status.gateMap;
-  const watchMaps = list?.maps ?? null;
 
-  const renderItem = useCallback<ListRenderItem<Row>>(
+  const renderItem = useCallback<SectionListRenderItem<Row, MapSection<Row>>>(
     ({ item }) => {
       const action = busy?.endsWith(`:${item.id}`) ? (busy.slice(0, busy.indexOf(':')) as RowBusy) : null;
       return (
@@ -266,6 +293,11 @@ export function OfflineMapLabScreen() {
     [busy, stored, watchMaps, progress, messages, idle, watchReady, download, send, removeLocal, removeFromWatch],
   );
 
+  const renderSectionHeader = useCallback(
+    ({ section }: { section: SectionListData<Row, MapSection<Row>> }) => <SectionHeader section={section} onToggle={toggleSection} />,
+    [toggleSection],
+  );
+
   if (status === null || !status.enabled) {
     return (
       <View style={[styles.fill, padding, { backgroundColor: colors.background }]}>
@@ -275,10 +307,33 @@ export function OfflineMapLabScreen() {
   }
 
   const others = list?.maps.filter((m) => !catalogIds.has(m.mapId)) ?? [];
-  const filtered = province !== null || query.trim() !== '';
+  const hasMaps = catalog !== null && catalog.length > 0;
+  const count = isFiltered(filter)
+    ? t('offlineMapLab.countOf', { count: listing.matched, total: catalog?.length ?? 0 })
+    : t('offlineMapLab.count', { count: catalog?.length ?? 0 });
 
   const header = (
     <View style={styles.header}>
+      {!status.p2p ? <Notice tone="danger">{t('offlineMapLab.notConnected')}</Notice> : null}
+      {status.p2p && !status.gateMap ? <Notice tone="danger">{t('offlineMapLab.noGate')}</Notice> : null}
+      {catalog === null && busy !== 'catalog' ? <Button label={t('offlineMapLab.reload')} icon="refresh" onPress={() => void loadCatalog()} /> : null}
+      {catalog !== null && catalog.length === 0 ? <Notice>{t('offlineMapLab.noMaps')}</Notice> : null}
+      {messages.about === null || !catalogIds.has(messages.about) ? <ActionMessages messages={messages} /> : null}
+      {hasMaps && !listing.filtered && near === 'locating' ? (
+        <AppText variant="caption" muted>
+          {t('offlineMapLab.locating')}
+        </AppText>
+      ) : null}
+      {hasMaps && !listing.filtered && (near === 'notAllowed' || near === 'noFix') ? (
+        <AppText variant="caption" muted>
+          {t(near === 'notAllowed' ? 'offlineMapLab.nearNotAllowed' : 'offlineMapLab.noFix')}
+        </AppText>
+      ) : null}
+    </View>
+  );
+
+  const footer = (
+    <View style={styles.footer}>
       <Section title={t('offlineMapLab.watch')} icon="watch" tint="workouts">
         <PairGrid>
           <Pair label={t('offlineMapLab.gate')} value={status.gateMap ? t('offlineMapLab.yes') : t('offlineMapLab.no')} />
@@ -303,8 +358,6 @@ export function OfflineMapLabScreen() {
             wide
           />
         </PairGrid>
-        {!status.p2p ? <Notice tone="danger">{t('offlineMapLab.notConnected')}</Notice> : null}
-        {status.p2p && !status.gateMap ? <Notice tone="danger">{t('offlineMapLab.noGate')}</Notice> : null}
         <ButtonRow>
           <Button label={t('offlineMapLab.list')} icon="list" disabled={!idle || !watchReady} loading={busy === 'list'} onPress={() => void listMaps()} />
           <Button label={t('offlineMapLab.space')} icon="server" disabled={!idle || !watchReady} loading={busy === 'space'} onPress={() => void freeSpace()} />
@@ -315,23 +368,14 @@ export function OfflineMapLabScreen() {
         ))}
         <Details>{t('offlineMapLab.details')}</Details>
       </Section>
+    </View>
+  );
 
-      <Section title={t('offlineMapLab.maps')} icon="map" tint="workouts">
-        {catalog === null && busy !== 'catalog' ? <Button label={t('offlineMapLab.reload')} icon="refresh" onPress={() => void loadCatalog()} /> : null}
-        {catalog !== null && catalog.length === 0 ? <Notice>{t('offlineMapLab.noMaps')}</Notice> : null}
-        {here ? <Notice icon="navigate">{t('offlineMapLab.nearSorted')}</Notice> : null}
-        {near === 'ask' || near === 'denied' || near === 'noFix' ? (
-          <Button label={t('offlineMapLab.nearMe')} icon="navigate" onPress={() => void nearMe()} />
-        ) : null}
-        {near === 'locating' ? <Notice icon="navigate">{t('offlineMapLab.locating')}</Notice> : null}
-        {near === 'denied' ? <Notice tone="danger">{t('offlineMapLab.nearDenied')}</Notice> : null}
-        {near === 'noFix' ? <Notice tone="danger">{t('offlineMapLab.noFix')}</Notice> : null}
-        {messages.about === null || !catalogIds.has(messages.about) ? <ActionMessages messages={messages} /> : null}
-        <Notice>{t('offlineMapLab.attribution')}</Notice>
-      </Section>
-
-      {catalog !== null && catalog.length > 0 ? (
-        <View style={styles.find}>
+  return (
+    <View style={[styles.fill, { backgroundColor: colors.background }]}>
+      {/* Search, filters and the OpenStreetMap credit stay in view above the list. */}
+      {hasMaps ? (
+        <View style={[styles.find, { paddingHorizontal: padding.paddingHorizontal, paddingTop: padding.paddingTop }]}>
           <Input
             icon="search"
             value={query}
@@ -340,33 +384,50 @@ export function OfflineMapLabScreen() {
             accessibilityLabel={t('offlineMapLab.searchLabel')}
             autoCapitalize="none"
             autoCorrect={false}
+            returnKeyType="search"
             clearButtonMode="while-editing"
           />
-          {provinces.length > 0 ? <ChipRow items={chips} /> : null}
+          <ChipRow items={chips} />
           <AppText variant="caption" muted>
-            {filtered ? t('offlineMapLab.countOf', { count: rows.length, total: catalog.length }) : t('offlineMapLab.count', { count: rows.length })}
+            {count}
+          </AppText>
+          <AppText variant="caption" muted>
+            {osmDate ? t('offlineMapLab.attributionDated', { date: formatDate(Date.parse(osmDate) / 1000) }) : t('offlineMapLab.attribution')}
           </AppText>
         </View>
       ) : null}
+      <SectionList
+        sections={listing.sections}
+        keyExtractor={keyOf}
+        renderItem={renderItem}
+        renderSectionHeader={renderSectionHeader}
+        stickySectionHeadersEnabled={false}
+        style={styles.fill}
+        contentContainerStyle={padding}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        ListHeaderComponent={header}
+        ListFooterComponent={footer}
+        ListEmptyComponent={
+          hasMaps ? <Notice action={{ label: t('offlineMapLab.clearFilters'), onPress: clearFilters }}>{t('offlineMapLab.noMatch')}</Notice> : null
+        }
+        ItemSeparatorComponent={Separator}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        removeClippedSubviews
+      />
+      <ProvinceSheet
+        visible={pickingProvince}
+        provinces={provinces}
+        selected={province}
+        onPick={(picked) => {
+          setProvince(picked);
+          setPickingProvince(false);
+        }}
+        onClose={() => setPickingProvince(false)}
+      />
     </View>
-  );
-
-  return (
-    <FlatList
-      data={rows}
-      keyExtractor={keyOf}
-      renderItem={renderItem}
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={padding}
-      keyboardShouldPersistTaps="handled"
-      ListHeaderComponent={header}
-      ListEmptyComponent={catalog !== null && catalog.length > 0 ? <Notice>{t('offlineMapLab.noMatch')}</Notice> : null}
-      ItemSeparatorComponent={Separator}
-      initialNumToRender={6}
-      maxToRenderPerBatch={8}
-      windowSize={7}
-      removeClippedSubviews
-    />
   );
 }
 
@@ -375,6 +436,44 @@ const keyOf = (map: Row) => map.id;
 function Separator() {
   return <View style={styles.separator} />;
 }
+
+/** "Di jam" and "Terdekat" with their count and size; a province is a button that opens or closes it. Search results have no header. */
+const SectionHeader = memo(function SectionHeader({ section, onToggle }: { section: MapSection<Row>; onToggle: (key: string) => void }) {
+  const { t } = useTranslation('settings');
+  const colors = useColors();
+  if (section.kind === 'results') return null;
+  const meta = t('offlineMapLab.sectionMeta', { count: section.count, mb: fmtNumber(section.totalBytes / 1_048_576, 0) });
+  if (section.kind !== 'province') {
+    return (
+      <View style={styles.sectionHeader}>
+        <AppText variant="heading" accessibilityRole="header">
+          {t(section.kind === 'watch' ? 'offlineMapLab.onWatch' : 'offlineMapLab.sectionNear')}
+        </AppText>
+        <AppText variant="caption" muted>
+          {section.kind === 'near' ? `${meta} · ${t('offlineMapLab.nearNote')}` : meta}
+        </AppText>
+      </View>
+    );
+  }
+  const title = section.province === '' ? t('offlineMapLab.noProvince') : section.province;
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={`${title}, ${meta}`}
+      accessibilityState={{ expanded: !section.collapsed }}
+      onPress={() => onToggle(provinceKey(section.province))}
+      scaleTo={0.985}
+      style={styles.provinceHeader}>
+      <Ionicons name={section.collapsed ? 'chevron-forward' : 'chevron-down'} size={18} color={colors.mutedForeground} />
+      <AppText variant="bodyStrong" numberOfLines={1} style={styles.provinceTitle}>
+        {title}
+      </AppText>
+      <AppText variant="caption" muted>
+        {meta}
+      </AppText>
+    </PressableScale>
+  );
+});
 
 /** The send verdict, notice and error of the last action. */
 function ActionMessages({ messages }: { messages: Messages }) {
@@ -438,34 +537,42 @@ const MapRow = memo(function MapRow({
   const phone = phoneState(map, stored);
   const watch = watchState(map, watchMaps);
   const onWatch = watchMaps?.find((m) => m.mapId === map.id && m.mapType === 0);
-  const where = [map.province, map.kind ? t(`offlineMapLab.kind.${map.kind}`) : ''].filter((s) => s !== '').join(' · ');
+  // The watch or the phone holds another build than the catalog's: the catalog has a newer one.
+  const newer = watch === 'other' || phone === 'outdated';
+  const distance =
+    map.distanceKm === undefined
+      ? ''
+      : map.distanceKm === 0
+        ? t('offlineMapLab.inside')
+        : t('offlineMapLab.distanceValue', { km: fmtNumber(map.distanceKm, map.distanceKm < 10 ? 1 : 0) });
+  const line = [map.province, map.kind ? t(`offlineMapLab.kind.${map.kind}`) : '', t('offlineMapLab.sizeValue', { mb: mb(map.sizeBytes) }), distance]
+    .filter((s) => s !== '')
+    .join(' · ');
   return (
     <Card>
-      <PairGrid>
-        <Pair label={t('offlineMapLab.region')} value={map.name} wide />
-        {where !== '' ? <Pair label={t('offlineMapLab.province')} value={where} wide /> : null}
-        <Pair label={t('offlineMapLab.size')} value={t('offlineMapLab.sizeValue', { mb: mb(map.sizeBytes) })} />
-        {map.distanceKm !== undefined ? (
-          <Pair
-            label={t('offlineMapLab.distance')}
-            value={map.distanceKm === 0 ? t('offlineMapLab.inside') : t('offlineMapLab.distanceValue', { km: fmtNumber(map.distanceKm, map.distanceKm < 10 ? 1 : 0) })}
-          />
-        ) : null}
-        <Pair label={t('offlineMapLab.osmDate')} value={map.osmDate ? formatDateTime(Date.parse(map.osmDate) / 1000) : null} />
-        <Pair label={t('offlineMapLab.onPhone')} value={t(`offlineMapLab.phone.${phone}`)} />
-        <Pair label={t('offlineMapLab.onWatch')} value={watch === null ? null : t(`offlineMapLab.watchState.${watch}`)} />
-        {action === 'download' && progress ? (
-          <Pair label={t('offlineMapLab.downloading')} value={t('offlineMapLab.progress', { done: mb(progress.done), total: mb(progress.total) })} wide />
-        ) : null}
-        {action === 'send' ? (
-          <Pair
-            label={t('offlineMapLab.sending')}
-            value={progress ? t('offlineMapLab.progress', { done: mb(progress.done), total: mb(progress.total) }) : t('offlineMapLab.preparing')}
-            wide
-          />
-        ) : null}
-      </PairGrid>
-      {/* Buttons sit below the grid, never in it: the grid is a wrapping row, where a row of flex:1 buttons gets no width (lab.8). */}
+      <View style={styles.rowTitle}>
+        <AppText variant="bodyStrong">{map.name}</AppText>
+        <AppText variant="caption" muted>
+          {line}
+        </AppText>
+      </View>
+      {onWatch || newer ? (
+        <View style={styles.badges}>
+          {onWatch ? <InfoPill label={t('offlineMapLab.onWatch')} tint="workouts" /> : null}
+          {newer ? <InfoPill label={t('offlineMapLab.badgeNewer')} tint="link" /> : null}
+        </View>
+      ) : null}
+      {action === 'download' && progress ? (
+        <AppText variant="caption" muted>
+          {t('offlineMapLab.downloading')}: {t('offlineMapLab.progress', { done: mb(progress.done), total: mb(progress.total) })}
+        </AppText>
+      ) : null}
+      {action === 'send' ? (
+        <AppText variant="caption" muted>
+          {t('offlineMapLab.sending')}:{' '}
+          {progress ? t('offlineMapLab.progress', { done: mb(progress.done), total: mb(progress.total) }) : t('offlineMapLab.preparing')}
+        </AppText>
+      ) : null}
       {phone === 'current' ? (
         <Button
           label={t('offlineMapLab.send')}
@@ -541,8 +648,14 @@ function OtherWatchMap({
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  header: { gap: spacing.lg, paddingBottom: spacing.sm },
-  find: { gap: spacing.sm },
+  find: { gap: spacing.sm, paddingBottom: spacing.sm },
+  header: { gap: spacing.sm, paddingBottom: spacing.sm },
+  footer: { paddingTop: spacing.xl },
+  sectionHeader: { gap: 2, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  provinceHeader: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
+  provinceTitle: { flex: 1 },
+  rowTitle: { gap: 2 },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   other: { gap: spacing.sm },
   separator: { height: spacing.sm },
 });
