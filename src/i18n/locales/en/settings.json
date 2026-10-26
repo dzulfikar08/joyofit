@@ -708,7 +708,7 @@
     "sleepDetails": "Once each morning, after the first sync that holds last night, the watch shows how long you slept and the stages."
   },
   "strava": {
-    "intro": "Send watch workouts to Strava. Free, no JoyoRogo Pro needed.",
+    "intro": "Send watch workouts to Strava. Free while slots are spare, no JoyoRogo Pro needed.",
     "howTitle": "How does it work?",
     "how": "Workouts go to Strava with the distance, calories, heart rate and route the watch recorded. After you connect, workouts that finish from then on are sent after each sync; earlier ones stay on the phone unless you send them from the workout screen. JoyoFit only sends workouts to your own Strava account and never reads your Strava activities.",
     "noCloud": "No cloud server URL in this build, which Strava needs. Deploy server/, set EXPO_PUBLIC_JOYOFIT_CLOUD_URL, rebuild.",
@@ -716,6 +716,13 @@
     "signInFirst": "Sign in with JoyoRogo first; it only keeps your Strava connection on the server.",
     "signIn": "Sign in with JoyoRogo",
     "connect": "Connect with Strava",
+    "slots": {
+      "fullTitle": "Strava slots full",
+      "reservedForPaid": "Strava lets JoyoFit and JoyoRogo connect only a limited number of accounts, and the slots still open are reserved for Pro users. You can still send each workout yourself with 'Upload to Strava (manual)' on the workout page, or upgrade to Pro.",
+      "full": "Strava lets JoyoFit and JoyoRogo connect only a limited number of accounts, and all slots are taken. Try again later, or send each workout yourself with 'Upload to Strava (manual)' on the workout page.",
+      "releasedTitle": "Strava was disconnected",
+      "released": "Slot released for Pro users on {{date}}: this account had not used Strava for a while. Send workouts with 'Upload to Strava (manual)' on the workout page, or connect again when a slot is open."
+    },
     "connectedSince": "Connected, sending since",
     "addLink": "Add fit.joyorogo.com to the description",
     "addLinkHint": "Plain text, never in the title.",

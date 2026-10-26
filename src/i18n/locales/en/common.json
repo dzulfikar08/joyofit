@@ -112,7 +112,8 @@
     "accessDenied": "Strava was not connected: access was declined.",
     "scopeMissing": "Strava was not connected: JoyoFit needs the \"upload your activities\" permission. Connect again and keep it ticked.",
     "invalidState": "The Strava connection took too long. Try again.",
-    "failed": "Strava could not be connected. Try again."
+    "failed": "Strava could not be connected. Try again.",
+    "slotsFull": "Strava slots full. See More, Strava."
   },
   "cloudLine": {
     "stays": "Cloud: stays on this phone (JoyoRogo Pro syncs it)",

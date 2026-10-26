@@ -272,7 +272,7 @@ export function StravaPage() {
             </h1>
             <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted-foreground">
               Setelah tersambung, JoyoFit mengunggah olahraga yang kamu rekam di jam Huawei ke akun Strava-mu sendiri.
-              Gratis. Slot Strava sedang penuh, dan formulir di bawah adalah daftar tunggunya.
+              Gratis selama slot masih ada. Slot Strava terbatas, dan formulir di bawah adalah daftar tunggunya.
             </p>
             <div className="mt-5 rounded-xl bg-white p-3">
               <img

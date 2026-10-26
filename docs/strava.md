@@ -1,7 +1,17 @@
 # Strava in JoyoFit
 
 JoyoFit sends a watch workout to the wearer's own Strava account, from Settings → Strava (button on a workout's screen,
-and automatically for workouts that finish after connecting). It is free: no JoyoRogo Pro check anywhere.
+and automatically for workouts that finish after connecting). It is **free while slots are spare** (owner rule,
+2026-10-26):
+
+- The Strava application's athlete capacity (10) is shared with JoyoRogo (section 1).
+- N = 3 slots are reserved for paying users (JoyoRogo Pro, Founder or an active subscription). A free user may connect
+  only while more than N slots are free; a paying user may connect while any slot is free.
+- A free user whose token has not been used for 14 days is released automatically to make room.
+- A user who cannot connect (or was released) is pointed to the manual upload on the workout page ('Unggah ke Strava
+  (manual)'), which needs no slot.
+
+JoyoRogo's Worker enforces all of it (it owns the tokens); JoyoFit's Worker only passes the result on (section 2a).
 
 How it is built is in the README ("Strava"). This page is the owner's runbook: set up the Strava API application, set the
 Worker secrets, register the webhook, and pass Strava's review.
@@ -132,11 +142,23 @@ either. The phone receives only the access token (6 h lifetime).
 JoyoRogo's side of the same contract (joyorogo repo): `apps/server/src/strava.ts` (the `/internal/joyofit/strava/*` routes) and
 `packages/api/src/lib/strava-grant.ts` (scopes, exchange, refresh with the rotation race handled, unlink, deauthorization).
 
+### 2a. Slots (capacity)
+
+JoyoRogo's `POST /internal/joyofit/strava/status` adds three optional fields while the user is not connected:
+`slotsFull` (may not connect now), `slotsReason` (`reserved_for_paid`: a free user and only the paying-user reserve is
+left; `full`: no slot at all, paying users included) and `released` (`{ at, reason: "released_for_pro" }`: the last grant
+was released as idle). `GET /v1/strava` passes them through; `GET /v1/strava/authorize` answers 409
+`{ error: "slots_full", reason }` instead of a URL when the user is not connected and `slotsFull` is true (a connected
+user's re-authorization, `?gear=1`, is unaffected). If JoyoRogo refuses an exchange for capacity (409
+`{ error: "slots_full" }`, the fresh grant already revoked), the callback redirects with `reason=slots_full`. The app then
+shows "Slot Strava penuh" (or "Slot dilepas untuk pengguna Pro" after a release), hides the connect button and points
+to 'Unggah ke Strava (manual)'. An older JoyoRogo without these fields behaves as before.
+
 ## 3. What Strava's rules mean here
 
 | Rule | How JoyoFit follows it |
 |---|---|
-| Strava sync must be free (API Agreement 5.8) | No Founder/Pro check on any Strava route or in the app. |
+| Strava sync must be free (API Agreement 5.8) | No Pro check on uploads: a connected account sends everything for free, and the manual upload needs no connection. Only *who gets one of the 10 slots* depends on the plan (owner rule 2026-10-26, top of this page), enforced by JoyoRogo. |
 | No Strava data into AI/analytics (5.3 / 5.4) | The app reads nothing from Strava except the status of its own upload and, only after the athlete grants `profile:read_all`, their own shoes and bikes (section 3b). JoyoRogo's database holds the athlete id and tokens only on JoyoFit's behalf. JoyoFit sends no Strava data anywhere; only the athlete id and the user id travel between the two Workers. |
 | Show Strava data only to its owner | The only Strava data shown is the link to the activity the wearer uploaded and, in the gear picker, their own shoes and bikes, on that wearer's phone. |
 | Deauthorization webhook | `POST /strava/webhook` forwards the deauthorization of an athlete who revokes the app on strava.com to JoyoRogo, which deletes the tokens (both products) at once. |
@@ -148,7 +170,7 @@ screen of both products, so a JoyoRogo user currently sees "JoyoFit". Rename the
 (still no "Strava" in the name, the brand guideline), keep the website `https://joyorogo.com`, and describe both uses
 in the description, for example: *"JoyoRogo (calorie diary) and JoyoFit (Huawei watch app) from Joyo Digitama.
 JoyoFit sends your watch workouts to your Strava account; JoyoRogo reads your Strava activities to count the calories you
-burned. Free. Remove access any time in Strava or in either app."* Use a neutral Joyo mark as the icon if there is one
+burned. Free while slots are spare. Remove access any time in Strava or in either app."* Use a neutral Joyo mark as the icon if there is one
 (JoyoFit's icon alone would again name only one product). Do the same in the review form, and show both apps' own names
 in their screenshots.
 

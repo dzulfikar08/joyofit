@@ -22,8 +22,10 @@ import { pushLog } from '@/state/logStore';
 /**
  * Strava for JoyoFit. The Worker keeps the Strava tokens and the client secret (`server/src/strava.ts`); this file
  * asks it for the connection status, the authorize URL and a short-lived access token, then uploads straight from
- * the phone to Strava. Strava sync is free: nothing here checks JoyoRogo Pro. A workout is only ever sent to the
- * Strava account of the person whose phone it is; no Strava data is read back except the upload's own status.
+ * the phone to Strava. Strava sync is free while slots are spare: the shared Strava application has a fixed athlete
+ * capacity, JoyoRogo keeps part of it for Pro users and the status says when this user cannot connect. Nothing here
+ * checks JoyoRogo Pro itself. A workout is only ever sent to the Strava account of the person whose phone it is; no
+ * Strava data is read back except the upload's own status.
  */
 
 const STRAVA_API = 'https://www.strava.com/api/v3';
@@ -42,6 +44,21 @@ export interface StravaStatus {
   connectedAt?: number;
   /** The grant also has `profile:read_all`, which listing the athlete's gear needs. */
   gearScope?: boolean;
+  /** Not connected and may not connect now: the shared Strava application has no slot open to this user. */
+  slotsFull?: boolean;
+  /** `reserved_for_paid`: only the slots kept for Pro users are left; `full`: none at all. */
+  slotsReason?: StravaSlotsReason;
+  /** The last connection was released to make room for Pro users (idle free account). */
+  released?: { at: number; reason: 'released_for_pro' };
+}
+
+export type StravaSlotsReason = 'reserved_for_paid' | 'full';
+
+/** The Worker refused to start a connection because no Strava slot is open to this user. */
+export class StravaSlotsFullError extends Error {
+  constructor() {
+    super(t('common:strava.slotsFull'));
+  }
 }
 
 /** The Worker has no Strava connection for this account (never connected, revoked, or deauthorized on strava.com). */
@@ -61,7 +78,12 @@ export const fetchStravaStatus = () => cloudRequest<StravaStatus>('GET', '/v1/st
  * `gear` also asks for `profile:read_all`, so the athlete's shoes and bikes can be listed.
  */
 export async function fetchStravaAuthorizeUrl({ gear = false }: { gear?: boolean } = {}): Promise<string> {
-  return (await cloudRequest<{ url: string }>('GET', gear ? '/v1/strava/authorize?gear=1' : '/v1/strava/authorize')).url;
+  try {
+    return (await cloudRequest<{ url: string }>('GET', gear ? '/v1/strava/authorize?gear=1' : '/v1/strava/authorize')).url;
+  } catch (error) {
+    if (error instanceof CloudHttpError && error.status === 409 && error.code === 'slots_full') throw new StravaSlotsFullError();
+    throw error;
+  }
 }
 
 /** Revokes the grant at Strava (through the Worker) and forgets everything local. */

@@ -1192,7 +1192,7 @@ const SEND_POINTS: { Icon: LucideIcon; title: string; body: string; href?: strin
   {
     Icon: Upload,
     title: "Upload ke Strava",
-    body: "Olahraga dikirim ke Strava sebagai file FIT berisi angka dari jam: jarak, waktu gerak, kalori, detak jantung, elevasi, kadensi, dan rute. Angka di JoyoFit sama dengan yang tampil di Strava. Gratis. Slot Strava sedang penuh, ada daftar tunggu.",
+    body: "Olahraga dikirim ke Strava sebagai file FIT berisi angka dari jam: jarak, waktu gerak, kalori, detak jantung, elevasi, kadensi, dan rute. Angka di JoyoFit sama dengan yang tampil di Strava. Gratis selama slot masih ada; sebagian slot disimpan untuk pengguna Pro, dan unggah manual selalu bisa.",
     href: "/blog/strava-file-fit",
     label: "Soal upload Strava",
   },
@@ -1888,7 +1888,7 @@ function Options() {
               <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">
                 Slot penuh
               </span>
-              Gratis: olahraga terkirim ke Strava. Slot sedang penuh, review sudah diajukan.
+              Gratis selama slot masih ada: olahraga terkirim ke Strava. Slot terbatas, unggah manual selalu bisa.
               <a
                 href={STRAVA_PATH}
                 className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80"

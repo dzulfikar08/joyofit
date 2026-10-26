@@ -141,7 +141,7 @@
   },
   "pro": {
     "title": "JoyoRogo Pro",
-    "intro": "JoyoFit is free to use in full: pairing, sync, workouts, Strava and the health apps all work on this phone without paying. Pro is an optional plan on your JoyoRogo account.",
+    "intro": "JoyoFit is free to use in full: pairing, sync, workouts, Strava (while slots are spare) and the health apps all work on this phone without paying. Pro is an optional plan on your JoyoRogo account.",
     "addsTitle": "What Pro adds",
     "adds1": "Cloud backup of your watch data (steps, heart rate, blood oxygen, sleep and workouts) to your own JoyoRogo account. JoyoFit uploads it today; restoring it into the app is not built yet.",
     "adds2": "Meal suggestions in JoyoRogo built from today's JoyoFit scores. Without Pro the diary shows a short hint instead.",
@@ -209,7 +209,7 @@
       },
       "strava": {
         "title": "Strava",
-        "text": "More, Strava: send watch workouts to Strava, free."
+        "text": "More, Strava: send watch workouts to Strava, free while slots are spare."
       },
       "findWatch": {
         "title": "Find my watch",

@@ -118,6 +118,7 @@ describe("Strava connect", () => {
     [422, { error: "scope_missing" }, "scope_missing"],
     [422, { error: "rejected" }, "exchange_failed"],
     [502, { error: "unavailable" }, "strava_unreachable"],
+    [409, { error: "slots_full", reason: "reserved_for_paid" }, "slots_full"],
     [500, { error: "boom" }, "exchange_failed"],
   ])("maps JoyoRogo's %i %j answer to the app reason %s", async (status, body, reason) => {
     const state = await signState(SECRET, "user-z", nowS());
@@ -183,6 +184,25 @@ describe("Strava status", () => {
     grantApi.handler = () => new Response("down", { status: 500 });
     const { cookie } = signUp("uma");
     expect((await call("/v1/strava", { cookie })).status).toBe(502);
+  });
+
+  it("passes JoyoRogo's slot fields through while not connected", async () => {
+    const released = { at: 1_790_000_000, reason: "released_for_pro" };
+    grantApi.handler = () => Response.json({ connected: false, requestedScope: "activity:write", slotsFull: true, slotsReason: "reserved_for_paid", released });
+    const { cookie } = signUp("vera");
+    expect(await (await call("/v1/strava", { cookie })).json()).toEqual({ configured: true, connected: false, slotsFull: true, slotsReason: "reserved_for_paid", released });
+  });
+
+  it("refuses to start an authorization when JoyoRogo says no slot is open, but not a connected user's re-authorization", async () => {
+    grantApi.handler = () => Response.json({ connected: false, requestedScope: "activity:write", slotsFull: true, slotsReason: "full" });
+    const { cookie } = signUp("wade");
+    const refused = await call("/v1/strava/authorize", { cookie });
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toEqual({ error: "slots_full", reason: "full" });
+    grantApi.handler = () => Response.json({ connected: true, athleteId: 1, connectedAt: 1, requestedScope: "activity:write", slotsFull: true, slotsReason: "full" });
+    expect((await call("/v1/strava/authorize?gear=1", { cookie })).status).toBe(200);
+    grantApi.handler = () => Response.json({ connected: false, requestedScope: "activity:write", slotsFull: false });
+    expect((await call("/v1/strava/authorize", { cookie })).status).toBe(200);
   });
 });
 

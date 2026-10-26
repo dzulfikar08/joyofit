@@ -60,7 +60,7 @@ const STATIC_PAGES = {
     title: "Sinkron Jam Huawei ke Strava dengan JoyoFit (Daftar Tunggu)",
     name: "Strava",
     description:
-      "Kirim olahraga dari jam Huawei ke Strava lewat JoyoFit, gratis: jarak, waktu aktif, kalori, langkah, detak jantung, dan rute dari jam. Slot Strava sedang penuh, ada daftar tunggu.",
+      "Kirim olahraga dari jam Huawei ke Strava lewat JoyoFit, gratis selama slot masih ada: jarak, waktu aktif, kalori, langkah, detak jantung, dan rute dari jam. Slot Strava terbatas, ada daftar tunggu.",
   },
   [IPHONE_PATH]: {
     title: "Huawei Watch di iPhone: JoyoFit Beta Publik TestFlight",

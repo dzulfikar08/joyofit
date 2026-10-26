@@ -10,7 +10,10 @@ import {
   autoUploadNewWorkouts,
   disconnectStrava,
   fetchStravaAuthorizeUrl,
+  StravaSlotsFullError,
   syncStravaStatus,
+  type StravaSlotsReason,
+  type StravaStatus,
 } from '@/cloud/strava';
 import { isIos } from '@/components/IosUnavailable';
 import { getStravaSettings, setStravaAddLink, setStravaAddDevice, type StravaSettings } from '@/db/strava';
@@ -33,6 +36,8 @@ export interface StravaContextValue {
   serverReady: boolean | null;
   busy: boolean;
   error: string | null;
+  /** What the Worker last said about Strava capacity while not connected. */
+  slots: StravaSlots;
   /** `gear` also asks for `profile:read_all` (a second consent) so the athlete's shoes and bikes can be linked to JoyoFit's gear. */
   connect: (options?: { gear?: boolean }) => Promise<void>;
   disconnect: () => Promise<void>;
@@ -43,6 +48,22 @@ export interface StravaContextValue {
 }
 
 const EMPTY: StravaSettings = { connectedAt: null, athleteId: null, addLink: false, addDevice: true, gearScope: false };
+
+/** Strava capacity for a user who is not connected (the shared Strava application has a fixed number of athletes). */
+export interface StravaSlots {
+  /** No slot is open to this user now: connecting is refused. */
+  full: boolean;
+  reason: StravaSlotsReason | null;
+  /** Unix seconds when the last connection was released to make room for Pro users; null when it was not. */
+  releasedAt: number | null;
+}
+
+const OPEN: StravaSlots = { full: false, reason: null, releasedAt: null };
+
+const slotsOf = (status: StravaStatus): StravaSlots =>
+  status.connected
+    ? OPEN
+    : { full: status.slotsFull === true, reason: status.slotsReason ?? null, releasedAt: status.released?.at ?? null };
 
 const StravaContext = createContext<StravaContextValue | null>(null);
 
@@ -60,8 +81,9 @@ const FAILURES: Record<string, 'accessDenied' | 'scopeMissing' | 'invalidState'>
 
 /**
  * The Strava connection of this phone: connect and disconnect through the Worker, the "add link" choice, and the
- * automatic upload of workouts that finish after connecting. Strava sync is free, so unlike the cloud backup nothing
- * here depends on JoyoRogo Pro; it only needs the JoyoRogo sign-in the Worker identifies the user with.
+ * automatic upload of workouts that finish after connecting. Strava sync is free while slots are spare, so unlike the
+ * cloud backup it does not need JoyoRogo Pro; it needs the JoyoRogo sign-in the Worker identifies the user with, and
+ * a free slot in the shared Strava application (JoyoRogo keeps some for Pro users).
  */
 export function StravaProvider({ children }: { children: ReactNode }) {
   const db = useSQLiteContext();
@@ -73,6 +95,7 @@ export function StravaProvider({ children }: { children: ReactNode }) {
   const [serverReady, setServerReady] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [slots, setSlots] = useState<StravaSlots>(OPEN);
   /** Counts returns to the foreground, so the upload pass runs again each time. */
   const [foreground, setForeground] = useState(0);
 
@@ -81,10 +104,20 @@ export function StravaProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     if (CLOUD_CONFIGURED && signedIn) {
       const status = await syncStravaStatus(db);
-      if (status) setServerReady(status.configured);
+      if (status) {
+        setServerReady(status.configured);
+        setSlots(slotsOf(status));
+      }
     }
     await reload();
   }, [db, signedIn, reload]);
+
+  /** The Worker refused a connection for capacity: show the slots-full state even if the status has not caught up. */
+  const refusedForSlots = useCallback(async () => {
+    const status = await syncStravaStatus(db);
+    await reload();
+    setSlots((current) => ({ ...(status ? slotsOf(status) : current), full: true, reason: status?.slotsReason ?? current.reason ?? 'full' }));
+  }, [db, reload]);
 
   // At start and when the session appears: read the connection (the effect itself sets nothing synchronously).
   useEffect(() => {
@@ -93,7 +126,10 @@ export function StravaProvider({ children }: { children: ReactNode }) {
       const status = CLOUD_CONFIGURED && signedIn ? await syncStravaStatus(db) : null;
       const stored = await getStravaSettings(db);
       if (!live) return;
-      if (status) setServerReady(status.configured);
+      if (status) {
+        setServerReady(status.configured);
+        setSlots(slotsOf(status));
+      }
       setSettings(stored);
     })().catch(() => {});
     return () => {
@@ -134,15 +170,17 @@ export function StravaProvider({ children }: { children: ReactNode }) {
       const result = await WebBrowser.openAuthSessionAsync(url, RETURN_URL);
       if (result.type === 'success') {
         const { reason } = Linking.parse(result.url).queryParams ?? {};
+        if (reason === 'slots_full') return await refusedForSlots();
         if (typeof reason === 'string') setError(t(`common:strava.${FAILURES[reason] ?? 'failed'}`));
       }
       await refresh();
     } catch (e) {
-      setError(errorMessage(e));
+      if (e instanceof StravaSlotsFullError) await refusedForSlots().catch(() => {});
+      else setError(errorMessage(e));
     } finally {
       setBusy(false);
     }
-  }, [refresh]);
+  }, [refresh, refusedForSlots]);
 
   const disconnect = useCallback(async () => {
     setError(null);
@@ -174,8 +212,8 @@ export function StravaProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<StravaContextValue>(
-    () => ({ configured: CLOUD_CONFIGURED, signedIn, settings, serverReady, busy, error, connect, disconnect, setAddLink, setAddDevice, refresh }),
-    [signedIn, settings, serverReady, busy, error, connect, disconnect, setAddLink, setAddDevice, refresh],
+    () => ({ configured: CLOUD_CONFIGURED, signedIn, settings, serverReady, busy, error, slots, connect, disconnect, setAddLink, setAddDevice, refresh }),
+    [signedIn, settings, serverReady, busy, error, slots, connect, disconnect, setAddLink, setAddDevice, refresh],
   );
 
   return <StravaContext.Provider value={value}>{children}</StravaContext.Provider>;

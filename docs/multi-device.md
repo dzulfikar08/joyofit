@@ -72,7 +72,7 @@ JoyoFit works without an account: everything is in the phone's SQLite and KV. **
 | Raw RR intervals `rri_samples`, `health_metric_status` | Phone | No: one row per heartbeat, too large; the derived `hrv_readings` are synced. Status describes what this watch supports | | | | | |
 | Notification toggles and permission state, background service, force BLE, sync interval, Android phone features (calls, find phone, SOS relay), alarms, fall detection, sensor alerts, watch faces | Phone / watch | No: act through this phone's permissions, SIM or the connected watch | | | | | |
 | Wi-Fi only, automatic sync, update dismissals, family device id/token, Health Connect / Apple Health connection and export state | Phone | No: per phone data plan, per install, or per OS | | | | | |
-| Strava link | Server (`strava_account`) | Server data | Free | | Re-read | | |
+| Strava link | Server (`strava_account`) | Server data | Free while slots are spare | | Re-read | | |
 | Family links and alerts | JoyoFit Worker | Server data | | | Re-read | | |
 
 ### Preferences that follow the account (JoyoFit, kind `pref`)

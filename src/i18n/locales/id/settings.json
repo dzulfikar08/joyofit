@@ -699,7 +699,7 @@
     "sleepDetails": "Sekali tiap pagi, setelah sinkron pertama yang memuat semalam, jam menampilkan berapa lama kamu tidur dan tahapnya."
   },
   "strava": {
-    "intro": "Kirim latihan dari jam ke Strava. Gratis, tidak perlu JoyoRogo Pro.",
+    "intro": "Kirim latihan dari jam ke Strava. Gratis selama slot masih ada, tidak perlu JoyoRogo Pro.",
     "howTitle": "Bagaimana caranya?",
     "how": "Latihan dikirim ke Strava beserta jarak, kalori, detak jantung, dan rute yang direkam jam. Setelah kamu terhubung, latihan yang selesai sejak saat itu dikirim setelah tiap sinkron; yang lebih lama tetap di ponsel kecuali kamu mengirimnya dari layar latihan. JoyoFit hanya mengirim latihan ke akun Strava kamu sendiri dan tidak pernah membaca aktivitas Strava kamu.",
     "noCloud": "Build ini tidak punya URL server cloud, yang dibutuhkan Strava. Deploy server/, atur EXPO_PUBLIC_JOYOFIT_CLOUD_URL, lalu build ulang.",
@@ -707,6 +707,13 @@
     "signInFirst": "Masuk dengan JoyoRogo dulu; ini hanya menyimpan koneksi Strava kamu di server.",
     "signIn": "Masuk dengan JoyoRogo",
     "connect": "Hubungkan dengan Strava",
+    "slots": {
+      "fullTitle": "Slot Strava penuh",
+      "reservedForPaid": "Strava hanya mengizinkan JoyoFit dan JoyoRogo menghubungkan akun dalam jumlah terbatas, dan slot yang tersisa disimpan untuk pengguna Pro. Kamu tetap bisa mengirim tiap latihan sendiri lewat 'Unggah ke Strava (manual)' di halaman latihan, atau upgrade ke Pro.",
+      "full": "Strava hanya mengizinkan JoyoFit dan JoyoRogo menghubungkan akun dalam jumlah terbatas, dan semua slot sudah terpakai. Coba lagi nanti, atau kirim tiap latihan sendiri lewat 'Unggah ke Strava (manual)' di halaman latihan.",
+      "releasedTitle": "Strava diputus",
+      "released": "Slot dilepas untuk pengguna Pro pada {{date}}: akun ini sudah lama tidak memakai Strava. Kirim latihan lewat 'Unggah ke Strava (manual)' di halaman latihan, atau hubungkan lagi saat ada slot."
+    },
     "connectedSince": "Terhubung, mengirim sejak",
     "addLink": "Tambahkan fit.joyorogo.com ke deskripsi",
     "addLinkHint": "Teks biasa, tidak pernah di judul.",

@@ -139,7 +139,7 @@
   },
   "pro": {
     "title": "JoyoRogo Pro",
-    "intro": "JoyoFit gratis dipakai penuh: memasangkan, sinkron, latihan, Strava, dan aplikasi kesehatan semuanya jalan di HP ini tanpa bayar. Pro adalah paket opsional di akun JoyoRogo kamu.",
+    "intro": "JoyoFit gratis dipakai penuh: memasangkan, sinkron, latihan, Strava (selama slot masih ada), dan aplikasi kesehatan semuanya jalan di HP ini tanpa bayar. Pro adalah paket opsional di akun JoyoRogo kamu.",
     "addsTitle": "Yang ditambah Pro",
     "adds1": "Cadangan cloud data jam kamu (langkah, detak jantung, oksigen darah, tidur, dan latihan) ke akun JoyoRogo kamu sendiri. JoyoFit mengunggahnya sekarang; memulihkannya ke aplikasi belum tersedia.",
     "adds2": "Saran makan di JoyoRogo yang disusun dari skor JoyoFit hari ini. Tanpa Pro, catatan makan menampilkan petunjuk singkat.",
@@ -207,7 +207,7 @@
       },
       "strava": {
         "title": "Strava",
-        "text": "Lainnya, Strava: kirim latihan jam ke Strava, gratis."
+        "text": "Lainnya, Strava: kirim latihan jam ke Strava, gratis selama slot masih ada."
       },
       "findWatch": {
         "title": "Cari jam",

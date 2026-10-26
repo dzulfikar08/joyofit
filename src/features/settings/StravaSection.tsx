@@ -23,9 +23,11 @@ const LOGO_HEIGHT = 16;
 const LOGO_SIZE = { width: (437 / 37) * LOGO_HEIGHT, height: LOGO_HEIGHT } as const;
 
 /**
- * Send watch workouts to Strava. Free: it needs the JoyoRogo sign-in (the Worker keeps the Strava tokens against that
- * account) but not Pro. Only workouts that finish after connecting go up on their own; older ones are sent one by one
- * from their detail screen.
+ * Send watch workouts to Strava. Free while slots are spare: it needs the JoyoRogo sign-in (the Worker keeps the Strava
+ * tokens against that account) but not Pro, and an open slot in the Strava application JoyoFit shares with JoyoRogo
+ * (JoyoRogo keeps some for Pro users and releases idle free accounts). Without a slot the connect button gives way to
+ * the manual upload on the workout page. Only workouts that finish after connecting go up on their own; older ones are
+ * sent one by one from their detail screen.
  */
 export function StravaSection() {
   const { t } = useTranslation('settings');
@@ -34,6 +36,7 @@ export function StravaSection() {
   const cloud = useCloud();
   const { scheme } = useTheme();
   const connected = strava.settings.connectedAt !== null;
+  const slotsFull = !connected && strava.slots.full;
 
   return (
     <Section title="Strava" leading={<BrandMark brand="strava" size={32} />}>
@@ -65,7 +68,25 @@ export function StravaSection() {
           />
         </>
       ) : null}
-      {strava.configured && strava.signedIn && !connected ? (
+      {strava.configured && strava.signedIn && !connected && strava.slots.releasedAt !== null ? (
+        <Notice icon="information-circle">
+          <AppText variant="caption" style={styles.strong}>
+            {t('strava.slots.releasedTitle')}
+          </AppText>
+          {'\n'}
+          {t('strava.slots.released', { date: formatDateTime(strava.slots.releasedAt) })}
+        </Notice>
+      ) : null}
+      {strava.configured && strava.signedIn && slotsFull ? (
+        <Notice icon="people">
+          <AppText variant="caption" style={styles.strong}>
+            {t('strava.slots.fullTitle')}
+          </AppText>
+          {'\n'}
+          {t(strava.slots.reason === 'reserved_for_paid' ? 'strava.slots.reservedForPaid' : 'strava.slots.full')}
+        </Notice>
+      ) : null}
+      {strava.configured && strava.signedIn && !connected && !slotsFull ? (
         <PressableScale
           accessibilityRole="button"
           accessibilityLabel={t('strava.connect')}
@@ -142,4 +163,5 @@ const styles = StyleSheet.create({
   dim: { opacity: 0.5 },
   logo: { alignSelf: 'flex-start' },
   plate: { backgroundColor: '#FFFFFF', borderRadius: 6, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  strong: { fontWeight: '600' },
 });

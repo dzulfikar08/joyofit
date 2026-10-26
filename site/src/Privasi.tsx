@@ -225,7 +225,7 @@ function Indonesian() {
         </p>
       </Block>
 
-      <Block title="Strava (opsional, gratis)">
+      <Block title="Strava (opsional, gratis selama slot masih ada)">
         <p>
           Bila kamu menyambungkan Strava di Pengaturan, Strava (masuk dengan akun JoyoRogo dulu), JoyoFit
           mengirim olahraga dari jam-mu ke akun Strava-mu sendiri. Izin yang diminta hanya satu: mengunggah
@@ -744,7 +744,7 @@ function English() {
         </p>
       </Block>
 
-      <Block title="Strava (optional, free)">
+      <Block title="Strava (optional, free while slots are spare)">
         <p>
           If you connect Strava under Settings, Strava (after signing in with your JoyoRogo account), JoyoFit sends
           workouts from your watch to your own Strava account. It asks for one permission only: uploading

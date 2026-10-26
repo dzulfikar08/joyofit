@@ -26,7 +26,7 @@ YANG BISA DILAKUKAN
 • Sinkron langkah, jarak, kalori, detak jantung, SpO2, tidur, dan olahraga dari jam, lengkap dengan rute GPS dan tahap tidur.
 • Lihat hari ini, tidur semalam, tren 30 dan 90 hari, kesiapan, beban latihan, dan riwayat olahraga dalam satu aplikasi.
 • Simpan ke Apple Health (hanya menulis; JoyoFit tidak pernah membaca data Health-mu): langkah, jarak, energi aktif, detak jantung, SpO2, tidur, dan olahraga beserta rutenya.
-• Kirim olahragamu ke Strava (opsional, gratis).
+• Kirim olahragamu ke Strava (opsional, gratis selama slot masih ada; unggah manual selalu bisa).
 • Pasang dan ganti watch face, atur alarm, tampilkan cuaca di jam (dari Open-Meteo, opsional), dan nyalakan pengukuran detak jantung, SpO2, dan stres otomatis di jam.
 • Cadangan cloud opsional, baru aktif setelah kamu masuk dengan akun JoyoRogo.
 
@@ -54,7 +54,7 @@ WHAT IT DOES
 • Syncs steps, distance, calories, heart rate, SpO2, sleep and workouts from the watch, with GPS routes and sleep stages.
 • Shows today, last night's sleep, 30 and 90 day trends, readiness, training strain and workout history in one app.
 • Saves to Apple Health (write only; JoyoFit never reads your Health data): steps, distance, active energy, heart rate, SpO2, sleep and workouts with their routes.
-• Sends your workouts to Strava (optional, free).
+• Sends your workouts to Strava (optional, free while slots are spare; manual upload always works).
 • Installs and switches watch faces, sets alarms, shows weather on the watch (from Open-Meteo, optional) and turns on automatic heart rate, SpO2 and stress measurement on the watch.
 • Optional cloud backup, which only starts after you sign in with a JoyoRogo account.
 

@@ -110,7 +110,8 @@
     "accessDenied": "Strava tidak terhubung: akses ditolak.",
     "scopeMissing": "Strava tidak terhubung: JoyoFit butuh izin \"unggah aktivitasmu\". Hubungkan lagi dan biarkan izinnya tercentang.",
     "invalidState": "Penghubungan Strava terlalu lama. Coba lagi.",
-    "failed": "Strava tidak bisa dihubungkan. Coba lagi."
+    "failed": "Strava tidak bisa dihubungkan. Coba lagi.",
+    "slotsFull": "Slot Strava penuh. Lihat Lainnya, Strava."
   },
   "cloudLine": {
     "stays": "Cloud: tetap di HP ini (JoyoRogo Pro menyinkronkannya)",
