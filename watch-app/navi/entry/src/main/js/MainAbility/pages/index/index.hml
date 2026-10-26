@@ -1,0 +1,53 @@
+<stack class="root" onclick="onTap" onlongpress="onLongPress" onswipe="onSwipe">
+  <!-- Idle: waiting for JoyoFit -->
+  <div class="screen center" if="{{isIdle}}">
+    <image class="idle-arrow" src="/common/images/big_depart.png"></image>
+    <text class="title">{{appName}}</text>
+    <text class="hint">{{idleLine}}</text>
+    <text class="sub warn" if="{{hasIdleSub}}">{{idleSub}}</text>
+    <text class="sub">{{idleDemo}}</text>
+  </div>
+
+  <!-- Navigating -->
+  <div class="screen" if="{{isNav}}">
+    <div class="status">
+      <text class="badge" if="{{demo}}">{{lblDemo}}</text>
+      <text class="rem" if="{{hasRem}}">{{remLine}}</text>
+      <text class="banner banner-warn" if="{{bannerWarn}}">{{banner}}</text>
+      <text class="banner banner-info" if="{{bannerInfo}}">{{banner}}</text>
+    </div>
+    <image class="arrow" src="{{arrow}}"></image>
+    <div class="dist" if="{{hasTurn}}">
+      <text class="dist-num">{{distNum}}</text>
+      <text class="dist-unit">{{distUnit}}</text>
+    </div>
+    <text class="action" if="{{hasTurn}}">{{actionLine}}</text>
+    <text class="street">{{street}}</text>
+    <text class="action" if="{{noTurn}}">{{waiting}}</text>
+    <div class="next" if="{{hasNext}}">
+      <image class="next-arrow" src="{{nextArrow}}"></image>
+      <text class="next-text">{{nextLine}}</text>
+    </div>
+  </div>
+
+  <!-- Arrived -->
+  <div class="screen center" if="{{isArrived}}">
+    <image class="idle-arrow" src="/common/images/big_arrive.png"></image>
+    <text class="title">{{lblArrived}}</text>
+    <text class="hint">{{dest}}</text>
+    <text class="sub">{{lblDone}}</text>
+  </div>
+
+  <!-- Pause / stop overlay over the navigation screen -->
+  <div class="screen center overlay" if="{{overlay}}">
+    <div class="button button-main" onclick="onPauseResume">
+      <text class="button-text">{{lblPauseResume}}</text>
+    </div>
+    <div class="button button-stop" onclick="onStop">
+      <text class="button-text">{{lblStop}}</text>
+    </div>
+    <div class="button button-close" onclick="onClose">
+      <text class="button-text button-text-light">{{lblClose}}</text>
+    </div>
+  </div>
+</stack>

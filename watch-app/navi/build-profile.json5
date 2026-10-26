@@ -1,0 +1,31 @@
+{
+  // Signing is not committed: DevEco writes `signingConfigs` here when you sign (File > Project Structure > Signing
+  // Configs), with paths to the .p12/.cer/.p7b under ~/.ohos/config. Keep that local (see README.md, "Signing").
+  "app": {
+    "signingConfigs": [],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        // API 10 is what Huawei's Wear Engine lite guide asks for; 5.1.0(18) is the newest target public lite apps for
+        // fw 6.x watches install with (an API 20 build failed with install error 40 on a GT 6).
+        "compatibleSdkVersion": "4.0.0(10)",
+        "targetSdkVersion": "5.1.0(18)",
+        "runtimeOS": "HarmonyOS"
+      }
+    ],
+    "buildModeSet": [
+      { "name": "debug" },
+      { "name": "release" }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        { "name": "default", "applyToProducts": ["default"] }
+      ]
+    }
+  ]
+}

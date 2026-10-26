@@ -56,6 +56,10 @@ jobs:
       - name: "@joyofit/agps-pgnss"
         working-directory: packages/agps-pgnss
         run: bun test
+      # The lite-wearable watch app's navigation logic (plain JS, built into the app by DevEco; see docs/watch-app.md).
+      - name: "watch-app/navi"
+        working-directory: watch-app/navi
+        run: bun test test
 
   server:
     name: Server (tsrs, vitest)

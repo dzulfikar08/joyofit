@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "JoyoNavi"
+    },
+    {
+      "name": "MainAbility_desc",
+      "value": "Turn-by-turn directions from JoyoFit"
+    },
+    {
+      "name": "MainAbility_label",
+      "value": "JoyoNavi"
+    }
+  ]
+}
