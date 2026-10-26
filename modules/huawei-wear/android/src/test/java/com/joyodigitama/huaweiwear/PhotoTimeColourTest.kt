@@ -29,17 +29,34 @@ class PhotoTimeColourTest {
 
   @Test
   fun aFlatDarkAreaGetsWhiteAndAFlatLightOneNearBlack() {
-    assertEquals(0xFFFFFFFF.toInt(), pickTop(flat(0xFF102060))) // navy: white 15.0, tint 8.6
-    assertEquals(0xFF111111.toInt(), pickTop(flat(0xFFF0E0C0))) // beige: near-black 14.5, shade 9.5
+    assertEquals(0xFFFFFFFF.toInt(), pickTop(flat(0xFF102060))) // navy: white 15.0, tint 12.2
+    assertEquals(0xFF111111.toInt(), pickTop(flat(0xFFF0E0C0))) // beige: near-black 14.5, shade 13.4
   }
 
   @Test
-  fun aHueKeepingCandidateMustBeWithinHalfAPointOfTheBest() {
-    assertEquals(0xFFFFFFFF.toInt(), pickTop(flat(0xFFD01010))) // red: white 5.6, tint 3.2
-    assertEquals(0xFFFFFFFF.toInt(), pickTop(flat(0xFF1030D0))) // blue: white 8.9, tint 5.0
-    assertEquals(0xFFFFFFFF.toInt(), pickTop(flat(0xFF606030))) // olive: white 6.5, tint 5.6
-    assertEquals(0xFF111111.toInt(), pickTop(flat(0xFFA0A0F0))) // lavender: near-black 7.9, shade 6.9
+  fun aHueKeepingCandidateWinsWithinHalfAPointOfTheBest() {
+    assertEquals(0xFFFFFFFF.toInt(), pickTop(flat(0xFFD01010))) // red: white 5.6, tint 4.5
+    assertEquals(0xFFFFFFFF.toInt(), pickTop(flat(0xFF1030D0))) // blue: white 8.9, tint 7.2
+    assertEquals(0xFFFFFFE0.toInt(), pickTop(flat(0xFF606030))) // olive: tint 6.4, white 6.5
+    assertEquals(0xFFE0FFFF.toInt(), pickTop(flat(0xFF005050))) // dark teal: tint 8.8, white 9.3
+    assertEquals(0xFF0F0F1F.toInt(), pickTop(flat(0xFFA0A0F0))) // lavender: shade 7.92, near-black 7.90
+    assertEquals(0xFF1F0F12.toInt(), pickTop(flat(0xFFFFC0CB))) // pink: shade 12.0, near-black 12.3
   }
+
+  @Test
+  fun texturedColourfulAreasKeepTheirHue() {
+    // A noisy orange sunset: shade 5.2, near-black 5.5.
+    assertEquals(0xFF1F160F.toInt(), pickTop(picture { x, y -> rgb(220 + noise(x, y) / 3, 90 + noise(x, y), 20 + noise(y, x) / 2) }))
+    // A noisy dark teal: tint 6.9, white 7.3.
+    assertEquals(0xFFE0FFFF.toInt(), pickTop(picture { x, y -> rgb(10, 50 + noise(x, y), 50 + noise(y, x)) }))
+    // Pastel pink with about 10 % black specks: shade 12.6, near-black 12.9.
+    assertEquals(0xFF1F0F14.toInt(), pickTop(picture { x, y -> if ((x * 31 + y * 17) % 97 < 10) 0xFF000000 else 0xFFFAC8D7 }))
+  }
+
+  /** Deterministic noise 0..60. */
+  private fun noise(x: Int, y: Int) = ((x * 7919) xor (y * 104729)) % 61
+
+  private fun rgb(r: Int, g: Int, b: Int) = 0xFF000000 or (r.toLong() shl 16) or (g.toLong() shl 8) or b.toLong()
 
   @Test
   fun greyAreasGetOnlyWhiteOrNearBlack() {

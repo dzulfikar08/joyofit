@@ -777,11 +777,13 @@ index takes the table's, as a new photo) and its colour (JoyoFit cannot read pho
 **JoyoFit's time colour** (`PhotoTimeColour.kt` / `.swift`; JoyoFit's own rule; not derived from Huawei code): the time area cut to the photo,
 or the whole photo when nothing of it is left, sampled on a grid of at most 4096 pixels (fully transparent pixels skipped, semi-transparent
 ones composited over black), each sample's WCAG 2 relative luminance in linear-light sRGB. Four candidates: white `#FFFFFF`, near-black
-`#111111` (softer than pure black, still above 18:1 on white), and two that keep the hue of the samples' mean, a light tint HSV(H, 0.25, 0.95)
-and a dark shade HSV(H, 0.60, 0.25). Each is scored by its 20th-percentile WCAG contrast over the samples, the contrast it reaches on 80 % of
+`#111111` (softer than pure black, still above 18:1 on white), and two that keep the hue of the samples' mean, a pale tint HSV(H, 0.12, 1.0)
+and a deep shade HSV(H, 0.50, 0.12). Each is scored by its 20th-percentile WCAG contrast over the samples, the contrast it reaches on 80 % of
 the area: scoring against the area's mean let a few bright highlights make a mostly dark photo count as light, and near-black digits came out
 on dark ground on the Fit 4 Pro (2026-10-26). The best score wins, white on a tie (light digits read best on photos); a hue-keeping candidate
-with a score of at least 3.0 and within 0.5 of the best is preferred. A grey area (saturation of the mean below 0.08) gets only white or
+with a score of at least 3.0 and within 0.5 of the best is preferred. On a sweep of every 4th RGB value (262,144 flat colours, 260,508 of them
+not grey) the tint wins on 5.6 % and the shade on 26.0 % of the non-grey ones; the first constants, tint HSV(H, 0.25, 0.95) and shade
+HSV(H, 0.60, 0.25), never came within 0.5 of white or near-black. A grey area (saturation of the mean below 0.08) gets only white or
 near-black. The same integer and double arithmetic on both platforms (sRGB to linear through a 256-entry table), so they pick the same colour;
 tests on synthetic pictures. The log names the time area it used (`time area for position 1: (68,18,406,182) of <width>x<height>`).
 

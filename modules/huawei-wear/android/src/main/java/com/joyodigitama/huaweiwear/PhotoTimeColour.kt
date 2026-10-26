@@ -7,7 +7,8 @@
 //    pixels (every s-th column and row from the area's corner, s as small as allows). Fully transparent pixels are skipped; a
 //    semi-transparent one counts as composited over black. Each sample's WCAG 2 relative luminance is taken in linear-light sRGB.
 // 2. Four candidates: white #FFFFFF, near-black #111111 (softer than pure black on an OLED face, still above 18:1 on white), and two that
-//    keep the hue of the samples' linear mean: a light tint HSV(H, 0.25, 0.95) and a dark shade HSV(H, 0.60, 0.25). A grey area (HSV
+//    keep the hue of the samples' linear mean: a pale tint HSV(H, 0.12, 1.0) and a deep shade HSV(H, 0.50, 0.12), close enough to white
+//    and black to compete on contrast (on a sweep of 260,508 non-grey flat colours one of them wins on 31.6 %). A grey area (HSV
 //    saturation of that mean below 0.08) has no hue worth keeping and gets only white and near-black.
 // 3. A candidate's score is its 20th-percentile WCAG contrast ratio over the samples: the contrast it reaches on at least 80 % of the area.
 //    Scoring against the mean instead lets a few bright highlights lift a mostly dark area into "light", so near-black digits end up on
@@ -154,10 +155,10 @@ internal object PhotoTimeColour {
   private const val OPAQUE = -0x1000000 // 0xFF000000
   private const val WHITE = -0x1 // 0xFFFFFFFF
   private const val NEAR_BLACK = -0xeeeeef // 0xFF111111
-  private const val TINT_SATURATION = 0.25
-  private const val TINT_VALUE = 0.95
-  private const val SHADE_SATURATION = 0.60
-  private const val SHADE_VALUE = 0.25
+  private const val TINT_SATURATION = 0.12
+  private const val TINT_VALUE = 1.0
+  private const val SHADE_SATURATION = 0.50
+  private const val SHADE_VALUE = 0.12
   private const val GREY_SATURATION_PERCENT = 8
   private const val MIN_HUE_SCORE = 3.0
   private const val HUE_PREFERENCE = 0.5

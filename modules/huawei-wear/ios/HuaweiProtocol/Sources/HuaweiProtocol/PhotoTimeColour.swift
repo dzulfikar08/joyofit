@@ -7,8 +7,9 @@
 //    (every s-th column and row from the area's corner, s as small as allows). Fully transparent pixels are skipped; a semi-transparent one
 //    counts as composited over black. Each sample's WCAG 2 relative luminance is taken in linear-light sRGB.
 // 2. Four candidates: white #FFFFFF, near-black #111111 (softer than pure black on an OLED face, still above 18:1 on white), and two that keep
-//    the hue of the samples' linear mean: a light tint HSV(H, 0.25, 0.95) and a dark shade HSV(H, 0.60, 0.25). A grey area (HSV saturation
-//    of that mean below 0.08) has no hue worth keeping and gets only white and near-black.
+//    the hue of the samples' linear mean: a pale tint HSV(H, 0.12, 1.0) and a deep shade HSV(H, 0.50, 0.12), close enough to white and black
+//    to compete on contrast (on a sweep of 260,508 non-grey flat colours one of them wins on 31.6 %). A grey area (HSV saturation of that mean
+//    below 0.08) has no hue worth keeping and gets only white and near-black.
 // 3. A candidate's score is its 20th-percentile WCAG contrast ratio over the samples: the contrast it reaches on at least 80 % of the area.
 //    Scoring against the mean instead lets a few bright highlights lift a mostly dark area into "light", so near-black digits end up on dark
 //    ground; the percentile follows what most of the area looks like.
@@ -21,10 +22,10 @@ public enum PhotoTimeColour {
     private static let maxSamples = 4096
     private static let white: UInt32 = 0xFFFF_FFFF
     private static let nearBlack: UInt32 = 0xFF11_1111
-    private static let tintSaturation = 0.25
-    private static let tintValue = 0.95
-    private static let shadeSaturation = 0.60
-    private static let shadeValue = 0.25
+    private static let tintSaturation = 0.12
+    private static let tintValue = 1.0
+    private static let shadeSaturation = 0.50
+    private static let shadeValue = 0.12
     private static let greySaturationPercent = 8
     private static let minHueScore = 3.0
     private static let huePreference = 0.5

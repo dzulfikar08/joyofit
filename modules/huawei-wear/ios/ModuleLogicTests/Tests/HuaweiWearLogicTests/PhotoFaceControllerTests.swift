@@ -422,8 +422,8 @@ final class PhotoFaceControllerTests: XCTestCase {
 
         _ = try await controller.add(uri: url.absoluteString)
 
-        // The 4 x 3 photo is dark: white scores 7.2, near-black 1.2.
-        XCTAssertEqual(try watch.saves.first?.object(0x82).object(0x83).string(0x0d), "#01ffffff")
+        // The 4 x 3 photo is dark yellow-brown: its pale tint scores 6.9, within 0.5 of white's 7.2.
+        XCTAssertEqual(try watch.saves.first?.object(0x82).object(0x83).string(0x0d), "#01fffae0")
     }
 
     func testAddingAPhotoAppliesTheFaceAgainOnceTheWatchHasReported() async throws {
