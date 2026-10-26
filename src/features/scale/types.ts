@@ -98,13 +98,25 @@ export interface DiscoveredService {
 export type GattAction =
   | { op: 'subscribe'; service: string; characteristic: string }
   | { op: 'read'; service: string; characteristic: string }
-  | { op: 'write'; service: string; characteristic: string; hex: string; withResponse: boolean };
+  | {
+      op: 'write';
+      service: string;
+      characteristic: string;
+      hex: string;
+      withResponse: boolean;
+      /** The bytes derive from the scale's secret (an authentication token, an encrypted session key): the trace says how many bytes went, never which. */
+      redact?: true;
+    };
 
 export interface GattStep {
   actions: GattAction[];
   readings: ScaleReading[];
   /** True once this protocol has nothing more to do (the driver may disconnect). Live-stream protocols never set it. */
   done?: boolean;
+  /** Lines for the support log (what the protocol understood). Never a secret or anything derived from one. */
+  notes?: string[];
+  /** The scale refused the saved secret: the driver disconnects and the app asks for the secret again instead of retrying. */
+  rejected?: true;
 }
 
 export const NOTHING: GattStep = Object.freeze({ actions: [], readings: [] }) as GattStep;
@@ -115,6 +127,12 @@ export interface GattContext {
   now: number;
   /** Minutes east of UTC of the phone (`-new Date().getTimezoneOffset()`), for protocols that write the local time. */
   timezoneOffsetMin: number;
+  /** The saved secret of this scale (what `ProtocolSecret.parse` returned), for a protocol that has one. */
+  secret?: string;
+  /** The name in the advertisement that made the app connect (some protocols tell models apart by it). */
+  deviceName?: string | null;
+  /** Cryptographically secure random bytes (the app passes expo-crypto), for protocols whose handshake needs nonces or session keys. */
+  randomBytes?: (size: number) => Uint8Array;
 }
 
 export interface GattSession {
@@ -122,6 +140,8 @@ export interface GattSession {
   start(services: DiscoveredService[]): GattStep;
   /** A notification / indication / read result. `hex` is lowercase without separators. */
   onValue(service: string, characteristic: string, hex: string, now: number): GattStep;
+  /** Called about once a second while connected, for protocols that poll or give up on an answer after a while. */
+  onTick?(now: number): GattStep;
 }
 
 interface ProtocolBase {
@@ -137,14 +157,33 @@ interface ProtocolBase {
   weightOnly?: true;
   /** The decoder was checked against a real scale in hand, not only against vectors built from a layout description. */
   realScaleTested?: true;
+  /** Present when the scale only talks with a secret: it is unusable until the person saves this secret for it. */
+  secret?: ProtocolSecret;
 }
 
-/** A per-scale secret the person types in because the scale's frames are encrypted with it (never sent anywhere, kept in the secure store). */
+export interface SecretField {
+  /** Key of the typed text in `parse`'s values; i18n `secret.fields.<id>` labels it. */
+  id: 'key' | 'cak' | 'c1' | 'c2' | 'address';
+  /** Longest text the input takes (room for pasted separators). */
+  maxLength: number;
+  /** Characters a valid value has; the hint counts the typed text against it. */
+  length: number;
+  /** Hex digits: the count leaves out spaces, `:` and `-`. */
+  hex?: true;
+  /** Asked only when the phone does not give the scale's Bluetooth address (iOS shows a per-phone identifier instead). */
+  onlyWithoutAddress?: true;
+}
+
+/** A per-scale secret the person types in because the scale encrypts with it (never sent anywhere, kept in the secure store). */
 export interface ProtocolSecret {
-  /** Selects the explanation the screen shows (i18n `secret.<kind>`). */
-  kind: 'tuya-local-key';
-  /** What the person typed as the secret to keep (cleaned of paste whitespace), or null when it is not a usable one. */
-  parse(text: string): string | null;
+  /** Selects the labels and the explanation the screen shows (i18n `secret.<kind>`). */
+  kind: 'tuya-local-key' | 'huawei-hagrid';
+  fields: readonly SecretField[];
+  /**
+   * What to keep, from the text typed per field (cleaned of paste whitespace), or null when a field is not usable. `scaleId` is the
+   * address on Android (fields marked `onlyWithoutAddress` are then not asked and not in `values`).
+   */
+  parse(values: Readonly<Record<string, string>>, scaleId: string): string | null;
 }
 
 export interface BroadcastProtocol extends ProtocolBase {
@@ -152,12 +191,11 @@ export interface BroadcastProtocol extends ProtocolBase {
   matches(frame: AdFrame): boolean;
   /** Null for advertisements that carry no reading (idle beacons, unknown frame types). Never throws on short or odd data. */
   decode(frame: AdFrame, user?: ScaleUser): ScaleReading | null;
-  /** Present when the frames are encrypted: the scale is unusable until the person saves this secret for it. `decode` then reads nothing. */
-  secret?: ProtocolSecret;
   /**
    * A decoder for one scale with the secret and a memory of the frames it saw (the scale's frame counter decides what is settled). One
-   * per listening session. When this exists the session uses it instead of `decode`, and what it marks `stable` is final at once: the
-   * protocol has its own settle rule, so the gate does not wait for a second equal frame.
+   * per listening session. When this exists the session uses it instead of `decode` (which reads nothing for a protocol with a
+   * `secret`), and what it marks `stable` is final at once: the protocol has its own settle rule, so the gate does not wait for a second
+   * equal frame.
    */
   createDecoder?(secret: string): (frame: AdFrame, user?: ScaleUser) => ScaleReading | null;
 }

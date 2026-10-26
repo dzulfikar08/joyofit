@@ -99,7 +99,7 @@
     "title": "Rekam data timbangan",
     "body": "Timbanganmu belum dikenali? Pilih perangkatnya di daftar pencarian, mulai merekam, lalu naik ke timbangan. JoyoFit mencatat semua yang dikirim timbangan ke log aplikasi. Salin atau bagikan hasilnya supaya dukungannya bisa ditambahkan.",
     "connect": "Sambungkan juga ke perangkatnya",
-    "connectHint": "Ikut mencatat data yang dikirim lewat sambungan. Tidak ada yang dikirim ke timbangan, kecuali satu pertanyaan yang tidak mengubah apa pun ke timbangan Huawei (menanyakan pengaturan sambungannya).",
+    "connectHint": "Ikut mencatat data yang dikirim lewat sambungan. Tidak ada yang dikirim ke timbangan.",
     "start": "Mulai merekam",
     "stop": "Berhenti merekam",
     "recording": "Merekam {{count}} perangkat…",
@@ -123,11 +123,25 @@
     "show": "Tampilkan",
     "hide": "Sembunyikan",
     "save": "Simpan kunci",
-    "length": "{{length}}/16 karakter",
+    "length": "{{length}}/{{max}} karakter",
+    "rejected": "Timbangan menolak kunci yang tersimpan. Hapus kunci, lalu isi lagi.",
+    "addressExplain": "iPhone tidak memberi tahu alamat Bluetooth timbangan, jadi isi juga alamatnya (misalnya AA:BB:CC:DD:EE:FF).",
+    "fields": {
+      "key": "Local key (16 karakter)",
+      "cak": "CAK (32 digit hex)",
+      "c1": "C1 (32 digit hex)",
+      "c2": "C2 (32 digit hex)",
+      "address": "Alamat Bluetooth timbangan (12 digit hex)"
+    },
     "tuya-local-key": {
-      "label": "Local key (16 karakter)",
+      "summary": "Timbangan ini mengenkripsi beratnya, jadi butuh local key (16 karakter) sebelum bisa dibaca.",
       "explain": "Timbangan Tuya mengenkripsi beratnya, jadi JoyoFit butuh local key milik timbanganmu. Kuncinya ada di platform pengembang Tuya (iot.tuya.com): buat proyek cloud, tautkan akun aplikasi tempat timbangan terdaftar, lalu salin local_key perangkat itu. Ini langkah untuk yang paham teknis. Kunci disimpan terenkripsi di HP ini dan tidak dikirim ke mana pun.",
       "invalid": "Local key harus tepat 16 karakter (huruf, angka, atau simbol biasa)."
+    },
+    "huawei-hagrid": {
+      "summary": "Timbangan ini butuh 3 kunci (CAK, C1, C2) sebelum mau mengirim data.",
+      "explain": "Kunci disimpan terenkripsi di HP ini dan tidak dikirim ke mana pun.",
+      "invalid": "CAK, C1, dan C2 masing-masing harus tepat 32 digit hex (0-9, a-f), dan alamat Bluetooth 12 digit hex."
     }
   }
 }

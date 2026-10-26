@@ -272,6 +272,23 @@ export const TIMBANGAN_FAMILIES: TimbanganFamily[] = [
     ]
   },
   {
+    "nama": "HUAWEI dan HONOR",
+    "items": [
+      {
+        "nama": "HUAWEI Scale 2 Pro / 3 / 3 Pro",
+        "merek": [
+          "HUAWEI Scale 3 Pro",
+          "HUAWEI Scale 3",
+          "HUAWEI Scale 2 Pro",
+          "HONOR Scale 2"
+        ],
+        "data": "timbangan",
+        "butuhKunci": true,
+        "catatan": "Timbangan ini butuh 3 kunci (CAK, C1, C2) sebelum mau mengirim data. Berat dan kadar lemak dihitung timbangannya sendiri. Belum diuji di timbangan asli."
+      }
+    ]
+  },
+  {
     "nama": "Timbangan Bluetooth standar",
     "items": [
       {

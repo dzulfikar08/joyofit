@@ -94,7 +94,7 @@ function TimbanganList() {
                     {item.butuhKunci && (
                       <p className="mt-1 flex items-start gap-1.5 text-sm font-medium text-muted-foreground">
                         <KeyRound className="mt-0.5 size-4 shrink-0" aria-hidden />
-                        Perlu kunci timbangan (local key)
+                        Perlu kunci timbangan
                       </p>
                     )}
                     {item.catatan && (

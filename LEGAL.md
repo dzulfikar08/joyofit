@@ -33,10 +33,16 @@ AGPL-3.0-or-later, and so is JoyoFit (see [`LICENSE`](LICENSE) and [`NOTICE`](NO
 the ported files. The protocol notes in [`protocol/`](protocol/README.md) describe facts about how the watch talks
 (message layouts, constants), written in our own words from Gadgetbridge and from watching how the watch behaves.
 
+The Bluetooth scale protocols are ported from [openScale](https://github.com/oliexdev/openScale) (GPL-3.0-or-later, compatible
+with JoyoFit's AGPL-3.0-or-later), with its copyright notices kept in each ported file; [`NOTICE`](NOTICE) and
+[`docs/scale.md`](docs/scale.md) name the files and the upstream commit.
+
 ## What JoyoFit does not do
 
 - It does not circumvent copy protection or DRM, and it does not break encryption it is not given the key for. The
   pairing key it uses is the one created when you pair your own watch.
+- It does not ship, fetch or explain how to obtain the keys some scales need (the HUAWEI Scale 2 Pro / 3 / 3 Pro need three:
+  CAK, C1, C2). The person who owns the scale types them in; they stay in the phone's secure storage and are sent nowhere.
 - It does not unlock paid or restricted features. A watch face that the watch refuses to accept stays refused; JoyoFit has no
   way to forge a Huawei signature and does not try.
 - It does not need, store or ask for a Huawei account, and it does not impersonate Huawei's apps.

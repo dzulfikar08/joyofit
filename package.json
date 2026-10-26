@@ -9,6 +9,8 @@
     "@expo/vector-icons": "^15.0.2",
     "@garmin/fitsdk": "^21.218.0",
     "@maplibre/maplibre-react-native": "^11.5.0",
+    "@noble/ciphers": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
     "@react-native-google-signin/google-signin": "16.1.5",
     "better-auth": "1.7.3",
     "eslint": "^9.0.0",

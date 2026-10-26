@@ -11,6 +11,7 @@ import { SwitchRow } from '@/components/SwitchRow';
 import { Notice } from '@/components/States';
 import { scaleUserFrom } from '@/features/scale/profile';
 import { PROTOCOLS, protocolById } from '@/features/scale/registry';
+import { secretFieldsFor } from '@/features/scale/secret';
 import { scaleLabel } from '@/features/scale/store';
 import type { Granted } from '@/features/sensors/permissions';
 import { RoutineNameDialog } from '@/features/strength/ui/RoutineNameDialog';
@@ -40,7 +41,7 @@ export function ScaleScreen() {
   useEffect(() => stopTest, [stopTest]);
 
   const protocol = s.scale ? protocolById(s.scale.protocolId) : null;
-  const secretKind = protocol?.kind === 'broadcast' ? (protocol.secret?.kind ?? null) : null;
+  const secret = protocol?.secret ?? null;
   const hasProfile = scaleUserFrom(HuaweiWear.getUserProfile(), new Date().getFullYear()) !== null;
   const searchProblem =
     permission === 'denied' || permission === 'blocked' || discovery.error === 'ERR_BLUETOOTH_PERMISSION'
@@ -69,7 +70,7 @@ export function ScaleScreen() {
           scale={s.scale}
           kindLabel={protocol?.label ?? null}
           weightOnly={protocol?.weightOnly === true}
-          needsKey={s.secret === 'missing'}
+          needsKey={s.secret === 'missing' || s.secret === 'rejected'}
           live={s.live}
           testing={s.testing}
           onTest={() => void startTest()}
@@ -85,8 +86,14 @@ export function ScaleScreen() {
         </Section>
       )}
 
-      {s.scale && secretKind && (s.secret === 'missing' || s.secret === 'saved') ? (
-        <SecretSection kind={secretKind} state={s.secret} onSave={s.saveSecret} onClear={s.clearSecret} />
+      {s.scale && secret && (s.secret === 'missing' || s.secret === 'saved' || s.secret === 'rejected') ? (
+        <SecretSection
+          kind={secret.kind}
+          fields={secretFieldsFor(secret, s.scale.id)}
+          state={s.secret}
+          onSave={s.saveSecret}
+          onClear={s.clearSecret}
+        />
       ) : null}
 
       <ScalePicker

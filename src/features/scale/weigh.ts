@@ -16,6 +16,8 @@ export interface WeighHandlers {
   onTrace(line: TraceLine): void;
   /** The scan cannot run (permission revoked, Bluetooth off): the native error code. The session has stopped. */
   onProblem(code: string): void;
+  /** The scale refused the saved secret (a connected scale with a handshake). The session keeps waiting; the app should ask for the secret again. */
+  onRejected?(): void;
 }
 
 export interface WeighOptions {
@@ -26,6 +28,8 @@ export interface WeighOptions {
   /** After a connected weigh-in ends, how long until the scale is looked for again. */
   cooldownMs?: number;
   timezoneOffsetMin?: () => number;
+  /** Secure random bytes for protocols whose handshake needs them (the app passes expo-crypto's `getRandomBytes`). */
+  randomBytes?: (size: number) => Uint8Array;
 }
 
 /**
@@ -34,7 +38,8 @@ export interface WeighOptions {
  *  - Connected scale: it only advertises while awake, so the session waits for its advertisement (cheap, scan-only), then connects, runs
  *    the protocol until the scale is done or drops, and goes back to waiting.
  * The scan is shared through the hub, so a picker or a recording can run beside it.
- * A protocol with a secret (Tuya local key) decodes with the `secret` given here, and settles by its own rule (`createDecoder`).
+ * A protocol with a secret decodes with the `secret` given here: a broadcast one (Tuya local key) settles by its own rule
+ * (`createDecoder`), a connected one (Huawei Hagrid keys) gets it in its `GattContext` for the handshake.
  */
 export class WeighSession {
   private active = false;
@@ -122,18 +127,22 @@ export class WeighSession {
       return;
     }
     if (this.run || this.now() < this.cooldownUntil) return;
-    this.connect(protocol);
+    this.connect(protocol, frame.name);
   }
 
-  private connect(protocol: Extract<ScaleProtocol, { kind: 'gatt' }>): void {
+  private connect(protocol: Extract<ScaleProtocol, { kind: 'gatt' }>, deviceName: string | null): void {
     const context = (): GattContext => ({
       user: this.options.user() ?? undefined,
       now: this.now(),
       timezoneOffsetMin: this.options.timezoneOffsetMin?.() ?? -new Date().getTimezoneOffset(),
+      secret: this.scale.secret,
+      deviceName,
+      randomBytes: this.options.randomBytes,
     });
     const run = new GattRun(this.hub.native, protocol, this.scale.id, context, {
       onReading: (reading) => this.emit(reading),
       onTrace: (line) => this.handlers.onTrace(line),
+      onRejected: () => this.handlers.onRejected?.(),
       onLink: (state) => {
         if (this.run !== run) return;
         if (state === 'disconnected') {

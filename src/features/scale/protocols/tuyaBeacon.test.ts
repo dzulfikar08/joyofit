@@ -164,7 +164,7 @@ describe('Tuya beacon protocol', () => {
   it('is weight only, tested on a real scale, and needs a local key', () => {
     expect(tuyaBeaconProtocol).toMatchObject({ id: 'tuya-beacon-broadcast', kind: 'broadcast', weightOnly: true, realScaleTested: true });
     expect(tuyaBeaconProtocol.secret?.kind).toBe('tuya-local-key');
-    expect(tuyaBeaconProtocol.secret?.parse(` ${LOCAL_KEY}`)).toBe(LOCAL_KEY);
+    expect(tuyaBeaconProtocol.secret?.parse({ key: ` ${LOCAL_KEY}` }, 'DC:23:53:DC:E1:95')).toBe(LOCAL_KEY);
   });
   it('claims reading and idle frames of company 0xD007, nothing else', () => {
     expect(tuyaBeaconProtocol.matches(frame(FINAL))).toBe(true);

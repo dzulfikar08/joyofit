@@ -1,5 +1,6 @@
 import type { BodyFormula } from './bodyComposition';
 import { BROADCAST_PROTOCOLS } from './protocols/broadcast';
+import { huaweiHagridProtocol } from './protocols/huaweiHagrid';
 import { STANDARD_PROTOCOLS } from './protocols/standard';
 import { VENDOR_MISC_PROTOCOLS } from './protocols/vendorMisc';
 import { VENDOR_QN_PROTOCOLS } from './protocols/vendorQn';
@@ -7,10 +8,12 @@ import type { AdFrame, BroadcastProtocol, GattInfo, GattProtocol, ScaleProtocol 
 
 /**
  * Every protocol, specific before generic: advertisement decoders (they recognise a frame layout), then the connected vendor protocols
- * (name rules), the Bluetooth SIG profile last because it matches nearly any device that offers 181D / 181B, Xiaomi included.
+ * (name rules), the Bluetooth SIG profile last because it matches nearly any device that offers 181D / 181B, Xiaomi included (and the
+ * Huawei Hagrid scales, which offer 181B too).
  */
 export const PROTOCOLS: readonly ScaleProtocol[] = [
   ...BROADCAST_PROTOCOLS,
+  huaweiHagridProtocol,
   ...VENDOR_QN_PROTOCOLS,
   ...VENDOR_MISC_PROTOCOLS,
   ...STANDARD_PROTOCOLS,

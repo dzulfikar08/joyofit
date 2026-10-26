@@ -107,6 +107,17 @@ export const GROUPS: readonly Group[] = [
     ],
   },
   {
+    nama: "HUAWEI dan HONOR",
+    entries: [
+      {
+        id: "huawei-hagrid",
+        data: "timbangan",
+        catatan:
+          "Timbangan ini butuh 3 kunci (CAK, C1, C2) sebelum mau mengirim data. Berat dan kadar lemak dihitung timbangannya sendiri. Belum diuji di timbangan asli.",
+      },
+    ],
+  },
+  {
     nama: "Timbangan Bluetooth standar",
     entries: [
       {
@@ -124,7 +135,7 @@ export type Item = {
   data: Data;
   /** Tried on a real scale, not only against sample data. */
   teruji?: true;
-  /** Needs a key the person gets elsewhere (a Tuya local key). */
+  /** Needs a key the person gets elsewhere (a Tuya local key, the keys of a Huawei Hagrid scale). */
   butuhKunci?: true;
   catatan?: string;
 };
@@ -149,7 +160,7 @@ export function build(): Family[] {
         merek: [...protocol.brands],
         data: entry.data,
         ...(protocol.realScaleTested ? { teruji: true as const } : {}),
-        ...(protocol.kind === "broadcast" && protocol.secret ? { butuhKunci: true as const } : {}),
+        ...(protocol.secret ? { butuhKunci: true as const } : {}),
         ...(entry.catatan ? { catatan: entry.catatan } : {}),
       };
     }),

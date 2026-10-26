@@ -13,18 +13,25 @@ export interface GattRunHandlers {
   onReading(reading: ScaleReading): void;
   onLink(state: 'connecting' | 'connected' | 'disconnected', error: string | null): void;
   onTrace(line: TraceLine): void;
+  /** The scale refused the saved secret; the run has ended. */
+  onRejected?(): void;
 }
+
+/** How often a session with `onTick` gets one while connected. */
+export const TICK_MS = 1000;
 
 /**
  * Runs one `GattProtocol` session against a scale: connects, hands the discovered services to the session, executes the actions it
- * returns in order and feeds it every notification. All protocol knowledge is in the session (pure, tested with byte vectors); this class
- * is the glue to the native module. A failed GATT operation is traced and skipped (a scale may lack an optional characteristic); the link
- * ending ends the run. `stop()` drops the link.
+ * returns in order and feeds it every notification (and a tick a second, for a session that polls). All protocol knowledge is in the
+ * session (pure, tested with byte vectors); this class is the glue to the native module. A failed GATT operation is traced and skipped (a
+ * scale may lack an optional characteristic); the link ending ends the run. `stop()` drops the link. A write marked `redact` is traced by
+ * its length only.
  */
 export class GattRun {
   private session: GattSession | null = null;
   private chain: Promise<void> = Promise.resolve();
   private listeners: { remove(): void }[] = [];
+  private ticker: ReturnType<typeof setInterval> | null = null;
   private ended = false;
 
   constructor(
@@ -58,6 +65,8 @@ export class GattRun {
   private detach(): void {
     for (const l of this.listeners) l.remove();
     this.listeners = [];
+    clearInterval(this.ticker ?? undefined);
+    this.ticker = null;
   }
 
   private finish(error: string | null): void {
@@ -86,6 +95,8 @@ export class GattRun {
     this.session = this.protocol.createSession(this.context());
     const session = this.session;
     this.enqueue(() => session.start(services));
+    const tick = session.onTick?.bind(session);
+    if (tick) this.ticker = setInterval(() => this.enqueue(() => tick(Date.now())), TICK_MS);
   }
 
   private onValue(event: ValueEvent): void {
@@ -106,10 +117,16 @@ export class GattRun {
         this.handlers.onTrace({ direction: 'error', message: `decoder failed: ${e instanceof Error ? e.message : String(e)}` });
         return;
       }
+      for (const note of step.notes ?? []) this.handlers.onTrace({ direction: 'info', message: note });
       for (const reading of step.readings) this.handlers.onReading(reading);
       for (const action of step.actions) {
         if (this.ended) return;
         await this.execute(action);
+      }
+      if (step.rejected && !this.ended) {
+        this.stop();
+        this.handlers.onRejected?.();
+        return;
       }
       if (step.done && !this.ended) this.stop();
     });
@@ -125,7 +142,8 @@ export class GattRun {
         this.handlers.onTrace({ direction: 'info', message: `read ${where}` });
         await this.native.scaleRead(this.id, action.service, action.characteristic);
       } else {
-        this.handlers.onTrace({ direction: 'tx', message: where, hex: action.hex });
+        if (action.redact) this.handlers.onTrace({ direction: 'tx', message: `${where} (${action.hex.length / 2} bytes, derived from the scale's keys: not logged)` });
+        else this.handlers.onTrace({ direction: 'tx', message: where, hex: action.hex });
         await this.native.scaleWrite(this.id, action.service, action.characteristic, action.hex, action.withResponse);
       }
     } catch (e) {

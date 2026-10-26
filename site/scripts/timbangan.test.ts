@@ -18,5 +18,13 @@ test("the Tuya beacon scale is listed as weight only, needing a key, and tried o
   const tuya = items.find((item) => item.nama === "Tuya beacon");
   expect(tuya).toMatchObject({ data: "berat", teruji: true, butuhKunci: true });
   expect(items.filter((item) => item.teruji).map((item) => item.nama)).toEqual(["Tuya beacon"]);
-  expect(items.filter((item) => item.butuhKunci)).toHaveLength(1);
+  expect(items.filter((item) => item.butuhKunci).map((item) => item.nama)).toEqual(["Tuya beacon", "HUAWEI Scale 2 Pro / 3 / 3 Pro"]);
+});
+
+test("the Huawei Hagrid scales are listed as needing keys and not tried on a real scale", () => {
+  const hagrid = build()
+    .flatMap((family) => family.items)
+    .find((item) => item.nama === "HUAWEI Scale 2 Pro / 3 / 3 Pro");
+  expect(hagrid).toMatchObject({ data: "timbangan", butuhKunci: true });
+  expect(hagrid?.teruji).toBeUndefined();
 });

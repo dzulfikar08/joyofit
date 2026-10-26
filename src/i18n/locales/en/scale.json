@@ -99,7 +99,7 @@
     "title": "Record scale data",
     "body": "Scale not recognised? Pick its device in the search list, start recording, then step on the scale. JoyoFit writes everything the scale sends to the app log. Copy or share the result so support for it can be added.",
     "connect": "Also connect to the device",
-    "connectHint": "Also records the data sent over a connection. Nothing is sent to the scale, except one read-only question to a Huawei scale (its connection settings).",
+    "connectHint": "Also records the data sent over a connection. Nothing is sent to the scale.",
     "start": "Start recording",
     "stop": "Stop recording",
     "recording": "Recording {{count}} devices…",
@@ -123,11 +123,25 @@
     "show": "Show",
     "hide": "Hide",
     "save": "Save key",
-    "length": "{{length}}/16 characters",
+    "length": "{{length}}/{{max}} characters",
+    "rejected": "The scale refused the saved key. Remove the key, then enter it again.",
+    "addressExplain": "The iPhone does not tell the scale's Bluetooth address, so enter it too (for example AA:BB:CC:DD:EE:FF).",
+    "fields": {
+      "key": "Local key (16 characters)",
+      "cak": "CAK (32 hex digits)",
+      "c1": "C1 (32 hex digits)",
+      "c2": "C2 (32 hex digits)",
+      "address": "Scale's Bluetooth address (12 hex digits)"
+    },
     "tuya-local-key": {
-      "label": "Local key (16 characters)",
+      "summary": "This scale encrypts its weight, so it needs its local key (16 characters) before it can be read.",
       "explain": "Tuya scales encrypt their weight, so JoyoFit needs your scale's local key. It comes from the Tuya developer platform (iot.tuya.com): create a cloud project, link the app account the scale is paired in, then copy that device's local_key. This is a technical step. The key is stored encrypted on this phone and is not sent anywhere.",
       "invalid": "The local key must be exactly 16 characters (letters, digits or plain symbols)."
+    },
+    "huawei-hagrid": {
+      "summary": "This scale needs 3 keys (CAK, C1, C2) before it will send data.",
+      "explain": "The keys are stored encrypted on this phone and are not sent anywhere.",
+      "invalid": "CAK, C1 and C2 must each be exactly 32 hex digits (0-9, a-f), and the Bluetooth address 12 hex digits."
     }
   }
 }

@@ -22,10 +22,7 @@ interface ScalePickerProps {
   onPick: (device: DiscoveredDevice) => void;
 }
 
-const needsKey = (protocolId: string | null): boolean => {
-  const protocol = protocolId === null ? null : protocolById(protocolId);
-  return protocol?.kind === 'broadcast' && protocol.secret !== undefined;
-};
+const needsKey = (protocolId: string | null): boolean => protocolId !== null && protocolById(protocolId)?.secret !== undefined;
 
 /** Search for a scale and pick it. The first search is preceded by what it does and a "Lanjut" (it is what raises the iOS prompt). */
 export function ScalePicker({ discovery, currentId, onPermission, onPick }: ScalePickerProps) {

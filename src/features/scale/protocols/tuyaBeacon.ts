@@ -224,7 +224,7 @@ export const tuyaBeaconProtocol: BroadcastProtocol = {
   source: [],
   weightOnly: true,
   realScaleTested: true,
-  secret: { kind: 'tuya-local-key', parse: parseLocalKey },
+  secret: { kind: 'tuya-local-key', fields: [{ id: 'key', maxLength: 64, length: 16 }], parse: (values) => parseLocalKey(values.key ?? '') },
   matches(frame) {
     const data = payloadOf(frame);
     return data !== null && data.length >= BEACON_LEN && (data[0] === HEAD_READING || data[0] === HEAD_IDLE);
