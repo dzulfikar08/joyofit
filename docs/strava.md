@@ -1,17 +1,17 @@
 # Strava in JoyoFit
 
 JoyoFit sends a watch workout to the wearer's own Strava account, from Settings → Strava (button on a workout's screen,
-and automatically for workouts that finish after connecting). It is **free while slots are spare** (owner rule,
-2026-10-26):
+and automatically for workouts that finish after connecting). It is **free while slots are spare**, the same for every
+user (owner rule 2026-10-26; Strava API Policy 5.8 forbids charging for anything built on the Strava API, so no plan
+changes any Strava behaviour or wording):
 
 - The Strava application's athlete capacity (10) is shared with JoyoRogo (section 1).
-- N = 3 slots are reserved for paying users (JoyoRogo Pro, Founder or an active subscription). A free user may connect
-  only while more than N slots are free; a paying user may connect while any slot is free.
-- A free user whose token has not been used for 14 days is released automatically to make room.
+- Anyone may connect while a slot is free. An account whose Strava connection has not been used for a while is
+  released automatically to give the slot back (JoyoRogo's rule).
 - A user who cannot connect (or was released) is pointed to the manual upload on the workout page ('Unggah ke Strava
   (manual)'), which needs no slot.
 
-JoyoRogo's Worker enforces all of it (it owns the tokens); JoyoFit's Worker only passes the result on (section 2a).
+JoyoRogo's Worker enforces it (it owns the tokens); JoyoFit's Worker only passes the result on (section 2a).
 
 How it is built is in the README ("Strava"). This page is the owner's runbook: set up the Strava API application, set the
 Worker secrets, register the webhook, and pass Strava's review.
@@ -144,21 +144,28 @@ JoyoRogo's side of the same contract (joyorogo repo): `apps/server/src/strava.ts
 
 ### 2a. Slots (capacity)
 
-JoyoRogo's `POST /internal/joyofit/strava/status` adds three optional fields while the user is not connected:
-`slotsFull` (may not connect now), `slotsReason` (`reserved_for_paid`: a free user and only the paying-user reserve is
-left; `full`: no slot at all, paying users included) and `released` (`{ at, reason: "released_for_pro" }`: the last grant
-was released as idle). `GET /v1/strava` passes them through; `GET /v1/strava/authorize` answers 409
-`{ error: "slots_full", reason }` instead of a URL when the user is not connected and `slotsFull` is true (a connected
-user's re-authorization, `?gear=1`, is unaffected). If JoyoRogo refuses an exchange for capacity (409
-`{ error: "slots_full" }`, the fresh grant already revoked), the callback redirects with `reason=slots_full`. The app then
-shows "Slot Strava penuh" (or "Slot dilepas untuk pengguna Pro" after a release), hides the connect button and points
-to 'Unggah ke Strava (manual)'. An older JoyoRogo without these fields behaves as before.
+JoyoRogo's `POST /internal/joyofit/strava/status` adds two optional fields while the user is not connected:
+`slotsFull` (every slot is taken, so the user may not connect now) and `released` (`{ at }`, unix seconds: the last
+grant was released because it had not been used for a while). `GET /v1/strava` passes them through (nothing else
+JoyoRogo might add); `GET /v1/strava/authorize` answers 409 `{ error: "slots_full" }` instead of a URL when the user is
+not connected and `slotsFull` is true (a connected user's re-authorization, `?gear=1`, is unaffected). If JoyoRogo
+refuses an exchange for capacity (409 `{ error: "slots_full" }`, the fresh grant already revoked), the callback
+redirects with `reason=slots_full`. The app then shows "Slot Strava penuh" (or "Koneksi Strava dilepas karena lama
+tidak dipakai" after a release), hides the connect button and points to 'Unggah ke Strava (manual)'. An older JoyoRogo
+without these fields behaves as before.
+
+**Manual upload switch.** The manual Strava upload (the user saves a file and uploads it on strava.com) is a workaround
+for everyone while Strava capacity is limited, not tied to any plan. `GET /v1/strava` carries `manualUpload: boolean` in
+every shape (not configured, not connected, connected), read from the Worker var `STRAVA_MANUAL_UPLOAD` in
+`server/wrangler.jsonc`: `"on"` (the default; unset or anything else counts as on) or `"off"`. **Turn it off when Strava
+grants extended capacity (9,999 athletes); turn it back on if the slots fill up again.** Change the var and run
+`bunx wrangler deploy` in `server/`; the app reads it with the next status check, no app update needed.
 
 ## 3. What Strava's rules mean here
 
 | Rule | How JoyoFit follows it |
 |---|---|
-| Strava sync must be free (API Agreement 5.8) | No Pro check on uploads: a connected account sends everything for free, and the manual upload needs no connection. Only *who gets one of the 10 slots* depends on the plan (owner rule 2026-10-26, top of this page), enforced by JoyoRogo. |
+| Strava sync must be free (API Agreement 5.8, API Policy 5.8) | No plan check anywhere: not on any Strava route, not in the app, not in who gets one of the 10 slots (first come, idle accounts released, the same for everyone). The manual upload needs no connection. |
 | No Strava data into AI/analytics (5.3 / 5.4) | The app reads nothing from Strava except the status of its own upload and, only after the athlete grants `profile:read_all`, their own shoes and bikes (section 3b). JoyoRogo's database holds the athlete id and tokens only on JoyoFit's behalf. JoyoFit sends no Strava data anywhere; only the athlete id and the user id travel between the two Workers. |
 | Show Strava data only to its owner | The only Strava data shown is the link to the activity the wearer uploaded and, in the gear picker, their own shoes and bikes, on that wearer's phone. |
 | Deauthorization webhook | `POST /strava/webhook` forwards the deauthorization of an athlete who revokes the app on strava.com to JoyoRogo, which deletes the tokens (both products) at once. |

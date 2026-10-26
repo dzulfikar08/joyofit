@@ -4,7 +4,7 @@ export const stravaFit: Post = {
   slug: "strava-file-fit",
   title: "Kirim olahraga jam Huawei ke Strava sebagai file FIT",
   description:
-    "JoyoFit mengunggah setiap olahraga ke Strava sebagai file FIT berisi angka dari jam: jarak, waktu aktif, kalori, detak jantung, elevasi, kadensi, dan rute. Gratis, tanpa JoyoRogo Pro.",
+    "JoyoFit mengunggah setiap olahraga ke Strava sebagai file FIT berisi angka dari jam: jarak, waktu aktif, kalori, detak jantung, elevasi, kadensi, dan rute. Gratis selama slot masih ada; unggah manual selalu bisa.",
   date: "2026-10-18",
   tag: "Strava",
   body: [
@@ -32,7 +32,7 @@ export const stravaFit: Post = {
         "Setelah terkirim, tautan View on Strava membuka aktivitasnya di Strava.",
       ],
     },
-    { kind: "p", text: "Gratis, tanpa cek JoyoRogo Pro." },
+    { kind: "p", text: "Gratis selama slot masih ada, sama untuk semua pengguna; unggah manual selalu bisa." },
     {
       kind: "note",
       text: "Strava membatasi aplikasi kami di 10 atlet dan semua slotnya sedang terpakai. Review ke Strava sudah diajukan untuk menaikkan batas itu. Sampai disetujui, [masuk daftar tunggu Strava](/strava).",

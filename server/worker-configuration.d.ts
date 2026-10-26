@@ -9,6 +9,7 @@ interface __BaseEnv_Env {
 	JOYOROGO_AUTH_URL: string;
 	MAX_IMPORT_BYTES: string;
 	STRAVA_CLIENT_ID: string;
+	STRAVA_MANUAL_UPLOAD: string;
 	EMAIL_FROM: string;
 	EMAIL_FROM_NAME: string;
 	RIDE_ROOM: DurableObjectNamespace<import("./src/index").RideRoom>;
@@ -26,7 +27,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "JOYOROGO_AUTH_URL" | "MAX_IMPORT_BYTES" | "STRAVA_CLIENT_ID" | "EMAIL_FROM" | "EMAIL_FROM_NAME">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "JOYOROGO_AUTH_URL" | "MAX_IMPORT_BYTES" | "STRAVA_CLIENT_ID" | "STRAVA_MANUAL_UPLOAD" | "EMAIL_FROM" | "EMAIL_FROM_NAME">> {}
 }
 declare module "*.txt" {
 	const value: string;

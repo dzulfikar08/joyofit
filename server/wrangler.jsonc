@@ -19,6 +19,9 @@
     // STRAVA_CLIENT_SECRET (the same value JoyoRogo's Worker has) and STRAVA_WEBHOOK_VERIFY_TOKEN are Worker
     // secrets: `bunx wrangler secret put <NAME>`.
     "STRAVA_CLIENT_ID": "287873",
+    // The manual Strava upload in the app (a workaround for everyone while Strava capacity is limited): "on" unless
+    // "off". Turn off when Strava grants extended capacity (9,999); turn back on if the slots fill up. docs/strava.md 2a.
+    "STRAVA_MANUAL_UPLOAD": "on",
     // Sender of family alert emails; same sender as JoyoRogo.
     "EMAIL_FROM": "halo@mail.joyorogo.com",
     "EMAIL_FROM_NAME": "JoyoFit"

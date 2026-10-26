@@ -23,9 +23,9 @@ import { pushLog } from '@/state/logStore';
  * Strava for JoyoFit. The Worker keeps the Strava tokens and the client secret (`server/src/strava.ts`); this file
  * asks it for the connection status, the authorize URL and a short-lived access token, then uploads straight from
  * the phone to Strava. Strava sync is free while slots are spare: the shared Strava application has a fixed athlete
- * capacity, JoyoRogo keeps part of it for Pro users and the status says when this user cannot connect. Nothing here
- * checks JoyoRogo Pro itself. A workout is only ever sent to the Strava account of the person whose phone it is; no
- * Strava data is read back except the upload's own status.
+ * capacity and the status says when every slot is taken. Nothing here checks JoyoRogo Pro. A workout is only ever
+ * sent to the Strava account of the person whose phone it is; no Strava data is read back except the upload's own
+ * status.
  */
 
 const STRAVA_API = 'https://www.strava.com/api/v3';
@@ -44,17 +44,15 @@ export interface StravaStatus {
   connectedAt?: number;
   /** The grant also has `profile:read_all`, which listing the athlete's gear needs. */
   gearScope?: boolean;
-  /** Not connected and may not connect now: the shared Strava application has no slot open to this user. */
+  /** Not connected and may not connect now: every slot of the shared Strava application is taken. */
   slotsFull?: boolean;
-  /** `reserved_for_paid`: only the slots kept for Pro users are left; `full`: none at all. */
-  slotsReason?: StravaSlotsReason;
-  /** The last connection was released to make room for Pro users (idle free account). */
-  released?: { at: number; reason: 'released_for_pro' };
+  /** The last connection was released because the account had not used Strava for a while. Unix seconds. */
+  released?: { at: number };
+  /** The app offers the manual Strava upload (Worker var `STRAVA_MANUAL_UPLOAD`); absent from an older Worker. */
+  manualUpload?: boolean;
 }
 
-export type StravaSlotsReason = 'reserved_for_paid' | 'full';
-
-/** The Worker refused to start a connection because no Strava slot is open to this user. */
+/** The Worker refused to start a connection because every Strava slot is taken. */
 export class StravaSlotsFullError extends Error {
   constructor() {
     super(t('common:strava.slotsFull'));

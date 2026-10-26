@@ -12,14 +12,15 @@ import { STRAVA_BROKER_TIMEOUT_MS, STRAVA_STATE_TTL_S, STRAVA_WEBHOOK_BROKER_TIM
  * grant (`apps/server/src/strava.ts` in the joyorogo repo, `/internal/joyofit/strava/*`), and this Worker keeps what
  * has to stay on JoyoFit's host: the signed OAuth state, the callback that returns to the app, and Strava's
  * webhook (one subscription per application, so it points here and the deauthorization is forwarded). Strava sync is
- * free while slots are spare: the shared application has a fixed athlete capacity, and JoyoRogo enforces it (slots
- * reserved for paying users, idle free users released). This Worker only passes JoyoRogo's `slotsFull`, `slotsReason`
- * and `released` through and refuses to start an authorization it knows would be refused. Strava data is never read,
- * stored or forwarded; only the athlete id travels.
+ * free while slots are spare: the shared application has a fixed athlete capacity, and JoyoRogo manages it the same
+ * way for every user (a slot opens again when an account stops using Strava for a while). This Worker only passes
+ * JoyoRogo's `slotsFull` and `released` through and refuses to start an authorization it knows would be refused.
+ * Strava data is never read, stored or forwarded; only the athlete id travels.
  *
  * - `GET  /v1/strava`             status (signed-in user)
  * - `GET  /v1/strava/authorize`   `{ url }` to open in a browser (signed-in user); `?gear=1` adds `profile:read_all`;
- *                                 409 `{ error: "slots_full", reason }` when not connected and no slot is open to the user
+ *                                 409 `{ error: "slots_full" }` when not connected and every slot is taken
+ *   (`GET /v1/strava` also carries `manualUpload`, from the `STRAVA_MANUAL_UPLOAD` var: the app offers the manual upload)
  * - `POST /v1/strava/token`       `{ accessToken, expiresAt, athleteId }`, refreshed by JoyoRogo (signed-in user)
  * - `POST /v1/strava/disconnect`  unlink JoyoFit; JoyoRogo revokes at Strava when nothing else uses the grant
  * - `GET  /strava/callback`       Strava's redirect; hands the code to JoyoRogo, redirects to the app (`joyofit://settings/strava`)
@@ -122,16 +123,13 @@ const statusSchema = z.object({
   requestedScope: z.string().min(1),
   /** Not connected and may not connect now (capacity). Absent from an older JoyoRogo. */
   slotsFull: z.boolean().optional(),
-  /** `reserved_for_paid`: a free user and only the paying-user reserve is left; `full`: no slot at all. */
-  slotsReason: z.enum(["reserved_for_paid", "full"]).optional(),
-  /** The last grant was released by capacity management (idle free user). */
-  released: z.object({ at: z.number(), reason: z.literal("released_for_pro") }).optional(),
+  /** The last grant was released because the account had not used Strava for a while. */
+  released: z.object({ at: z.number() }).optional(),
 });
 
 /** The capacity fields of a not-connected status, as the app reads them; absent fields stay absent. */
 const slotFields = (status: z.infer<typeof statusSchema>) => ({
   ...(status.slotsFull === undefined ? {} : { slotsFull: status.slotsFull }),
-  ...(status.slotsReason === undefined ? {} : { slotsReason: status.slotsReason }),
   ...(status.released === undefined ? {} : { released: status.released }),
 });
 
@@ -166,14 +164,27 @@ async function unlink(env: AppEnv & { STRAVA_CLIENT_SECRET: string }, userId: st
 
 export const strava = new Hono<AppContext>();
 
+/**
+ * Whether the app offers the manual Strava upload (a file the user uploads on strava.com themselves), the workaround for
+ * everyone while Strava capacity is limited. Var `STRAVA_MANUAL_UPLOAD`: on unless it is exactly "off".
+ */
+const manualUpload = (env: AppEnv) => env.STRAVA_MANUAL_UPLOAD !== "off";
+
 strava.get("/", async (c) => {
-  if (!configured(c.env)) return c.json({ configured: false, connected: false });
+  if (!configured(c.env)) return c.json({ configured: false, connected: false, manualUpload: manualUpload(c.env) });
   const status = await grantStatus(c.env, c.get("user").id);
-  if (!status.connected) return c.json({ configured: true, connected: false, ...slotFields(status) });
+  if (!status.connected) return c.json({ configured: true, connected: false, ...slotFields(status), manualUpload: manualUpload(c.env) });
   // JoyoRogo's `requestedScope` is JoyoFit's own scope plus everything already granted, and JoyoFit's own never includes the
   // gear scope, so the gear scope is in it exactly when the athlete granted it.
   const gearScope = scopeList(status.requestedScope).includes(GEAR_SCOPE);
-  return c.json({ configured: true, connected: true, athleteId: status.athleteId, connectedAt: status.connectedAt, gearScope });
+  return c.json({
+    configured: true,
+    connected: true,
+    athleteId: status.athleteId,
+    connectedAt: status.connectedAt,
+    gearScope,
+    manualUpload: manualUpload(c.env),
+  });
 });
 
 strava.get("/authorize", async (c) => {
@@ -183,10 +194,10 @@ strava.get("/authorize", async (c) => {
   const redirectUri = `${new URL(c.req.url).origin}/strava/callback`;
   // JoyoRogo answers with JoyoFit's scope plus what the athlete already granted JoyoRogo, so connecting here never
   // narrows the grant JoyoRogo reads activities with.
-  const { requestedScope, connected, slotsFull, slotsReason } = await grantStatus(c.env, userId);
+  const { requestedScope, connected, slotsFull } = await grantStatus(c.env, userId);
   // JoyoRogo would refuse the exchange (and revoke the fresh grant), so do not send the user through Strava's page.
   // A connected user's re-authorization (`?gear=1`) holds a slot already.
-  if (!connected && slotsFull) return c.json({ error: "slots_full", reason: slotsReason ?? "full" }, 409);
+  if (!connected && slotsFull) return c.json({ error: "slots_full" }, 409);
   // `?gear=1`: also ask for `profile:read_all` (the athlete's shoes and bikes), a second consent for an existing connection.
   const scope = c.req.query("gear") === "1" ? [...new Set([...scopeList(requestedScope), GEAR_SCOPE])].join(",") : requestedScope;
   const query = new URLSearchParams({

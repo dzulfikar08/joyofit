@@ -37,7 +37,7 @@ export const FAQ: readonly FaqItem[] = [
   },
   {
     q: "Apa yang gratis dan apa yang JoyoRogo Pro?",
-    a: "Sinkron jam, skor, analisis latihan, pencatat latihan beban, Strava (selama slot masih ada), perlengkapan, dan membagikan latihan ke Social gratis. JoyoRogo Pro dipakai untuk Coach (saran harian, rencana lari dan beban, Tanya coach) dan salinan cloud untuk olahraga, riwayat beban, perlengkapan, dan rencana Coach. Pelanggan Pro juga dapat dukungan prioritas: laporan dan permintaan fitur mereka didahulukan.",
+    a: "Sinkron jam, skor, analisis latihan, pencatat latihan beban, perlengkapan, dan membagikan latihan ke Social gratis. Strava juga gratis selama slot masih ada, dan unggah manual selalu bisa. JoyoRogo Pro dipakai untuk Coach (saran harian, rencana lari dan beban, Tanya coach) dan salinan cloud untuk olahraga, riwayat beban, perlengkapan, dan rencana Coach. Pelanggan Pro juga dapat dukungan prioritas: laporan dan permintaan fitur mereka didahulukan.",
   },
   {
     q: "Kapan dukungan lebih dari satu jam dan sensor Bluetooth rilis?",

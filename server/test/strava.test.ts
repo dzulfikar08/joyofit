@@ -118,7 +118,7 @@ describe("Strava connect", () => {
     [422, { error: "scope_missing" }, "scope_missing"],
     [422, { error: "rejected" }, "exchange_failed"],
     [502, { error: "unavailable" }, "strava_unreachable"],
-    [409, { error: "slots_full", reason: "reserved_for_paid" }, "slots_full"],
+    [409, { error: "slots_full" }, "slots_full"],
     [500, { error: "boom" }, "exchange_failed"],
   ])("maps JoyoRogo's %i %j answer to the app reason %s", async (status, body, reason) => {
     const state = await signState(SECRET, "user-z", nowS());
@@ -139,7 +139,7 @@ describe("Strava connect", () => {
   it("answers 503 when the Strava secret is not set", async () => {
     const { cookie } = signUp("dave");
     const status = await call("/v1/strava", { cookie, env: { STRAVA_CLIENT_SECRET: "" } });
-    expect(await status.json()).toEqual({ configured: false, connected: false });
+    expect(await status.json()).toEqual({ configured: false, connected: false, manualUpload: true });
     expect((await call("/v1/strava/authorize", { cookie, env: { STRAVA_CLIENT_SECRET: "" } })).status).toBe(503);
     const token = await call("/v1/strava/token", { method: "POST", cookie, env: { STRAVA_CLIENT_SECRET: "" } });
     expect(token.status).toBe(503);
@@ -152,7 +152,7 @@ describe("Strava status", () => {
     grantApi.handler = () => Response.json({ connected: true, athleteId: 4242, connectedAt: 1_700_000_000, requestedScope: "activity:write" });
     const { user, cookie } = signUp("sam");
     const status = (await (await call("/v1/strava", { cookie })).json()) as Record<string, unknown>;
-    expect(status).toEqual({ configured: true, connected: true, athleteId: 4242, connectedAt: 1_700_000_000, gearScope: false });
+    expect(status).toEqual({ configured: true, connected: true, athleteId: 4242, connectedAt: 1_700_000_000, gearScope: false, manualUpload: true });
     expect(grantApi.calls[0]?.body).toEqual({ userId: user.id });
   });
 
@@ -177,7 +177,7 @@ describe("Strava status", () => {
   it("is not connected when JoyoRogo says so, including a JoyoRogo-only grant without the upload scope", async () => {
     grantApi.handler = notConnected();
     const { cookie } = signUp("tess");
-    expect(await (await call("/v1/strava", { cookie })).json()).toEqual({ configured: true, connected: false });
+    expect(await (await call("/v1/strava", { cookie })).json()).toEqual({ configured: true, connected: false, manualUpload: true });
   });
 
   it("answers 502 when JoyoRogo's grant API fails, instead of claiming a disconnect", async () => {
@@ -186,20 +186,35 @@ describe("Strava status", () => {
     expect((await call("/v1/strava", { cookie })).status).toBe(502);
   });
 
-  it("passes JoyoRogo's slot fields through while not connected", async () => {
-    const released = { at: 1_790_000_000, reason: "released_for_pro" };
-    grantApi.handler = () => Response.json({ connected: false, requestedScope: "activity:write", slotsFull: true, slotsReason: "reserved_for_paid", released });
+  it("passes JoyoRogo's slot fields through while not connected, and nothing else it might add", async () => {
+    const released = { at: 1_790_000_000 };
+    grantApi.handler = () =>
+      Response.json({ connected: false, requestedScope: "activity:write", slotsFull: true, slotsReason: "full", released: { ...released, reason: "idle" } });
     const { cookie } = signUp("vera");
-    expect(await (await call("/v1/strava", { cookie })).json()).toEqual({ configured: true, connected: false, slotsFull: true, slotsReason: "reserved_for_paid", released });
+    expect(await (await call("/v1/strava", { cookie })).json()).toEqual({ configured: true, connected: false, slotsFull: true, released, manualUpload: true });
+  });
+
+  it("says whether the app offers the manual upload, from STRAVA_MANUAL_UPLOAD (on unless \"off\"), in every shape", async () => {
+    const { cookie } = signUp("xena");
+    const manual = async (env: Record<string, string>) => ((await (await call("/v1/strava", { cookie, env })).json()) as { manualUpload: unknown }).manualUpload;
+    expect(await manual({ STRAVA_CLIENT_SECRET: "", STRAVA_MANUAL_UPLOAD: "off" })).toBe(false);
+    grantApi.handler = notConnected();
+    expect(await manual({ STRAVA_MANUAL_UPLOAD: "off" })).toBe(false);
+    expect(await manual({ STRAVA_MANUAL_UPLOAD: "on" })).toBe(true);
+    expect(await manual({ STRAVA_MANUAL_UPLOAD: "" })).toBe(true);
+    expect(await manual({ STRAVA_MANUAL_UPLOAD: "yes" })).toBe(true);
+    grantApi.handler = () => Response.json({ connected: true, athleteId: 1, connectedAt: 1, requestedScope: "activity:write" });
+    expect(await manual({ STRAVA_MANUAL_UPLOAD: "off" })).toBe(false);
+    expect(await manual({})).toBe(true);
   });
 
   it("refuses to start an authorization when JoyoRogo says no slot is open, but not a connected user's re-authorization", async () => {
-    grantApi.handler = () => Response.json({ connected: false, requestedScope: "activity:write", slotsFull: true, slotsReason: "full" });
+    grantApi.handler = () => Response.json({ connected: false, requestedScope: "activity:write", slotsFull: true });
     const { cookie } = signUp("wade");
     const refused = await call("/v1/strava/authorize", { cookie });
     expect(refused.status).toBe(409);
-    expect(await refused.json()).toEqual({ error: "slots_full", reason: "full" });
-    grantApi.handler = () => Response.json({ connected: true, athleteId: 1, connectedAt: 1, requestedScope: "activity:write", slotsFull: true, slotsReason: "full" });
+    expect(await refused.json()).toEqual({ error: "slots_full" });
+    grantApi.handler = () => Response.json({ connected: true, athleteId: 1, connectedAt: 1, requestedScope: "activity:write", slotsFull: true });
     expect((await call("/v1/strava/authorize?gear=1", { cookie })).status).toBe(200);
     grantApi.handler = () => Response.json({ connected: false, requestedScope: "activity:write", slotsFull: false });
     expect((await call("/v1/strava/authorize", { cookie })).status).toBe(200);

@@ -164,11 +164,12 @@ Workout screen → ⋮ → **Hapus latihan**, or a long press on a card in the W
 
 ## Strava
 
-Settings → **Strava** sends watch workouts to the wearer's own Strava account. It is **free while slots are spare**: no
-JoyoRogo Pro for uploading, but the Strava application's 10 athlete slots are shared with JoyoRogo, 3 are reserved for
-paying users (a free user connects only while more than 3 are free), and a free user idle for 14 days is released. A
-user who cannot connect sees "Slot Strava penuh" (after a release "Slot dilepas untuk pengguna Pro"), no connect button,
-and is pointed to 'Unggah ke Strava (manual)' on the workout page. JoyoRogo enforces the rule (docs/strava.md 2a).
+Settings → **Strava** sends watch workouts to the wearer's own Strava account. It is **free while slots are spare**, the
+same for every user (no plan changes anything about Strava): the Strava application's 10 athlete slots are shared with
+JoyoRogo, anyone may connect while one is free, and an account that has not used its connection for a while is
+released. A user who cannot connect sees "Slot Strava penuh" (after a release "Koneksi Strava dilepas karena lama tidak
+dipakai"), no connect button, and is pointed to 'Unggah ke Strava (manual)' on the workout page. JoyoRogo enforces the
+rule (docs/strava.md 2a).
 It does need the JoyoRogo sign-in, because the Strava tokens are kept against that account. JoyoFit shares
 its Strava API application with JoyoRogo (which reads the athlete's activities for its burned-calorie diary), and Strava
 keeps one token per athlete and application, so **JoyoRogo's Worker owns the tokens** and this Worker (`server/src/strava.ts`)

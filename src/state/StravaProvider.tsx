@@ -12,7 +12,6 @@ import {
   fetchStravaAuthorizeUrl,
   StravaSlotsFullError,
   syncStravaStatus,
-  type StravaSlotsReason,
   type StravaStatus,
 } from '@/cloud/strava';
 import { isIos } from '@/components/IosUnavailable';
@@ -51,19 +50,16 @@ const EMPTY: StravaSettings = { connectedAt: null, athleteId: null, addLink: fal
 
 /** Strava capacity for a user who is not connected (the shared Strava application has a fixed number of athletes). */
 export interface StravaSlots {
-  /** No slot is open to this user now: connecting is refused. */
+  /** Every slot is taken: connecting is refused. */
   full: boolean;
-  reason: StravaSlotsReason | null;
-  /** Unix seconds when the last connection was released to make room for Pro users; null when it was not. */
+  /** Unix seconds when the last connection was released because the account had not used Strava for a while. */
   releasedAt: number | null;
 }
 
-const OPEN: StravaSlots = { full: false, reason: null, releasedAt: null };
+const OPEN: StravaSlots = { full: false, releasedAt: null };
 
 const slotsOf = (status: StravaStatus): StravaSlots =>
-  status.connected
-    ? OPEN
-    : { full: status.slotsFull === true, reason: status.slotsReason ?? null, releasedAt: status.released?.at ?? null };
+  status.connected ? OPEN : { full: status.slotsFull === true, releasedAt: status.released?.at ?? null };
 
 const StravaContext = createContext<StravaContextValue | null>(null);
 
@@ -81,9 +77,9 @@ const FAILURES: Record<string, 'accessDenied' | 'scopeMissing' | 'invalidState'>
 
 /**
  * The Strava connection of this phone: connect and disconnect through the Worker, the "add link" choice, and the
- * automatic upload of workouts that finish after connecting. Strava sync is free while slots are spare, so unlike the
- * cloud backup it does not need JoyoRogo Pro; it needs the JoyoRogo sign-in the Worker identifies the user with, and
- * a free slot in the shared Strava application (JoyoRogo keeps some for Pro users).
+ * automatic upload of workouts that finish after connecting. Strava sync is free while slots are spare: unlike the
+ * cloud backup it never depends on JoyoRogo Pro; it needs the JoyoRogo sign-in the Worker identifies the user with,
+ * and a free slot in the shared Strava application.
  */
 export function StravaProvider({ children }: { children: ReactNode }) {
   const db = useSQLiteContext();
@@ -116,7 +112,7 @@ export function StravaProvider({ children }: { children: ReactNode }) {
   const refusedForSlots = useCallback(async () => {
     const status = await syncStravaStatus(db);
     await reload();
-    setSlots((current) => ({ ...(status ? slotsOf(status) : current), full: true, reason: status?.slotsReason ?? current.reason ?? 'full' }));
+    setSlots((current) => ({ ...(status ? slotsOf(status) : current), full: true }));
   }, [db, reload]);
 
   // At start and when the session appears: read the connection (the effect itself sets nothing synchronously).

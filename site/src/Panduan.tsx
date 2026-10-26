@@ -636,14 +636,14 @@ function Features({ lang }: { lang: Lang }) {
       <p>
         {id ? (
           <>
-            Pengaturan → <B>Strava</B> mengirim olahraga dari jam ke akun Strava-mu. Gratis selama slot masih ada (sebagian slot disimpan untuk pengguna Pro). Masuk dulu
+            Pengaturan → <B>Strava</B> mengirim olahraga dari jam ke akun Strava-mu. Gratis selama slot masih ada; unggah manual selalu bisa. Masuk dulu
             dengan <B>Sign in with JoyoRogo</B>, lalu ketuk <B>Connect with Strava</B>. Olahraga baru dikirim otomatis tiap
             sinkron; olahraga sebelum tersambung bisa dikirim manual lewat <B>Send to Strava</B> di layar olahraganya, dan{" "}
             <B>View on Strava</B> membuka aktivitasnya setelah terkirim.
           </>
         ) : (
           <>
-            Settings → <B>Strava</B> sends watch workouts to your Strava account. Free while slots are spare (some slots are kept for Pro users). First tap{" "}
+            Settings → <B>Strava</B> sends watch workouts to your Strava account. Free while slots are spare; uploading by hand always works. First tap{" "}
             <B>Sign in with JoyoRogo</B>, then <B>Connect with Strava</B>. New workouts go up automatically on each sync; ones
             from before you connected can be sent by hand with <B>Send to Strava</B> on the workout screen, and{" "}
             <B>View on Strava</B> opens the activity once it is sent.

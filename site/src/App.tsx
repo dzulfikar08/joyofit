@@ -1192,7 +1192,7 @@ const SEND_POINTS: { Icon: LucideIcon; title: string; body: string; href?: strin
   {
     Icon: Upload,
     title: "Upload ke Strava",
-    body: "Olahraga dikirim ke Strava sebagai file FIT berisi angka dari jam: jarak, waktu gerak, kalori, detak jantung, elevasi, kadensi, dan rute. Angka di JoyoFit sama dengan yang tampil di Strava. Gratis selama slot masih ada; sebagian slot disimpan untuk pengguna Pro, dan unggah manual selalu bisa.",
+    body: "Olahraga dikirim ke Strava sebagai file FIT berisi angka dari jam: jarak, waktu gerak, kalori, detak jantung, elevasi, kadensi, dan rute. Angka di JoyoFit sama dengan yang tampil di Strava. Gratis selama slot masih ada; unggah manual selalu bisa.",
     href: "/blog/strava-file-fit",
     label: "Soal upload Strava",
   },

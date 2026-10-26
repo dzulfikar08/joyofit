@@ -24,10 +24,10 @@ const LOGO_SIZE = { width: (437 / 37) * LOGO_HEIGHT, height: LOGO_HEIGHT } as co
 
 /**
  * Send watch workouts to Strava. Free while slots are spare: it needs the JoyoRogo sign-in (the Worker keeps the Strava
- * tokens against that account) but not Pro, and an open slot in the Strava application JoyoFit shares with JoyoRogo
- * (JoyoRogo keeps some for Pro users and releases idle free accounts). Without a slot the connect button gives way to
- * the manual upload on the workout page. Only workouts that finish after connecting go up on their own; older ones are
- * sent one by one from their detail screen.
+ * tokens against that account) and an open slot in the Strava application JoyoFit shares with JoyoRogo (an account
+ * that stops using Strava for a while gives its slot back). Without a slot the connect button gives way to the manual
+ * upload on the workout page. Only workouts that finish after connecting go up on their own; older ones are sent one
+ * by one from their detail screen.
  */
 export function StravaSection() {
   const { t } = useTranslation('settings');
@@ -83,7 +83,7 @@ export function StravaSection() {
             {t('strava.slots.fullTitle')}
           </AppText>
           {'\n'}
-          {t(strava.slots.reason === 'reserved_for_paid' ? 'strava.slots.reservedForPaid' : 'strava.slots.full')}
+          {t('strava.slots.full')}
         </Notice>
       ) : null}
       {strava.configured && strava.signedIn && !connected && !slotsFull ? (
