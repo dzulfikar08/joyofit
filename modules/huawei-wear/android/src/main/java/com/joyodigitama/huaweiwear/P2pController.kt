@@ -77,6 +77,7 @@ internal class P2pController(
         created.start()
         created.registerServices()
         offlineMaps.attach(created)
+        if (settings.petalMapsProbe) created.registerPetalProbe()
         scope.launch(Dispatchers.IO) { recordGates(created) }
       }
       LinkState.DISCONNECTED -> detach()
@@ -88,6 +89,15 @@ internal class P2pController(
     stack?.close()
     stack = null
     attached = null
+  }
+
+  /** Lab (JRG-434, off by default): the Petal Maps companion probe ([PetalProbeWire]); applied at once when connected and on every connect. */
+  @Synchronized
+  fun setPetalMapsProbe(enabled: Boolean) {
+    settings.petalMapsProbe = enabled
+    log("${PetalProbeWire.TAG} lab switch ${if (enabled) "on" else "off"}")
+    val current = stack ?: return
+    if (enabled) current.registerPetalProbe() else current.unregisterPetalProbe()
   }
 
   private fun recordGates(created: P2pStack) {

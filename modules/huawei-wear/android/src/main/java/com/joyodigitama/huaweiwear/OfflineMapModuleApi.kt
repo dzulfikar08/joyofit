@@ -5,7 +5,8 @@ import expo.modules.kotlin.modules.ModuleDefinitionBuilder
 
 /**
  * The offline-map lab of the `HuaweiWear` module (`getOfflineMapLab` ... `deleteOfflineMap` in `HuaweiWearModule.ts`, types in
- * `HuaweiWearOfflineMaps.types.ts`; [OfflineMapLab]). Call once from the module definition.
+ * `HuaweiWearOfflineMaps.types.ts`; [OfflineMapLab]) and the Petal Maps probe switch (`getPetalMapsProbe`, `setPetalMapsProbe`;
+ * [PetalMapsProbeService]). Call once from the module definition.
  */
 internal fun ModuleDefinitionBuilder.offlineMapApi(runtime: () -> WearRuntime) {
   Function("getOfflineMapLab") {
@@ -14,6 +15,15 @@ internal fun ModuleDefinitionBuilder.offlineMapApi(runtime: () -> WearRuntime) {
 
   AsyncFunction("setOfflineMapLab") { enabled: Boolean ->
     runtime().p2p.offlineMaps.setEnabled(enabled)
+  }
+
+  // Lab (JRG-434): the Petal Maps companion probe switch (PetalMapsProbe.kt).
+  Function("getPetalMapsProbe") {
+    runtime().p2p.settings.petalMapsProbe
+  }
+
+  AsyncFunction("setPetalMapsProbe") { enabled: Boolean ->
+    runtime().p2p.setPetalMapsProbe(enabled)
   }
 
   AsyncFunction("offlineMapFreeSpace") Coroutine { ->

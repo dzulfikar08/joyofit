@@ -1130,6 +1130,17 @@ the lab switch on and bit 201 set.
 
 Every frame both ways is logged as `Mapkit: tx|rx <type> <name>: <tags>` (`MapkitWire.describe`; containers `87 88 90 91` expanded, ASCII values quoted). Map ids are u64 and travel to JS as decimal strings.
 
+### (f) Petal Maps watch app (JRG-434): watch `com.huawei.ohos.maps.app` → phone `com.huawei.maps.app` — LAB probe, off by default, not on master
+
+Opening the built-in Petal Maps app of the Watch Fit 4 Pro (6.1.0.117) shows "scan to download Petal Maps"; at that moment the watch sends one P2P ping
+(`cmd=1 src=com.huawei.ohos.maps.app dst=com.huawei.maps.app`, no data, no fingerprints) that no JoyoFit service answered. The lab probe (`PetalMapsProbe.kt` /
+`PetalMapsProbe.swift`, switch Settings → About & advanced → Experimental → **Uji Petal Maps di jam (lab)**) registers that package pair, answers the ping
+with `0xca` (what the watch answers our own pings with), acknowledges the app's messages (cmd 2) with `0xcf` and sends nothing else; it calls no server.
+It logs every packet and file of the app as `PetalProbe:` lines: `rx P2P cmd=… seq=… code=… src=… dst=… srcFp=… dstFp=…`, the data in 512-byte
+`hex[k/n] <HEX> |<UTF-8 preview>|` lines and a TLV breakdown (`tlv 81.02 len=…: <hex> = <int> "<text>"`). For 30 s after each ping it also logs
+`unhandled svc=.. cmd=..` frames nothing else handles (with their decoded TLV) and `unclaimed P2P` packets for packages no service has.
+Device check: `adb logcat -s JoyoFit:V | grep PetalProbe`, open the watch app, read what follows `answering ping seq=… with 0xca (app present)`.
+
 ### Device test steps
 
 1. Connect, tap **Sync now** and read `adb logcat -d -s JoyoFit:V | grep -E "P2P|Health metric|Healthy Living|Courses"`. Expected: `P2P: SupportedCommands 34/01=true; registering P2P services`, `P2P dictionary sync: ping answered 0xca`,

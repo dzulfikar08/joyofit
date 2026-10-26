@@ -56,6 +56,8 @@ public final class P2PStack: @unchecked Sendable {
     private var _dictionary: P2PDictionarySyncService?
     private var _healthModel: HealthModelService?
     private var _dictionaryPing: Int?
+    private var _petalProbe: PetalMapsProbeService?
+    private var _petalProbeHook: Int?
 
     public init(
         session: HuaweiSession, caps: DeviceCaps, log: @escaping LogSink, settings: HealthLivingState,
@@ -170,16 +172,62 @@ public final class P2PStack: @unchecked Sendable {
         return true
     }
 
+    /// The Petal Maps companion probe (lab, `PetalProbeWire`); nil unless its switch is on.
+    public var petalProbe: PetalMapsProbeService? { lock.p2pLocked { _petalProbe } }
+
+    /// Registers the Petal Maps companion probe and its listeners for unhandled frames; `P2pController` checks the lab switch.
+    public func registerPetalProbe() async {
+        if !caps.supports(0x34, 0x01) {
+            note("\(PetalProbeWire.tag) the watch does not list the P2P service (34/01); probe not registered")
+            return
+        }
+        let service = PetalMapsProbeService(manager: manager, log: sink)
+        let fresh = lock.p2pLocked { () -> Bool in
+            if _petalProbe != nil { return false }
+            _petalProbe = service
+            return true
+        }
+        if !fresh { return }
+        manager.setUnclaimedListener { [weak service] in service?.onUnclaimed($0) }
+        service.register()
+        let hook = await session.observeUnhandled { [weak service] s, c, tlv, raw in service?.onUnhandled(service: s, command: c, tlv: tlv, raw: raw) }
+        let kept = lock.p2pLocked { () -> Bool in
+            guard _petalProbe === service else { return false }
+            _petalProbeHook = hook
+            return true
+        }
+        if !kept { await session.unsubscribe(hook) }
+    }
+
+    public func unregisterPetalProbe() {
+        let (service, hook) = lock.p2pLocked { () -> (PetalMapsProbeService?, Int?) in
+            defer {
+                _petalProbe = nil
+                _petalProbeHook = nil
+            }
+            return (_petalProbe, _petalProbeHook)
+        }
+        guard service != nil else { return }
+        if let hook {
+            let session = self.session
+            Task { await session.unsubscribe(hook) }
+        }
+        manager.setUnclaimedListener(nil)
+        manager.unregisterService(PetalProbeWire.phonePackage)
+        note("\(PetalProbeWire.tag) unregistered")
+    }
+
     public func close() {
-        let (id, running) = lock.p2pLocked { () -> (Int?, [Task<Void, Never>]) in
+        let (id, hook, running) = lock.p2pLocked { () -> (Int?, Int?, [Task<Void, Never>]) in
             defer {
                 subscription = nil
+                _petalProbeHook = nil
                 tasks = []
             }
-            return (subscription, tasks)
+            return (subscription, _petalProbeHook, tasks)
         }
-        if let id {
-            let session = self.session
+        let session = self.session
+        for id in [id, hook].compactMap({ $0 }) {
             Task { await session.unsubscribe(id) }
         }
         manager.unregisterAllServices()

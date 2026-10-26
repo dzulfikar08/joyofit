@@ -91,6 +91,8 @@
     "detailsDev": "Running courses: unverified, the course format comes from static analysis of Huawei Health. The watch may refuse it. Bluetooth LE link: connect over Bluetooth LE GATT (service FE86) instead of the watch's own link. Disconnect and connect again to apply. Steps go to logcat tag JoyoFitBle.",
     "offlineMapLab": "Offline maps on the watch (lab test)",
     "offlineMapLabSubtitle": "Download maps built from OpenStreetMap and send them to the watch",
+    "petalMapsProbe": "Petal Maps on the watch (lab test)",
+    "petalMapsProbeRisk": "Off by default. A lab test: when on, JoyoFit answers the watch's built-in Petal Maps app as if its phone app were installed and writes everything that app sends to the log (tag JoyoFit), to learn what it expects from the phone. JoyoFit sends the app nothing else and contacts no Petal or Huawei server. The watch app may keep showing its download screen or misbehave; switch this off if it does.",
     "offlineMapLabRisk": "Off by default. When on, JoyoFit talks to the watch's offline-map app (the way the watch maker's app sends its maps). The lab screen downloads map files that JoyoFit builds from OpenStreetMap from JoyoFit's server (api.fit.joyorogo.com; the request carries no location, ID or account, the server sees your IP address) and sends them to the watch. The map format comes from public research, not from the watch maker; the watch may refuse a file or its map app may misbehave. Delete the map from the lab screen to undo. Unproven on any watch: turn it on only to test."
   },
   "log": {

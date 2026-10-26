@@ -35,6 +35,14 @@ final class OfflineMapLabTests: XCTestCase {
         XCTAssertTrue(defaults.bool(forKey: "offline_map_lab"))
     }
 
+    func testThePetalMapsProbeSwitchIsOffByDefaultAndPersists() {
+        let defaults = ephemeralDefaults()
+        XCTAssertFalse(P2pSettings(defaults: defaults).petalMapsProbe)
+        P2pSettings(defaults: defaults).petalMapsProbe = true
+        XCTAssertTrue(P2pSettings(defaults: defaults).petalMapsProbe)
+        XCTAssertTrue(defaults.bool(forKey: "petal_maps_probe"))
+    }
+
     func testEveryWatchCallRefusesWhileTheSwitchIsOff() async {
         let (lab, _) = lab()
         var r = await code { try await lab.freeSpace() }

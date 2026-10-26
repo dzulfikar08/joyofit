@@ -88,6 +88,7 @@ public final class P2pController: LinkObserver, @unchecked Sendable {
         await created.start()
         created.registerServices()
         offlineMaps.attach(created)
+        if settings.petalMapsProbe { await created.registerPetalProbe() }
         recordGates(created, caps: handle.caps)
     }
 
@@ -100,6 +101,14 @@ public final class P2pController: LinkObserver, @unchecked Sendable {
             return _stack
         }
         old?.close()
+    }
+
+    /// Lab (JRG-434, off by default): the Petal Maps companion probe (`PetalProbeWire`); applied at once when connected and on every connect.
+    public func setPetalMapsProbe(_ enabled: Bool) async {
+        settings.petalMapsProbe = enabled
+        events.info("\(PetalProbeWire.tag) lab switch \(enabled ? "on" : "off")")
+        guard let current = stack else { return }
+        if enabled { await current.registerPetalProbe() } else { current.unregisterPetalProbe() }
     }
 
     private func recordGates(_ created: P2PStack, caps: DeviceCaps) {

@@ -18,6 +18,7 @@ public final class P2pSettings: HealthLivingState, @unchecked Sendable {
         static let summary = "hl_summary"
         static let courses = "courses_experimental"
         static let offlineMapLab = "offline_map_lab"
+        static let petalMapsProbe = "petal_maps_probe"
     }
 
     public init(defaults: UserDefaults? = nil) {
@@ -68,5 +69,11 @@ public final class P2pSettings: HealthLivingState, @unchecked Sendable {
     public var offlineMapLab: Bool {
         get { defaults.bool(forKey: Key.offlineMapLab) }
         set { defaults.set(newValue, forKey: Key.offlineMapLab) }
+    }
+
+    /// Lab (JRG-434): answer the watch's Petal Maps app and log what it sends (`PetalProbeWire`). Off by default.
+    public var petalMapsProbe: Bool {
+        get { defaults.bool(forKey: Key.petalMapsProbe) }
+        set { defaults.set(newValue, forKey: Key.petalMapsProbe) }
     }
 }
