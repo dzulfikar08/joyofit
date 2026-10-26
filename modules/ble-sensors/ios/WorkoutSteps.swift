@@ -92,7 +92,7 @@ final class WorkoutSteps: @unchecked Sendable {
         let started: String? = lock.withLock {
             if running { return nil }
             running = true
-            let log = StepsLog(label: label, startedMs: startedMs)
+            let log = StepsLog(label: self.label, startedMs: startedMs)
             self.log = log
             steps = 0
             timer = makeTimer()
