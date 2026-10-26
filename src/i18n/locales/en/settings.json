@@ -1193,6 +1193,7 @@
     "update": "Update",
     "deletePhone": "Delete from phone",
     "deleteWatch": "Delete from watch",
-    "downloaded": "{{name}} downloaded and checked (SHA-256)."
+    "downloaded": "{{name}} downloaded and checked (SHA-256).",
+    "missingFile": "{{name}} is no longer on this phone. Download it again."
   }
 }
