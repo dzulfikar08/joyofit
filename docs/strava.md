@@ -378,7 +378,20 @@ keeps showing its mark.
 
 **Flow.** The app builds the same FIT file the API upload sends (`buildWorkoutFit`, `manualUploadFile`), writes it to the
 cache as `joyofit-<workout start>.fit` (`fitFileName`, the API upload's file name too) and opens
-`app/workouts/strava-upload.tsx`: Strava's upload page in a web view (`modules/strava-upload-web`), requested as the desktop
+`app/workouts/strava-upload.tsx` on a chooser with two ways (`ManualRoute`):
+
+- **Open in browser (Google login works)**, the default: saves the file (Android: the export folder picker, remembered like
+  the Export card's Save, normally Downloads; iOS: the share sheet, "Save to Files"), then opens
+  `https://www.strava.com/upload/select` in the phone's browser and shows one line: pick `joyofit-<date>.fit` from
+  Downloads/Files, and turn on Desktop site if the page asks. A cancelled folder picker opens nothing. The chooser stays up
+  for **Already uploaded**.
+- **Inside JoyoFit (email & password login)**: the web view described below. **Other way** goes back to the chooser.
+
+The last choice is stored in `cloud_state.strava_manual_route` (`getManualRoute`/`setManualRoute` in `manualStore.ts`; kept
+when local data is deleted, like the other `strava_` keys) and shown as the main (filled) button, first, next time. Both are
+JavaScript only: no native code was added for the chooser, so it shipped over the air.
+
+The in-app way is Strava's upload page in a web view (`modules/strava-upload-web`), requested as the desktop
 site because Strava offers the file upload only there. The person logs in to Strava there themselves and taps Strava's own
 **Choose files**. When the page's file input asks the browser for a file, the app answers that request with the workout's
 file instead of opening a picker; the person then finishes on Strava. Taps with a Strava login in place: **Upload to Strava
@@ -413,11 +426,9 @@ browser for the person:
 
 **Login.** Google does not allow its sign-in in embedded web views (Google OAuth 2.0 Policies,
 <https://developers.google.com/identity/protocols/oauth2/policies>, "Use secure browsers"; blocked since 30 September 2021),
-so **Sign in with Google** on Strava's page fails inside the app. The screen says to log in with email and password. Apple and
-Facebook sign-in were not tested in the web view and are not promised. Someone with a Google-only Strava account uses **Open
-in browser**: it saves the file (Android: the export folder picker, remembered like the Export card's Save; iOS: the share
-sheet, "Save to Files"), then opens `strava.com/upload/select` in the phone's browser with a note to switch on its desktop
-site and pick the file.
+so **Sign in with Google** on Strava's page fails inside the app. That is why the browser is the default way (Flow above), and
+the in-app screen says to log in with email and password. Apple and Facebook sign-in were not tested in the web view and are
+not promised.
 
 **State.** Nothing is read back from Strava. **Already uploaded** stores the time in `strava_manual_upload`
 (`workout_start`, `marked_at`; `src/features/strava/manualStore.ts`), shown on the workout's Strava card with **Not uploaded

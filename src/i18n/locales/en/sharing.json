@@ -63,14 +63,14 @@
       "loadError": "Strava's page did not load: {{error}}",
       "retry": "Try again",
       "markDone": "Already uploaded",
-      "openBrowser": "Open in browser",
-      "browserTitle": "Upload in the browser",
-      "browserFolder": "{{file}} is saved in {{folder}}. In the browser, turn on Desktop site, log in to Strava, tap Choose files and pick the file there.",
-      "browserFiles": "In the browser, turn on the desktop website (Safari: aA, Request Desktop Website), log in to Strava, tap Choose files and pick {{file}} from Files.",
-      "browserConfirm": "Open browser",
+      "openBrowser": "Open in browser (Google login works)",
       "status": "Uploaded by hand",
       "markedOn": "Marked on {{date}}",
-      "unmark": "Not uploaded after all"
+      "unmark": "Not uploaded after all",
+      "inApp": "Inside JoyoFit (email & password login)",
+      "chooseTitle": "Upload this workout on Strava's page. Choose how:",
+      "browserHint": "Pick {{file}} from Downloads/Files. If the page asks, turn on Desktop site.",
+      "otherWay": "Other way"
     }
   },
   "fitImport": {

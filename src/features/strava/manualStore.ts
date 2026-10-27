@@ -1,5 +1,8 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { setCloudState } from '@/db/cloud';
+import { parseManualRoute, type ManualRoute } from '@/features/strava/manualUpload';
+
 /**
  * Workouts the person marked as uploaded to Strava by hand ("Already uploaded" after the manual upload). Local only, keyed by the
  * workout's start like `strava_upload`, and apart from it: that table is the API upload's own state (wiped when the connection
@@ -35,4 +38,19 @@ export async function markManualUpload(db: SQLiteDatabase, workoutStart: number,
 
 export async function clearManualUploadMark(db: SQLiteDatabase, workoutStart: number): Promise<void> {
   await db.runAsync('DELETE FROM strava_manual_upload WHERE workout_start = ?', workoutStart);
+}
+
+/**
+ * The last way the person chose to upload by hand (`ManualRoute`), offered first next time. In `cloud_state` under a `strava_` key,
+ * which deleting local data keeps, like the other Strava choices.
+ */
+const ROUTE_KEY = 'strava_manual_route';
+
+export async function getManualRoute(db: SQLiteDatabase): Promise<ManualRoute> {
+  const row = await db.getFirstAsync<{ value: string }>('SELECT value FROM cloud_state WHERE key = ?', ROUTE_KEY);
+  return parseManualRoute(row?.value);
+}
+
+export async function setManualRoute(db: SQLiteDatabase, route: ManualRoute): Promise<void> {
+  await setCloudState(db, { [ROUTE_KEY]: route });
 }

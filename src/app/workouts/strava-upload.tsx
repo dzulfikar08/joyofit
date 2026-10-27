@@ -8,29 +8,30 @@ import { answersFileRequests, StravaUploadWebView, type FileRequest, type Strava
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ButtonRow } from '@/components/ButtonRow';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Notice } from '@/components/States';
 import { useFloatingTabBarFootprint } from '@/components/useFloatingTabBarFootprint';
 import { deviceExportIo } from '@/features/export/exportWorkoutFile';
 import { EXPORT_MIME, saveFlow } from '@/features/export/workoutExport';
 import { writeManualUploadFile, type WrittenManualFile } from '@/features/strava/manualFile';
-import { getManualUploadMark, markManualUpload } from '@/features/strava/manualStore';
+import { getManualRoute, getManualUploadMark, markManualUpload, setManualRoute } from '@/features/strava/manualStore';
 import {
   answerFileRequest,
   initialManualUpload,
   manualUploadReducer,
   STRAVA_UPLOAD_URL,
   type ManualFile,
+  type ManualRoute,
 } from '@/features/strava/manualUpload';
 import { errorMessage } from '@/format';
 import { fmtDate } from '@/i18n/format';
 import { spacing, useTheme } from '@/theme';
 
 /**
- * Manual Strava upload (`features/strava/manualUpload.ts`): strava.com's own upload page in a web view, and the workout's FIT file
- * handed to the page when its "Choose files" asks for one. The person logs in and taps everything on Strava themselves; the app
- * reads nothing from the page. "Already uploaded" marks the workout on this phone; "Open in browser" saves the file and opens
- * the page in the phone's browser instead.
+ * Manual Strava upload (`features/strava/manualUpload.ts`). It opens on a chooser: "Open in browser" (the default, since Google
+ * login only works there) saves the workout's FIT file and opens strava.com's upload page in the phone's browser; "Inside JoyoFit"
+ * shows the page in a web view and hands it the file when its "Choose files" asks for one. The last choice is remembered and
+ * offered as the main button. The person logs in and taps everything on Strava themselves; the app reads nothing from the page.
+ * "Already uploaded" marks the workout on this phone.
  */
 export default function StravaUploadScreen() {
   const { t } = useTranslation('sharing');
@@ -49,7 +50,7 @@ export default function StravaUploadScreen() {
   const [canGoBack, setCanGoBack] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [browserNote, setBrowserNote] = useState<string | null>(null);
+  const [browserHint, setBrowserHint] = useState<string | null>(null);
   const [busy, setBusy] = useState<'files' | 'browser' | 'mark' | null>(null);
   const web = useRef<StravaUploadWebRef>(null);
   // The file as the native event handler sees it, and a request that came before the file was written.
@@ -73,6 +74,26 @@ export default function StravaUploadScreen() {
       live = false;
     };
   }, [db, workoutId]);
+
+  useEffect(() => {
+    let live = true;
+    getManualRoute(db)
+      .then((route) => {
+        if (live) dispatch({ type: 'routeLoaded', route });
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [db]);
+
+  const remember = useCallback(
+    (route: ManualRoute) => {
+      dispatch({ type: 'chose', route });
+      setManualRoute(db, route).catch(() => {});
+    },
+    [db],
+  );
 
   const answer = useCallback((request: FileRequest, current: ManualFile) => {
     const decision = answerFileRequest(current, request);
@@ -115,24 +136,28 @@ export default function StravaUploadScreen() {
     }
   }, [written]);
 
+  // Saves the file (Android: the export folder picker, remembered like the Export card's Save; iOS: the share sheet, "Save to
+  // Files"), then opens Strava's upload page in the phone's browser.
   const openInBrowser = useCallback(async () => {
     if (!written) return;
+    remember('browser');
     setActionError(null);
     setBusy('browser');
     try {
       if (saveFlow(Platform.OS) === 'folder') {
         const folder = await deviceExportIo.saveToFolder(written.name, EXPORT_MIME.fit, written.bytes, false);
-        if (folder !== null) setBrowserNote(t('strava.manual.browserFolder', { file: written.name, folder }));
+        if (folder === null) return;
       } else {
         await deviceExportIo.share(written.uri, EXPORT_MIME.fit, written.name);
-        setBrowserNote(t('strava.manual.browserFiles', { file: written.name }));
       }
+      setBrowserHint(t('strava.manual.browserHint', { file: written.name }));
+      await Linking.openURL(STRAVA_UPLOAD_URL);
     } catch (e) {
       setActionError(errorMessage(e));
     } finally {
       setBusy(null);
     }
-  }, [written, t]);
+  }, [written, t, remember]);
 
   const markDone = useCallback(async () => {
     if (!written) return;
@@ -154,6 +179,63 @@ export default function StravaUploadScreen() {
       : t(direct ? 'strava.manual.direct' : 'strava.manual.files', { file: ready.name })
     : null;
 
+  const browserButton = (
+    <Button
+      key="browser"
+      label={t('strava.manual.openBrowser')}
+      variant={state.preferred === 'browser' ? 'primary' : 'secondary'}
+      icon="open-outline"
+      onPress={() => void openInBrowser()}
+      disabled={!written || busy !== null}
+      loading={busy === 'browser'}
+    />
+  );
+  const inAppButton = (
+    <Button
+      key="inApp"
+      label={t('strava.manual.inApp')}
+      variant={state.preferred === 'inApp' ? 'primary' : 'secondary'}
+      icon="globe-outline"
+      onPress={() => remember('inApp')}
+      disabled={state.file.status === 'failed' || busy !== null}
+    />
+  );
+  const markButton = (
+    <Button
+      label={t('strava.manual.markDone')}
+      variant={state.stage === 'inApp' ? 'primary' : 'secondary'}
+      icon="checkmark-done"
+      onPress={() => void markDone()}
+      disabled={!written || busy !== null}
+      loading={busy === 'mark'}
+    />
+  );
+  const markedOn =
+    state.markedAt !== null ? (
+      <AppText variant="caption" muted>
+        {t('strava.manual.markedOn', { date: fmtDate(state.markedAt, 'medium') })}
+      </AppText>
+    ) : null;
+
+  if (state.stage === 'choose') {
+    return (
+      <View style={[styles.screen, styles.chooser, { backgroundColor: colors.background, paddingBottom: bottom + spacing.sm }]}>
+        <AppText variant="body">{t('strava.manual.chooseTitle')}</AppText>
+        {state.file.status === 'failed' ? <Notice tone="danger">{state.file.error}</Notice> : null}
+        {state.file.status === 'building' ? (
+          <AppText variant="caption" muted>
+            {t('strava.manual.preparing')}
+          </AppText>
+        ) : null}
+        {browserHint !== null ? <Notice icon="information-circle">{browserHint}</Notice> : null}
+        {actionError !== null ? <Notice tone="danger">{actionError}</Notice> : null}
+        {markedOn}
+        <View style={styles.choices}>{state.preferred === 'browser' ? [browserButton, inAppButton] : [inAppButton, browserButton]}</View>
+        {markButton}
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <View style={styles.top}>
@@ -170,16 +252,10 @@ export default function StravaUploadScreen() {
             {fileHint}
           </Notice>
         ) : null}
-        {state.markedAt !== null ? (
-          <AppText variant="caption" muted>
-            {t('strava.manual.markedOn', { date: fmtDate(state.markedAt, 'medium') })}
-          </AppText>
-        ) : null}
-        {state.file.status !== 'failed' ? (
-          <AppText variant="caption" muted>
-            {t('strava.manual.loginHint')}
-          </AppText>
-        ) : null}
+        {markedOn}
+        <AppText variant="caption" muted>
+          {t('strava.manual.loginHint')}
+        </AppText>
         {loadError !== null ? (
           <Notice
             tone="danger"
@@ -195,52 +271,29 @@ export default function StravaUploadScreen() {
         ) : null}
         {actionError !== null ? <Notice tone="danger">{actionError}</Notice> : null}
       </View>
-      {state.file.status !== 'failed' ? (
-        <StravaUploadWebView
-          ref={web}
-          style={[styles.web, { borderColor: colors.hairline }]}
-          sourceUrl={STRAVA_UPLOAD_URL}
-          onFileRequest={(event) => answer(event.nativeEvent, file.current)}
-          onNavigation={(event) => {
-            setCanGoBack(event.nativeEvent.canGoBack);
-            if (event.nativeEvent.loading) setLoadError(null);
-          }}
-          onLoadError={(event) => setLoadError(event.nativeEvent.description)}
-        />
-      ) : (
-        <View style={styles.web} />
-      )}
+      <StravaUploadWebView
+        ref={web}
+        style={[styles.web, { borderColor: colors.hairline }]}
+        sourceUrl={STRAVA_UPLOAD_URL}
+        onFileRequest={(event) => answer(event.nativeEvent, file.current)}
+        onNavigation={(event) => {
+          setCanGoBack(event.nativeEvent.canGoBack);
+          if (event.nativeEvent.loading) setLoadError(null);
+        }}
+        onLoadError={(event) => setLoadError(event.nativeEvent.description)}
+      />
       <View style={[styles.bottom, { paddingBottom: bottom + spacing.sm }]}>
         <ButtonRow>
           <Button
-            label={t('strava.manual.openBrowser')}
+            label={t('strava.manual.otherWay')}
             variant="secondary"
-            icon="open-outline"
-            onPress={() => void openInBrowser()}
-            disabled={!written || busy !== null}
-            loading={busy === 'browser' || busy === 'files'}
+            icon="swap-horizontal"
+            onPress={() => dispatch({ type: 'backToChoices' })}
+            disabled={busy !== null}
           />
-          <Button
-            label={t('strava.manual.markDone')}
-            variant="primary"
-            icon="checkmark-done"
-            onPress={() => void markDone()}
-            disabled={!written || busy !== null}
-            loading={busy === 'mark'}
-          />
+          {markButton}
         </ButtonRow>
       </View>
-      <ConfirmDialog
-        visible={browserNote !== null}
-        title={t('strava.manual.browserTitle')}
-        message={browserNote ?? ''}
-        confirmLabel={t('strava.manual.browserConfirm')}
-        onConfirm={() => {
-          setBrowserNote(null);
-          Linking.openURL(STRAVA_UPLOAD_URL).catch((e) => setActionError(errorMessage(e)));
-        }}
-        onCancel={() => setBrowserNote(null)}
-      />
     </View>
   );
 }
@@ -250,4 +303,6 @@ const styles = StyleSheet.create({
   top: { paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.sm, gap: spacing.xs },
   web: { flex: 1, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth },
   bottom: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
+  chooser: { paddingHorizontal: spacing.md, paddingTop: spacing.md, gap: spacing.sm },
+  choices: { gap: spacing.sm },
 });

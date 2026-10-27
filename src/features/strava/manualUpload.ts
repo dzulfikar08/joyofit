@@ -56,8 +56,28 @@ export function answerFileRequest(file: ManualFile, request: PageFileRequest): F
   return { kind: 'file', uri: file.uri };
 }
 
-/** The upload screen's state. `handedOver` counts the file requests answered with the file during this visit. */
+/**
+ * How the person uploads: `browser` saves the file and opens Strava's page in the phone's browser, where every Strava login works
+ * (Google blocks its sign-in inside embedded web views); `inApp` is the web view that hands the file over itself, with email and
+ * password login only. The browser is the default; the screen remembers the last choice (`cloud_state.strava_manual_route`).
+ */
+export type ManualRoute = 'browser' | 'inApp';
+
+export const DEFAULT_MANUAL_ROUTE: ManualRoute = 'browser';
+
+/** The stored choice; anything else (never chosen, an unknown value) is the default. */
+export function parseManualRoute(value: string | null | undefined): ManualRoute {
+  return value === 'inApp' || value === 'browser' ? value : DEFAULT_MANUAL_ROUTE;
+}
+
+/**
+ * The upload screen's state. `handedOver` counts the file requests answered with the file during this visit. `stage` is the
+ * chooser first (`choose`, which also stays up after the browser was opened, for "Already uploaded") and the web view once the
+ * person picked it (`inApp`); `preferred` is the remembered choice, offered as the main button.
+ */
 export interface ManualUploadState {
+  stage: 'choose' | 'inApp';
+  preferred: ManualRoute;
   file: ManualFile;
   handedOver: number;
   /** Unix seconds the person marked the workout as uploaded; null when not marked. */
@@ -70,9 +90,18 @@ export type ManualUploadEvent =
   | { type: 'handedOver' }
   | { type: 'markLoaded'; markedAt: number | null }
   | { type: 'marked'; at: number }
-  | { type: 'unmarked' };
+  | { type: 'unmarked' }
+  | { type: 'routeLoaded'; route: ManualRoute }
+  | { type: 'chose'; route: ManualRoute }
+  | { type: 'backToChoices' };
 
-export const initialManualUpload: ManualUploadState = { file: { status: 'building' }, handedOver: 0, markedAt: null };
+export const initialManualUpload: ManualUploadState = {
+  stage: 'choose',
+  preferred: DEFAULT_MANUAL_ROUTE,
+  file: { status: 'building' },
+  handedOver: 0,
+  markedAt: null,
+};
 
 export function manualUploadReducer(state: ManualUploadState, event: ManualUploadEvent): ManualUploadState {
   switch (event.type) {
@@ -89,5 +118,12 @@ export function manualUploadReducer(state: ManualUploadState, event: ManualUploa
       return { ...state, markedAt: event.at };
     case 'unmarked':
       return { ...state, markedAt: null };
+    case 'routeLoaded':
+      // The stored choice only sets the default while the person has not picked yet.
+      return state.stage === 'choose' ? { ...state, preferred: event.route } : state;
+    case 'chose':
+      return { ...state, preferred: event.route, stage: event.route === 'inApp' ? 'inApp' : 'choose' };
+    case 'backToChoices':
+      return { ...state, stage: 'choose' };
   }
 }

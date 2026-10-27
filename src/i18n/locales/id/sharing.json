@@ -63,14 +63,14 @@
       "loadError": "Halaman Strava tidak terbuka: {{error}}",
       "retry": "Coba lagi",
       "markDone": "Sudah diunggah",
-      "openBrowser": "Buka di browser",
-      "browserTitle": "Unggah lewat browser",
-      "browserFolder": "{{file}} tersimpan di {{folder}}. Di browser, nyalakan Situs desktop, masuk ke Strava, ketuk Choose files, lalu pilih file itu.",
-      "browserFiles": "Di browser, nyalakan situs desktop (Safari: aA, Minta Situs Web Desktop), masuk ke Strava, ketuk Choose files, lalu pilih {{file}} dari Files.",
-      "browserConfirm": "Buka browser",
+      "openBrowser": "Buka di browser (login Google bisa)",
       "status": "Diunggah manual",
       "markedOn": "Ditandai {{date}}",
-      "unmark": "Ternyata belum diunggah"
+      "unmark": "Ternyata belum diunggah",
+      "inApp": "Di dalam JoyoFit (login email & password)",
+      "chooseTitle": "Unggah latihan ini di halaman Strava. Pilih caranya:",
+      "browserHint": "Pilih file {{file}} dari Unduhan/Files. Kalau halaman minta, nyalakan Situs desktop.",
+      "otherWay": "Cara lain"
     }
   },
   "fitImport": {

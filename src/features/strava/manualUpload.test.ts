@@ -7,6 +7,7 @@ import {
   manualUploadFile,
   manualUploadReducer,
   STRAVA_UPLOAD_URL,
+  parseManualRoute,
   takesWorkoutFile,
   type ManualFile,
   type ManualUploadState,
@@ -111,7 +112,7 @@ describe('manualUploadReducer', () => {
   const step = (state: ManualUploadState, ...events: Parameters<typeof manualUploadReducer>[1][]) => events.reduce(manualUploadReducer, state);
 
   it('starts building, with nothing handed over and no mark', () => {
-    expect(initialManualUpload).toEqual({ file: { status: 'building' }, handedOver: 0, markedAt: null });
+    expect(initialManualUpload).toEqual({ stage: 'choose', preferred: 'browser', file: { status: 'building' }, handedOver: 0, markedAt: null });
   });
 
   it('counts hand-overs only once the file is written', () => {
@@ -124,7 +125,7 @@ describe('manualUploadReducer', () => {
 
   it('keeps a failure and hands nothing over after it', () => {
     const failed = step(initialManualUpload, { type: 'fileFailed', error: 'gone' }, { type: 'handedOver' });
-    expect(failed).toEqual({ file: { status: 'failed', error: 'gone' }, handedOver: 0, markedAt: null });
+    expect(failed).toEqual({ ...initialManualUpload, file: { status: 'failed', error: 'gone' } });
   });
 
   it('loads, sets and clears the mark without touching the file', () => {
@@ -134,5 +135,34 @@ describe('manualUploadReducer', () => {
     expect(marked.markedAt).toBe(200);
     expect(marked.file).toBe(ready.file);
     expect(step(marked, { type: 'unmarked' }).markedAt).toBeNull();
+  });
+});
+
+describe('manual upload chooser', () => {
+  const step = (state: ManualUploadState, ...events: Parameters<typeof manualUploadReducer>[1][]) => events.reduce(manualUploadReducer, state);
+
+  it('reads the stored choice, defaulting to the browser', () => {
+    expect(parseManualRoute(null)).toBe('browser');
+    expect(parseManualRoute('webview')).toBe('browser');
+    expect(parseManualRoute('browser')).toBe('browser');
+    expect(parseManualRoute('inApp')).toBe('inApp');
+  });
+
+  it('opens on the chooser with the remembered choice as default', () => {
+    const loaded = step(initialManualUpload, { type: 'routeLoaded', route: 'inApp' });
+    expect(loaded.stage).toBe('choose');
+    expect(loaded.preferred).toBe('inApp');
+  });
+
+  it('shows the web view only for the in-app choice and goes back to the chooser', () => {
+    const inApp = step(initialManualUpload, { type: 'chose', route: 'inApp' });
+    expect(inApp).toMatchObject({ stage: 'inApp', preferred: 'inApp' });
+    const browser = step(inApp, { type: 'backToChoices' }, { type: 'chose', route: 'browser' });
+    expect(browser).toMatchObject({ stage: 'choose', preferred: 'browser' });
+  });
+
+  it('does not let a late stored choice override a pick', () => {
+    const picked = step(initialManualUpload, { type: 'chose', route: 'inApp' }, { type: 'routeLoaded', route: 'browser' });
+    expect(picked).toMatchObject({ stage: 'inApp', preferred: 'inApp' });
   });
 });

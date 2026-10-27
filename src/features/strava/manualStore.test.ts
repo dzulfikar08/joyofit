@@ -11,7 +11,7 @@ import {
   saveStravaUpload,
 } from '@/db/strava';
 
-import { clearManualUploadMark, ensureStravaManualSchema, getManualUploadMark, markManualUpload } from './manualStore';
+import { clearManualUploadMark, ensureStravaManualSchema, getManualRoute, getManualUploadMark, markManualUpload, setManualRoute } from './manualStore';
 
 const START = 1_792_058_016;
 
@@ -78,5 +78,16 @@ describe('manual upload switch', () => {
     await applyManualUploadSwitch(db, false);
     await applyStravaConnection(db, { connected: false });
     expect(await getStravaSettings(db)).toMatchObject({ connectedAt: null, manualUpload: false });
+  });
+});
+
+describe('manual upload route memory', () => {
+  it('defaults to the browser and remembers the last choice', async () => {
+    const { db } = await open();
+    expect(await getManualRoute(db)).toBe('browser');
+    await setManualRoute(db, 'inApp');
+    expect(await getManualRoute(db)).toBe('inApp');
+    await setManualRoute(db, 'browser');
+    expect(await getManualRoute(db)).toBe('browser');
   });
 });
