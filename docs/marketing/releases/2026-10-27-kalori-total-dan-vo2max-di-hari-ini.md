@@ -2,7 +2,7 @@
 app: joyofit
 feature: Kalori total dan VO2max di Hari Ini
 shipped: 2026-10-27
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-458
