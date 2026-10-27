@@ -16,7 +16,10 @@ describe('watch music files', () => {
     expect(formatOf('lagu.mp3')).toBe('mp3');
     expect(formatOf('lagu.M4A')).toBe('m4a');
     expect(formatOf('lagu.Aac')).toBe('aac');
-    expect(formatOf('lagu.flac')).toBeNull();
+    expect(formatOf('lagu.FLAC')).toBe('flac');
+    expect(formatOf('lagu.wav')).toBe('wav');
+    expect(formatOf('lagu.opus')).toBe('opus');
+    expect(formatOf('lagu.wma')).toBeNull();
   });
 
   test('MP3, M4A and AAC are accepted, in any case', () => {
@@ -24,13 +27,25 @@ describe('watch music files', () => {
     expect(checks.map((c) => (c.accepted ? c.format : null))).toEqual(['mp3', 'm4a', 'aac', 'mp3']);
   });
 
+  test('FLAC, WAV and Opus follow the watch list (Fit 4 Pro: mp3, wav, aac, m4a, flac, opus)', () => {
+    const fit4Pro = { formats: ['mp3', 'wav', 'aac', 'm4a', 'flac', 'opus'], freeSpaceMb: 1469 };
+    const checks = checkSongs([song('a.flac'), song('b.WAV'), song('c.opus'), song('d.ogg')], fit4Pro);
+    expect(checks.map((c) => (c.accepted ? c.format : c.reason))).toEqual(['flac', 'wav', 'opus', 'opus']);
+    const old = checkSongs([song('a.flac'), song('b.wav'), song('c.opus'), song('d.ogg')], ALL);
+    expect(old.map((c) => (c.accepted ? null : [c.reason, c.extension]))).toEqual([
+      ['notOnWatch', 'flac'],
+      ['notOnWatch', 'wav'],
+      ['notOnWatch', 'opus'],
+      ['notOnWatch', 'ogg'],
+    ]);
+    expect(checkSongs([song('d.ogg')], { formats: ['ogg'], freeSpaceMb: 1000 })[0]).toMatchObject({ accepted: true, format: 'ogg' });
+  });
+
   test('other formats and names without an extension are rejected', () => {
-    const checks = checkSongs([song('a.flac'), song('b.wav'), song('c.ogg'), song('d.opus'), song('lagu')], ALL);
+    const checks = checkSongs([song('a.wma'), song('b.ape'), song('lagu')], ALL);
     expect(checks.map((c) => (c.accepted ? null : [c.reason, c.extension]))).toEqual([
-      ['format', 'flac'],
-      ['format', 'wav'],
-      ['format', 'ogg'],
-      ['format', 'opus'],
+      ['format', 'wma'],
+      ['format', 'ape'],
       ['noExtension', ''],
     ]);
   });

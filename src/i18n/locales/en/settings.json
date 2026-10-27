@@ -93,8 +93,8 @@
     "offlineMapLab": "Offline maps on the watch (lab test)",
     "offlineMapLabSubtitle": "Download maps built from OpenStreetMap and send them to the watch",
     "watchMusicLab": "Music on the watch (lab test)",
-    "watchMusicLabRisk": "Off by default. When on, you can copy your own song files to the watch, see the songs on the watch and delete them. Files go only from the phone to the watch over Bluetooth; nothing is uploaded to a server. JoyoFit does not convert songs: only MP3, M4A and AAC are sent, other formats are refused. The way songs are sent comes from public research, not from the watch maker, and is unproven on any watch; the watch may refuse a file. Turn it on only to test.",
-    "watchMusicLabSubtitle": "Copy your own MP3, M4A or AAC files to the watch",
+    "watchMusicLabRisk": "Off by default. When on, you can copy your own song files to the watch, see the songs on the watch and delete them. Files go only from the phone to the watch over Bluetooth; nothing is uploaded to a server. JoyoFit does not convert songs: MP3, M4A, AAC, FLAC, WAV and Opus are sent only when the watch says it takes that format, other files are refused. The way songs are sent comes from public research, not from the watch maker, and has been tried only on a Watch Fit 4 Pro; the watch may refuse a file. Turn it on only to test.",
+    "watchMusicLabSubtitle": "Copy your own MP3, M4A, AAC, FLAC, WAV or Opus files to the watch",
     "offlineMapLabRisk": "Off by default. When on, JoyoFit talks to the watch's offline-map app (the way the watch maker's app sends its maps). The lab screen downloads map files that JoyoFit builds from OpenStreetMap from JoyoFit's server (api.fit.joyorogo.com; the request carries no location, ID or account, the server sees your IP address) and sends them to the watch. The map format comes from public research, not from the watch maker; the watch may refuse a file or its map app may misbehave. Delete the map from the lab screen to undo. Unproven on any watch: turn it on only to test.",
     "watchNavLab": "Watch navigation (lab)",
     "watchNavLabRisk": "Off by default. When on, a route's page has a \"Start watch navigation\" button: the phone follows your GPS along the route and sends turn instructions to the JoyoNavi app on the watch. For street names and a new route when you leave it, the route's points and your position go to the public OSRM service (routing.openstreetmap.de, FOSSGIS), as when drawing a route. The watch app cannot be installed yet (the Huawei developer account is not ready), so this is for testing only."
@@ -1266,8 +1266,8 @@
       "skipped": "Not sent"
     },
     "reject": {
-      "noExtension": "{{name}}: the file name has no extension, so its format is unknown. Use MP3, M4A or AAC; JoyoFit does not convert songs.",
-      "format": "{{name}}: {{ext}} is not supported. Use MP3, M4A or AAC; JoyoFit does not convert songs.",
+      "noExtension": "{{name}}: the file name has no extension, so its format is unknown. Use MP3, M4A, AAC, FLAC, WAV or Opus; JoyoFit does not convert songs.",
+      "format": "{{name}}: {{ext}} is not supported. Use MP3, M4A, AAC, FLAC, WAV or Opus; JoyoFit does not convert songs.",
       "notOnWatch": "{{name}}: this watch does not take {{ext}}. It takes: {{formats}}.",
       "empty": "{{name}}: the file is empty.",
       "tooBig": "{{name}}: over {{max}} MB, too big to send.",

@@ -15,10 +15,13 @@ import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiPacket
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.FileUpload
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.MusicControl
 
-/** The audio formats JoyoFit sends, by their name in Gadgetbridge's format table. Nothing is converted. */
-internal enum class SongFormat(val wire: String) { MP3("mp3"), M4A("m4a"), AAC("aac") }
+/**
+ * The audio formats JoyoFit sends, by their name in Gadgetbridge's format table (the names the watch lists in 25/04). Nothing is converted.
+ * OGG is Ogg Vorbis; Opus in an Ogg file is OPUS.
+ */
+internal enum class SongFormat(val wire: String) { MP3("mp3"), M4A("m4a"), AAC("aac"), FLAC("flac"), WAV("wav"), OPUS("opus"), OGG("ogg") }
 
-/** What a song file's first bytes say: its format and, for MP3 and ADTS AAC, the sample rate of the first frame. */
+/** What a song file's first bytes say: its format and, when the header carries it, the sample rate (MP3/ADTS first frame, FLAC, WAV, Ogg). */
 internal data class SongProbe(val format: SongFormat, val sampleRate: Int?, val detail: String)
 
 /** One format's limits from 25/0D. */
@@ -81,22 +84,65 @@ internal object MusicFiles {
     return name.substring(dot + 1).lowercase(java.util.Locale.ROOT)
   }
 
+  /** `.ogg` names OGG here; its content decides (Opus in an Ogg file is sent as OPUS, see [check]). */
   fun formatOfExtension(name: String): SongFormat? = when (extension(name)) {
     "mp3" -> SongFormat.MP3
     "m4a" -> SongFormat.M4A
     "aac" -> SongFormat.AAC
+    "flac" -> SongFormat.FLAC
+    "wav" -> SongFormat.WAV
+    "opus" -> SongFormat.OPUS
+    "ogg" -> SongFormat.OGG
     else -> null
   }
 
+  private fun ascii(data: ByteArray, at: Int, text: String): Boolean =
+    at >= 0 && at + text.length <= data.size && text.indices.all { data[at + it] == text[it].code.toByte() }
+
+  private fun le32(data: ByteArray, at: Int): Long =
+    (data[at].toLong() and 0xFF) or ((data[at + 1].toLong() and 0xFF) shl 8) or ((data[at + 2].toLong() and 0xFF) shl 16) or ((data[at + 3].toLong() and 0xFF) shl 24)
+
+  /** A RIFF/WAVE file: the sample rate from its `fmt ` chunk (null when the chunk is not in the bytes). */
+  private fun probeWav(data: ByteArray): SongProbe {
+    var at = 12
+    while (at + 8 <= data.size) {
+      val size = le32(data, at + 4)
+      if (ascii(data, at, "fmt ") && at + 16 <= data.size) {
+        return SongProbe(SongFormat.WAV, le32(data, at + 12).toInt(), "RIFF WAVE, fmt chunk at $at")
+      }
+      val next = at + 8 + size + (size and 1)
+      if (next > Int.MAX_VALUE) break
+      at = next.toInt()
+    }
+    return SongProbe(SongFormat.WAV, null, "RIFF WAVE without fmt chunk")
+  }
+
+  /** The first Ogg page's first packet: `OpusHead` is OPUS, a Vorbis identification header is OGG, anything else null. */
+  private fun probeOgg(data: ByteArray): SongProbe? {
+    if (data.size < 27) return null
+    val packet = 27 + (data[26].toInt() and 0xFF)
+    if (ascii(data, packet, "OpusHead")) {
+      val rate = if (packet + 16 <= data.size) le32(data, packet + 12).toInt() else null
+      return SongProbe(SongFormat.OPUS, rate, "Ogg Opus")
+    }
+    if (packet + 16 <= data.size && data[packet].toInt() == 1 && ascii(data, packet + 1, "vorbis")) {
+      return SongProbe(SongFormat.OGG, le32(data, packet + 12).toInt(), "Ogg Vorbis")
+    }
+    return null
+  }
+
   /**
-   * The format by content: an MP4 `ftyp` box is M4A; after an optional ID3v2 tag, an MPEG-1/2/2.5 Layer III frame header is MP3 and an
-   * ADTS header (sync, layer 00) is AAC. Anything else is null.
+   * The format by content: an MP4 `ftyp` box is M4A; `RIFF`..`WAVE` is WAV; an Ogg page whose first packet is `OpusHead` is OPUS (Vorbis is
+   * OGG); after an optional ID3v2 tag, `fLaC` is FLAC, an MPEG-1/2/2.5 Layer III frame header is MP3 and an ADTS header (sync, layer 00) is
+   * AAC. Anything else is null.
    */
   fun probe(data: ByteArray): SongProbe? {
     if (data.size >= 12 && data[4] == 'f'.code.toByte() && data[5] == 't'.code.toByte() && data[6] == 'y'.code.toByte() && data[7] == 'p'.code.toByte()) {
       val brand = String(data, 8, 4, Charsets.ISO_8859_1)
       return SongProbe(SongFormat.M4A, null, "MP4 brand '$brand'")
     }
+    if (ascii(data, 0, "RIFF") && ascii(data, 8, "WAVE")) return probeWav(data)
+    if (ascii(data, 0, "OggS")) return probeOgg(data)
     var at = 0
     var id3 = ""
     if (data.size >= 10 && data[0] == 'I'.code.toByte() && data[1] == 'D'.code.toByte() && data[2] == '3'.code.toByte()) {
@@ -107,6 +153,12 @@ internal object MusicFiles {
     }
     // Some encoders pad the tag with zeros beyond its declared size.
     while (at < data.size && data[at].toInt() == 0) at++
+    if (ascii(data, at, "fLaC")) {
+      // STREAMINFO is the first metadata block: 4-byte block header, then the 20-bit sample rate at byte 10.
+      val s = at + 8 + 10
+      val rate = if (s + 3 <= data.size) ((data[s].toInt() and 0xFF) shl 12) or ((data[s + 1].toInt() and 0xFF) shl 4) or ((data[s + 2].toInt() and 0xFF) shr 4) else null
+      return SongProbe(SongFormat.FLAC, rate, "${id3}FLAC stream at $at")
+    }
     if (at + 4 > data.size) return null
     val b0 = data[at].toInt() and 0xFF
     val b1 = data[at + 1].toInt() and 0xFF
@@ -136,12 +188,13 @@ internal object MusicFiles {
    */
   fun check(name: String, data: ByteArray, info: MusicInfo?): SongProbe {
     val byName = formatOfExtension(name)
-      ?: throw invalid("'$name' is not an MP3, M4A or AAC file. JoyoFit sends these as they are and converts nothing.")
+      ?: throw invalid("'$name' is not an MP3, M4A, AAC, FLAC, WAV or Opus file. JoyoFit sends these as they are and converts nothing.")
     if (data.isEmpty()) throw invalid("'$name' is empty.")
     if (data.size > MAX_FILE_BYTES) throw invalid("'$name' is larger than ${MAX_FILE_BYTES / 1024 / 1024} MiB.")
     val probe = probe(data)
       ?: throw invalid("'$name' does not contain ${byName.wire.uppercase(java.util.Locale.ROOT)} audio JoyoFit recognises.")
-    if (probe.format != byName) {
+    // An .ogg file holding Opus goes as OPUS.
+    if (probe.format != byName && !(byName == SongFormat.OGG && probe.format == SongFormat.OPUS)) {
       throw invalid("'$name' is named .${extension(name)} but contains ${probe.format.wire.uppercase(java.util.Locale.ROOT)} audio; rename it to .${probe.format.wire}.")
     }
     if (info != null && info.formats.isNotEmpty() && probe.format.wire !in info.formats) {

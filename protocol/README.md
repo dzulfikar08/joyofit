@@ -526,7 +526,10 @@ thunderstorm. Icon byte values are in `Weather.java` (`iconToByte`, unknown = `0
   slot missing from the list is not an alarm, and a set replaces the whole event list. The app sends the list, then
   reads it back, because a missing acknowledgment is otherwise invisible.
 
-## Songs on the watch (service `25` + FileUpload type `2`; `WatchMusic.kt` / `WatchMusic.swift`) — LAB, off by default, UNVERIFIED on a watch
+## Songs on the watch (service `25` + FileUpload type `2`; `WatchMusic.kt` / `WatchMusic.swift`) — LAB, off by default
+
+Verified on a Watch Fit 4 Pro (Android, 2026-10-27): `25/04` answered `availableSpace=1469 MB formats=[mp3, wav, aac, m4a, flac, opus]
+maxMusicCount=500`; a 32 MB MP3 uploaded over type `2` and plays. Other formats, cancel, delete and iOS are not yet tried on a watch.
 
 Port of Gadgetbridge commit `c8e59392` (`MusicControl`, `HuaweiMusicUtils`, `HuaweiMusicManager`); plan, limits and device test in
 `docs/watch-music.md`. Gate: SupportedCommands `25/04` (GB `supportsMusicUploading`); `25/0D` is asked only when listed; ExpandCapability
@@ -543,6 +546,9 @@ Port of Gadgetbridge commit `c8e59392` (`MusicControl`, `HuaweiMusicUtils`, `Hua
 
 Format bits: seven per byte, bit 7 = more follow; byte 0 `mp3 wav aac sbc msbc hwa cvsd`, byte 1 `pcm ape m4a flac opus ogg butt`, byte 2
 `amr imy` (GB: "most unknown"). Frames of every request and parse of every answer: `Fixtures/packetsMusic.json` (from `GoldenMusic.java`).
+JoyoFit sends a file only when its probed format is in that list: `mp3`, `aac`, `m4a`, `flac` (`fLaC`), `wav` (`RIFF`/`WAVE`), `opus`
+(Ogg page with `OpusHead`, also from a `.ogg` name) and `ogg` (Ogg Vorbis). The format is not sent to the watch; `28/02` carries only
+the file name, size and type `2`.
 
 ## Watch faces
 

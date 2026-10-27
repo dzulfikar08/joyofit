@@ -3,7 +3,8 @@ import type { WatchMusicInfo, WatchSongFormat } from '@/wear';
 /** The native side refuses a song over 64 MiB (`uploadWatchSong`); the same limit is checked before sending. */
 export const MAX_SONG_BYTES = 64 * 1_048_576;
 
-const FORMATS: Readonly<Record<string, WatchSongFormat>> = { mp3: 'mp3', m4a: 'm4a', aac: 'aac' };
+/** Extension to the format sent. `.ogg` is decided against the watch's list in `checkSongs` (Opus first) and by content natively. */
+const FORMATS: Readonly<Record<string, WatchSongFormat>> = { mp3: 'mp3', m4a: 'm4a', aac: 'aac', flac: 'flac', wav: 'wav', opus: 'opus', ogg: 'ogg' };
 
 /** One file from the document picker. `size` is unknown on some providers: then the native side checks it. */
 export interface PickedSong {
@@ -36,8 +37,9 @@ export function watchFormats(info: Pick<WatchMusicInfo, 'formats'>): string[] {
 }
 
 /**
- * Checks the picked files in order before anything is sent: the extension must be MP3, M4A or AAC and listed by the watch, and the
- * file must fit. Free space counts down over the accepted files, so a batch that does not fit as a whole stops being accepted where
+ * Checks the picked files in order before anything is sent: the extension must be MP3, M4A, AAC, FLAC, WAV, Opus or Ogg and listed by
+ * the watch (an .ogg goes as Opus when the watch lists opus, else as Ogg Vorbis when it lists ogg; the native side checks the content),
+ * and the file must fit. Free space counts down over the accepted files, so a batch that does not fit as a whole stops being accepted where
  * the room runs out. Without a free-space answer (null) the native side decides. Sizes are bytes; free space is MB (MiB, unverified).
  */
 export function checkSongs(files: readonly PickedSong[], info: Pick<WatchMusicInfo, 'formats' | 'freeSpaceMb'>): SongCheck[] {
@@ -47,8 +49,9 @@ export function checkSongs(files: readonly PickedSong[], info: Pick<WatchMusicIn
     const extension = extensionOf(file.name);
     const reject = (reason: RejectReason): SongCheck => ({ file, accepted: false, reason, extension });
     if (extension === '') return reject('noExtension');
-    const format = FORMATS[extension];
-    if (format === undefined) return reject('format');
+    const byName = FORMATS[extension];
+    if (byName === undefined) return reject('format');
+    const format: WatchSongFormat = byName === 'ogg' && takes.includes('opus') ? 'opus' : byName;
     if (!takes.includes(format)) return reject('notOnWatch');
     if (file.size !== null) {
       if (file.size <= 0) return reject('empty');

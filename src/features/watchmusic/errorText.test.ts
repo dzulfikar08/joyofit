@@ -41,14 +41,14 @@ describe('watch music error text', () => {
   test('reject text names the file and the format', () => {
     const [flac, bare, m4a, big] = checkSongs(
       [
-        { uri: 'u', name: 'lagu.flac', size: 10 },
+        { uri: 'u', name: 'lagu.wma', size: 10 },
         { uri: 'u', name: 'lagu', size: 10 },
         { uri: 'u', name: 'lagu.m4a', size: 10 },
         { uri: 'u', name: 'besar.mp3', size: 3 * 1_048_576 },
       ],
       { formats: ['mp3', 'aac'], freeSpaceMb: 2 },
     );
-    expect(rejectText(flac, ['mp3', 'aac'])).toBe('lagu.flac: format FLAC tidak didukung. Pakai MP3, M4A, atau AAC; JoyoFit tidak mengonversi lagu.');
+    expect(rejectText(flac, ['mp3', 'aac'])).toBe('lagu.wma: format WMA tidak didukung. Pakai MP3, M4A, AAC, FLAC, WAV, atau Opus; JoyoFit tidak mengonversi lagu.');
     expect(rejectText(bare, ['mp3', 'aac'])).toStartWith('lagu: nama file tanpa ekstensi');
     expect(rejectText(m4a, ['mp3', 'aac'])).toBe('lagu.m4a: jam ini tidak menerima M4A. Format yang diterima jam: MP3, AAC.');
     expect(rejectText(big, ['mp3', 'aac'])).toBe('besar.mp3 (3 MB): ruang kosong di jam tidak cukup.');

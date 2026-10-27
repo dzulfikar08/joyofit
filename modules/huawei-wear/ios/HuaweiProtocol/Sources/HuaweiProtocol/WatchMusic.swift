@@ -7,16 +7,21 @@
 // Same behaviour, log lines (`Music: ...`) and error messages as the Kotlin twin.
 import Foundation
 
-/// The audio formats JoyoFit sends, by their name in Gadgetbridge's format table. Nothing is converted.
+/// The audio formats JoyoFit sends, by their name in Gadgetbridge's format table (the names the watch lists in 25/04). Nothing is converted.
+/// `ogg` is Ogg Vorbis; Opus in an Ogg file is `opus`.
 public enum SongFormat: String, Sendable {
     case mp3
     case m4a
     case aac
+    case flac
+    case wav
+    case opus
+    case ogg
 
     public var wire: String { rawValue }
 }
 
-/// What a song file's first bytes say: its format and, for MP3 and ADTS AAC, the sample rate of the first frame.
+/// What a song file's first bytes say: its format and, when the header carries it, the sample rate (MP3/ADTS first frame, FLAC, WAV, Ogg).
 public struct SongProbe: Equatable, Sendable {
     public let format: SongFormat
     public let sampleRate: Int?
@@ -157,22 +162,68 @@ public enum MusicFiles {
         return name[name.index(after: dot)...].lowercased()
     }
 
+    /// `.ogg` names `ogg` here; its content decides (Opus in an Ogg file is sent as `opus`, see `check`).
     public static func formatOfExtension(_ name: String) -> SongFormat? {
         switch `extension`(name) {
         case "mp3": return .mp3
         case "m4a": return .m4a
         case "aac": return .aac
+        case "flac": return .flac
+        case "wav": return .wav
+        case "opus": return .opus
+        case "ogg": return .ogg
         default: return nil
         }
     }
 
-    /// The format by content: an MP4 `ftyp` box is M4A; after an optional ID3v2 tag, an MPEG-1/2/2.5 Layer III frame header is MP3 and an
-    /// ADTS header (sync, layer 00) is AAC. Anything else is nil.
+    static func ascii(_ data: Bytes, _ at: Int, _ text: String) -> Bool {
+        let chars = Array(text.utf8)
+        guard at >= 0, at + chars.count <= data.count else { return false }
+        for (i, c) in chars.enumerated() where data[at + i] != c { return false }
+        return true
+    }
+
+    static func le32(_ data: Bytes, _ at: Int) -> Int {
+        Int(data[at]) | Int(data[at + 1]) << 8 | Int(data[at + 2]) << 16 | Int(data[at + 3]) << 24
+    }
+
+    /// A RIFF/WAVE file: the sample rate from its `fmt ` chunk (nil when the chunk is not in the bytes).
+    static func probeWav(_ data: Bytes) -> SongProbe {
+        var at = 12
+        while at + 8 <= data.count {
+            let size = le32(data, at + 4)
+            if ascii(data, at, "fmt ") && at + 16 <= data.count {
+                return SongProbe(format: .wav, sampleRate: le32(data, at + 12), detail: "RIFF WAVE, fmt chunk at \(at)")
+            }
+            at += 8 + size + (size & 1)
+        }
+        return SongProbe(format: .wav, sampleRate: nil, detail: "RIFF WAVE without fmt chunk")
+    }
+
+    /// The first Ogg page's first packet: `OpusHead` is `opus`, a Vorbis identification header is `ogg`, anything else nil.
+    static func probeOgg(_ data: Bytes) -> SongProbe? {
+        if data.count < 27 { return nil }
+        let packet = 27 + Int(data[26])
+        if ascii(data, packet, "OpusHead") {
+            let rate = packet + 16 <= data.count ? le32(data, packet + 12) : nil
+            return SongProbe(format: .opus, sampleRate: rate, detail: "Ogg Opus")
+        }
+        if packet + 16 <= data.count && data[packet] == 1 && ascii(data, packet + 1, "vorbis") {
+            return SongProbe(format: .ogg, sampleRate: le32(data, packet + 12), detail: "Ogg Vorbis")
+        }
+        return nil
+    }
+
+    /// The format by content: an MP4 `ftyp` box is M4A; `RIFF`..`WAVE` is WAV; an Ogg page whose first packet is `OpusHead` is OPUS (Vorbis
+    /// is OGG); after an optional ID3v2 tag, `fLaC` is FLAC, an MPEG-1/2/2.5 Layer III frame header is MP3 and an ADTS header (sync, layer
+    /// 00) is AAC. Anything else is nil.
     public static func probe(_ data: Bytes) -> SongProbe? {
         if data.count >= 12 && data[4] == UInt8(ascii: "f") && data[5] == UInt8(ascii: "t") && data[6] == UInt8(ascii: "y") && data[7] == UInt8(ascii: "p") {
             let brand = String(data[8..<12].map { Character(Unicode.Scalar($0)) })
             return SongProbe(format: .m4a, sampleRate: nil, detail: "MP4 brand '\(brand)'")
         }
+        if ascii(data, 0, "RIFF") && ascii(data, 8, "WAVE") { return probeWav(data) }
+        if ascii(data, 0, "OggS") { return probeOgg(data) }
         var at = 0
         var id3 = ""
         if data.count >= 10 && data[0] == UInt8(ascii: "I") && data[1] == UInt8(ascii: "D") && data[2] == UInt8(ascii: "3") {
@@ -183,6 +234,12 @@ public enum MusicFiles {
         }
         // Some encoders pad the tag with zeros beyond its declared size.
         while at < data.count && data[at] == 0 { at += 1 }
+        if ascii(data, at, "fLaC") {
+            // STREAMINFO is the first metadata block: 4-byte block header, then the 20-bit sample rate at byte 10.
+            let s = at + 8 + 10
+            let rate = s + 3 <= data.count ? Int(data[s]) << 12 | Int(data[s + 1]) << 4 | Int(data[s + 2]) >> 4 : nil
+            return SongProbe(format: .flac, sampleRate: rate, detail: "\(id3)FLAC stream at \(at)")
+        }
         if at + 4 > data.count { return nil }
         let b0 = Int(data[at])
         let b1 = Int(data[at + 1])
@@ -211,14 +268,15 @@ public enum MusicFiles {
     /// a message for the user.
     public static func check(name: String, data: Bytes, info: MusicInfo?) throws -> SongProbe {
         guard let byName = formatOfExtension(name) else {
-            throw invalid("'\(name)' is not an MP3, M4A or AAC file. JoyoFit sends these as they are and converts nothing.")
+            throw invalid("'\(name)' is not an MP3, M4A, AAC, FLAC, WAV or Opus file. JoyoFit sends these as they are and converts nothing.")
         }
         if data.isEmpty { throw invalid("'\(name)' is empty.") }
         if data.count > maxFileBytes { throw invalid("'\(name)' is larger than \(maxFileBytes / 1024 / 1024) MiB.") }
         guard let probe = probe(data) else {
             throw invalid("'\(name)' does not contain \(byName.wire.uppercased()) audio JoyoFit recognises.")
         }
-        if probe.format != byName {
+        // An .ogg file holding Opus goes as OPUS.
+        if probe.format != byName && !(byName == .ogg && probe.format == .opus) {
             throw invalid(
                 "'\(name)' is named .\(`extension`(name) ?? "") but contains \(probe.format.wire.uppercased()) audio; rename it to .\(probe.format.wire)."
             )

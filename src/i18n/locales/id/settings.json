@@ -93,8 +93,8 @@
     "offlineMapLab": "Peta offline di jam (uji lab)",
     "offlineMapLabSubtitle": "Unduh peta dari OpenStreetMap dan kirim ke jam",
     "watchMusicLab": "Musik di jam (uji lab)",
-    "watchMusicLabRisk": "Mati secara bawaan. Saat menyala, kamu bisa menyalin file lagu milikmu sendiri ke jam, melihat lagu di jam, dan menghapusnya. File hanya berpindah dari HP ke jam lewat Bluetooth; tidak ada yang diunggah ke server. JoyoFit tidak mengonversi lagu: hanya MP3, M4A, dan AAC yang dikirim, format lain ditolak. Cara kirimnya berasal dari riset publik, bukan dari pembuat jam, dan belum terbukti di jam mana pun; jam bisa menolak file. Nyalakan hanya untuk menguji.",
-    "watchMusicLabSubtitle": "Salin MP3, M4A, atau AAC milikmu ke jam",
+    "watchMusicLabRisk": "Mati secara bawaan. Saat menyala, kamu bisa menyalin file lagu milikmu sendiri ke jam, melihat lagu di jam, dan menghapusnya. File hanya berpindah dari HP ke jam lewat Bluetooth; tidak ada yang diunggah ke server. JoyoFit tidak mengonversi lagu: MP3, M4A, AAC, FLAC, WAV, dan Opus hanya dikirim kalau jam bilang menerima format itu, file lain ditolak. Cara kirimnya berasal dari riset publik, bukan dari pembuat jam, dan baru dicoba di Watch Fit 4 Pro; jam bisa menolak file. Nyalakan hanya untuk menguji.",
+    "watchMusicLabSubtitle": "Salin MP3, M4A, AAC, FLAC, WAV, atau Opus milikmu ke jam",
     "offlineMapLabRisk": "Mati secara bawaan. Saat menyala, JoyoFit berbicara dengan aplikasi peta offline di jam (seperti aplikasi pembuat jam mengirim petanya). Layar lab mengunduh file peta yang dibuat JoyoFit dari OpenStreetMap dari server JoyoFit (api.fit.joyorogo.com; permintaannya tidak membawa lokasi, ID, atau akun, server melihat alamat IP-mu) lalu mengirimnya ke jam. Format petanya berasal dari riset publik, bukan dari pembuat jam; jam bisa menolak file atau aplikasi petanya bisa bermasalah. Hapus peta dari layar lab untuk membatalkan. Belum terbukti di jam mana pun: nyalakan hanya untuk menguji.",
     "watchNavLab": "Navigasi di jam (lab)",
     "watchNavLabRisk": "Mati secara bawaan. Saat menyala, halaman rute punya tombol \"Mulai navigasi di jam\": HP mengikuti GPS-mu di sepanjang rute dan mengirim petunjuk belok ke aplikasi JoyoNavi di jam. Untuk nama jalan dan rute baru saat keluar jalur, titik-titik rute dan posisimu dikirim ke layanan OSRM publik (routing.openstreetmap.de, FOSSGIS), seperti saat menggambar rute. Aplikasi jamnya belum bisa dipasang (akun pengembang Huawei belum siap), jadi ini baru untuk uji coba."
@@ -1238,8 +1238,8 @@
       "skipped": "Tidak dikirim"
     },
     "reject": {
-      "noExtension": "{{name}}: nama file tanpa ekstensi, jadi formatnya tidak dikenali. Pakai MP3, M4A, atau AAC; JoyoFit tidak mengonversi lagu.",
-      "format": "{{name}}: format {{ext}} tidak didukung. Pakai MP3, M4A, atau AAC; JoyoFit tidak mengonversi lagu.",
+      "noExtension": "{{name}}: nama file tanpa ekstensi, jadi formatnya tidak dikenali. Pakai MP3, M4A, AAC, FLAC, WAV, atau Opus; JoyoFit tidak mengonversi lagu.",
+      "format": "{{name}}: format {{ext}} tidak didukung. Pakai MP3, M4A, AAC, FLAC, WAV, atau Opus; JoyoFit tidak mengonversi lagu.",
       "notOnWatch": "{{name}}: jam ini tidak menerima {{ext}}. Format yang diterima jam: {{formats}}.",
       "empty": "{{name}}: file kosong.",
       "tooBig": "{{name}}: lebih dari {{max}} MB, terlalu besar untuk dikirim.",

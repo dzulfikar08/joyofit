@@ -151,6 +151,16 @@ class WatchMusicTest {
   private val adtsFrame = byteArrayOf(0xFF.toByte(), 0xF1.toByte(), 0x50, 0x80.toByte()) + ByteArray(60)
   private fun id3(body: Int) = byteArrayOf('I'.code.toByte(), 'D'.code.toByte(), '3'.code.toByte(), 4, 0, 0, 0, 0, (body shr 7).toByte(), (body and 0x7F).toByte()) + ByteArray(body)
   private val m4a = byteArrayOf(0, 0, 0, 0x20) + "ftypM4A ".toByteArray(Charsets.ISO_8859_1) + ByteArray(40)
+  private fun b(vararg v: Int) = ByteArray(v.size) { v[it].toByte() }
+  private fun s(text: String) = text.toByteArray(Charsets.ISO_8859_1)
+  // fLaC, STREAMINFO block header, min/max block and frame sizes, then 44100 Hz in 20 bits.
+  private val flac = s("fLaC") + b(0x80, 0, 0, 34) + ByteArray(10) + b(0x0A, 0xC4, 0x42) + ByteArray(30)
+  // A LIST chunk before fmt: the chunk walk skips it. 48000 Hz.
+  private val wav = s("RIFF") + ByteArray(4) + s("WAVE") + s("LIST") + b(3, 0, 0, 0) + b(1, 2, 3, 0) + s("fmt ") + b(16, 0, 0, 0) + b(1, 0, 2, 0, 0x80, 0xBB, 0, 0) + ByteArray(40)
+  private fun ogg(packet: ByteArray) = s("OggS") + ByteArray(22) + b(1, packet.size) + packet
+  private val opus = ogg(s("OpusHead") + b(1, 2, 0, 0, 0x80, 0xBB, 0, 0) + ByteArray(3))
+  private val vorbis = ogg(b(1) + s("vorbis") + b(0, 0, 0, 0, 2, 0x44, 0xAC, 0, 0) + ByteArray(10))
+  private val fit4Pro = listOf("mp3", "wav", "aac", "m4a", "flac", "opus")
 
   private fun info(formats: List<String> = listOf("mp3", "aac", "m4a"), free: Int? = 100) =
     MusicInfo(free, formats, 500, 0, null, 1, emptyList(), false)
@@ -164,8 +174,13 @@ class WatchMusicTest {
     assertEquals(SongProbe(SongFormat.AAC, 44100, "ADTS at 0"), MusicFiles.probe(adtsFrame))
     assertEquals(SongFormat.AAC, MusicFiles.probe(id3(20) + adtsFrame)?.format)
     assertEquals(SongFormat.M4A, MusicFiles.probe(m4a)?.format)
-    assertNull(MusicFiles.probe("fLaC".toByteArray() + ByteArray(40)))
-    assertNull(MusicFiles.probe("RIFF....WAVE".toByteArray() + ByteArray(40)))
+    assertEquals(SongProbe(SongFormat.FLAC, 44100, "FLAC stream at 0"), MusicFiles.probe(flac))
+    assertEquals(SongProbe(SongFormat.FLAC, 44100, "ID3v2.4 tag of 30 bytes, FLAC stream at 30"), MusicFiles.probe(id3(20) + flac))
+    assertEquals(SongProbe(SongFormat.WAV, 48000, "RIFF WAVE, fmt chunk at 24"), MusicFiles.probe(wav))
+    assertEquals(SongProbe(SongFormat.WAV, null, "RIFF WAVE without fmt chunk"), MusicFiles.probe(s("RIFF....WAVE")))
+    assertEquals(SongProbe(SongFormat.OPUS, 48000, "Ogg Opus"), MusicFiles.probe(opus))
+    assertEquals(SongProbe(SongFormat.OGG, 44100, "Ogg Vorbis"), MusicFiles.probe(vorbis))
+    assertNull(MusicFiles.probe(ogg(s("FLAC") + ByteArray(20))))
     // MPEG Layer II is not MP3.
     assertNull(MusicFiles.probe(byteArrayOf(0xFF.toByte(), 0xFD.toByte(), 0x90.toByte(), 0x64)))
     assertNull(MusicFiles.probe(ByteArray(0)))
@@ -186,14 +201,27 @@ class WatchMusicTest {
     assertEquals(SongFormat.MP3, MusicFiles.check("Lari Pagi.MP3", mp3Frame, info()).format)
     assertEquals(SongFormat.M4A, MusicFiles.check("a.m4a", m4a, info()).format)
     assertEquals(SongFormat.AAC, MusicFiles.check("a.aac", adtsFrame, null).format)
-    assertTrue(rejected("song.flac", "fLaC".toByteArray()).contains("not an MP3, M4A or AAC"))
-    assertTrue(rejected("song.wav", ByteArray(10)).contains("not an MP3"))
+    assertTrue(rejected("song.wma", ByteArray(10)).contains("not an MP3, M4A, AAC, FLAC, WAV or Opus"))
+    assertTrue(rejected("song.ape", ByteArray(10)).contains("not an MP3"))
     assertTrue(rejected("song", mp3Frame).contains("not an MP3"))
     assertTrue(rejected("empty.mp3", ByteArray(0)).contains("empty"))
     assertTrue(rejected("x.mp3", m4a).contains("rename it to .m4a"))
     assertTrue(rejected("x.mp3", ByteArray(64) { 1 }).contains("does not contain MP3"))
     assertTrue(rejected("x.m4a", m4a, info(formats = listOf("mp3", "aac"))).contains("does not take M4A"))
     assertTrue(rejected("x.mp3", mp3Frame + ByteArray(2 * 1024 * 1024), info(free = 1)).contains("1 MB free"))
+    // FLAC, WAV and Opus go when the watch lists them (the Fit 4 Pro's 25/04 list), and are refused when it does not.
+    assertEquals(SongFormat.FLAC, MusicFiles.check("a.flac", flac, info(fit4Pro)).format)
+    assertEquals(SongFormat.WAV, MusicFiles.check("a.wav", wav, info(fit4Pro)).format)
+    assertEquals(SongFormat.OPUS, MusicFiles.check("a.opus", opus, info(fit4Pro)).format)
+    assertEquals(SongFormat.OPUS, MusicFiles.check("a.ogg", opus, info(fit4Pro)).format)
+    assertEquals("The watch does not take FLAC files (it lists mp3, aac, m4a).", rejected("a.flac", flac))
+    assertEquals("The watch does not take WAV files (it lists mp3, aac, m4a).", rejected("a.wav", wav))
+    assertEquals("The watch does not take OPUS files (it lists mp3, aac, m4a).", rejected("a.ogg", opus))
+    // Ogg Vorbis is not Opus: refused unless the watch lists ogg.
+    assertEquals("The watch does not take OGG files (it lists mp3, wav, aac, m4a, flac, opus).", rejected("a.ogg", vorbis, info(fit4Pro)))
+    assertEquals("'a.opus' is named .opus but contains OGG audio; rename it to .ogg.", rejected("a.opus", vorbis, info(fit4Pro)))
+    assertEquals(SongFormat.OGG, MusicFiles.check("a.ogg", vorbis, info(listOf("ogg"))).format)
+    assertEquals("'a.flac' is named .flac but contains WAV audio; rename it to .wav.", rejected("a.flac", wav, info(fit4Pro)))
     // An empty format list (the watch sent no bits) or no free space value does not block the file.
     assertEquals(SongFormat.MP3, MusicFiles.check("x.mp3", mp3Frame, info(formats = emptyList(), free = null)).format)
     assertEquals("Lari Pagi", MusicFiles.titleFallback("Lari Pagi.mp3"))

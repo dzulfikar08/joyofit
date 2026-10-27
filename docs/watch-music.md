@@ -6,8 +6,10 @@ Status:
   iOS cannot control another app's playback. UNVERIFIED on a watch (acks `7F = 0x000186A0` on success or `0` on failure, whereas GB always
   acks `0x000186A0`).
 - **Songs on the watch** (`25/04`, `25/05`, `25/08`, `25/09`, `25/0D` and FileUpload `28` with file type `2`): implemented on Android and iOS
-  behind the Experimental switch **Musik di jam (uji lab)** (JRG-417), off by default. **UNVERIFIED on any watch**: everything below is
-  Gadgetbridge's behaviour, ported, and tested only against golden frames and a fake watch. Needs a new store build (native code).
+  behind the Experimental switch **Musik di jam (uji lab)** (JRG-417), off by default. **Verified on a Watch Fit 4 Pro** (Android, lab build
+  v1.1-lab.12, 2026-10-27): the watch's `25/04` answer was `availableSpace=1469 MB formats=[mp3, wav, aac, m4a, flac, opus]
+  maxMusicCount=500`, and a 32 MB MP3 uploaded and plays on the watch. FLAC, WAV and Opus uploads, cancel, delete, the iOS build and other
+  watches are not yet tried. Needs a new store build (native code).
 
 Asked by a user (Salim, Watch Fit 2): "can I put songs on the watch?", and wanted for phone-free runs on the Fit 4 Pro.
 
@@ -73,10 +75,18 @@ partial file when its own wait runs out [INFERENCE, unverified]. A song cut shor
 
 ## Files JoyoFit sends
 
-- **MP3, M4A or AAC only**, by name *and* content: an MPEG Layer III frame after an optional ID3v2 tag is MP3, an MP4 `ftyp` box is M4A, an
-  ADTS header is AAC. A `.mp3` that holds AAC is refused with "rename it". FLAC, WAV, OGG, Opus and anything else are refused. **Nothing is
-  converted**: no pure-JS or OS encoder exists without a new native dependency.
-- The format must be in the watch's format bits when it sent any (strict: a `.m4a` is refused when the watch lists `aac` but not `m4a`).
+- **The formats the watch lists**, by name *and* content, nothing else. JoyoFit recognises:
+  - MP3: an MPEG Layer III frame after an optional ID3v2 tag (`.mp3`);
+  - AAC: an ADTS header after an optional ID3v2 tag (`.aac`); M4A: an MP4 `ftyp` box (`.m4a`);
+  - FLAC: `fLaC` after an optional ID3v2 tag, sample rate from STREAMINFO (`.flac`);
+  - WAV: `RIFF`....`WAVE`, sample rate from the `fmt ` chunk (`.wav`);
+  - Opus: an Ogg page whose first packet starts with `OpusHead`, sample rate from that header (`.opus`, and `.ogg` holding Opus, sent as
+    `opus`). An Ogg file holding Vorbis is `ogg`: sent only when the watch lists `ogg` (the Fit 4 Pro does not).
+
+  The wire names are Gadgetbridge's format table names (`mp3 wav aac m4a flac opus ogg`). A file whose content is another format than its
+  name says is refused with "rename it". **Nothing is converted**: no pure-JS or OS encoder exists without a new native dependency.
+- The format must be in the watch's format bits when it sent any (strict: a `.m4a` is refused when the watch lists `aac` but not `m4a`;
+  a FLAC is refused on a watch that does not list `flac`).
 - At most 64 MiB (the upload holds the file in memory) and at most the free space the watch reported.
 - Sample rate and bitrate against the `25/0D` limits are logged only (`Music: 25/0D limits for mp3: ...`), never refused: GB's meaning of
   those fields is a guess. Huawei's own advice is MP3 or AAC below 320 kbit/s.
@@ -108,7 +118,8 @@ Needs the test build of this branch (not OTA). Android first, then iOS.
    Log: `Music: upload <name>: <bytes> bytes, mp3 (...)`, `Upload: start <name>: type=2 ...`, `Upload: FileUploadConsultAck: ... unitSize=...`,
    `Music: 25/09 song index N '<name>': answered title '...', artist '...'` (or `no 25/09 during the upload`), `Upload: complete <name> ...`,
    `Music: upload <name> done in S s (B/s): 28/07 status ...`. On the watch: Music app → the song plays with its title and artist.
-4. Pick an M4A and an AAC file (if the watch lists those formats), and a FLAC: the FLAC is refused before sending.
+4. Pick a FLAC, a WAV and an Opus file (the Fit 4 Pro lists all three): each goes and plays. On a watch that does not list a format, that
+   file is refused before sending; an Ogg Vorbis file is refused unless the watch lists `ogg`.
 5. Pick several MP3s at once, press **Batal** during the second: the first stays, the second is `cancelled`, the rest skipped. Reopen the
    screen after 1 minute: the cancelled song must not be listed (log `Music: cancel requested`, `upload of <name> cancelled after ...`).
 6. Upload the same file again: expect the `140008` message ("already on the watch").

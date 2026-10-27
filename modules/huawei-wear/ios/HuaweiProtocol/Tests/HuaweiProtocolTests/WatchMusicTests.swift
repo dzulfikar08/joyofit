@@ -12,6 +12,15 @@ final class WatchMusicTests: XCTestCase {
     private let adtsFrame: Bytes = [0xFF, 0xF1, 0x50, 0x80] + Bytes(repeating: 0, count: 60)
     private func id3(_ body: Int) -> Bytes { Array("ID3".utf8) + [4, 0, 0, 0, 0, UInt8(body >> 7), UInt8(body & 0x7F)] + Bytes(repeating: 0, count: body) }
     private let m4a: Bytes = [0, 0, 0, 0x20] + Array("ftypM4A ".utf8) + Bytes(repeating: 0, count: 40)
+    // fLaC, STREAMINFO block header, min/max block and frame sizes, then 44100 Hz in 20 bits.
+    private let flac: Bytes = Array("fLaC".utf8) + [0x80, 0, 0, 34] + Bytes(repeating: 0, count: 10) + [0x0A, 0xC4, 0x42] + Bytes(repeating: 0, count: 30)
+    // A LIST chunk before fmt: the chunk walk skips it. 48000 Hz.
+    private let wav: Bytes = Array("RIFF".utf8) + Bytes(repeating: 0, count: 4) + Array("WAVELIST".utf8) + [3, 0, 0, 0, 1, 2, 3, 0] + Array("fmt ".utf8)
+        + [16, 0, 0, 0, 1, 0, 2, 0, 0x80, 0xBB, 0, 0] + Bytes(repeating: 0, count: 40)
+    private func ogg(_ packet: Bytes) -> Bytes { Array("OggS".utf8) + Bytes(repeating: 0, count: 22) + [1, UInt8(packet.count)] + packet }
+    private var opus: Bytes { ogg(Array("OpusHead".utf8) + [1, 2, 0, 0, 0x80, 0xBB, 0, 0] + Bytes(repeating: 0, count: 3)) }
+    private var vorbis: Bytes { ogg([1] + Array("vorbis".utf8) + [0, 0, 0, 0, 2, 0x44, 0xAC, 0, 0] + Bytes(repeating: 0, count: 10)) }
+    private let fit4Pro = ["mp3", "wav", "aac", "m4a", "flac", "opus"]
 
     private func info(formats: [String] = ["mp3", "aac", "m4a"], free: Int? = 100) -> MusicInfo {
         MusicInfo(freeSpaceMb: free, formats: formats, maxSongs: 500, songCount: 0, maxPlaylists: nil, frameCount: 1, limits: [], extended: false)
@@ -25,8 +34,13 @@ final class WatchMusicTests: XCTestCase {
         XCTAssertEqual(MusicFiles.probe(adtsFrame), SongProbe(format: .aac, sampleRate: 44100, detail: "ADTS at 0"))
         XCTAssertEqual(MusicFiles.probe(id3(20) + adtsFrame)?.format, .aac)
         XCTAssertEqual(MusicFiles.probe(m4a), SongProbe(format: .m4a, sampleRate: nil, detail: "MP4 brand 'M4A '"))
-        XCTAssertNil(MusicFiles.probe(Array("fLaC".utf8) + Bytes(repeating: 0, count: 40)))
-        XCTAssertNil(MusicFiles.probe(Array("RIFF....WAVE".utf8) + Bytes(repeating: 0, count: 40)))
+        XCTAssertEqual(MusicFiles.probe(flac), SongProbe(format: .flac, sampleRate: 44100, detail: "FLAC stream at 0"))
+        XCTAssertEqual(MusicFiles.probe(id3(20) + flac), SongProbe(format: .flac, sampleRate: 44100, detail: "ID3v2.4 tag of 30 bytes, FLAC stream at 30"))
+        XCTAssertEqual(MusicFiles.probe(wav), SongProbe(format: .wav, sampleRate: 48000, detail: "RIFF WAVE, fmt chunk at 24"))
+        XCTAssertEqual(MusicFiles.probe(Array("RIFF....WAVE".utf8)), SongProbe(format: .wav, sampleRate: nil, detail: "RIFF WAVE without fmt chunk"))
+        XCTAssertEqual(MusicFiles.probe(opus), SongProbe(format: .opus, sampleRate: 48000, detail: "Ogg Opus"))
+        XCTAssertEqual(MusicFiles.probe(vorbis), SongProbe(format: .ogg, sampleRate: 44100, detail: "Ogg Vorbis"))
+        XCTAssertNil(MusicFiles.probe(ogg(Array("FLAC".utf8) + Bytes(repeating: 0, count: 20))))
         // MPEG Layer II is not MP3.
         XCTAssertNil(MusicFiles.probe([0xFF, 0xFD, 0x90, 0x64]))
         XCTAssertNil(MusicFiles.probe([]))
@@ -50,8 +64,8 @@ final class WatchMusicTests: XCTestCase {
         XCTAssertEqual(try MusicFiles.check(name: "Lari Pagi.MP3", data: mp3Frame, info: info()).format, .mp3)
         XCTAssertEqual(try MusicFiles.check(name: "a.m4a", data: m4a, info: info()).format, .m4a)
         XCTAssertEqual(try MusicFiles.check(name: "a.aac", data: adtsFrame, info: nil).format, .aac)
-        XCTAssertTrue(rejected("song.flac", Array("fLaC".utf8), info()).contains("not an MP3, M4A or AAC"))
-        XCTAssertTrue(rejected("song.wav", Bytes(repeating: 0, count: 10), info()).contains("not an MP3"))
+        XCTAssertTrue(rejected("song.wma", Bytes(repeating: 0, count: 10), info()).contains("not an MP3, M4A, AAC, FLAC, WAV or Opus"))
+        XCTAssertTrue(rejected("song.ape", Bytes(repeating: 0, count: 10), info()).contains("not an MP3"))
         XCTAssertTrue(rejected("song", mp3Frame, info()).contains("not an MP3"))
         XCTAssertEqual(rejected("empty.mp3", [], info()), "'empty.mp3' is empty.")
         XCTAssertEqual(rejected("x.mp3", m4a, info()), "'x.mp3' is named .mp3 but contains M4A audio; rename it to .m4a.")
@@ -60,6 +74,19 @@ final class WatchMusicTests: XCTestCase {
         XCTAssertEqual(
             rejected("x.mp3", mp3Frame + Bytes(repeating: 0, count: 2 * 1024 * 1024), info(free: 1)), "'x.mp3' is 3 MB; the watch has 1 MB free."
         )
+        // FLAC, WAV and Opus go when the watch lists them (the Fit 4 Pro's 25/04 list), and are refused when it does not.
+        XCTAssertEqual(try MusicFiles.check(name: "a.flac", data: flac, info: info(formats: fit4Pro)).format, .flac)
+        XCTAssertEqual(try MusicFiles.check(name: "a.wav", data: wav, info: info(formats: fit4Pro)).format, .wav)
+        XCTAssertEqual(try MusicFiles.check(name: "a.opus", data: opus, info: info(formats: fit4Pro)).format, .opus)
+        XCTAssertEqual(try MusicFiles.check(name: "a.ogg", data: opus, info: info(formats: fit4Pro)).format, .opus)
+        XCTAssertEqual(rejected("a.flac", flac, info()), "The watch does not take FLAC files (it lists mp3, aac, m4a).")
+        XCTAssertEqual(rejected("a.wav", wav, info()), "The watch does not take WAV files (it lists mp3, aac, m4a).")
+        XCTAssertEqual(rejected("a.ogg", opus, info()), "The watch does not take OPUS files (it lists mp3, aac, m4a).")
+        // Ogg Vorbis is not Opus: refused unless the watch lists ogg.
+        XCTAssertEqual(rejected("a.ogg", vorbis, info(formats: fit4Pro)), "The watch does not take OGG files (it lists mp3, wav, aac, m4a, flac, opus).")
+        XCTAssertEqual(rejected("a.opus", vorbis, info(formats: fit4Pro)), "'a.opus' is named .opus but contains OGG audio; rename it to .ogg.")
+        XCTAssertEqual(try MusicFiles.check(name: "a.ogg", data: vorbis, info: info(formats: ["ogg"])).format, .ogg)
+        XCTAssertEqual(rejected("a.flac", wav, info(formats: fit4Pro)), "'a.flac' is named .flac but contains WAV audio; rename it to .wav.")
         // An empty format list (the watch sent no bits) or no free space value does not block the file.
         XCTAssertEqual(try MusicFiles.check(name: "x.mp3", data: mp3Frame, info: info(formats: [], free: nil)).format, .mp3)
         XCTAssertEqual(MusicFiles.titleFallback("Lari Pagi.mp3"), "Lari Pagi")

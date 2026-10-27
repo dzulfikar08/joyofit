@@ -5,8 +5,8 @@
  * Native code: `WatchMusic.kt` / `WatchMusic.swift` (+ `WatchMusicController.swift`).
  */
 
-/** The audio formats JoyoFit sends; nothing is converted, the file must already be one of these and listed by the watch. */
-export type WatchSongFormat = 'mp3' | 'm4a' | 'aac';
+/** The audio formats JoyoFit sends; nothing is converted, the file must already be one of these and listed by the watch. `ogg` is Ogg Vorbis. */
+export type WatchSongFormat = 'mp3' | 'm4a' | 'aac' | 'flac' | 'wav' | 'opus' | 'ogg';
 
 export interface WatchMusicStatus {
   /** The experimental switch. Off: every music call rejects with ERR_UNSUPPORTED. */

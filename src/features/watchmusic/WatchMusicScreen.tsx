@@ -30,10 +30,15 @@ function read(): WatchMusicStatus | null {
 }
 
 /**
- * Android providers label some .aac files `application/octet-stream`, so that type is offered too there; on iOS it would open the
- * picker to every file, and `audio/*` (public.audio) already covers MP3, M4A and AAC. Every pick is checked by extension anyway.
+ * Android providers label some .aac files `application/octet-stream` and some .ogg/.opus files `application/ogg`, so those types are
+ * offered too there; on iOS octet-stream would open the picker to every file. `audio/*` (public.audio) covers MP3, M4A, AAC, FLAC and
+ * WAV; the Ogg/Opus and FLAC types are listed on iOS as well because not every iOS version files them under public.audio. Every pick is
+ * checked by extension anyway.
  */
-const PICK_TYPES = Platform.OS === 'android' ? ['audio/*', 'application/octet-stream'] : ['audio/*'];
+const PICK_TYPES =
+  Platform.OS === 'android'
+    ? ['audio/*', 'application/octet-stream', 'application/ogg']
+    : ['audio/*', 'audio/flac', 'audio/wav', 'audio/ogg', 'audio/opus', 'application/ogg'];
 
 /** What runs now: reading the list, a batch of uploads, or deleting one song (`delete:<id>`). */
 type Busy = 'list' | 'upload' | `delete:${number}` | null;
@@ -45,7 +50,7 @@ type Rejected = { checks: SongCheck[]; formats: string[] };
 
 /**
  * The watch-music lab (Settings → About & advanced → Experimental → Music on the watch): the songs on the watch with their storage,
- * delete, and "Add songs" for the person's own MP3, M4A and AAC files. Picked files are checked here first (format, the watch's formats,
+ * delete, and "Add songs" for the person's own MP3, M4A, AAC, FLAC, WAV and Opus files (each only when the watch lists it). Picked files are checked here first (format, the watch's formats,
  * size, free space), then sent one by one; `uploadQueue.ts` decides the batch, `errorText.ts` the words. Nothing is converted and nothing
  * leaves the phone except to the watch.
  */
