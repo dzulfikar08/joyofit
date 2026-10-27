@@ -153,6 +153,30 @@ Release Android run 39190705172 (AAB versionCode 1471837, Play alpha; sideload A
 
 The iOS TestFlight build 1.0 (202610190340, master `96a9076`, Release iOS run 39195739996) embeds the same `60ae9d289f32d564fee79956251795a11e147d56` as 202610181417: no native iOS change since. **Master iOS OTAs target `60ae9d28...`** and reach both builds.
 
+### Runtimes of the 2026-10-26 store builds (master `3b858088` / `24e5be5d`)
+
+Read from the binaries (`assets/fingerprint`, `EXUpdates.bundle/fingerprint`). `scripts/ota.sh --runtime` on these commits prints
+android `d890d9c9...` and ios `78141fcc...`, so publish with `--runtime-version`:
+
+| Platform | Build | Runtime embedded in the binary |
+| --- | --- | --- |
+| Android | Play alpha AAB 1482533, sideload APK 1482543 (Release Android run 40325811530, `24e5be5d`) | `a239d6c83ad2202e9ad232ce9167a505691cf88a` |
+| iOS | TestFlight 1.1 (202610261252) (Release iOS run 40325806773, `24e5be5d`) | `dbe7aff58af45ad0b7cd989e1510416cba613938` |
+
+OTAs published for them: #33 Huawei Scale (groups `d96332a3...` ios, `9f701897...` android) and master `276b89e3` (privacy link,
+neutral Strava text, offline-map search; groups `bb45ff92...` ios, `7c1e4275...` android). Master after `276b89e3` carries native
+changes (#35 JoyoNavi phone side, #39 manual Strava upload) and can no longer publish to these runtimes: JS-only fixes for them
+go on a branch cut at `276b89e3`.
+
+### Runtimes of the 2026-10-27 store builds (master `c7e52731`)
+
+| Platform | Build | Runtime embedded in the binary |
+| --- | --- | --- |
+| Android | Play alpha AAB 1483205, sideload APK 1483219 (Release Android run 40423944217) | `fce68de9bfdc78401cfb69ead4b7585bb7491879` |
+| iOS | TestFlight 1.1 (202610270004) (Release iOS run 40423947811) | `d6db9df49ebdcbda73dd9b8dfa5b7c1bc274ca08` |
+
+**Master OTAs target these two** (with `--runtime-version`) until the next native change.
+
 ## When OTA is not enough
 
 Anything that changes the runtimeVersion, or is on the "not over the air" list above, needs a new binary: build through `scripts/build-release.sh` / `scripts/build-ios-mac.sh` / the `Release *` workflows, and from that commit on updates target the new runtime. Binaries that stay on an older runtime keep getting updates from their own branch, see "Which branch publishes to which runtime" (`ota/1.0` for the pre-sensors builds).
