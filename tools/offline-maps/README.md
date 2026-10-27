@@ -17,7 +17,8 @@ the watch (lab test)"; protocol, findings and the pipeline's numbers in `docs/of
 ## Setup
 
 Tested on macOS 26 (arm64) with osmium-tool 1.19.1, Python 3.14, shapely 2.2.0, bun 1.4.3, wrangler 4.151.0, and in CI on Ubuntu 24.04
-with osmium-tool 1.16.0 and Python 3.12.3 (below). The full build is meant for the owner's Linux box. On Ubuntu 24.04 / Debian 12:
+with osmium-tool 1.16.0 and Python 3.12.3 (below). The full build runs monthly on GitHub Actions (below, "Monthly refresh") or on a Linux
+box. On Ubuntu 24.04 / Debian 12:
 
 ```
 sudo apt install osmium-tool python3 python3-venv git curl     # osmium-tool 1.16 (Ubuntu 24.04) / 1.15 (Debian 12) is fine
@@ -56,7 +57,9 @@ What `build-all.sh` does:
 4. Cuts `--batch` (16) regions per pass over the extract (`osmium extract --strategy complete_ways --config`), while the previous batch
    converts.
 5. Converts `--jobs` regions at once: the converter's `extract_geojson.sh`, then `build_country.py` with zooms 10/12/14/16, labels
-   Indonesian (language id `0x20`) then English, the region's name in the header. Header version = build time `YYMMDDHH`.
+   Indonesian (language id `0x20`) then English, the region's name in the header. Header version = the extract's date as `YYMMDDHH`
+   (the converter stamps the build hour; `build_all.py` overwrites it), so a rebuild of the same extract is byte-identical and
+   `publish.py` uploads nothing for it.
 6. Size cap: if a region's cut is above `--split-pbf-mib` (40) or its map above `--max-mib` (64, the app's lab limit while the upload
    holds the file in memory), it is cut in two across the longer side of its box, and again, up to `--max-depth` (4) times. Parts get
    ids `2·10^18 + part·10^4 + code` and names "Kabupaten X 1/3" (written into the header too). A part still above the cap is flagged
@@ -80,10 +83,12 @@ Expected for all 514 regions (from cutting every region on 2026-10-25, see `docs
 
 ### Monthly refresh
 
-Two ways; use one. **GitHub Actions**: the same workflow's `monthly` job rebuilds everything on the 2nd of each month (about 1 to 1.5 hours
-on the 4-CPU runner, inside the 6-hour limit) and publishes when the repository secret `CLOUDFLARE_R2_TOKEN` (an API token with "Workers R2
-Storage: Edit" on the JoyoFit account) is set; "Run workflow" with "full" starts it by hand. **The owner's Linux box**, where `out/` persists
-(a stopped run resumes there), with a systemd timer. `~/.config/systemd/user/joyofit-maps.service`:
+Two ways; use one. **GitHub Actions** (the default): `.github/workflows/offline-maps.yml` rebuilds every region on the 2nd of each month,
+one job per province in parallel, uploads what changed and writes the catalog once at the end; a failed province keeps its previous
+entries. Publishing needs `CLOUDFLARE_R2_TOKEN` (an API token with "Workers R2 Storage: Edit" on the JoyoFit account) in the repository's
+`maps` environment. Actions → Offline maps → Run workflow starts it by hand, for some provinces or as a dry run (`docs/offline-maps.md`,
+"Automatic refresh", has the inputs, timings and cost). **The owner's Linux box**, where `out/` persists (a stopped run resumes there),
+with a systemd timer. `~/.config/systemd/user/joyofit-maps.service`:
 
 ```
 [Unit]
@@ -128,8 +133,11 @@ tools/offline-maps/publish.py --all --dry-run               # what would change;
 ```
 
 `publish.py` reads `watch/catalog.json` from the R2 bucket `joyofit-maps` (`bunx wrangler r2 object … --remote` from `server/`, account
-`b7e6f845…`), uploads every `out/<id>.bin` whose SHA-256 differs from the catalog's, writes the new catalog last (so it never lists a
-file that is not there yet) and then deletes the files of maps that left it (a region split differently than before). Entries of
+`b7e6f845…`), uploads every `out/<id>.bin` whose SHA-256 differs from the catalog's (each upload leaves `out/published/<id>.sha256`),
+then writes the new catalog in one PUT, listing a new entry only once its file is in the bucket (a failed upload keeps the previous
+entry and makes the exit code 1), and then deletes the files of maps that left it (a region split differently than before).
+`--upload-only` and `--catalog-only` run one of the two phases: the workflow uploads in each province's job and writes the catalog once
+from all of them. `--dry-run` without `CLOUDFLARE_API_TOKEN` reads the public catalog (`GET /v1/maps`) instead of the bucket. Entries of
 JoyoFit ids that lack code/province/kind (maps from `build-map.sh`) get them from `regions.json`. JoyoFit's Worker serves the catalog at
 `GET /v1/maps` (filters `province`, `q`, `limit`; `server/src/maps.ts`) and the files at `GET /v1/maps/<id>.bin`; the app
 downloads from there and checks size and SHA-256 before it keeps a file. The bucket also holds the bike computer's PMTiles

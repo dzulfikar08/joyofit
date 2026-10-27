@@ -49,7 +49,9 @@ def read_remote_catalog(bucket: str, public: bool) -> List[dict]:
     """The bucket's catalog entries. A missing catalog is an empty list; any other failure stops the run, because writing a catalog
     from an empty list would drop every region this run did not build."""
     if public:
-        with urllib.request.urlopen(PUBLIC_CATALOG, timeout=60) as response:
+        # Cloudflare answers 403 to urllib's default User-Agent.
+        request = urllib.request.Request(PUBLIC_CATALOG, headers={"User-Agent": "JoyoFit-offline-maps/1.0 (tools/offline-maps/publish.py)"})
+        with urllib.request.urlopen(request, timeout=60) as response:
             maps = json.load(response)
         print(f"publish: read {len(maps)} entries from {PUBLIC_CATALOG} (dry run without CLOUDFLARE_API_TOKEN)")
         return [{k: v for k, v in m.items() if k != "attribution"} for m in maps]
