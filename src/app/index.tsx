@@ -30,6 +30,7 @@ import {
 import { useLiveHeartRate } from '@/features/today/useLiveHeartRate';
 import { useStepGoal } from '@/features/today/useStepGoal';
 import { useNightHrvAvailability } from '@/features/today/useNightHrvAvailability';
+import { useRestingToday } from '@/features/today/useRestingToday';
 import { useTodayData } from '@/features/today/useTodayData';
 import { WatchHero } from '@/features/today/WatchHero';
 import { computeScores } from '@/features/today/scores';
@@ -123,6 +124,9 @@ function WatchToday() {
   const distance = splitDistance(view?.totals.distance ?? 0);
   const nowMs = useNow(HERO_TICK_MS);
   const heartReading = pickHeartReading(live, data?.latestHeart ?? null, nowMs);
+  // Total = active (watch) + resting so far (BMR prorated). Only this tile: everything pushed or exported stays active-only.
+  const resting = useRestingToday(data?.dayStart ?? null, Math.floor(nowMs / 1000));
+  const activeKcal = view?.totals.calories ?? 0;
 
   const homeCards = useHomeCards().prefs;
   const cards: Record<HomeCardId, ReactNode> = {
@@ -133,9 +137,23 @@ function WatchToday() {
         <Skeleton width="48%" height={84} radius={18} />
       </View>
     ) : (
-      <View style={styles.tiles}>
-        <StatTile icon="flame" tint="workouts" label={t('home.calories')} value={formatCount(view?.totals.calories ?? 0)} unit={t('home.kcal')} />
-        <StatTile icon="trail-sign" tint="steps" label={t('home.distance')} value={distance.value} unit={distance.unit} />
+      <View style={styles.activity}>
+        <View style={styles.tiles}>
+          <StatTile
+            icon="flame"
+            tint="workouts"
+            label={t('home.calories')}
+            value={formatCount(resting ? activeKcal + resting.kcal : activeKcal)}
+            unit={t('home.kcal')}
+            sub={resting ? t('home.caloriesSplit', { active: formatCount(activeKcal), resting: formatCount(resting.kcal) }) : t('home.caloriesActiveOnly')}
+          />
+          <StatTile icon="trail-sign" tint="steps" label={t('home.distance')} value={distance.value} unit={distance.unit} />
+        </View>
+        {resting ? null : (
+          <AppText variant="caption" muted>
+            {t('home.caloriesHint')}
+          </AppText>
+        )}
       </View>
     ),
     heart: (
@@ -270,7 +288,9 @@ function WatchToday() {
         <Fragment key={id}>{cards[id]}</Fragment>
       ))}
       <Details title={t('home.aboutTitle')}>
-        {t(view?.totalsFromWatch ? 'home.aboutWatch' : view?.hasSamples ? 'home.aboutSamples' : 'home.aboutNone')}
+        {`${t(view?.totalsFromWatch ? 'home.aboutWatch' : view?.hasSamples ? 'home.aboutSamples' : 'home.aboutNone')}\n\n${t(
+          resting?.source === 'rogo' ? 'home.aboutKcalRogo' : resting ? 'home.aboutKcalProfile' : 'home.aboutKcalActive',
+        )}`}
       </Details>
       <Card>
         <NavRow icon="albums" tint="neutral" title={t('cards.entry')} subtitle={t('cards.entrySubtitle')} onPress={() => router.push('/home-cards')} />
@@ -300,6 +320,7 @@ export default function TodayScreen() {
 const styles = StyleSheet.create({
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   stack: { gap: spacing.md },
+  activity: { gap: spacing.sm },
   tiles: { flexDirection: 'row', gap: spacing.md },
   heartRow: { flexDirection: 'row', gap: spacing.md },
   heartCol: { flex: 1, gap: 0 },

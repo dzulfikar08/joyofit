@@ -487,6 +487,25 @@ file (`strava/cadenceFields.ts`: session and lap cadence, `avg_step_length`, per
 
 Map data © OpenStreetMap contributors, tiles by [OpenFreeMap](https://openfreemap.org); the attribution is drawn on every map.
 
+## Calories on Today: total here, active everywhere else
+
+The watch's per-minute `step_samples.calories` and its day counter are **active** energy only: a day with 2 829 steps sums to 110 kcal (checked,
+see "Import from Huawei Health"), and the same minutes are written to Health Connect as ActiveCaloriesBurned. Nothing in the protocol notes
+or the native totals carries basal energy, so adding resting energy does not double count.
+
+The **Today calories tile** (`src/app/index.tsx`) shows **total = active + resting so far**, with the split on the tile ("Aktif 400 + istirahat 350").
+Resting so far is the BMR times the elapsed fraction of the local day (`restingSoFar`, `src/features/today/restingEnergy.ts`; today only, a 24 h day
+is assumed, no DST handling). BMR source, first that works:
+
+1. JoyoRogo `targets.bmr`, as cached on the phone by the last JoyoRogo profile read (`readCachedBmr`, the Joyo AI profile cache `joyofit.ai.person`,
+   field `bmrKcal`; ignored after 14 days; no network call is made for Today, so it exists only after JoyoRogo's profile was read, e.g. by Joyo AI).
+2. Mifflin-St Jeor from Settings > Body profile: 10 × kg + 6.25 × cm − 5 × age + s, s = +5 male, −161 female, −78 when sex is not set (midpoint, at most
+   83 kcal/day off either way). Height 100 to 250 cm, weight 20 to 300 kg and a valid birth year are required.
+3. Nothing: the tile shows active only ("Aktif saja") with a hint to fill in the profile. There is no default body.
+
+**Active only, on purpose:** the `activeKcal` sent to JoyoRogo (JoyoRogo adds its own BMR, so sending the total would count it twice), the Joyo AI
+digest and tools, Health Connect, Strava, workout energy and the Kebugaran energy model. No other screen shows a day's calories next to Today.
+
 ## Fitness metrics (Today cards, Today → Kebugaran; screens in Indonesian)
 
 Code in `src/features/fitness/`; every formula is a pure function with a unit test next to it. The watch's own value is shown first and labelled "dari jam"; when
@@ -505,6 +524,9 @@ the watch gave none, JoyoFit's estimate is shown and labelled "perkiraan". Nothi
 | Sleep need tonight | | `readiness.ts`: 7 h 30 min + up to 1 h from today's strain ÷ 21 + a quarter of the 7-night sleep debt (at most 1 h) | 3 nights for the debt |
 | Sleep of the day | | `stats.ts` `lastSleepSession` (Today summary, readiness sleep signal, JoyoRogo `sleepPct`) and `nights.ts` `sleepByDay` (debt, trend, Sleep screen need %, JoyoRogo `sleepHours`, today's and each earlier day of the week's): night plus naps, a nap belonging to the day it ends on like the main sleep, overlaps counted once; the watch's sleep score, stages and awakenings stay on the main sleep; a day with only naps has no night for debt, trend and `sleepHours` | |
 | Energi Tubuh | | 0 to 100, own model: wake level 30 + 60 × min(1, asleep ÷ need) + up to ±10 from the HRV z-score, minus 0.8 per hour awake, minus up to 55 from strain since waking, minus up to 1 per hour from stress above 40, plus 5 per hour of naps and 0.4 per hour of still minutes near resting HR; clamped | last night's sleep |
+
+The Today Energi card also shows the latest VO2max as a tile (tap opens Kebugaran): the watch's value, or the estimate labelled "perkiraan"; with neither it
+shows one quiet line saying what is needed. It comes from `computeDailyFitness().vo2`, computed from the Today screen's one `full` fitness read (no extra query).
 
 Max heart rate is `userMaxHr()` everywhere (Sleep, Today, workouts and these metrics), from the profile's birth year, or 220 − 35 without one. The watch's
 `workoutLoad` and `trainingPoints` units are not verified against hardware, so they are shown as reported and never combined with TRIMP.

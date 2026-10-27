@@ -22,7 +22,8 @@ const log = (direction: 'info' | 'error', message: string) =>
  * Sends the last few days' Recovery / Strain / Sleep to JoyoRogo's diary while signed in to JoyoRogo, with today's body
  * metrics (`metrics`: sleep hours, resting HR, HRV, VO2max, training status, recovery time; whichever JoyoFit has computed),
  * the hours slept on each earlier day of the week (`sleepHours`), and the watch's all-day active energy per day (`activeKcal`,
- * which JoyoRogo counts in Sisa). A change of any of them (also only the active energy of a day) changes the serialized days
+ * which JoyoRogo counts in Sisa). `activeKcal` stays ACTIVE energy only, never the Today tile's total: JoyoRogo adds its own
+ * BMR, so sending resting energy too would count it twice. A change of any of them (also only the active energy of a day) changes the serialized days
  * and so is sent again.
  * It runs when the scores change (every stored sync and every time Today regains focus re-reads them) and when the app returns to the
  * foreground, and only sends what differs from the last accepted push. Nothing is shown: a failure is a line in the Log

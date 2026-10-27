@@ -24,9 +24,11 @@ export interface DailyFitness {
   energyMissing: string | null;
   recovery: RecoveryLeft | null;
   sleepNeed: SleepNeedTonight;
+  /** Latest VO2max (the watch's, else the estimate); needs the `full` fitness scope for the 90 days of workouts it looks at. */
+  vo2: Vo2Status | null;
 }
 
-/** The Today cards: Energi Tubuh, recovery time and the sleep tonight needs. */
+/** The Today cards: Energi Tubuh, recovery time, the sleep tonight needs and VO2max. */
 export function computeDailyFitness(d: FitnessData, availability?: NightHrvAvailability | null): DailyFitness {
   const { nowSec, dayStart } = d;
   const nights = buildNights(d.sleep, []);
@@ -66,7 +68,18 @@ export function computeDailyFitness(d: FitnessData, availability?: NightHrvAvail
       todayStrain: d.strain.find((s) => s.day === dayStart)?.strain ?? null,
       nightsAsleepSec: recentNightsAsleep(d.sleep, nowSec),
     }),
+    vo2: vo2Of(d),
   };
+}
+
+function vo2Of(d: FitnessData): Vo2Status | null {
+  return vo2maxStatus({
+    nowSec: d.nowSec,
+    dayStart: d.dayStart,
+    workouts: d.workouts.map(({ workout, summary }) => ({ start: workout.start, vo2max: summary.vo2max })),
+    resting: d.resting,
+    maxHr: d.maxHr,
+  });
 }
 
 export interface FitnessOverview {
@@ -80,13 +93,7 @@ export interface FitnessOverview {
 /** The Kebugaran screen. `efforts` are the best efforts of the recent runs (`loadRunEfforts`). */
 export function computeFitnessOverview(d: FitnessData, efforts: readonly EffortSeconds[]): FitnessOverview {
   return {
-    vo2: vo2maxStatus({
-      nowSec: d.nowSec,
-      dayStart: d.dayStart,
-      workouts: d.workouts.map(({ workout, summary }) => ({ start: workout.start, vo2max: summary.vo2max })),
-      resting: d.resting,
-      maxHr: d.maxHr,
-    }),
+    vo2: vo2Of(d),
     load: loadBalance(d.strain, d.dayStart),
     races: predictRaces(efforts),
     hrv: hrvStatus(d.hrv, d.nowSec),

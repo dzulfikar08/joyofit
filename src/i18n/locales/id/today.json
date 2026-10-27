@@ -44,7 +44,13 @@
     "aboutWatch": "Kalori dan jarak sesuai laporan jam saat sinkron terakhir. Tarik ke bawah untuk sinkron.",
     "aboutSamples": "Kalori dan jarak dijumlahkan dari sampel per menit yang tersimpan. Tarik ke bawah untuk sinkron.",
     "aboutNone": "Belum ada data tersimpan untuk hari ini. Sinkron untuk mengambil data hari ini dari jam. Tarik ke bawah untuk sinkron.",
-    "strengthOnWatch": "Latihan beban berjalan di jam"
+    "strengthOnWatch": "Latihan beban berjalan di jam",
+    "caloriesSplit": "Aktif {{active}} + istirahat {{resting}}",
+    "caloriesActiveOnly": "Aktif saja",
+    "caloriesHint": "Isi tinggi, berat, dan tahun lahir di Pengaturan > Profil tubuh untuk melihat total kalori, termasuk istirahat.",
+    "aboutKcalRogo": "Kalori di sini = aktif (dari jam) + istirahat sampai sekarang. Istirahat adalah BMR dari JoyoRogo, dibagi rata sepanjang hari. JoyoRogo, Health Connect, dan layar lain tetap memakai kalori aktif saja.",
+    "aboutKcalProfile": "Kalori di sini = aktif (dari jam) + istirahat sampai sekarang. Istirahat adalah perkiraan BMR dari rumus Mifflin-St Jeor dengan tinggi, berat, dan umur di profilmu, dibagi rata sepanjang hari. Kalau jenis kelamin tidak diisi, dipakai nilai tengah. JoyoRogo, Health Connect, dan layar lain tetap memakai kalori aktif saja.",
+    "aboutKcalActive": "Kalori di sini hanya kalori aktif dari jam. Isi tinggi, berat, dan tahun lahir di profil agar istirahat ikut dihitung."
   },
   "hourly": {
     "peak_other": "Jam tersibuk {{hour}}, {{steps}} langkah"

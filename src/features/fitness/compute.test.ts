@@ -46,6 +46,13 @@ const workout = (over: Partial<WorkoutRow>): WorkoutRow => ({
 });
 
 describe('computeDailyFitness', () => {
+  it('carries the latest VO2max for the Today card: the watch value, else null without data', () => {
+    expect(computeDailyFitness(empty).vo2).toBeNull();
+    const r = computeDailyFitness({ ...empty, workouts: [{ workout: workout({}), summary: { vo2max: 44 } }] });
+    expect(r.vo2?.value).toBe(44);
+    expect(r.vo2?.source).toBe('watch');
+  });
+
   it('has no Energi Tubuh without last night, but still a sleep need', () => {
     const r = computeDailyFitness(empty);
     expect(r.energy).toBeNull();

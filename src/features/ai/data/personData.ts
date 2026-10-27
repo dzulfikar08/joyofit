@@ -16,6 +16,8 @@ interface CachedProfile {
   eatKcal: number | null;
   sex: Person['sex'];
   heightCm: number | null;
+  /** JoyoRogo's `targets.bmr` (kcal/day) at that read; absent in caches written before it was kept. Today's total calories read it. */
+  bmrKcal?: number | null;
 }
 
 const valid = (v: unknown): v is CachedProfile => typeof v === 'object' && v !== null && typeof (v as CachedProfile).at === 'number';
@@ -33,7 +35,18 @@ function fromRogo(p: RogoMyProfile, at: number): CachedProfile {
     eatKcal: typeof eat === 'number' && Number.isFinite(eat) ? Math.round(eat) : null,
     sex,
     heightCm: typeof row?.heightCm === 'number' ? row.heightCm : null,
+    bmrKcal: typeof p.targets?.bmr === 'number' && Number.isFinite(p.targets.bmr) ? p.targets.bmr : null,
   };
+}
+
+/** A cached BMR older than this is ignored (weight and age move it): Today then falls back to the profile formula. */
+const BMR_MAX_AGE_SEC = 14 * 86400;
+
+/** JoyoRogo's BMR from the last cached profile read (no network), or null when there is none or it is old. */
+export function readCachedBmr(kv: KvStore, nowSec: number): number | null {
+  const cached = readJson<CachedProfile | null>(kv, KEY, null, (v): v is CachedProfile | null => v === null || valid(v));
+  if (!cached || cached.at > nowSec || nowSec - cached.at > BMR_MAX_AGE_SEC) return null;
+  return typeof cached.bmrKcal === 'number' ? cached.bmrKcal : null;
 }
 
 /**

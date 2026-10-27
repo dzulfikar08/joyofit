@@ -44,7 +44,13 @@
     "aboutWatch": "Calories and distance are as reported by the watch at the last sync. Pull down to sync.",
     "aboutSamples": "Calories and distance are added up from stored one-minute samples. Pull down to sync.",
     "aboutNone": "Nothing stored for today yet. Sync to pull today from the watch. Pull down to sync.",
-    "strengthOnWatch": "Strength training running on the watch"
+    "strengthOnWatch": "Strength training running on the watch",
+    "caloriesSplit": "Active {{active}} + resting {{resting}}",
+    "caloriesActiveOnly": "Active only",
+    "caloriesHint": "Add height, weight and birth year in Settings > Body profile to see total calories, resting included.",
+    "aboutKcalRogo": "Calories here = active (from the watch) + resting so far. Resting is your JoyoRogo BMR, spread evenly over the day. JoyoRogo, Health Connect and other screens still use active calories only.",
+    "aboutKcalProfile": "Calories here = active (from the watch) + resting so far. Resting is a BMR estimate from the Mifflin-St Jeor formula with the height, weight and age in your profile, spread evenly over the day. If sex is not set, the midpoint is used. JoyoRogo, Health Connect and other screens still use active calories only.",
+    "aboutKcalActive": "Calories here are the watch's active calories only. Add height, weight and birth year to your profile to include resting."
   },
   "hourly": {
     "peak_one": "Busiest hour {{hour}}, {{steps}} step",

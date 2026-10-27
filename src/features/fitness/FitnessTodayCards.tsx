@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -5,6 +6,7 @@ import { AppText } from '@/components/AppText';
 import { Details } from '@/components/Details';
 import { CountUpText, FadeIn } from '@/components/motion';
 import { Ring } from '@/components/Ring';
+import { PressableScale } from '@/components/PressableScale';
 import { Card } from '@/components/Screen';
 import { Skeleton } from '@/components/States';
 import { StatTile } from '@/components/StatTile';
@@ -15,7 +17,7 @@ import { Paragraphs } from '@/features/fitness/Paragraphs';
 import { Sparkline } from '@/features/fitness/Sparkline';
 import type { FitnessData } from '@/features/fitness/useFitnessData';
 import type { NightHrvAvailability } from '@/features/today/nightHrv';
-import { fmtInt, useLocale, useTranslation } from '@/i18n';
+import { fmtDecimal, fmtInt, useLocale, useTranslation } from '@/i18n';
 import { spacing, useColors } from '@/theme';
 
 const SIZE = 92;
@@ -26,11 +28,12 @@ export function FitnessTodayCards({ data, availability }: { data: FitnessData | 
   const { t } = useTranslation('health');
   const locale = useLocale();
   const colors = useColors();
+  const router = useRouter();
   const daily = useMemo(() => (data ? computeDailyFitness(data, availability) : null), [data, availability, locale]);
 
   if (!daily) return <Skeleton width="100%" height={220} radius="card" />;
 
-  const { energy, recovery, sleepNeed } = daily;
+  const { energy, recovery, sleepNeed, vo2 } = daily;
   const recoveryText = recovery ? formatRecovery(recovery.hoursLeft) : null;
 
   return (
@@ -98,6 +101,22 @@ export function FitnessTodayCards({ data, availability }: { data: FitnessData | 
           />
           <StatTile icon="bed" tint="sleep" label={t('fitness.today.sleepTonightLabel')} value={formatHm(sleepNeed.needSec)} sub={t('fitness.today.estimate')} />
         </View>
+        <PressableScale accessibilityRole="link" accessibilityLabel={t('fitness.screen.vo2.title')} scaleTo={0.98} onPress={() => router.push('/fitness')}>
+          {vo2 ? (
+            <StatTile
+              icon="pulse"
+              tint="heart"
+              label={t('fitness.screen.vo2.title')}
+              value={fmtDecimal(vo2.value, vo2.source === 'watch' ? 0 : 1)}
+              unit={t('fitness.screen.vo2.unit')}
+              sub={vo2.source === 'estimate' ? t('fitness.today.estimate') : sourceLabel('watch')}
+            />
+          ) : (
+            <AppText variant="caption" muted>
+              {`${t('fitness.screen.vo2.title')}: ${t('fitness.screen.vo2.none')}`}
+            </AppText>
+          )}
+        </PressableScale>
         <Details title={t('fitness.today.howRecoveryTitle')}>
           {recovery?.source === 'watch' ? t('fitness.today.howRecoveryWatch') : t('fitness.today.howRecoveryEstimate')}
         </Details>
