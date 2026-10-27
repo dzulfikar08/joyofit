@@ -65,6 +65,21 @@ def cut(pbf: str, jobs: List[tuple], workdir: str, logfile: str) -> None:
         os.remove(config)
 
 
+def pre_cut(pbf: str, regions: List[dict], osm_date: str, workdir: str) -> str:
+    """One pass over the extract writing the box around `regions` (their relations' boxes from regions.json plus 0.05°, about 5.5 km,
+    more than the buffer), also with complete ways: every way that touches a region's polygon touches the box, so it is in the smaller
+    file with all its nodes, and so are the region relations' members. The boundary pass and the region cuts then read this file."""
+    boxes = [r["bbox"] for r in regions]
+    margin = 0.05
+    bbox = (min(b[0] for b in boxes) - margin, min(b[1] for b in boxes) - margin,
+            max(b[2] for b in boxes) + margin, max(b[3] for b in boxes) + margin)
+    out = os.path.join(workdir, "selection.osm.pbf")
+    log(f"cutting the box {','.join(f'{v:.4f}' for v in bbox)} around the {len(regions)} regions from the extract")
+    run(["osmium", "extract", "--overwrite", "--strategy", "complete_ways", "-b", ",".join(f"{v:.4f}" for v in bbox),
+         "--output-header", f"osmosis_replication_timestamp={osm_date}", "-o", out, pbf], os.path.join(workdir, "cut.log"))
+    return out
+
+
 def halves(geometry):
     """The two halves of `geometry` across the middle of its bbox's longer side (in km, so east-west degrees count less away from the
     equator); empty halves are dropped."""
@@ -246,7 +261,10 @@ def main(argv: Optional[List[str]] = None) -> None:
     p.add_argument("--max-depth", type=int, default=4, help="halvings per region at most (up to 16 parts)")
     p.add_argument("--buffer-km", type=float, default=1.0, help="added around each boundary")
     p.add_argument("--batch", type=int, default=16,
-                   help="regions cut per pass over the extract (8 and 24 peaked at about 2 GB of RAM; 64 at once ran out of 8 GB)")
+                   help="regions cut per pass over the extract; osmium needs about 1.3 GB per region on Linux (Gorontalo, 6 regions: 7.6 GB) "
+                        "and reports far less on macOS (8 and 24 peaked at about 2 GB; 64 at once ran out of 8 GB)")
+    p.add_argument("--pre-cut", action="store_true",
+                   help="first cut the box around the selected regions (one pass), then read that smaller file (for --province)")
     p.add_argument("--force", action="store_true", help="rebuild regions that are up to date")
     p.add_argument("--keep-work", action="store_true", help="keep out/work/<code>/ (cuts, polygons, logs)")
     args = p.parse_args(argv)
@@ -264,8 +282,9 @@ def main(argv: Optional[List[str]] = None) -> None:
 
     results = {r["code"]: builder.read_state(r["code"]) for r in chosen if r not in todo}
     if todo:
+        source = pre_cut(args.pbf, todo, osm_date, builder.work) if args.pre_cut else args.pbf
         log("reading the boundaries from the extract")
-        boundaries = regionlib.region_boundaries(args.pbf, todo, os.path.join(builder.work, "boundaries"))
+        boundaries = regionlib.region_boundaries(source, todo, os.path.join(builder.work, "boundaries"))
         cuttable = []
         for region in todo:
             boundary = boundaries.get(region["code"])
@@ -306,7 +325,7 @@ def main(argv: Optional[List[str]] = None) -> None:
                 batch = cuttable[start:start + args.batch]
                 log(f"cutting regions {start + 1}-{start + len(batch)} of {len(cuttable)} from the extract")
                 try:
-                    cut(args.pbf, [(poly, pbf) for _, _, poly, pbf, _ in batch], builder.work, os.path.join(builder.work, "cut.log"))
+                    cut(source, [(poly, pbf) for _, _, poly, pbf, _ in batch], builder.work, os.path.join(builder.work, "cut.log"))
                 except RuntimeError as error:
                     for region, *_ in batch:
                         results[region["code"]] = builder.fail(region, f"cut: {error}")
@@ -315,6 +334,8 @@ def main(argv: Optional[List[str]] = None) -> None:
                 for region, geometry, _, pbf, exact in batch:
                     futures.append(pool.submit(work, region, geometry, pbf, exact))
             concurrent.futures.wait(futures)
+        if source != args.pbf and not args.keep_work:
+            os.remove(source)
 
     states = [results[r["code"]] for r in chosen if results.get(r["code"])]
     ok = [s for s in states if s.get("status") == "ok"]

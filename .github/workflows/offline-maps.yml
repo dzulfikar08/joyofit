@@ -167,12 +167,14 @@ jobs:
         run: |
           (while sleep 2; do echo "$(free -m | awk '/^Mem:/ {print $3}') $(df -m --output=used / | tail -1)"; done > "$RUNNER_TEMP/usage.log") &
           df -h / && free -m
+      # osmium needs about 1.3 GB per region in a cut pass on Linux (16 at once ran out of the runner's 16 GB): cut the province's box
+      # once, then two regions per pass from that small file, while four conversions run.
       - name: Build ${{ matrix.province }} (${{ matrix.regions }} regions, 4 jobs)
         id: build
         run: |
           status=0
           /usr/bin/time -v -o "$RUNNER_TEMP/time.log" tools/offline-maps/build-all.sh --pbf "$RUNNER_TEMP/indonesia-latest.osm.pbf" \
-            --province "$PROVINCE" --jobs 4 || status=$?
+            --province "$PROVINCE" --pre-cut --batch 2 --jobs 4 || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           [ "$status" = 0 ] || echo "::warning::some regions of $PROVINCE failed; their previous catalog entries stay (report below)"
       - name: Upload the changed maps

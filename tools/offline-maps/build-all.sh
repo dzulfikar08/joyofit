@@ -9,6 +9,7 @@
 #   --jobs N       conversions at once (default: half the CPUs)          --only 3573,3515   only these BPS codes
 #   --province P   only this province ("Jawa Timur")                     --force            rebuild up-to-date regions too
 #   --max-mib M    split maps above M MiB (default 64)                   --keep-work        keep cuts and logs in out/work/
+#   --batch N      regions per osmium pass (default 16; ~1.3 GB each on Linux)   --pre-cut   cut the selection's box first (with --province)
 #   (all options: build-all.sh --help)
 #
 # Output in tools/offline-maps/out/: <id>.bin, <id>.json (catalog entry), state/<code>.json, report.json.

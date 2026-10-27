@@ -32,8 +32,11 @@ No Java is needed: the converter is Python (standard library only). `build-all.s
 `.cache/`: HDataResearch cloned at the pinned commit `c736a1a`, a virtualenv with `shapely==2.2.0`, the Geofabrik extract.
 
 Resources for the full run: **disk** about 2 GB for the extract, the finished maps (see `docs/offline-maps.md` for the total) and up to
-1-2 GB of temporary GeoJSON per running job; **RAM** about 2 GB for each `osmium extract` pass of 16 regions and up to 2.5 GB per
-conversion of a dense region (Kabupaten Sidoarjo peaked at 2.4 GB), so `--jobs` ≈ (RAM in GB − 2) / 2.5.
+1-2 GB of temporary GeoJSON per running job; **RAM** up to 2.5 GB per conversion of a dense region (Kabupaten Sidoarjo peaked at 2.4 GB)
+plus the `osmium extract` pass: osmium keeps two bitmaps of all node ids per region in the pass, about **1.3 GB per region on Linux**
+(Gorontalo's 6 regions: 7.6 GB; passes of 9 to 16 regions ran 18 of 38 provinces out of the 16 GB runner). macOS reports far less
+(about 2 GB for 16), as it compresses the mostly empty bitmaps [INFERENCE]. So on Linux `--batch` ≈ (RAM in GB − 2.5 × `--jobs` − 1) /
+1.3; `--pre-cut` (cut the box around the selection once, then every pass reads that small file) makes small batches cheap.
 
 ## All regions
 
