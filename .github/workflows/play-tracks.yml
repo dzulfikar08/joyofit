@@ -1,0 +1,48 @@
+# Read-only: lists what each Google Play track of com.joyodigitama.joyofit holds (status, versionCodes, rollout).
+# Opens an edit, reads the tracks and deletes the edit, so nothing on Play changes. Uses PLAY_SERVICE_ACCOUNT_JSON
+# from the `release` environment (docs/ci-release.md), so a run waits for the owner's approval like a release.
+name: Play tracks
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tracks:
+    runs-on: ubuntu-24.04
+    environment: release
+    steps:
+      - name: List the tracks
+        env:
+          SA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          pip install --quiet pyjwt==2.10.1 cryptography==46.0.3
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, os, time, urllib.parse, urllib.request
+          import jwt
+          sa = json.loads(os.environ["SA"])
+          now = int(time.time())
+          assertion = jwt.encode({"iss": sa["client_email"], "scope": "https://www.googleapis.com/auth/androidpublisher",
+                                  "aud": sa["token_uri"], "iat": now, "exp": now + 600}, sa["private_key"], algorithm="RS256")
+          body = urllib.parse.urlencode({"grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer", "assertion": assertion}).encode()
+          token = json.load(urllib.request.urlopen(urllib.request.Request(sa["token_uri"], data=body)))["access_token"]
+          base = "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/com.joyodigitama.joyofit"
+          def call(method, path):
+              req = urllib.request.Request(base + path, method=method, data=b"" if method == "POST" else None,
+                                           headers={"Authorization": "Bearer " + token})
+              with urllib.request.urlopen(req) as res:
+                  raw = res.read()
+              return json.loads(raw) if raw else None
+          edit = call("POST", "/edits")["id"]
+          try:
+              print("| Track | Status | Version codes | Rollout | Name |")
+              print("| --- | --- | --- | --- | --- |")
+              for track in call("GET", f"/edits/{edit}/tracks")["tracks"]:
+                  for release in track.get("releases", []) or [{}]:
+                      print(f"| {track['track']} | {release.get('status', '')} | {', '.join(release.get('versionCodes', []))} "
+                            f"| {release.get('userFraction', '')} | {release.get('name', '')} |")
+          finally:
+              call("DELETE", f"/edits/{edit}")
+          PY
