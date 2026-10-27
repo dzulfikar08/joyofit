@@ -39,6 +39,7 @@ a guess. Deploy JoyoRogo with `fitness.cloudAccess` before this Worker.
 | `GET /v1/agps/hw-agnss` | Public (no session, no parameters), `Cache-Control: public, max-age=900`. The experimental `HW_AGNSS_RTCM_33` satellite file (RTCM 3 frames 1019/1020/1042/1046): fetched from BKG's `BRDC00WRD_S_...rnx.gz` (today's, plus yesterday's in the first 4 h of the UTC day), built with `../packages/agps-rtcm`, checked (CRC-24Q of every frame, 512 B to 16 KiB, at least 20 satellites) and kept in the Cache API for 15 minutes; `Last-Modified` is the build time. `503 { error: "agps_unavailable" }` (`no-store`, `Retry-After: 60`) when no valid file can be built; the failure is remembered in the Cache API for 60 s so BKG is not asked again by every caller. See [`../docs/agps.md`](../docs/agps.md). |
 | `GET /v1/maps` | Public (no session), `Cache-Control: public, max-age=300`, `ETag` (hash of the answer; `If-None-Match` → `304`). Offline watch maps for every Indonesian Kabupaten/Kota (docs/offline-maps.md): the entries of `watch/catalog.json` in the R2 bucket `MAPS` (`joyofit-maps`, shared with the bike computer's PMTiles; written by `tools/offline-maps/publish.py`): `id` decimal u64 string, `name`, `code` (4-digit BPS code), `province`, `kind` (`kota` \| `kabupaten`), `part?` `{ index, count }` for a split region, `bbox` [west,south,east,north], `sizeBytes`, `sha256`, `version`, `builtAt`, `osmDate`, each plus `attribution: "© OpenStreetMap contributors, ODbL 1.0"`. Optional query: `province` (exact, any case), `q` (part of the name or province, or the code), `limit` 1..1000; anything malformed → `400 { error: "invalid_query" }`. The parsed catalog is kept per isolate and re-read only when the R2 object's etag changes. Invalid entries are dropped and logged; a missing or broken catalog is `[]`. No position filter on purpose: Workers Logs (observability on) records request URLs, so coordinates in a query would sit in the account's logs; the app sorts by distance on the phone. |
 | `GET /v1/maps/:id.bin` | Public. The `offvmp` file `watch/<id>.bin` streamed from `MAPS`: `application/octet-stream`, `Content-Length`, `ETag`, `Cache-Control: public, max-age=3600`; `If-None-Match` → `304`. Unknown or malformed id → `404 { error: "not_found" }`. |
+| `/internal/maps/…` | Not for the app: the offline-maps workflow publishes the maps here with `X-Maps-Publish-Key`. See "Offline maps publishing" below. |
 | `GET /v1/waitlist?kind=&status=` | Owner only: `Authorization: Bearer $WAITLIST_ADMIN_TOKEN` (Worker secret, `503` when unset). Easiest: `scripts/waitlist.sh [strava\|iphone]` from the repo root, which reads the token from `~/.config/joyofit/waitlist-admin-token`. |
 
 Strava needs the `STRAVA_CLIENT_ID` var (in `wrangler.jsonc`) and two secrets, `STRAVA_CLIENT_SECRET` (the same value as on
@@ -52,6 +53,41 @@ Owner setup (callback domain, webhook registration, the shared application, revi
 which is what `since` filters on. D1 schema: [`migrations/0001_init.sql`](migrations/0001_init.sql)
 (`step_samples`, `sleep_segments` with `stage`, `workouts`, `workout_points`, `device`, `user_state`,
 `imports`).
+
+### Offline maps publishing (`/internal/maps`)
+
+`tools/offline-maps/publish.py --via-worker https://api.fit.joyorogo.com` (the monthly workflow, `.github/workflows/offline-maps.yml`)
+writes the watch maps into `MAPS` through these routes (`src/mapsPublish.ts`), so it needs no Cloudflare API token. Every request needs
+`X-Maps-Publish-Key: <MAPS_PUBLISH_KEY>`, compared in constant time with the Worker secret: wrong or missing → `401 unauthorized`,
+secret unset → `503 maps_publish_not_configured`. Only `watch/catalog.json`, `watch/<id>.bin` (`id` a decimal u64, as in `GET /v1/maps`)
+and the chunk staging keys below can be written; any other path is `404`, and nothing else in the bucket (the bike computer's PMTiles)
+can be written or deleted.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /internal/maps/watch/catalog.json` | The stored catalog as is (`no-store`), with its `ETag`; `404` when there is none. |
+| `PUT /internal/maps/watch/catalog.json` | JSON `{ generatedAt?, attribution?, maps: [...] }`, at most 5 MiB. Every entry must be valid for `GET /v1/maps` (`id`, `sizeBytes`, `sha256` and the rest; `400 invalid_catalog` with the first 20 issues) and every id listed once (`400 duplicate_id`). One R2 PUT replaces the object, so readers see the old catalog or the new one. `If-Match: <etag from the GET>` → `412 catalog_changed` when someone wrote it in between. Answers `{ ok, maps, etag }`. |
+| `GET /internal/maps/watch/<id>.bin/meta` | `{ exists: false }`, or `{ exists: true, sizeBytes, sha256, uploaded }`. `sha256` (upper-case hex) is the one checked at upload; `null` for files put by wrangler without one. `publish.py` skips a map whose `sha256` already matches. |
+| `PUT /internal/maps/watch/<id>.bin` | The body is the file: `Content-Length` required (`411`), 1 byte to 95 MiB (`413` above; Cloudflare refuses request bodies over 100 MB on the Free and Pro plans), `X-Sha256: <hex>` of the body (`400 invalid_sha256`). R2 checks the bytes against it before it stores anything: a mismatch is `422 sha256_mismatch` and the previous file stays. Stored with metadata `sha256`. Answers `201 { ok, sizeBytes, sha256 }`. |
+| `PUT /internal/maps/watch/<id>.bin/chunks/<file sha256>/<n>` | Files above 90 MiB go in chunks (`publish.py` uses 64 MiB): chunk `n` (1 to 64) of the file whose SHA-256 is in the path, same rules as the single PUT, `X-Sha256` of this chunk (R2 checks it, `422` on a mismatch). Staged at `watch/.chunks/<id>/<file sha256>/<n>`. Answers `201 { ok, chunk, sizeBytes }`. |
+| `POST /internal/maps/watch/<id>.bin/chunks/<file sha256>/commit` | JSON `{ chunks, sizeBytes }`. Checks that chunks 1..`chunks` exist (`409 missing_chunk`) and add up to `sizeBytes` (`422 size_mismatch`), streams them in order into `watch/<id>.bin` with R2 checking the whole file's SHA-256 before it stores it (`422 sha256_mismatch`, the previous file stays, the chunks are deleted), then deletes every staged chunk of that id (also those of an abandoned upload). Answers `201 { ok, sizeBytes, sha256 }`. A file that is never committed leaves its chunks until the next commit of the same id. |
+| `DELETE /internal/maps/watch/<id>.bin` | Deletes a file the stored catalog does not list (`409 listed_in_catalog` when it does, `409 catalog_unreadable` when the catalog is not JSON): `publish.py` removes the files of maps that left the catalog. Answers `{ ok, existed }`. |
+
+`publish.py` retries `5xx`, `429` and network errors 4 times (2, 4, 8, 16 s) and fails a map, never the run, on a `4xx`.
+
+The key is a Worker secret plus the same value as the secret `MAPS_PUBLISH_KEY` of the GitHub environment `maps`. Set or rotate both
+at once, from `server/` (the wrangler OAuth login is enough; nothing prints the key, and it never reaches the shell history):
+
+```sh
+K=$(openssl rand -hex 32)
+printf %s "$K" | bunx wrangler secret put MAPS_PUBLISH_KEY
+printf %s "$K" | gh secret set MAPS_PUBLISH_KEY --env maps -R dzulfikar08/joyofit
+unset K
+```
+
+Rotate when no refresh is running (between the two commands the workflow's key is wrong and publishing answers `401`). Check:
+`curl -s -o /dev/null -w '%{http_code}\n' -H 'X-Maps-Publish-Key: wrong' https://api.fit.joyorogo.com/internal/maps/watch/catalog.json`
+answers `401`.
 
 ### Ride relay ("Main di web")
 

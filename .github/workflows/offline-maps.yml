@@ -6,8 +6,9 @@
 #   `provinces` and `dry_run`). `plan` downloads the Geofabrik Indonesia extract once and hands it to the shards as an artifact (one
 #   download per run, as Geofabrik asks); one `shard` per province builds its regions and uploads the maps whose SHA-256 changed; `catalog`
 #   then writes watch/catalog.json once from every shard that finished, so a failed shard keeps its regions' previous entries.
-#   Publishing needs CLOUDFLARE_R2_TOKEN (an API token with "Workers R2 Storage: Edit" on the JoyoFit account) in the `maps`
-#   environment (no reviewers, master only); a dry run needs no secret and publishes nothing.
+#   Publishing goes through JoyoFit's Worker (`publish.py --via-worker`, server/src/mapsPublish.ts) with the secret MAPS_PUBLISH_KEY of
+#   the `maps` environment (no reviewers, master only), the same value as the Worker secret; no Cloudflare API token. Without that secret
+#   a run is a dry run (warning in the log). A dry run needs no secret and publishes nothing.
 # The owner's Linux box (systemd timer in the README) runs the same scripts; use one of the two, not both.
 name: Offline maps
 
@@ -31,6 +32,9 @@ on:
 
 permissions:
   contents: read
+
+env:
+  MAPS_API: https://api.fit.joyorogo.com
 
 concurrency:
   group: offline-maps-${{ github.event_name == 'pull_request' && github.ref || 'refresh' }}
@@ -80,8 +84,8 @@ jobs:
           [ "$(sha256sum tools/offline-maps/out/2000000000000008171.bin)" = "$before" ]
       - name: Publish, both phases, dry run (reads the public catalog)
         run: |
-          tools/offline-maps/publish.py --all --upload-only --dry-run
-          tools/offline-maps/publish.py --all --catalog-only --dry-run
+          tools/offline-maps/publish.py --all --upload-only --dry-run --via-worker "$MAPS_API"
+          tools/offline-maps/publish.py --all --catalog-only --dry-run --via-worker "$MAPS_API"
           python3 -c "import json; m = json.load(open('tools/offline-maps/out/catalog.json'))['maps']; assert any(e['id'] == '2000000000000008171' for e in m); print(len(m), 'maps')"
 
   plan:
@@ -143,22 +147,23 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.plan.outputs.shards) }}
     env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_TOKEN }}
+      MAPS_PUBLISH_KEY: ${{ secrets.MAPS_PUBLISH_KEY }}
       PUBLISH: ${{ needs.plan.outputs.publish }}
       PROVINCE: ${{ matrix.province }}
     steps:
-      - name: Publishing needs the R2 token
-        if: env.PUBLISH == 'true' && env.CLOUDFLARE_API_TOKEN == ''
+      - name: Publish, or a dry run without MAPS_PUBLISH_KEY
+        id: mode
         run: |
-          echo "::error::Add the secret CLOUDFLARE_R2_TOKEN to the 'maps' environment (docs/offline-maps.md, Automatic refresh), or run with dry_run"
-          exit 1
+          if [ "$PUBLISH" = true ] && [ -z "$MAPS_PUBLISH_KEY" ]; then
+            echo "::warning::the 'maps' environment has no MAPS_PUBLISH_KEY: dry run, nothing is published (docs/offline-maps.md, Automatic refresh)"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool python3-venv time
-      - run: bun install --frozen-lockfile
-        working-directory: server
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: extract
@@ -178,9 +183,11 @@ jobs:
           echo "status=$status" >> "$GITHUB_OUTPUT"
           [ "$status" = 0 ] || echo "::warning::some regions of $PROVINCE failed; their previous catalog entries stay (report below)"
       - name: Upload the changed maps
+        env:
+          DO_PUBLISH: ${{ steps.mode.outputs.publish }}
         run: |
-          flags=(); [ "$PUBLISH" = true ] || flags=(--dry-run)
-          tools/offline-maps/publish.py --all --upload-only "${flags[@]}"
+          flags=(); [ "$DO_PUBLISH" = true ] || flags=(--dry-run)
+          tools/offline-maps/publish.py --all --upload-only --via-worker "$MAPS_API" "${flags[@]}"
       - name: Hand the catalog entries to the catalog job
         run: mkdir -p tools/offline-maps/out/reports && cp tools/offline-maps/out/report.json "tools/offline-maps/out/reports/${{ matrix.slug }}.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -218,28 +225,36 @@ jobs:
     timeout-minutes: 20
     environment: ${{ needs.plan.outputs.publish == 'true' && 'maps' || '' }}
     env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_TOKEN }}
+      MAPS_PUBLISH_KEY: ${{ secrets.MAPS_PUBLISH_KEY }}
       PUBLISH: ${{ needs.plan.outputs.publish }}
     steps:
+      - name: Publish, or a dry run without MAPS_PUBLISH_KEY
+        id: mode
+        run: |
+          if [ "$PUBLISH" = true ] && [ -z "$MAPS_PUBLISH_KEY" ]; then
+            echo "::warning::the 'maps' environment has no MAPS_PUBLISH_KEY: dry run, nothing is published (docs/offline-maps.md, Automatic refresh)"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-      - run: bun install --frozen-lockfile
-        working-directory: server
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: maps-*
           merge-multiple: true
           path: tools/offline-maps/out
       - name: Write watch/catalog.json once
+        env:
+          DO_PUBLISH: ${{ steps.mode.outputs.publish }}
         run: |
           if ! ls tools/offline-maps/out/state/*.json > /dev/null 2>&1; then
             echo "::error::no shard finished; the catalog stays as it is"
             exit 1
           fi
-          flags=(); [ "$PUBLISH" = true ] || flags=(--dry-run)
-          tools/offline-maps/publish.py --all --catalog-only "${flags[@]}"
+          flags=(); [ "$DO_PUBLISH" = true ] || flags=(--dry-run)
+          tools/offline-maps/publish.py --all --catalog-only --via-worker "$MAPS_API" "${flags[@]}"
       - name: Summary
         if: always()
         run: |

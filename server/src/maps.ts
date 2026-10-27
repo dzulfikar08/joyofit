@@ -24,11 +24,11 @@ export const MAPS_FILE_CACHE_SECONDS = 3600;
 const ID = /^(0|[1-9]\d{0,19})$/;
 const U64_MAX = 18446744073709551615n;
 
-function isMapId(id: string): boolean {
+export function isMapId(id: string): boolean {
   return ID.test(id) && BigInt(id) <= U64_MAX;
 }
 
-const entrySchema = z.object({
+export const entrySchema = z.object({
   id: z.string().refine(isMapId),
   name: z.string().min(1),
   /** BPS kode wilayah of the Kabupaten/Kota. */

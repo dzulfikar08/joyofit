@@ -88,9 +88,10 @@ Expected for all 514 regions (from cutting every region on 2026-10-25, see `docs
 
 Two ways; use one. **GitHub Actions** (the default): `.github/workflows/offline-maps.yml` rebuilds every region on the 2nd of each month,
 one job per province in parallel, uploads what changed and writes the catalog once at the end; a failed province keeps its previous
-entries. Publishing needs `CLOUDFLARE_R2_TOKEN` (an API token with "Workers R2 Storage: Edit" on the JoyoFit account) in the repository's
-`maps` environment. Actions → Offline maps → Run workflow starts it by hand, for some provinces or as a dry run (`docs/offline-maps.md`,
-"Automatic refresh", has the inputs, timings and cost). **The owner's Linux box**, where `out/` persists (a stopped run resumes there),
+entries. It publishes through JoyoFit's Worker (`publish.py --via-worker`) with the secret `MAPS_PUBLISH_KEY` in the repository's `maps`
+environment, the same value as the Worker secret (`server/README.md`, "Offline maps publishing", has the endpoints and how to set or rotate
+it); without it a run is a dry run. Actions → Offline maps → Run workflow starts it by hand, for some provinces or as a dry run
+(`docs/offline-maps.md`, "Automatic refresh", has the inputs, timings and cost). **The owner's Linux box**, where `out/` persists (a stopped run resumes there),
 with a systemd timer. `~/.config/systemd/user/joyofit-maps.service`:
 
 ```
@@ -140,7 +141,11 @@ tools/offline-maps/publish.py --all --dry-run               # what would change;
 then writes the new catalog in one PUT, listing a new entry only once its file is in the bucket (a failed upload keeps the previous
 entry and makes the exit code 1), and then deletes the files of maps that left it (a region split differently than before).
 `--upload-only` and `--catalog-only` run one of the two phases: the workflow uploads in each province's job and writes the catalog once
-from all of them. `--dry-run` without `CLOUDFLARE_API_TOKEN` reads the public catalog (`GET /v1/maps`) instead of the bucket. Entries of
+from all of them. `--via-worker https://api.fit.joyorogo.com` does the same through JoyoFit's Worker (`/internal/maps/…`, key in
+`MAPS_PUBLISH_KEY`) instead of wrangler: the workflow's way, no Cloudflare credentials. There R2 checks each file's SHA-256 before storing
+it, a file the bucket already holds with that SHA-256 is skipped, files above 90 MiB go in 64 MiB chunks, and `5xx` or network errors
+are retried with backoff. `--dry-run` without credentials (`CLOUDFLARE_API_TOKEN`, or `MAPS_PUBLISH_KEY` with `--via-worker`) reads the
+public catalog (`GET /v1/maps`) instead of the bucket. Entries of
 JoyoFit ids that lack code/province/kind (maps from `build-map.sh`) get them from `regions.json`. JoyoFit's Worker serves the catalog at
 `GET /v1/maps` (filters `province`, `q`, `limit`; `server/src/maps.ts`) and the files at `GET /v1/maps/<id>.bin`; the app
 downloads from there and checks size and SHA-256 before it keeps a file. The bucket also holds the bike computer's PMTiles

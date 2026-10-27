@@ -295,7 +295,8 @@ Branch `feat/jrg-433-all-city-maps` (on top of the lab branch). How to run every
   longer side while its cut is above 40 MiB or its map above 64 MiB (the app's limit while the upload holds the file in memory), flags parts
   still above the cap, writes `out/report.json`.
 - **Publish.** `publish.py --all`: uploads only maps whose SHA-256 the catalog does not have, writes `watch/catalog.json` last, deletes files
-  that left the catalog.
+  that left the catalog. The workflow publishes through the Worker (`--via-worker`, "Automatic refresh" below); the owner's Linux box can
+  keep using wrangler.
 - **Server.** `GET /v1/maps` serves the catalog with `code`, `province`, `kind`, `part`, an `ETag` (`304` on `If-None-Match`), and optional
   `province`, `q` and `limit` (`server/README.md`); no position filter, because Workers Logs records request URLs. The Worker keeps the
   parsed catalog per isolate and re-reads R2 only when the object's etag changes. `GET /v1/maps/<id>.bin` is unchanged.
@@ -349,10 +350,30 @@ Jawa Barat 316 MiB, Jawa Timur 260, Jawa Tengah 252, Sumatera Utara 88, Sulawesi
   about 520 writes; each download is one read through the Worker. Expected cost **$0** inside the free tier, or about **$0.04 a month** for the
   maps if the account's other buckets already use it up.
 - **Schedule.** `.github/workflows/offline-maps.yml` rebuilds every region on the 2nd of each month on a GitHub-hosted runner (the repository is
-  public: free minutes; 16 GB RAM, 4 CPUs, enough disk) and publishes when the secret `CLOUDFLARE_R2_TOKEN` exists; without it, it builds and
-  publishes nothing. The alternative is the owner's Linux box with a systemd timer (README). Each month's extract has a new date, so every
-  region is rebuilt and, because the header version is the build time, every map gets a new SHA-256 and is uploaded again; the app shows the
-  phone's copy as an older version until the user downloads the new one.
+  public: free minutes; 16 GB RAM, 4 CPUs, enough disk); see "Automatic refresh" below. The alternative is the owner's Linux box with a
+  systemd timer (README). Each month's extract has a new date, so every region is rebuilt and, because the header version is the build time,
+  every map gets a new SHA-256 and is uploaded again; the app shows the phone's copy as an older version until the user downloads the new one.
+
+### Automatic refresh
+
+`.github/workflows/offline-maps.yml`: on the 2nd of each month at 19:00 UTC (3rd, 02:00 WIB), and by hand from Actions → Offline maps → Run
+workflow with `provinces` (comma-separated as in `regions.json`, empty = all 38) and `dry_run`. `plan` downloads the Geofabrik extract once,
+one `shard` per province builds and uploads its changed maps, `catalog` writes `watch/catalog.json` once from every shard that finished (a
+failed shard keeps its regions' previous entries).
+
+- **Publishing goes through the Worker**, not a Cloudflare API token: `publish.py --via-worker https://api.fit.joyorogo.com` calls
+  `/internal/maps/…` (`server/src/mapsPublish.ts`, `server/README.md` "Offline maps publishing") with `X-Maps-Publish-Key`, and the Worker
+  writes the bucket through its `MAPS` binding. R2 checks every file against its SHA-256 before storing it (a bad upload leaves the previous
+  file in place); files above 90 MiB go in 64 MiB chunks that the Worker joins (the largest map today, Kota Surabaya, is 45 MiB); a file the
+  bucket already holds with the same SHA-256 is skipped; `5xx` and network errors are retried with backoff. Only `watch/catalog.json` and
+  `watch/<id>.bin` can be written, nothing else in the bucket.
+- **The secret.** `MAPS_PUBLISH_KEY` in the `maps` environment (no reviewers, master only) holds the same value as the Worker secret of the
+  same name. Set or rotate both with the four lines in `server/README.md` (`openssl rand -hex 32` into `wrangler secret put` and
+  `gh secret set --env maps`, never printed). Without the GitHub secret a run that should publish is a dry run, with a warning in the log.
+- **Dry run** (`dry_run`, or no secret): builds and reports, reads the public catalog, writes `out/catalog.json` into the artifact, uploads
+  nothing and leaves the catalog as it is.
+- **Check a run**: `curl -s https://api.fit.joyorogo.com/v1/maps | jq length` (514), and per file
+  `curl -s -H "X-Maps-Publish-Key: $K" https://api.fit.joyorogo.com/internal/maps/watch/<id>.bin/meta` (`sha256` matches the catalog).
 
 ## Evidence index (decompile paths are under `~/re/agps/jadx/`)
 

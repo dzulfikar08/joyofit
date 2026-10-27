@@ -25,6 +25,7 @@ import { appConfig } from "./appConfig";
 import { agps } from "./agps";
 import { agpsPgnss } from "./agpsPgnss";
 import { maps } from "./maps";
+import { mapsPublish } from "./mapsPublish";
 
 const app = new Hono<AppContext>();
 
@@ -40,6 +41,8 @@ app.route("/v1/agps", agps);
 app.route("/v1/agps", agpsPgnss);
 // Public, lab only: OSM-built offline watch maps (every Kabupaten/Kota) from the R2 bucket MAPS (docs/offline-maps.md); no user data either.
 app.route("/v1/maps", maps);
+// Not a session either: the offline-maps workflow publishes the maps with the shared secret MAPS_PUBLISH_KEY (src/mapsPublish.ts).
+app.route("/internal/maps", mapsPublish);
 // Device-token auth, not a session: the monitored phone uploads from native background code.
 app.route("/v1/family", familyDevice);
 // Live tracking link: the phone posts with its write key (Bearer) and anyone with the link reads; neither uses a session.

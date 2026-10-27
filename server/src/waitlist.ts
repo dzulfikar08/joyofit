@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 
+import { tokenMatches } from "./auth";
 import type { AppContext } from "./env";
 import { WAITLIST_MAX_BODY_BYTES, WAITLIST_MAX_ENTRIES, WAITLIST_MAX_PER_HOUR } from "./limits";
 
@@ -64,16 +65,6 @@ async function readBody(request: Request): Promise<unknown> {
   } catch {
     throw new HTTPException(400, { message: "invalid_json" });
   }
-}
-
-/** Constant-time comparison of the bearer token with the configured secret. */
-async function tokenMatches(given: string, expected: string): Promise<boolean> {
-  const enc = new TextEncoder();
-  const [a, b] = await Promise.all([
-    crypto.subtle.digest("SHA-256", enc.encode(given)),
-    crypto.subtle.digest("SHA-256", enc.encode(expected)),
-  ]);
-  return crypto.subtle.timingSafeEqual(a, b);
 }
 
 export const waitlist = new Hono<AppContext>();

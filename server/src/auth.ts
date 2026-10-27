@@ -53,6 +53,16 @@ export async function sha256Hex(text: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/** Constant-time comparison of a presented token with the configured secret (both hashed first, so their lengths leak nothing). */
+export async function tokenMatches(given: string, expected: string): Promise<boolean> {
+  const enc = new TextEncoder();
+  const [a, b] = await Promise.all([
+    crypto.subtle.digest("SHA-256", enc.encode(given)),
+    crypto.subtle.digest("SHA-256", enc.encode(expected)),
+  ]);
+  return crypto.subtle.timingSafeEqual(a, b);
+}
+
 function remember(key: string, user: AuthUser, now: number, sessionExpiresAt: number | null): void {
   if (verified.size >= AUTH_CACHE_MAX_ENTRIES) {
     for (const [k, v] of verified) if (v.expiresAt <= now) verified.delete(k);

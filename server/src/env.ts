@@ -11,6 +11,8 @@ export type AppEnv = Env & {
   STRAVA_WEBHOOK_VERIFY_TOKEN?: string;
   /** Bearer token for `GET /v1/waitlist` (the owner's list). Unset = the list answers 503. */
   WAITLIST_ADMIN_TOKEN?: string;
+  /** `X-Maps-Publish-Key` for `/internal/maps/*` (src/mapsPublish.ts; the offline-maps workflow). Unset = those routes answer 503. */
+  MAPS_PUBLISH_KEY?: string;
   /** Cloudflare Email binding for family alert emails and the digest (wrangler.jsonc `send_email`). Unset = no email. */
   EMAIL?: SendEmail;
   EMAIL_FROM?: string;
