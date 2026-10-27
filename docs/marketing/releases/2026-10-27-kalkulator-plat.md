@@ -2,7 +2,7 @@
 app: joyofit
 feature: Kalkulator plat
 shipped: 2026-10-27
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-451
@@ -16,4 +16,4 @@ atur: JRG-451
 
 **Bukti visual:** Mulai latihan, tambah Bench Press, isi 100 kg di satu set, ketuk chip "Plat". Screenshot sheet dengan gambar barbel dan daftar per sisi.
 
-**Jangan klaim:** Belum ada di build yang dipegang pengguna (kode saja). Plat standar saja (kg: 25 sampai 1,25; lb: 45 sampai 2,5), belum bisa mengatur plat yang kamu punya sendiri.
+**Jangan klaim:** Hanya di build uji (Play closed test, TestFlight), belum di toko. Plat standar saja (kg: 25 sampai 1,25; lb: 45 sampai 2,5), belum bisa mengatur plat yang kamu punya sendiri.

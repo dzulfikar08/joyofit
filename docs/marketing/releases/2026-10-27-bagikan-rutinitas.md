@@ -2,7 +2,7 @@
 app: joyofit
 feature: Bagikan dan impor rutinitas
 shipped: 2026-10-27
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-453
@@ -16,4 +16,4 @@ atur: JRG-453
 
 **Bukti visual:** Buka satu rutinitas, ketuk Bagikan (screenshot teks di WhatsApp), lalu Ekspor file dan impor di HP kedua; screenshot pratinjau impor.
 
-**Jangan klaim:** Belum ada di build yang dipegang pengguna (kode saja). File diimpor lewat tombol Impor rutinitas; membuka file langsung dari aplikasi lain belum bisa.
+**Jangan klaim:** Hanya di build uji (Play closed test, TestFlight), belum di toko. File diimpor lewat tombol Impor rutinitas; membuka file langsung dari aplikasi lain belum bisa.

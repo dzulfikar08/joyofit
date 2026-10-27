@@ -2,7 +2,7 @@
 app: joyofit
 feature: Timer istirahat di layar kunci
 shipped: 2026-10-27
-available: code
+available: test-build
 tier: free
 post: todo
 atur: JRG-454
@@ -16,4 +16,4 @@ atur: JRG-454
 
 **Bukti visual:** Mulai latihan, centang satu set, kunci HP. Screenshot layar kunci Android dan iPhone (Dynamic Island bila ada).
 
-**Jangan klaim:** Belum ada di build yang dipegang pengguna (kode saja). Butuh versi aplikasi baru dari toko, tidak lewat pembaruan otomatis (OTA). Versi iPhone belum diuji di perangkat. Di Android butuh izin notifikasi.
+**Jangan klaim:** Hanya di build uji (Play closed test, TestFlight), belum di toko. Butuh versi aplikasi baru dari toko, tidak lewat pembaruan otomatis (OTA). Versi iPhone belum diuji di perangkat. Di Android butuh izin notifikasi.
