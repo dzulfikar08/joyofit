@@ -283,7 +283,7 @@ final class WatchfacePackageTests: XCTestCase {
         ("fit4pro/SpaceRed2.hwt", "SpaceRedV2", "HWHD13", "2.8.2", 1_201_549, "d7d657e189154179"),
         ("other/FocusWGTru.gt6_46_pro.hwt", "FocusWGTru", "HWHD09", "2.8.1", 830_900, "c92309d7a428ce57"),
         ("other/Unnamed.hwhd02.hwt", "Unnamed", "HWHD02", "2.1.9", 9_445, "887bf0bad85cc876"),
-        ("synthetic/SynthBand.hwhd07.hwt", "SynthBand", "HWHD07", "2.1.1", 49_339, "bae97b2e37d0c5f2"),
+        ("synthetic/SynthBand.hwhd07.hwt", "SynthBand", "HWHD07", "2.1.1", 49_339, "fbe165bd73bab16e"),
         ("synthetic/SynthNested.hwhd09.hwt", "SynthNested", "HWHD09", "2.0.4", 134_835, "b207bf0583328412"),
         ("synthetic/SynthV1Glyphs.hwhd02.hwt", "SynthGlyphs", "HWHD02", "2.1.9", 195_007, "af9644b4ecb893bb"),
         ("synthetic/SynthV1Hands.hwhd02.hwt", "SynthHands", "HWHD02", "2.1.9", 721_072, "a6b7550be2d47cb0"),
