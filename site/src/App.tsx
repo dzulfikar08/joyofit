@@ -98,7 +98,7 @@ import roadmap from "../../docs/roadmap.json";
 import { IphonePage, StravaPage } from "./Waitlist";
 
 /** Harga JoyoRogo Pro, sama dengan joyorogo.com/harga (api.joyorogo.com/api/config). */
-const PRICE = { monthly: "Rp29.000", yearly: "Rp199.000", next: "Rp49.000", slots: 110 };
+const PRICE = { monthly: "Rp29.000", yearly: "Rp199.000", next: "Rp49.000", slots: 60 };
 
 const FACTS = [
   { value: `${JAM_BISA_DICOBA} model`, label: "jam dan band Huawei dan Honor bisa dicoba", href: "/jam" },
