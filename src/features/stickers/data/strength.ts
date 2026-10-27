@@ -6,6 +6,7 @@ import { MUSCLE_GROUPS, averageRpe, isCounted, muscleSets, workoutTotals, type M
 import type { Catalog } from '@/features/strength/catalog';
 import { heatFill, heatLevel } from '@/features/strength/heat';
 import { setLoad, strengthShareStats, topSets } from '@/features/strength/share/strengthShareStats';
+import { getWeightUnit, kgToUnit } from '@/features/strength/units';
 import type { StrengthWorkout } from '@/features/strength/types';
 import { getT } from '@/i18n';
 
@@ -44,7 +45,10 @@ export function buildStrengthSubject(input: StrengthSubjectInput, locale: Locale
 
   const strength: JsonObject = { name: clip(share.name) || clip(t('fallbackName')) };
   if (Number.isFinite(workout.startedAt)) strength.startedAt = workout.startedAt;
-  if (positive(totals.volume)) strength.volumeKg = Math.round(totals.volume * 10) / 10;
+  if (positive(totals.volume)) {
+    strength.volume = Math.round(kgToUnit(totals.volume) * 10) / 10;
+    strength.unit = getWeightUnit();
+  }
   if (positive(totals.reps)) strength.reps = Math.round(totals.reps);
   if (positive(totals.seconds)) strength.seconds = Math.round(totals.seconds);
   if (positive(totals.sets)) strength.sets = Math.round(totals.sets);

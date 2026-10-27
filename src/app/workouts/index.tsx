@@ -28,6 +28,7 @@ import type { StrengthWorkout } from '@/features/strength/types';
 import { ActiveWorkoutBanner } from '@/features/strength/ui/ActiveWorkoutBanner';
 import { timerText } from '@/features/strength/logFormat';
 import { volumeText } from '@/features/strength/ui/liftFormat';
+import { useWeightUnit } from '@/features/strength/useWeightUnit';
 import { getStrengthMeta, setStrengthMeta } from '@/features/strength/store';
 import {
   countGroups,
@@ -79,6 +80,7 @@ function WorkoutCard({ workout, strength, onDelete }: { workout: WorkoutRow; str
   const heart = tintColors(colors, 'heart');
   const { t } = useTranslation('workouts');
   const { t: lifts } = useTranslation('lifts');
+  useWeightUnit();
   const sport = strength?.name.trim() || sportLabel(workout.sportName);
   const { value: distance, unit: distanceUnit } = workoutDistanceParts(workout.distance);
   const strain = useWorkoutStrain(workout);

@@ -2,7 +2,8 @@
   "title": "Routines",
   "duplicateName": "{{name}} (copy)",
   "unit": {
-    "kg": "{{value}} kg"
+    "kg": "{{value}} kg",
+    "lb": "{{value}} lb"
   },
   "toast": {
     "duplicated": "Routine duplicated",
@@ -109,13 +110,14 @@
     "exerciseNoteLabel": "Note for {{name}}",
     "setType": "Set type",
     "setTypeLabel": "Type of set {{number}} of {{name}}",
-    "weightLabel": "Weight of set {{number}} of {{name}}, kg",
+    "weightLabel": "Weight of set {{number}} of {{name}}, {{unit}}",
     "repsLabel": "Repetitions of set {{number}} of {{name}}",
     "secondsLabel": "Seconds of set {{number}} of {{name}}",
     "removeSet": "Remove set {{number}} of {{name}}",
     "col": {
       "set": "Set",
       "kg": "kg",
+      "lb": "lb",
       "reps": "Reps",
       "seconds": "Seconds"
     },
@@ -172,5 +174,36 @@
       "body": "Workouts: {{workouts}}, routines: {{routines}}"
     },
     "error": "The import did not finish. Check your connection and try again. What was already imported is kept."
+  },
+  "share": {
+    "text": "Share",
+    "file": "Export file",
+    "folder": "Export folder (file)",
+    "error": "Could not share: {{error}}",
+    "import": {
+      "button": "Import routines",
+      "title": "Import routines",
+      "errorTitle": "This file cannot be imported",
+      "close": "Close",
+      "newFolder": "New folder: {{name}}",
+      "customTitle_one": "{{count}} exercise will be created as your own exercise",
+      "customTitle_other": "{{count}} exercises will be created as your own exercises",
+      "keepNote": "Your existing routines are not changed. What you import is added as new routines.",
+      "confirm_one": "Import {{count}} routine",
+      "confirm_other": "Import {{count}} routines",
+      "done_one": "{{count}} routine imported",
+      "done_other": "{{count}} routines imported",
+      "error": {
+        "unreadable": "The file could not be opened. Pick another file.",
+        "too-large": "The file is too large to hold routines.",
+        "not-json": "This is not a JoyoFit routine file: its content cannot be read.",
+        "not-joyofit": "This is not a JoyoFit routine file.",
+        "wrong-kind": "This JoyoFit file does not hold routines.",
+        "version": "This file was made by a JoyoFit version this one does not know. Update the app and try again.",
+        "shape": "The file is damaged or incomplete. Nothing was imported.",
+        "number": "The file holds numbers that make no sense. Nothing was imported.",
+        "too-many": "The file holds too much data. Nothing was imported."
+      }
+    }
   }
 }

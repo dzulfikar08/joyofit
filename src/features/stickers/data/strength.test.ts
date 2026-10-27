@@ -4,10 +4,14 @@ import { applyLocale } from '@/i18n';
 
 import type { PersonalRecord } from '@/features/strength/calc';
 import { buildCatalog } from '@/features/strength/catalog';
+import { kgToUnit, setWeightUnit } from '@/features/strength/units';
 import type { CustomExercise, Muscle, StrengthExercise, StrengthSet, StrengthWorkout } from '@/features/strength/types';
 import { buildStrengthSubject } from './strength';
 
-afterEach(() => applyLocale('id'));
+afterEach(() => {
+  applyLocale('id');
+  setWeightUnit('kg');
+});
 
 const custom = (id: string, name: string, primary: Muscle[], timed = false): CustomExercise => ({ id, name, primary, equipment: 'other', timed, updatedAt: 0, deletedAt: null });
 const catalog = buildCatalog([]);
@@ -60,7 +64,8 @@ describe('buildStrengthSubject', () => {
     expect(s.caption).toContain('JoyoFit');
     expect(d.name).toBe('Push day');
     expect(d.startedAt).toBe(s.date);
-    expect(d.volumeKg).toBe(60 * 8 + 70 * 5 + 500);
+    expect(d.volume).toBe(60 * 8 + 70 * 5 + 500);
+    expect(d.unit).toBe('kg');
     expect(d.reps).toBe(18);
     expect(d.sets).toBe(3);
     expect(d.exercises).toBe(2);
@@ -84,6 +89,15 @@ describe('buildStrengthSubject', () => {
     expect(d.muscleLabels).toContain('Chest');
   });
 
+  it('carries the volume and its unit in lb when the logger is set to lb', () => {
+    setWeightUnit('lb');
+    const d = strengthOf(build(workout([bench, squat])));
+    const kg = 60 * 8 + 70 * 5 + 500;
+    expect(d.unit).toBe('lb');
+    expect(d.volume).toBeCloseTo(kgToUnit(kg, 'lb'), 1);
+    expect(d.topSets[0].load).toContain('lb');
+  });
+
   it('has no prs and only the strength kind without records', () => {
     const s = build(workout([bench]));
     expect(s.kinds).toEqual(['strength']);
@@ -94,7 +108,8 @@ describe('buildStrengthSubject', () => {
 
   it('keeps reps as the headline for a bodyweight-only workout', () => {
     const d = strengthOf(build(workout([pushUps], { kcal: null })));
-    expect(d.volumeKg).toBeUndefined();
+    expect(d.volume).toBeUndefined();
+    expect(d.unit).toBeUndefined();
     expect(d.kcal).toBeUndefined();
     expect(d.reps).toBe(20);
     expect(d.sets).toBe(1);
@@ -103,7 +118,7 @@ describe('buildStrengthSubject', () => {
 
   it('handles a timed-set-only workout', () => {
     const d = strengthOf(build(workout([plank])));
-    expect(d.volumeKg).toBeUndefined();
+    expect(d.volume).toBeUndefined();
     expect(d.reps).toBeUndefined();
     expect(d.seconds).toBe(45);
     expect(d.sets).toBe(1);
@@ -116,7 +131,7 @@ describe('buildStrengthSubject', () => {
     const d = strengthOf(s);
     expect(s.kinds).toEqual(['strength']);
     expect(d.name).toBe('Push day');
-    for (const key of ['volumeKg', 'reps', 'seconds', 'sets', 'exercises', 'durationSec', 'kcal', 'topSets', 'prs', 'muscleLabels', 'muscleSets', 'muscleColors', 'avgRpe']) {
+    for (const key of ['volume', 'unit', 'reps', 'seconds', 'sets', 'exercises', 'durationSec', 'kcal', 'topSets', 'prs', 'muscleLabels', 'muscleSets', 'muscleColors', 'avgRpe']) {
       expect(d[key]).toBeUndefined();
     }
     const empty = strengthOf(build(workout([])));

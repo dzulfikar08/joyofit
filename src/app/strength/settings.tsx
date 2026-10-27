@@ -8,6 +8,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { Divider, Screen, Section } from '@/components/Screen';
+import { Segmented } from '@/components/Segmented';
 import { Skeleton } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
 import { useLocale } from '@/i18n';
@@ -23,6 +24,7 @@ import {
   setRestPref,
   type StrengthSettings,
 } from '@/features/strength/store';
+import { setWeightUnit, WEIGHT_UNITS } from '@/features/strength/units';
 import { useWatchStartRefused, useWatchWorkoutAvailability } from '@/features/strength/useStrengthWatch';
 
 /** Logger settings: the default rest, the switches, and the rest timers saved per exercise. */
@@ -56,6 +58,8 @@ export default function StrengthSettingsScreen() {
     if (!settings) return;
     const next = { ...settings, ...patch };
     setSettings(next);
+    // The formatters read the module unit; every screen that draws a weight redraws from it (`useWeightUnit`).
+    if (patch.weightUnit) setWeightUnit(patch.weightUnit);
     void saveSettings(db, next);
   };
 
@@ -77,6 +81,17 @@ export default function StrengthSettingsScreen() {
         </>
       ) : (
         <>
+          <Section title={t('units.title')} icon="barbell-outline" tint="workouts">
+            <Segmented
+              options={WEIGHT_UNITS.map((unit) => ({ value: unit, label: unit }))}
+              value={settings.weightUnit}
+              onChange={(weightUnit) => change({ weightUnit })}
+            />
+            <AppText variant="caption" muted>
+              {t('units.hint')}
+            </AppText>
+          </Section>
+
           <Section title={t('settings.restTitle')} icon="timer-outline" tint="workouts">
             <View style={styles.stepper}>
               <View style={styles.grow}>

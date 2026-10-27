@@ -84,7 +84,7 @@ jobs:
       # Export signs manually: automatic export needs a cloud-managed distribution certificate, which the API key
       # may not create ("Cloud signing permission error", see docs/ios-mac.md). So the Apple Distribution identity
       # comes from a .p12 in a temporary keychain and the App Store profile from the API (asc-ci-profile.py).
-      - name: Import distribution certificate and fetch the App Store profile
+      - name: Import distribution certificate and fetch the App Store profiles
         env:
           P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
           P12_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
@@ -107,6 +107,12 @@ jobs:
           uuid="$(cut -f1 <<<"$out")"
           cp "$RUNNER_TEMP/store.mobileprovision" "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/$uuid.mobileprovision"
           echo "EXPORT_PROFILE=$(cut -f2 <<<"$out")" >> "$GITHUB_ENV"
+          # The rest-timer Live Activity extension (targets/rest-timer) has its own bundle id and profile; it needs no
+          # capability, and asc-ci-profile.py registers the bundle id when it is missing.
+          out="$(python3 scripts/ios/asc-ci-profile.py com.joyodigitama.joyofit.resttimer "$serial" "$RUNNER_TEMP/widget.mobileprovision")"
+          uuid="$(cut -f1 <<<"$out")"
+          cp "$RUNNER_TEMP/widget.mobileprovision" "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/$uuid.mobileprovision"
+          echo "EXPORT_WIDGET_PROFILE=$(cut -f2 <<<"$out")" >> "$GITHUB_ENV"
 
       - name: Build IPA
         run: |

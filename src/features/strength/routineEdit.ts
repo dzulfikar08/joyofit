@@ -8,6 +8,7 @@
 import { clampRest, MAX_EXERCISES, MAX_SETS_PER_EXERCISE, resolveTimed, type ExerciseInfo } from './draft';
 import { newId } from './store';
 import type { Routine, RoutineExercise, RoutineSet, SetType } from './types';
+import { kgToUnit, unitToKg, type WeightUnit } from './units';
 
 /** A routine exercise with an id that survives moves and edits (list keys). */
 export interface EditExercise extends RoutineExercise {
@@ -289,6 +290,15 @@ export function parseAmount(text: string, max: number, decimals: number): number
   if (!Number.isFinite(value)) return null;
   const scale = 10 ** decimals;
   return Math.min(max, Math.round(value * scale) / scale);
+}
+
+/**
+ * A weight box of the routine editor: `text` is in `unit`, the result is the kg to store (two decimals, at most `MAX_WEIGHT_KG`), null
+ * for nothing. One decimal of the unit is kept while typing, as `parseAmount` does for kg.
+ */
+export function parseWeightAmount(text: string, unit: WeightUnit): number | null {
+  const typed = parseAmount(text, kgToUnit(MAX_WEIGHT_KG, unit), 1);
+  return typed === null ? null : Math.min(MAX_WEIGHT_KG, Math.round(unitToKg(typed, unit) * 100) / 100);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

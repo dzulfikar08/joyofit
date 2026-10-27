@@ -1,0 +1,4 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- The countdown notification of a rest between sets. Asked at runtime on Android 13 and newer through the logger's own explanation (strength/restNotification.ts); without it nothing is posted. -->
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+</manifest>

@@ -210,7 +210,7 @@ function runReceiptSticker() {
       row('label.swolf', '{run.swolf|int}', undefined, has('run.swolf')),
       row('label.sets', '{run.sets|int}', undefined, has('run.sets')),
       row('label.reps', '{run.reps|int}', undefined, has('run.reps')),
-      row('label.volume', '{run.volumeKg|int}', tl('unit.kg'), has('run.volumeKg')),
+      row('label.volume', '{run.volume|int}', '{run.unit}', has('run.volume')),
       row('label.jumps', '{run.jumps|int}', undefined, has('run.jumps')),
       row('label.avgHr', '{run.hrAvg|int}', tl('unit.bpm'), has('run.hrAvg')),
       row('label.maxHr', '{run.hrMax|int}', tl('unit.bpm'), has('run.hrMax')),

@@ -34,6 +34,8 @@ import { resolveTimed, routineExercisesOf } from '@/features/strength/draft';
 import { detachWorkoutRow } from '@/features/strength/link';
 import { DEFAULT_WEIGHT_KG, hasUserWeight } from '@/features/strength/profile';
 import { prValueText, previousLabel, rpeText, SET_BADGE, timerText } from '@/features/strength/logFormat';
+import { volumeText } from '@/features/strength/ui/liftFormat';
+import { useWeightUnit } from '@/features/strength/useWeightUnit';
 import { nextSortOrder } from '@/features/strength/routineEdit';
 import { startStrengthWorkout } from '@/features/strength/start';
 import {
@@ -71,6 +73,8 @@ const PR_KINDS: readonly PrKind[] = ['weight', 'e1rm', 'volume', 'reps', 'time']
 export default function StrengthSummaryScreen() {
   const { t } = useTranslation(['strength', 'common']);
   const locale = useLocale();
+  // The unit is read by the formatters; this makes the screen redraw when it changes in Settings.
+  useWeightUnit();
   const db = useSQLiteContext();
   const { id, fresh } = useLocalSearchParams<{ id: string; fresh?: string }>();
   const { toast, show } = useToast();
@@ -217,7 +221,7 @@ export default function StrengthSummaryScreen() {
         <View style={styles.tiles}>
           <View style={styles.tileRow}>
             <StatTile icon="time-outline" tint="workouts" label={t('strength:summary.duration')} value={fmtDuration(workout.durationSec)} />
-            <StatTile icon="barbell-outline" tint="steps" label={t('strength:summary.volume')} value={t('strength:unit.kg', { value: fmtInt(totals.volume) })} />
+            <StatTile icon="barbell-outline" tint="steps" label={t('strength:summary.volume')} value={volumeText(totals.volume)} />
           </View>
           <View style={styles.tileRow}>
             <StatTile icon="layers-outline" tint="link" label={t('strength:summary.sets')} value={fmtInt(totals.sets)} sub={totals.warmupSets > 0 ? t('strength:summary.warmupSets', { count: totals.warmupSets }) : undefined} />

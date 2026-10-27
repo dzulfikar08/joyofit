@@ -29,6 +29,7 @@ import { lockPortrait } from '@/features/bikecomputer/ui/orientation';
 import { flushSupportReports } from '@/features/device/aturReports';
 import { LiveExtrasFeed } from '@/features/live/liveExtras';
 import { LivePill } from '@/features/record/ui/LivePill';
+import { useHydrateWeightUnit } from '@/features/strength/useWeightUnit';
 import { RoomCaptureRunner } from '@/features/thermometer/RoomCaptureRunner';
 import { UpdateBanner } from '@/features/updates/UpdateBanner';
 import { UpdateGateProvider, useUpdateGate } from '@/features/updates/UpdateGateProvider';
@@ -77,6 +78,12 @@ export default function RootLayout() {
       </NavigationTheme>
     </ThemeProvider>
   );
+}
+
+/** Puts the saved lift unit (kg or lb) into the strength formatters once the database is open. */
+function WeightUnitSync() {
+  useHydrateWeightUnit();
+  return null;
 }
 
 /** A tab's label. It reads the language itself: the navigator keeps the options it first got, so a label built from `t` in them would stay in the old language after a switch in Settings. */
@@ -193,6 +200,7 @@ function RootNavigator() {
                   <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
                   {/* The bedroom thermometer's readings (foreground scan, overnight file); idle without a paired thermometer. */}
                   <RoomCaptureRunner />
+                  <WeightUnitSync />
                   {/* A watch-started workout's average and highest heart rate, and the phone's step counter while it runs on foot. */}
                   <LiveExtrasFeed />
                   <TabBarInsetProvider>

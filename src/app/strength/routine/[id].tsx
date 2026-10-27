@@ -60,6 +60,7 @@ import { SET_TYPES, type Routine, type RoutineFolder, type SetType } from '@/fea
 import { ExercisePicker } from '@/features/strength/ui/ExercisePicker';
 import { RoutineExerciseCard } from '@/features/strength/ui/RoutineExerciseCard';
 import { RoutineMenu, type MenuItem } from '@/features/strength/ui/RoutineMenu';
+import { shareRoutineFile, shareRoutineText } from '@/features/strength/routineShareIo';
 import { useLocale } from '@/i18n';
 import { spacing } from '@/theme';
 
@@ -89,6 +90,24 @@ export default function RoutineEditor() {
   const [problem, setProblem] = useState<EditProblem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+
+  /** Shares the routine as it is in the editor, saved or not (the edit is what the person sees). */
+  const shareCurrent = async (how: 'text' | 'file') => {
+    const found = validateEdit(edit);
+    if (found) {
+      setProblem(found);
+      return;
+    }
+    setShareError(null);
+    try {
+      const routine = routineFromEdit(base, edit, base?.sortOrder ?? 0, Date.now());
+      if (how === 'text') await shareRoutineText(routine, catalog, locale);
+      else await shareRoutineFile([routine], routine.name, catalog, locale, null);
+    } catch (e) {
+      setShareError(errorMessage(e));
+    }
+  };
 
   const [picker, setPicker] = useState<PickerMode | null>(null);
   const [exerciseMenu, setExerciseMenu] = useState<string | null>(null);
@@ -391,13 +410,20 @@ export default function RoutineEditor() {
 
       {problem !== null ? <Notice tone="danger">{t(`routines:editor.problem.${problem}`)}</Notice> : null}
       {error !== null ? <Notice tone="danger">{t('routines:editor.saveError', { error })}</Notice> : null}
+      {shareError !== null ? <Notice tone="danger">{t('routines:share.error', { error: shareError })}</Notice> : null}
 
       <Button label={t('routines:editor.save')} variant="primary" icon="checkmark" loading={busy} onPress={() => void save()} />
       {base ? (
-        <ButtonRow>
-          <Button label={t('routines:editor.duplicate')} icon="copy-outline" disabled={busy} onPress={() => void duplicate()} />
-          <Button label={t('routines:editor.delete')} variant="destructive" icon="trash-outline" disabled={busy} onPress={() => setConfirmDelete(true)} />
-        </ButtonRow>
+        <>
+          <ButtonRow>
+            <Button label={t('routines:share.text')} icon="share-social-outline" disabled={busy} onPress={() => void shareCurrent('text')} />
+            <Button label={t('routines:share.file')} icon="document-outline" disabled={busy} onPress={() => void shareCurrent('file')} />
+          </ButtonRow>
+          <ButtonRow>
+            <Button label={t('routines:editor.duplicate')} icon="copy-outline" disabled={busy} onPress={() => void duplicate()} />
+            <Button label={t('routines:editor.delete')} variant="destructive" icon="trash-outline" disabled={busy} onPress={() => setConfirmDelete(true)} />
+          </ButtonRow>
+        </>
       ) : null}
 
       <ExercisePicker

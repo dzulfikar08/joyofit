@@ -27,7 +27,7 @@ export const METRIC_FIELDS: Readonly<Record<SportMetric, readonly string[]>> = {
   route: ['route'],
   splits: ['splitKmh', 'splitLabels', 'splitFastest', 'paceSeries'],
   swim: ['laps', 'strokes', 'swolf', 'poolM', 'strokeRate'],
-  lifts: ['volumeKg', 'sets', 'reps', 'exercises'],
+  lifts: ['volume', 'unit', 'sets', 'reps', 'exercises'],
   records: ['prLabel', 'prTime', 'prCount'],
 };
 

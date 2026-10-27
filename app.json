@@ -24,6 +24,7 @@
         "NSHealthShareUsageDescription": "JoyoFit reads your Apple Health history once, only when you tap Import history from Apple Health, to bring the steps, heart rate, sleep, blood oxygen, active energy and workouts your watch's own app saved there into JoyoFit. It stays on your phone.",
         "NSHealthUpdateUsageDescription": "Allow JoyoFit to save the steps, distance, calories, heart rate, blood oxygen, sleep, workouts and workout routes recorded by your watch to Apple Health.",
         "UIBackgroundModes": ["bluetooth-central", "location", "audio"],
+        "NSSupportsLiveActivities": true,
         "LSSupportsOpeningDocumentsInPlace": false,
         "CFBundleDocumentTypes": [
           {
@@ -301,7 +302,8 @@
             "backgroundColor": "#0D1112"
           }
         }
-      ]
+      ],
+      "@bacons/apple-targets"
     ],
     "extra": {
       "joyorogoUrl": "https://api.joyorogo.com",

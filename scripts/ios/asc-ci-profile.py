@@ -3,7 +3,7 @@
 
     asc-ci-profile.py <bundle id> <Apple Distribution certificate serial, hex> <out .mobileprovision> [required entitlement ...]
 
-Finds the certificate on App Store Connect by serial, reuses the ACTIVE IOS_APP_STORE profile "joyo-ci <bundle id>
+Registers the bundle id when it is missing (the Live Activity extension's), then finds the certificate on App Store Connect by serial, reuses the ACTIVE IOS_APP_STORE profile "joyo-ci <bundle id>
 <cert id>" or creates it, writes the profile and prints "<uuid>", a tab, "<profile name>". A profile that is not
 ACTIVE (enabling a capability makes it INVALID) or lacks a required entitlement is deleted and recreated. Needs
 ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_PATH (.p8 key with access to Certificates, Identifiers & Profiles). The profile is separate from the ones scripts/build-ios-mac.sh
@@ -97,7 +97,10 @@ cert_id = found[0]["id"]
 bundle_ids = call("GET", f"/v1/bundleIds?filter[identifier]={urllib.parse.quote(bundle)}&limit=200")["data"]
 bundle_ids = [b for b in bundle_ids if b["attributes"]["identifier"] == bundle]
 if not bundle_ids:
-    sys.exit(f"bundle id {bundle} is not registered")
+    print(f"registering bundle id {bundle}", file=sys.stderr)
+    bundle_ids = [call("POST", "/v1/bundleIds", {"data": {"type": "bundleIds", "attributes": {
+        "identifier": bundle, "name": bundle.replace(".", " "), "platform": "IOS",
+    }}})["data"]]
 
 name = f"joyo-ci {bundle} {cert_id}"
 listed = call("GET", f"/v1/profiles?filter[name]={urllib.parse.quote(name)}&filter[profileType]=IOS_APP_STORE&limit=200")["data"]

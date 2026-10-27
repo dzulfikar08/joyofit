@@ -11,6 +11,8 @@ import { overlay, spacing, useTheme } from '@/theme';
 import type { Catalog } from '../catalog';
 import { summarizeSets } from '../routineEdit';
 import type { Routine, RoutineExercise } from '../types';
+import { inputWeight } from '../units';
+import { useWeightUnit } from '../useWeightUnit';
 
 import { MenuRows, type MenuItem } from './RoutineMenu';
 
@@ -31,6 +33,8 @@ interface RoutineSheetProps {
   onMoveDown: (routine: Routine) => void;
   onDelete: (routine: Routine) => void;
   onCopy: (routine: Routine) => void;
+  onShare: (routine: Routine) => void;
+  onExportFile: (routine: Routine) => void;
 }
 
 const range = (r: { min: number; max: number }): string => (r.min === r.max ? fmtInt(r.min) : `${fmtInt(r.min)}-${fmtInt(r.max)}`);
@@ -51,24 +55,33 @@ export function RoutineSheet({
   onMoveDown,
   onDelete,
   onCopy,
+  onShare,
+  onExportFile,
 }: RoutineSheetProps) {
   const { t } = useTranslation('routines');
   const locale = useLocale();
+  const unit = useWeightUnit();
   const { colors, radius } = useTheme();
   const accent = colors.primary;
 
   const summaryOf = (exercise: RoutineExercise): string => {
     const s = summarizeSets(exercise.sets);
-    const weight = s.weightKg === null ? null : t('unit.kg', { value: fmtNumber(s.weightKg, 1) });
+    const weight = s.weightKg === null ? null : t(`unit.${unit}`, { value: fmtNumber(inputWeight(s.weightKg, unit), 1) });
     if (s.seconds) return t('sheet.summarySeconds', { sets: fmtInt(s.sets), seconds: range(s.seconds) });
     if (s.reps && weight) return t('sheet.summaryRepsWeight', { sets: fmtInt(s.sets), reps: range(s.reps), weight });
     if (s.reps) return t('sheet.summaryReps', { sets: fmtInt(s.sets), reps: range(s.reps) });
     return t('row.sets', { count: s.sets });
   };
 
+  const shareItems = (r: Routine): MenuItem[] => [
+    { key: 'share', label: t('share.text'), icon: 'share-social-outline', onPress: () => onShare(r) },
+    { key: 'exportFile', label: t('share.file'), icon: 'document-outline', onPress: () => onExportFile(r) },
+  ];
+
   const actions = (r: Routine): MenuItem[] => [
     { key: 'edit', label: t('sheet.edit'), icon: 'create-outline', onPress: () => onEdit(r) },
     { key: 'duplicate', label: t('sheet.duplicate'), icon: 'copy-outline', onPress: () => onDuplicate(r) },
+    ...shareItems(r),
     { key: 'move', label: t('sheet.moveToFolder'), icon: 'folder-open-outline', onPress: () => onMoveToFolder(r) },
     { key: 'up', label: t('sheet.moveUp'), icon: 'arrow-up', disabled: !canMoveUp, onPress: () => onMoveUp(r) },
     { key: 'down', label: t('sheet.moveDown'), icon: 'arrow-down', disabled: !canMoveDown, onPress: () => onMoveDown(r) },
@@ -122,7 +135,10 @@ export function RoutineSheet({
               </View>
               <Button label={t('sheet.start')} variant="primary" icon="play" onPress={() => onStart(routine)} />
               {starter ? (
-                <Button label={t('sheet.copy')} icon="copy-outline" onPress={() => onCopy(routine)} />
+                <>
+                  <Button label={t('sheet.copy')} icon="copy-outline" onPress={() => onCopy(routine)} />
+                  <MenuRows items={shareItems(routine)} />
+                </>
               ) : (
                 <>
                   <Divider />

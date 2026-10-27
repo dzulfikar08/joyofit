@@ -26,7 +26,9 @@ import {
 } from '@/features/strength/exerciseStats';
 import { useStrengthHistory } from '@/features/strength/history';
 import { BarChart, LineChart, type ChartDatum } from '@/features/strength/ui/Chart';
-import { kgNumber, kgText, secondsText, setText, volumeText } from '@/features/strength/ui/liftFormat';
+import { kgToUnit } from '@/features/strength/units';
+import { useWeightUnit } from '@/features/strength/useWeightUnit';
+import { secondsText, setText, unitNumber, unitText, unitVolumeText, volumeText, weightText } from '@/features/strength/ui/liftFormat';
 import { fmtDate, fmtInt, useLocale } from '@/i18n';
 import { spacing, tintColors, useColors, useTheme } from '@/theme';
 
@@ -36,6 +38,9 @@ const REP_ROWS = 8;
 /** Charts drawn as a line; the others are bars per workout. */
 const LINE_METRICS: readonly ExerciseMetric[] = ['bestSet', 'e1rm'];
 
+/** Charts whose values are kg (volume is kg x reps); the chart scales them to the chosen unit. */
+const WEIGHT_METRICS: readonly ExerciseMetric[] = ['bestSet', 'e1rm', 'volume'];
+
 export default function StrengthExerciseScreen() {
   const { id: raw } = useLocalSearchParams<{ id: string }>();
   const id = String(raw ?? '');
@@ -43,6 +48,7 @@ export default function StrengthExerciseScreen() {
   const router = useRouter();
   const colors = useColors();
   const locale = useLocale();
+  const unit = useWeightUnit();
   const { ready, workouts, catalog } = useStrengthHistory();
   const [metricPick, setMetricPick] = useState<ExerciseMetric | null>(null);
   const [rangePick, setRangePick] = useState<ChartRange | null>(null);
@@ -66,15 +72,16 @@ export default function StrengthExerciseScreen() {
   const reps = useMemo(() => repRecords(workouts, id), [workouts, id]);
   const sessions = useMemo(() => exerciseSessions(workouts, id), [workouts, id]);
 
+  // The series are kg (volume: kg x reps). The chart takes them in the chosen unit so its axis ticks land on round pounds too.
   const data = useMemo<ChartDatum[]>(
     () =>
       inRange(series, range, Date.now()).map((p) => ({
         at: p.at,
-        value: p.value,
+        value: metric !== null && WEIGHT_METRICS.includes(metric) ? kgToUnit(p.value, unit) : p.value,
         detail: metric === 'bestSet' && p.best ? (setText(p.best) ?? undefined) : undefined,
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [series, range, metric, locale],
+    [series, range, metric, locale, unit],
   );
 
   const openWorkout = (workoutId: string) => router.push({ pathname: '/strength/summary/[id]', params: { id: workoutId } });
@@ -94,10 +101,10 @@ export default function StrengthExerciseScreen() {
       key: 'weight',
       label: t('records.weight'),
       entry: records.weight,
-      value: setText({ weightKg: records.weight.value, reps: records.weight.reps, seconds: null }) ?? kgText(records.weight.value),
+      value: setText({ weightKg: records.weight.value, reps: records.weight.reps, seconds: null }) ?? weightText(records.weight.value),
     });
   }
-  if (records.e1rm) recordRows.push({ key: 'e1rm', label: t('records.e1rm'), entry: records.e1rm, value: kgText(records.e1rm.value) });
+  if (records.e1rm) recordRows.push({ key: 'e1rm', label: t('records.e1rm'), entry: records.e1rm, value: weightText(records.e1rm.value) });
   if (records.volume) recordRows.push({ key: 'volume', label: t('records.volume'), entry: records.volume, value: volumeText(records.volume.value) });
   if (records.time) recordRows.push({ key: 'time', label: t('records.time'), entry: records.time, value: secondsText(records.time.value) });
 
@@ -220,7 +227,7 @@ export default function StrengthExerciseScreen() {
                   key={r.weightKg}
                   accessibilityRole="button"
                   accessibilityLabel={t('repRecords.rowA11y', {
-                    weight: r.weightKg > 0 ? kgText(r.weightKg) : t('repRecords.bodyweight'),
+                    weight: r.weightKg > 0 ? weightText(r.weightKg) : t('repRecords.bodyweight'),
                     reps: fmtInt(r.reps),
                     date: dateOf(r.at),
                   })}
@@ -228,7 +235,7 @@ export default function StrengthExerciseScreen() {
                   onPress={() => openWorkout(r.workoutId)}
                   style={styles.tableRow}>
                   <AppText variant="bodyStrong" style={styles.colWeight}>
-                    {r.weightKg > 0 ? kgText(r.weightKg) : t('repRecords.bodyweight')}
+                    {r.weightKg > 0 ? weightText(r.weightKg) : t('repRecords.bodyweight')}
                   </AppText>
                   <AppText variant="bodyStrong" style={[styles.colReps, styles.num]}>
                     {fmtInt(r.reps)}
@@ -299,14 +306,14 @@ export default function StrengthExerciseScreen() {
 function chartFormatters(metric: ExerciseMetric | null, repsText: (value: number) => string) {
   switch (metric) {
     case 'volume':
-      return { formatValue: volumeText, formatTick: (v: number) => fmtInt(v) };
+      return { formatValue: unitVolumeText, formatTick: (v: number) => fmtInt(v) };
     case 'reps':
       return { formatValue: repsText, formatTick: (v: number) => fmtInt(v) };
     case 'time':
     case 'totalTime':
       return { formatValue: secondsText, formatTick: (v: number) => fmtInt(v) };
     default:
-      return { formatValue: kgText, formatTick: kgNumber };
+      return { formatValue: unitText, formatTick: unitNumber };
   }
 }
 

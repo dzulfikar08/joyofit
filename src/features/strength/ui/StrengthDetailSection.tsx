@@ -15,6 +15,7 @@ import { fmtInt, useLocale } from '@/i18n';
 import { spacing } from '@/theme';
 
 import { timerText } from '../logFormat';
+import { useWeightUnit } from '../useWeightUnit';
 import { setText, volumeText } from './liftFormat';
 import { OPEN_IN_STACK } from '@/components/navigation';
 
@@ -27,6 +28,7 @@ export function StrengthDetailSection({ strength, catalog }: StrengthDetailSecti
   const { t } = useTranslation('lifts');
   const router = useRouter();
   const locale = useLocale();
+  const unit = useWeightUnit();
   const totals = useMemo(() => workoutTotals(strength), [strength]);
   const rows = useMemo(
     () =>
@@ -43,7 +45,7 @@ export function StrengthDetailSection({ strength, catalog }: StrengthDetailSecti
         })
         .filter((row) => row.sets > 0),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [strength, catalog, locale, t],
+    [strength, catalog, locale, t, unit],
   );
 
   return (

@@ -363,7 +363,7 @@
       "records": "New records",
       "weeklyKm": "Distance per week, km",
       "weeklyMin": "Minutes per week",
-      "weeklyVolume": "Volume per week, kg",
+      "weeklyVolume": "Volume per week, {{unit}}",
       "weeklySessions": "Sessions per week",
       "fourWeeks": "The four weeks up to this workout. Each bar is 7 days.",
       "ftpNote": "Zones are based on an FTP of {{ftp}} W.",
@@ -387,7 +387,7 @@
         "cadence": "cadence {{value}} spm",
         "power": "power {{value}} W",
         "kcal": "{{value}} kcal",
-        "volume": "volume {{value}} kg",
+        "volume": "volume {{value}} {{unit}}",
         "sets_one": "{{count}} set",
         "sets_other": "{{count}} sets",
         "reps_one": "{{count}} rep",
@@ -405,8 +405,8 @@
         "distance_other": "Last 4 weeks: {{distance}} km in {{count}} sessions.",
         "sessions_one": "Last 4 weeks: {{count}} session.",
         "sessions_other": "Last 4 weeks: {{count}} sessions.",
-        "volume_one": "Last 4 weeks: {{volume}} kg of volume in {{count}} session.",
-        "volume_other": "Last 4 weeks: {{volume}} kg of volume in {{count}} sessions."
+        "volume_one": "Last 4 weeks: {{volume}} {{unit}} of volume in {{count}} session.",
+        "volume_other": "Last 4 weeks: {{volume}} {{unit}} of volume in {{count}} sessions."
       },
       "swipe_one": "The full data is in the image.",
       "swipe_other": "The full data is in the {{count}} images.",

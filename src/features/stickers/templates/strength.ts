@@ -17,7 +17,8 @@ import { GLASS, INK, PAPER, STICKER, VOLT, type Palette } from './palette';
 
 type Canvas = 'story' | 'square';
 
-const VOL = 'strength.volumeKg';
+const VOL = 'strength.volume';
+const UNIT = '{strength.unit}';
 const REPS = 'strength.reps';
 const SECS = 'strength.seconds';
 const SETS = 'strength.sets';
@@ -66,7 +67,7 @@ function hero(k: Kit, o: HeroOpts): LayerJson[] {
   } as const;
   const box = { w: o.w ?? 'fill', h: 'auto' } as const;
   return [
-    k.stat(box, `{${VOL}|int}`, { ...base, unit: tl('unit.kg'), unitSize: o.unitSize, label: tl('label.volume'), when: heroVol }),
+    k.stat(box, `{${VOL}|int}`, { ...base, unit: UNIT, unitSize: o.unitSize, label: tl('label.volume'), when: heroVol }),
     k.stat(box, `{${REPS}|int}`, { ...base, label: tl('label.reps'), when: heroReps }),
     k.stat(box, `{${SECS}|dur}`, { ...base, label: tl('label.hold'), when: heroSecs }),
     k.stat(box, `{${DUR}|durhm}`, { ...base, label: tl('label.duration'), when: heroDur }),
@@ -485,7 +486,7 @@ function receipt() {
     leaderRow(k, { left: `{${topEx(i)}|ellipsis:27}`, right: `{${topLoad(i)}|ellipsis:16}`, size: 30, when: has(topEx(i)) }),
   );
   const totals: LayerJson[] = [
-    leaderRow(k, { left: tl('label.volume'), right: `{${VOL}|int} kg`, size: 36, weight: 700, upper: true, when: has(VOL) }),
+    leaderRow(k, { left: tl('label.volume'), right: `{${VOL}|int} ${UNIT}`, size: 36, weight: 700, upper: true, when: has(VOL) }),
     leaderRow(k, { left: tl('label.sets'), right: `{${SETS}|int}`, size: 30, upper: true, when: has(SETS) }),
     leaderRow(k, { left: tl('label.reps'), right: `{${REPS}|int}`, size: 30, upper: true, when: has(REPS) }),
     leaderRow(k, { left: tl('label.hold'), right: `{${SECS}|dur}`, size: 30, upper: true, when: has(SECS) }),

@@ -9,8 +9,13 @@
   },
   "unit": {
     "kg": "{{value}} kg",
+    "lb": "{{value}} lb",
     "sec": "{{value}} dtk",
     "reps_other": "{{value}} repetisi"
+  },
+  "units": {
+    "title": "Satuan beban",
+    "hint": "Dipakai untuk semua beban di pencatat, riwayat, rutinitas, dan kartu berbagi. Data tersimpan dalam kg, jadi kamu bisa ganti kapan saja dan angka lamamu tidak berubah."
   },
   "previous": {
     "weightBy": "{{weight}} x {{amount}}"
@@ -31,6 +36,7 @@
     "set": "Set",
     "previous": "Sebelumnya",
     "kg": "kg",
+    "lb": "lb",
     "reps": "Repetisi",
     "time": "Waktu",
     "rpe": "RPE",
@@ -38,7 +44,7 @@
     "setLabel": "Set {{label}}, {{type}}. Ketuk untuk mengubah",
     "usePrevious": "Pakai {{value}} dari sebelumnya",
     "noPrevious": "Belum ada data sebelumnya",
-    "weightField": "Beban set {{label}}, kg",
+    "weightField": "Beban set {{label}}, {{unit}}",
     "repsField": "Repetisi set {{label}}",
     "secondsField": "Waktu set {{label}}, detik",
     "rpeField": "RPE set {{label}}",
@@ -120,6 +126,12 @@
     "askMessage": "Kalau layar mati atau kamu membuka aplikasi lain, JoyoFit bisa kirim notifikasi saat timer istirahat habis.",
     "askConfirm": "Boleh",
     "askCancel": "Jangan"
+  },
+  "liveRest": {
+    "channel": "Timer istirahat di layar kunci",
+    "title": "Istirahat",
+    "body": "Antar set",
+    "bodyNamed": "Setelah {{name}}"
   },
   "toast": {
     "needValue": "Isi repetisi atau waktu dulu.",
@@ -324,5 +336,27 @@
     "intro": "Jam sedang merekam Latihan kekuatan. Pilih rutinitas untuk dicentang di sini; detak jantung dan waktu dari jam muncul di header.",
     "start": "Mulai dengan rutinitas ini",
     "none": "Tanpa rutinitas"
+  },
+  "plates": {
+    "title": "Kalkulator plat",
+    "empty": "Isi beban sebuah set dulu, lalu plat per sisi muncul di sini.",
+    "target": "Beban",
+    "value": "{{value}} {{unit}}",
+    "unit": {
+      "kg": "kg",
+      "lb": "lb"
+    },
+    "pictureLabel": "Satu sisi barbel dengan platnya",
+    "perSide": "Per sisi",
+    "count": "× {{n}}",
+    "barOnly": "Cukup batangnya, tanpa plat.",
+    "belowBar": "Beban ini lebih ringan dari batang ({{bar}}).",
+    "inexact": "Tidak pas. Plat yang ada sampai {{reached}}, kurang {{left}}.",
+    "bar": "Batang",
+    "barHint": "Disimpan untuk satuan ini",
+    "barLess": "Kurangi berat batang",
+    "barMore": "Tambah berat batang",
+    "open": "Kalkulator plat untuk {{name}}",
+    "chip": "Plat"
   }
 }

@@ -13,7 +13,9 @@ import { HIT, spacing, useColors, useTheme } from '@/theme';
 
 import { MAX_REST_SEC, MIN_REST_SEC, setLabels } from '../draft';
 import { digitsClock, digitsFromSeconds, MAX_DURATION_DIGITS, secondsFromDigits, timerText } from '../logFormat';
-import { MAX_REPS, MAX_SECONDS, MAX_WEIGHT_KG, parseAmount, type EditExercise, type SetPatch } from '../routineEdit';
+import { MAX_REPS, MAX_SECONDS, MAX_WEIGHT_KG, parseAmount, parseWeightAmount, type EditExercise, type SetPatch } from '../routineEdit';
+import { inputWeight, type WeightUnit } from '../units';
+import { useWeightUnit } from '../useWeightUnit';
 import { MeasureToggle } from './MeasureToggle';
 
 /** Seconds one tap on the rest stepper adds or takes away. */
@@ -26,28 +28,31 @@ interface NumberCellProps {
   label: string;
   placeholder?: string;
   keyboard: 'decimal-pad' | 'number-pad';
+  /** Set for a weight box: `value` is kg, what is typed and shown is in this unit. */
+  unit?: WeightUnit;
   onChange: (value: number | null) => void;
 }
 
 /**
- * A kg, repetitions or seconds box. It keeps what is being typed ("12," on the way to "12,5"); when the value changes from outside
- * (a set above was removed and this row now shows another set) it shows the new value.
+ * A weight, repetitions or seconds box. It keeps what is being typed ("12," on the way to "12,5"); when the value changes from outside
+ * (a set above was removed and this row now shows another set, or the unit changed) it shows the new value.
  */
-function NumberCell({ value, max, decimals, label, placeholder, keyboard, onChange }: NumberCellProps) {
-  const shown = (v: number | null) => (v === null ? '' : fmtNumber(v, decimals));
+function NumberCell({ value, max, decimals, label, placeholder, keyboard, unit, onChange }: NumberCellProps) {
+  const shown = (v: number | null) => (v === null ? '' : fmtNumber(unit ? inputWeight(v, unit) : v, decimals));
+  const read = (text: string) => (unit ? parseWeightAmount(text, unit) : parseAmount(text, max, decimals));
   const [text, setText] = useState(shown(value));
   useEffect(() => {
-    setText((current) => (parseAmount(current, max, decimals) === value ? current : shown(value)));
+    setText((current) => (read(current) === value ? current : shown(value)));
     // `shown` only depends on the language; a language switch while typing is not worth a redraw of the text.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, max, decimals]);
+  }, [value, max, decimals, unit]);
   return (
     <View style={styles.cell}>
       <Input
         value={text}
         onChangeText={(next) => {
           setText(next);
-          onChange(parseAmount(next, max, decimals));
+          onChange(read(next));
         }}
         keyboardType={keyboard}
         placeholder={placeholder}
@@ -122,6 +127,7 @@ export function RoutineExerciseCard({
   onRemoveSet,
 }: RoutineExerciseCardProps) {
   const { t } = useTranslation('routines');
+  const unit = useWeightUnit();
   const colors = useColors();
   const { radius } = useTheme();
   const labels = setLabels(exercise.sets);
@@ -177,7 +183,7 @@ export function RoutineExerciseCard({
           {t('editor.col.set')}
         </AppText>
         <AppText variant="label" muted style={styles.colNumber}>
-          {t('editor.col.kg')}
+          {t(`editor.col.${unit}`)}
         </AppText>
         <AppText variant="label" muted style={styles.colNumber}>
           {timed ? t('editor.col.seconds') : t('editor.col.reps')}
@@ -204,7 +210,8 @@ export function RoutineExerciseCard({
               max={MAX_WEIGHT_KG}
               decimals={1}
               keyboard="decimal-pad"
-              label={t('editor.weightLabel', { name, number: setIndex + 1 })}
+              unit={unit}
+              label={t('editor.weightLabel', { name, number: setIndex + 1, unit })}
               onChange={(weightKg) => onSetPatch(setIndex, { weightKg })}
             />
             {timed ? (

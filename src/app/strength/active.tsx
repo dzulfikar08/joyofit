@@ -68,6 +68,7 @@ import {
   type PreviousSet,
 } from '@/features/strength/logFormat';
 import { userEnergyProfile, userWeightKg } from '@/features/strength/profile';
+import { restLiveAllowed, stopRestLive, syncRestLive } from '@/features/strength/restLive';
 import {
   cancelRestEnd,
   declineRestPermission,
@@ -91,14 +92,18 @@ import {
   loadSettings,
   saveDraft,
   saveWorkout,
+  saveSettings,
   setRestPref,
   setTimedPref,
   type StrengthSettings,
 } from '@/features/strength/store';
+import { plateLoads } from '@/features/strength/plates';
+import { getWeightUnit } from '@/features/strength/units';
 import type { StrengthDraft, StrengthExercise, StrengthWorkout } from '@/features/strength/types';
 import { ExerciseCard, type ExerciseCardActions } from '@/features/strength/ui/ExerciseCard';
 import { ExerciseInfoSheet } from '@/features/strength/ui/ExerciseInfoSheet';
 import { ExercisePicker } from '@/features/strength/ui/ExercisePicker';
+import { PlateSheet } from '@/features/strength/ui/PlateSheet';
 import { RestBar, RestOverBanner } from '@/features/strength/ui/RestBar';
 import { BottomSheet, MenuSheet, TextPrompt, type MenuItem } from '@/features/strength/ui/Sheet';
 import { StrapCard } from '@/features/strength/ui/StrapCard';
@@ -167,6 +172,7 @@ export default function ActiveWorkoutScreen() {
   const [customRestFor, setCustomRestFor] = useState<string | null>(null);
   const [saveRest, setSaveRest] = useState(false);
   const [infoKey, setInfoKey] = useState<string | null>(null);
+  const [platesKey, setPlatesKey] = useState<string | null>(null);
   const [supersetFor, setSupersetFor] = useState<string | null>(null);
   const [notePrompt, setNotePrompt] = useState<'workout' | { key: string } | null>(null);
   const [conflictDraft, setConflictDraft] = useState<StrengthDraft | null>(null);
@@ -349,6 +355,8 @@ export default function ActiveWorkoutScreen() {
   const restExerciseName = rest && draft ? nameOf(draft.exercises.find((e) => e.key === rest.exerciseKey)?.exerciseId ?? '') : null;
   useEffect(() => {
     if (phase !== 'ready' || editing) return;
+    // The live countdown follows the rest (start, +/-15 s, pause) on its own terms: on iOS it needs no notification permission.
+    syncRestLive({ active: true, rest, paused, allowed: restLiveAllowed(permission), exerciseName: restExerciseName });
     if (!rest || paused || permission !== 'granted') {
       void cancelRestEnd();
       return;
@@ -471,6 +479,7 @@ export default function ActiveWorkoutScreen() {
       onInfo: (key) => setInfoKey(key),
       onNote: (key) => setNotePrompt({ key }),
       onRest: (key) => setRestFor(key),
+      onPlates: (key) => setPlatesKey(key),
       onExerciseMenu: (key) => setExerciseMenu(key),
     }),
     // `editing` and the callbacks above are all this reads; everything else comes from refs.
@@ -480,6 +489,7 @@ export default function ActiveWorkoutScreen() {
   const onRestEnded = useCallback(() => {
     update((d) => skipRest(d));
     void cancelRestEnd();
+    stopRestLive();
     setRestOver(true);
   }, [update]);
 
@@ -511,6 +521,7 @@ export default function ActiveWorkoutScreen() {
     void endStrengthWatch(db);
     await saveDraft(db, null);
     await cancelRestEnd();
+    stopRestLive();
     leave();
   }, [handle, db, leave]);
 
@@ -546,6 +557,7 @@ export default function ActiveWorkoutScreen() {
       handle.close();
       await saveDraft(db, null);
       await cancelRestEnd();
+      stopRestLive();
       setClosing(true);
       void strengthHr.end();
       void endStrengthWatch(db);
@@ -590,6 +602,7 @@ export default function ActiveWorkoutScreen() {
     setConflictDraft(null);
     if (replaceExisting && fresh) {
       await cancelRestEnd();
+      stopRestLive();
       requested.current.clear();
       setPrevious({});
       handle.start(fresh);
@@ -614,6 +627,9 @@ export default function ActiveWorkoutScreen() {
   const menuIndex = menuEntry ? draft.exercises.indexOf(menuEntry) : -1;
   const restEntry = draft.exercises.find((e) => e.key === restTarget) ?? null;
   const infoEntry = draft.exercises.find((e) => e.key === infoKey) ?? null;
+  const platesEntry = draft.exercises.find((e) => e.key === platesKey) ?? null;
+  // Distinct loads of the exercise; the first one still to do (else the last) is the one the sheet opens on.
+  const plateWeights = platesEntry ? plateLoads(platesEntry.sets) : [];
   const noteEntry = notePrompt && notePrompt !== 'workout' ? (draft.exercises.find((e) => e.key === notePrompt.key) ?? null) : null;
   const progress = draftProgress(draft);
 
@@ -801,6 +817,7 @@ export default function ActiveWorkoutScreen() {
               onSkip={() => {
                 update((d) => skipRest(d));
                 void cancelRestEnd();
+                stopRestLive();
               }}
               onEnded={onRestEnded}
             />
@@ -835,6 +852,18 @@ export default function ActiveWorkoutScreen() {
       />
 
       <ExerciseInfoSheet exercise={infoEntry ? catalog.get(infoEntry.exerciseId) : null} name={infoEntry ? nameOf(infoEntry.exerciseId) : ''} onClose={() => setInfoKey(null)} />
+      <PlateSheet
+        visible={platesEntry !== null}
+        onClose={() => setPlatesKey(null)}
+        weightsKg={plateWeights}
+        bar={settings.barWeight[getWeightUnit()]}
+        onBarChange={(bar) => {
+          const unit = getWeightUnit();
+          const next = { ...settings, barWeight: { ...settings.barWeight, [unit]: bar } };
+          setSettings(next);
+          void saveSettings(db, next);
+        }}
+      />
       <MenuSheet visible={overflow} onClose={() => setOverflow(false)} items={overflowItems} />
       <MenuSheet visible={menuEntry !== null} onClose={() => setExerciseMenu(null)} title={menuEntry ? nameOf(menuEntry.exerciseId) : undefined} items={exerciseMenuItems} />
       <MenuSheet visible={setMenu !== null} onClose={() => setSetMenu(null)} title={t('strength:setMenu.title')} items={setMenuItems} />

@@ -1,5 +1,6 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test';
 
+import { setWeightUnit } from '@/features/strength/units';
 import type { StrengthExercise, StrengthSet } from '@/features/strength/types';
 import { applyLocale } from '@/i18n';
 
@@ -16,6 +17,7 @@ import { slideData } from './threads';
 
 beforeAll(() => applyLocale('id'));
 afterAll(() => applyLocale('id'));
+afterEach(() => setWeightUnit('kg'));
 
 function subjectOf(key: string, strength?: StrengthExercise[]) {
   const { input } = sportWorkout(key);
@@ -28,8 +30,8 @@ function texts(nodes: readonly SceneNode[]): string[] {
 }
 
 /** Every text of every template the sheet offers the workout, in both canvases, as the person would see them. */
-function everyCardText(key: string): string[] {
-  const { subject } = subjectOf(key);
+function everyCardText(key: string, log?: StrengthExercise[]): string[] {
+  const { subject } = subjectOf(key, log);
   const out: string[] = [];
   for (const group of offerGroups(subject)) {
     for (const template of Object.values(group.variants)) {
@@ -69,10 +71,22 @@ describe('sport families: the numbers each family keeps', () => {
   test('a strength log merged with the watch session brings its working sets, reps and volume', () => {
     const log = [exercise('bench', [set(1, 40, 10, 'warmup'), set(2, 80, 5), set(3, 80, 5)]), exercise('row', [set(4, 60, 8)])];
     const { run } = subjectOf('gym.watch', log);
-    expect(run).toMatchObject({ volumeKg: 80 * 5 * 2 + 60 * 8, sets: 3, reps: 18, exercises: 2 });
+    expect(run).toMatchObject({ volume: 80 * 5 * 2 + 60 * 8, unit: 'kg', sets: 3, reps: 18, exercises: 2 });
     // The same log on a run is not a run number.
     const onRun = buildRunSubject({ ...sportWorkout('run.road').input, strength: { exercises: log } }, 'id').data.run as JsonObject;
-    expect(onRun.volumeKg).toBeUndefined();
+    expect(onRun.volume).toBeUndefined();
+    expect(onRun.unit).toBeUndefined();
+  });
+
+  test('with the logger set to lb the merged volume is in lb and the cards print lb, not kg', () => {
+    setWeightUnit('lb');
+    const log = [exercise('bench', [set(2, 80, 5), set(3, 80, 5)]), exercise('row', [set(4, 60, 8)])];
+    const { run } = subjectOf('gym.watch', log);
+    expect(run.unit).toBe('lb');
+    expect(run.volume).toBeCloseTo((80 * 5 * 2 + 60 * 8) / 0.45359237, 1);
+    const all = everyCardText('gym.watch', log);
+    expect(all.some((t) => /\blb\b/.test(t))).toBe(true);
+    expect(all.some((t) => /\bkg\b/.test(t))).toBe(false);
   });
 
   test('a pool swim carries laps, strokes, SWOLF and pool length, its pace per 100 m, and no steps', () => {

@@ -160,8 +160,8 @@ function tileRow(k: Kit, tiles: TileSpec[]): LayerJson {
 }
 
 /** A small section label above a block. */
-function section(k: Kit, key: string, when?: Cond): LayerJson {
-  return k.text({ w: 'fill' }, tl(key), { size: 26, weight: 700, upper: true, ls: 3, color: '$fgMuted', when });
+function section(k: Kit, key: string, when?: Cond, args?: Record<string, string>): LayerJson {
+  return k.text({ w: 'fill' }, tl(key, args), { size: 26, weight: 700, upper: true, ls: 3, color: '$fgMuted', when });
 }
 
 const deviceLine = (k: Kit) => k.text({ w: 'fill' }, tl('threads.text.device', { device: '{th.device}' }), { size: 30, weight: 600, color: '$fgMuted', minSize: 24, when: has('th.device') });
@@ -218,9 +218,9 @@ function summary() {
 
 function lift() {
   const k = kit('tl');
-  const hero = k.stat({ w: 'fill' }, '{strength.volumeKg|int}', { unit: tl('unit.kg'), label: tl('label.volume'), size: 230, unitSize: 64, labelSize: 28, labelPos: 'above', gap: 12, weight: 800, color: '$accent', minSize: 100, when: has('strength.volumeKg') });
-  const heroReps = k.stat({ w: 'fill' }, '{strength.reps|int}', { label: tl('label.reps'), size: 230, labelSize: 28, labelPos: 'above', gap: 12, weight: 800, color: '$accent', minSize: 100, when: all(lacks('strength.volumeKg'), has('strength.reps')) });
-  const heroSecs = k.stat({ w: 'fill' }, '{strength.seconds|dur}', { label: tl('label.hold'), size: 230, labelSize: 28, labelPos: 'above', gap: 12, weight: 800, color: '$accent', minSize: 100, when: all(lacks('strength.volumeKg'), lacks('strength.reps'), has('strength.seconds')) });
+  const hero = k.stat({ w: 'fill' }, '{strength.volume|int}', { unit: '{strength.unit}', label: tl('label.volume'), size: 230, unitSize: 64, labelSize: 28, labelPos: 'above', gap: 12, weight: 800, color: '$accent', minSize: 100, when: has('strength.volume') });
+  const heroReps = k.stat({ w: 'fill' }, '{strength.reps|int}', { label: tl('label.reps'), size: 230, labelSize: 28, labelPos: 'above', gap: 12, weight: 800, color: '$accent', minSize: 100, when: all(lacks('strength.volume'), has('strength.reps')) });
+  const heroSecs = k.stat({ w: 'fill' }, '{strength.seconds|dur}', { label: tl('label.hold'), size: 230, labelSize: 28, labelPos: 'above', gap: 12, weight: 800, color: '$accent', minSize: 100, when: all(lacks('strength.volume'), lacks('strength.reps'), has('strength.seconds')) });
   const pr = k.group(
     { w: 'fill', h: 'auto' },
     [
@@ -237,7 +237,7 @@ function lift() {
     tileRow(k, [
       { value: '{strength.durationSec|dur}', label: tl('label.duration') },
       { value: '{strength.sets|int}', label: tl('label.sets') },
-      { value: '{strength.reps|int}', label: tl('label.reps'), when: has('strength.volumeKg') },
+      { value: '{strength.reps|int}', label: tl('label.reps'), when: has('strength.volume') },
     ]),
     tileRow(k, [
       { value: '{strength.exercises|int}', label: tl('threads.label.exercises') },
@@ -607,7 +607,7 @@ function liftsPage(id: 'lifts' | 'lifts2' | 'lifts3', path: string, more: boolea
           [
             k.text({ w: 'fill' }, `{${r}.name}`, { size: 38, weight: 800, color: '$fg', minSize: 26 }),
             pill,
-            k.stat({ w: 'auto' }, `{${r}.volumeKg|int}`, { unit: tl('unit.kg'), size: 34, unitSize: 24, weight: 800, color: '$accent', labelPos: 'none', trim: false, when: has(`${r}.volumeKg`) }),
+            k.stat({ w: 'auto' }, `{${r}.volume|int}`, { unit: `{${r}.unit}`, size: 34, unitSize: 24, weight: 800, color: '$accent', labelPos: 'none', trim: false, when: has(`${r}.volume`) }),
           ],
           { dir: 'row', gap: 14, align: 'center' },
         ),
@@ -673,7 +673,7 @@ function muscle() {
 // ------------------------------------------------------------------------------------------------------------- context
 
 /** Four equal columns of the bar chart: the bars and the value of each week under its date (the chart draws four bars side by side). */
-function weekBars(k: Kit, o: { series: string; unit?: Expr; fmt: string; color: string; h: number; title: string; when?: Cond }): LayerJson {
+function weekBars(k: Kit, o: { series: string; unit?: Expr; fmt: string; color: string; h: number; title: string; titleArgs?: Record<string, string>; when?: Cond }): LayerJson {
   const inner = W - 2 * 26;
   const gap = Math.max(4, Math.min(24, (inner / 4) * 0.28));
   const col = (inner - gap * 3) / 4;
@@ -683,7 +683,7 @@ function weekBars(k: Kit, o: { series: string; unit?: Expr; fmt: string; color: 
   return k.group(
     { w: 'fill', h: 'auto' },
     [
-      section(k, o.title),
+      section(k, o.title, undefined, o.titleArgs),
       k.chart({ w: 'fill', h: o.h }, { kind: 'bars', series: { bind: o.series }, labels: { bind: 'th.ctx.weekLabels' }, showLabels: true, labelSize: 26, color: o.color, color2: `${o.color}/45`, highlight: 'last', barRadius: 16 }),
       k.group({ w: 'fill', h: 'auto' }, values, { dir: 'row', gap }),
     ],
@@ -695,7 +695,7 @@ function contextSlide(lifting: boolean) {
   const k = kit(lifting ? 'tq' : 'tx');
   const subject = lifting ? 'lift' : 'run';
   const main = lifting
-    ? [weekBars(k, { series: 'th.ctx.weekVolume', fmt: 'int', color: '$accent', h: 200, title: 'threads.text.weeklyVolume' })]
+    ? [weekBars(k, { series: 'th.ctx.weekVolume', fmt: 'int', color: '$accent', h: 200, title: 'threads.text.weeklyVolume', titleArgs: { unit: '{th.ctx.unit}' } })]
     : [
         weekBars(k, { series: 'th.ctx.weekKm', fmt: 'num:1', color: '$accent', h: 200, title: 'threads.text.weeklyKm', when: has('th.ctx.weekKm') }),
         weekBars(k, { series: 'th.ctx.weekMin', fmt: 'int', color: '$accent', h: 200, title: 'threads.text.weeklyMin', when: lacks('th.ctx.weekKm') }),
@@ -703,12 +703,12 @@ function contextSlide(lifting: boolean) {
   const totals = lifting
     ? [
         tileRow(k, [
-          { value: '{th.ctx.volumeKg|int}', label: tl('threads.label.volume4'), unit: tl('unit.kg') },
+          { value: '{th.ctx.volume|int}', label: tl('threads.label.volume4'), unit: '{th.ctx.unit}' },
           { value: '{th.ctx.sessions|int}', label: tl('threads.label.sessions') },
           { value: '{th.ctx.sets|int}', label: tl('label.sets') },
         ]),
         tileRow(k, [
-          { value: '{th.ctx.avgVolumeWeek|int}', label: tl('threads.label.avgVolumeWeek'), unit: tl('unit.kg') },
+          { value: '{th.ctx.avgVolumeWeek|int}', label: tl('threads.label.avgVolumeWeek'), unit: '{th.ctx.unit}' },
           { value: '{th.ctx.avgSessionsWeek|num:1}', label: tl('threads.label.avgSessionsWeek') },
           { value: '{th.ctx.movingSec|durhm}', label: tl('label.duration') },
         ]),

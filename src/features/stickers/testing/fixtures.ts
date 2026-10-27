@@ -70,7 +70,8 @@ const MILESTONE_PR: JsonObject = {
 const STRENGTH_FULL: JsonObject = {
   name: 'Push day',
   startedAt: Date.UTC(2026, 9, 14, 11, 5),
-  volumeKg: 8420,
+  volume: 8420,
+  unit: 'kg',
   reps: 142,
   sets: 19,
   durationSec: 3720,
@@ -250,7 +251,7 @@ const FAMILY_FIXTURES: readonly Fixture[] = [
     kind: 'gym',
     label: 'Watch session merged with a strength log: volume, sets, reps',
     data: {
-      run: { sport: 'Latihan kekuatan', kind: 'other', category: 'gym', startedAt: Date.UTC(2026, 9, 17, 23, 0), movingSec: 3480, hrAvg: 112, hrMax: 151, kcal: 344, volumeKg: 8420, sets: 18, reps: 142, exercises: 6, hrSeries: wave(48, 112, 20, 23) },
+      run: { sport: 'Latihan kekuatan', kind: 'other', category: 'gym', startedAt: Date.UTC(2026, 9, 17, 23, 0), movingSec: 3480, hrAvg: 112, hrMax: 151, kcal: 344, volume: 8420, unit: 'kg', sets: 18, reps: 142, exercises: 6, hrSeries: wave(48, 112, 20, 23) },
     },
   },
   {
@@ -479,7 +480,8 @@ export const FIXTURES: readonly Fixture[] = [
       strength: {
         name: 'Full body',
         startedAt: Date.UTC(2026, 9, 12, 18, 30),
-        volumeKg: 12_450,
+        volume: 12_450,
+        unit: 'kg',
         reps: 231,
         sets: 28,
         durationSec: 5400,
@@ -506,7 +508,8 @@ export const FIXTURES: readonly Fixture[] = [
       strength: {
         name: 'Leg day',
         startedAt: Date.UTC(2026, 9, 9, 7, 15),
-        volumeKg: 6_180,
+        volume: 6_180,
+        unit: 'kg',
         reps: 96,
         sets: 15,
         durationSec: 2820,

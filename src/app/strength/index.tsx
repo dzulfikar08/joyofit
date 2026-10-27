@@ -22,6 +22,7 @@ import {
   parseCollapsed,
   STARTERS_FOLD,
 } from '@/features/strength/routineEdit';
+import { pickRoutineFile, planImportFromDb, savePlan, shareRoutineFile, shareRoutineText } from '@/features/strength/routineShareIo';
 import { getStarterRoutine, starterRoutines } from '@/features/strength/starterRoutines';
 import { startStrengthWorkout } from '@/features/strength/start';
 import {
@@ -44,6 +45,7 @@ import { RoutineList } from '@/features/strength/ui/RoutineList';
 import { RoutineMenu, type MenuItem } from '@/features/strength/ui/RoutineMenu';
 import { RoutineNameDialog } from '@/features/strength/ui/RoutineNameDialog';
 import { RoutineSheet } from '@/features/strength/ui/RoutineSheet';
+import { RoutineImportSheet, type ImportState } from '@/features/strength/ui/RoutineImportSheet';
 import { RogoImportCard } from '@/features/strength/ui/RogoImportCard';
 import { StrengthCloudLine } from '@/features/strength/ui/StrengthCloudLine';
 import { fmtDate, fmtDuration, useLocale } from '@/i18n';
@@ -90,6 +92,8 @@ export default function StrengthHome() {
   const [folderMenu, setFolderMenu] = useState<RoutineFolder | null>(null);
   const [folderDialog, setFolderDialog] = useState<FolderDialog | null>(null);
   const [folderDeleting, setFolderDeleting] = useState<RoutineFolder | null>(null);
+  const [importing, setImporting] = useState<ImportState | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -113,6 +117,48 @@ export default function StrengthHome() {
     return getStarterRoutine(sheet.id, locale) ?? data?.routines.find((r) => r.id === sheet.id) ?? null;
   }, [sheet, data, locale]);
   const sheetIsStarter = sheet !== null && sheet.id.startsWith('builtin:');
+
+  /** Share and import problems show in the same notice as a read error; closing the share sheet is not one. */
+  const shareSafely = async (work: () => Promise<void>) => {
+    try {
+      await work();
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+  };
+
+  const pickImport = async () => {
+    try {
+      const picked = await pickRoutineFile();
+      if (!picked.ok) {
+        if (picked.reason === 'unreadable') setImporting({ fileName: '', error: 'unreadable' });
+        return;
+      }
+      if (!picked.result.ok) {
+        setImporting({ fileName: picked.name, error: picked.result.error });
+        return;
+      }
+      setImporting({ fileName: picked.name, plan: await planImportFromDb(db, picked.result.file) });
+    } catch {
+      setImporting({ fileName: '', error: 'unreadable' });
+    }
+  };
+
+  const confirmImport = async () => {
+    if (!importing || !('plan' in importing)) return;
+    setImportBusy(true);
+    try {
+      await savePlan(db, importing.plan);
+      setImporting(null);
+      show(t('share.import.done', { count: importing.plan.routines.length }));
+      await refresh();
+    } catch (e) {
+      setImporting({ fileName: importing.fileName, error: 'unreadable' });
+      setError(errorMessage(e));
+    } finally {
+      setImportBusy(false);
+    }
+  };
 
   const run = useCallback(
     async (work: () => Promise<void>) => {
@@ -199,6 +245,13 @@ export default function StrengthHome() {
       onPress: () => router.push({ pathname: '/strength/routine/[id]', params: { id: 'new', folder: folder.id } }),
     },
     { key: 'rename', label: t('folder.rename'), icon: 'create-outline', onPress: () => setFolderDialog({ mode: 'rename', folder }) },
+    {
+      key: 'export',
+      label: t('share.folder'),
+      icon: 'share-social-outline',
+      disabled: inFolder(folder).length === 0,
+      onPress: () => void shareSafely(() => shareRoutineFile(inFolder(folder), folder.name, data?.catalog ?? buildCatalog([]), locale, folder.name)),
+    },
     { key: 'delete', label: t('folder.delete'), icon: 'trash-outline', destructive: true, onPress: () => setFolderDeleting(folder) },
   ];
 
@@ -231,6 +284,7 @@ export default function StrengthHome() {
           <Button label={t('home.newRoutine')} icon="add" onPress={() => router.push({ pathname: '/strength/routine/[id]', params: { id: 'new' } })} />
           <Button label={t('home.newFolder')} icon="folder-outline" onPress={() => setFolderDialog({ mode: 'new' })} />
         </ButtonRow>
+        <Button label={t('share.import.button')} icon="download-outline" onPress={() => void pickImport()} />
 
         {data === null && error === null ? <RoutineSkeletons /> : null}
 
@@ -370,6 +424,14 @@ export default function StrengthHome() {
           setSheet(null);
           setDeleting(r);
         }}
+        onShare={(r) => {
+          setSheet(null);
+          void shareSafely(() => shareRoutineText(r, data?.catalog ?? buildCatalog([]), locale));
+        }}
+        onExportFile={(r) => {
+          setSheet(null);
+          void shareSafely(() => shareRoutineFile([r], r.name, data?.catalog ?? buildCatalog([]), locale, null));
+        }}
         onCopy={(r) => {
           setSheet(null);
           void copyTo(r, r.name, null, t('toast.copied'));
@@ -419,6 +481,7 @@ export default function StrengthHome() {
         }}
       />
       {toast}
+      <RoutineImportSheet state={importing} busy={importBusy} onConfirm={() => void confirmImport()} onClose={() => setImporting(null)} />
     </Screen>
   );
 }

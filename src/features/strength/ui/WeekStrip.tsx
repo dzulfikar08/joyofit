@@ -11,12 +11,14 @@ import type { StrengthWorkout } from '@/features/strength/types';
 import { fmtInt } from '@/i18n';
 import { spacing } from '@/theme';
 
+import { useWeightUnit } from '../useWeightUnit';
 import { volumeText } from './liftFormat';
 
 const CONSISTENCY_WEEKS = 8;
 
 export function WeekStrip({ workouts }: { workouts: readonly StrengthWorkout[] }) {
   const { t } = useTranslation('lifts');
+  useWeightUnit();
   const stats = useMemo(() => {
     const now = Date.now();
     return {

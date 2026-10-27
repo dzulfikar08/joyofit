@@ -16,6 +16,7 @@
   },
   "unit": {
     "kg": "{{value}} kg",
+    "lb": "{{value}} lb",
     "sec": "{{value}} dtk",
     "kcal": "kcal",
     "sets_other": "set",

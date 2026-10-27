@@ -28,6 +28,7 @@ import type { WorkoutRow } from '@/db/queries';
 import { isCounted, setVolume, type PersonalRecord } from '@/features/strength/calc';
 import type { Catalog } from '@/features/strength/catalog';
 import type { StrengthSet, StrengthWorkout } from '@/features/strength/types';
+import { getWeightUnit, kgToUnit } from '@/features/strength/units';
 import { haversineM } from '@/features/workouts/analysis/geo';
 import { downsample, kmSplits } from '@/features/workouts/summary';
 import { sportKind } from '@/features/workouts/analysis/sport';
@@ -162,10 +163,13 @@ function contextData(context: ThreadsContext, locale: Locale): JsonObject {
   ctx.movingSec = total((w) => w.movingSec);
   ctx.avgSessionsWeek = round1(total((w) => w.sessions) / WEEKS);
   if (context.kind === 'strength') {
-    ctx.weekVolume = context.weeks.map((w) => Math.round(w.volumeKg));
-    ctx.volumeKg = Math.round(total((w) => w.volumeKg));
+    const unit = getWeightUnit();
+    ctx.weekVolume = context.weeks.map((w) => Math.round(kgToUnit(w.volumeKg, unit)));
+    const volume = kgToUnit(total((w) => w.volumeKg), unit);
+    ctx.volume = Math.round(volume);
+    ctx.unit = unit;
     ctx.sets = total((w) => w.sets);
-    ctx.avgVolumeWeek = Math.round(total((w) => w.volumeKg) / WEEKS);
+    ctx.avgVolumeWeek = Math.round(volume / WEEKS);
   } else if (total((w) => w.distanceM) > 0) {
     ctx.weekKm = context.weeks.map((w) => round1(w.distanceM / 1000));
     ctx.distanceM = Math.round(total((w) => w.distanceM));
@@ -564,7 +568,8 @@ export interface ThreadsStrengthInput extends StrengthSubjectInput {
 function setsText(sets: readonly StrengthSet[], locale: Locale): string {
   const groups: { text: string; count: number }[] = [];
   for (const set of sets) {
-    const weight = pos(set.weightKg) ? `${fmtNumber(Math.round(set.weightKg * 10) / 10, 1, locale)} kg` : null;
+    const unit = getWeightUnit();
+    const weight = pos(set.weightKg) ? `${fmtNumber(Math.round(kgToUnit(set.weightKg, unit) * 10) / 10, 1, locale)} ${unit}` : null;
     const amount = pos(set.reps) ? String(set.reps) : pos(set.seconds) ? `${set.seconds} s` : null;
     const text = [amount, weight].filter((x): x is string => x !== null).join(' \u00d7 ');
     if (!text) continue;
@@ -594,7 +599,10 @@ export function buildThreadsStrength(input: ThreadsStrengthInput, locale: Locale
     if (!text) continue;
     const volume = counted.reduce((a, s) => a + setVolume(s), 0);
     const row: JsonObject = { name: clip(catalog.name(exercise.exerciseId, locale) ?? t('unknownExercise')) ?? '', sets: text, setCount: counted.length };
-    if (volume > 0) row.volumeKg = Math.round(volume);
+    if (volume > 0) {
+      row.volume = Math.round(kgToUnit(volume));
+      row.unit = getWeightUnit();
+    }
     if (prExercises.has(exercise.exerciseId)) row.pr = 1;
     rows.push(row);
   }

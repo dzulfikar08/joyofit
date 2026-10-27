@@ -19,6 +19,7 @@ import { sportLabel } from '@/features/workouts/sportLabel';
 import { fmtClock, fmtDate, fmtDuration, fmtInt, useLocale } from '@/i18n';
 import { spacing, tintColors, useTheme } from '@/theme';
 
+import { useWeightUnit } from '../useWeightUnit';
 import { volumeText } from './liftFormat';
 
 interface StrengthCardProps {
@@ -34,6 +35,7 @@ function StrengthCardView({ workout, prs, showDate = true, onPress }: StrengthCa
   const { t } = useTranslation('lifts');
   const { colors, radius } = useTheme();
   const locale = useLocale();
+  useWeightUnit();
   const totals = useMemo(() => workoutTotals(workout), [workout]);
   const when = useMemo(() => {
     const clock = fmtClock(new Date(workout.startedAt));

@@ -359,7 +359,7 @@
       "records": "Rekor baru",
       "weeklyKm": "Jarak per minggu, km",
       "weeklyMin": "Menit per minggu",
-      "weeklyVolume": "Volume per minggu, kg",
+      "weeklyVolume": "Volume per minggu, {{unit}}",
       "weeklySessions": "Sesi per minggu",
       "fourWeeks": "Empat minggu sampai latihan ini. Tiap batang adalah 7 hari.",
       "ftpNote": "Zona dihitung dari FTP {{ftp}} W.",
@@ -383,7 +383,7 @@
         "cadence": "kadensi {{value}} spm",
         "power": "daya {{value}} W",
         "kcal": "{{value}} kcal",
-        "volume": "volume {{value}} kg",
+        "volume": "volume {{value}} {{unit}}",
         "sets_other": "{{count}} set",
         "reps_other": "{{count}} repetisi",
         "hold": "tahan {{value}}",
@@ -395,7 +395,7 @@
       "context": {
         "distance_other": "4 minggu terakhir: {{distance}} km dalam {{count}} sesi.",
         "sessions_other": "4 minggu terakhir: {{count}} sesi.",
-        "volume_other": "4 minggu terakhir: volume {{volume}} kg dalam {{count}} sesi."
+        "volume_other": "4 minggu terakhir: volume {{volume}} {{unit}} dalam {{count}} sesi."
       },
       "swipe_other": "Data lengkap ada di {{count}} gambar.",
       "question": {

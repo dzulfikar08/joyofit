@@ -8,8 +8,9 @@ import { PressableScale } from '@/components/PressableScale';
 import { fontSize, spacing, tintColors, useColors, useTheme } from '@/theme';
 
 import type { SetPatch } from '../draft';
-import { inputText, previousForMeasure, previousLabel, rpeText, SET_BADGE, timerText, type PreviousSet } from '../logFormat';
+import { inputText, previousForMeasure, previousLabel, rpeText, SET_BADGE, timerText, weightInputText, type PreviousSet } from '../logFormat';
 import { timerShownSec, type SetTimer } from '../setTimer';
+import { useWeightUnit } from '../useWeightUnit';
 import type { SetType, StrengthSet } from '../types';
 import { NumberField } from './NumberField';
 import { useTicker } from './useStrengthDraft';
@@ -78,11 +79,14 @@ function RunningClock({ timer, label, onPress, style }: { timer: SetTimer; label
 
 function SetRowView({ exerciseKey, set, label, previous, timed, timer, showRpe, flash, actions }: SetRowProps) {
   const { t } = useTranslation('strength');
+  // The row is memoised: a switch of kg and lb has to reach the "previous" label and the weight hint from here.
+  const unit = useWeightUnit();
   const colors = useColors();
   const typeColor = useTypeColor(set.type);
   const badge = SET_BADGE[set.type];
   const prev = previous ? previousLabel(previousForMeasure(previous, timed), timed) : null;
   const hintOf = (n: number | null): string | undefined => (set.done || n === null ? undefined : inputText(n));
+  const hintWeight = (n: number | null): string | undefined => (set.done || n === null ? undefined : weightInputText(n));
   const hintTime = (n: number | null): string | undefined => (set.done || n === null ? undefined : timerText(n));
 
   const typeName = t(`setType.${set.type}`);
@@ -119,8 +123,8 @@ function SetRowView({ exerciseKey, set, label, previous, timed, timer, showRpe, 
       <NumberField
         kind="weight"
         value={set.weightKg}
-        hint={hintOf(previous?.weightKg ?? null)}
-        label={t('table.weightField', { label })}
+        hint={hintWeight(previous?.weightKg ?? null)}
+        label={t('table.weightField', { label, unit })}
         done={set.done}
         flash={0}
         onChange={(weightKg) => actions.onChange(exerciseKey, set.id, { weightKg })}

@@ -1,5 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import type { WeightUnit } from './units';
+
 import type {
   CustomExercise,
   ExercisePref,
@@ -310,6 +312,10 @@ export interface StrengthSettings {
   countdownTimed: boolean;
   /** A connected watch that can be started from the phone starts Strength training with the logger, and is paused and stopped with it (`watchWorkout.ts`). */
   startOnWatch: boolean;
+  /** The unit weights are shown and typed in (`units.ts`); storage is always kg. */
+  weightUnit: WeightUnit;
+  /** The bar of the plate calculator, per unit, in that unit (20 kg and 45 lb are different bars, so each unit keeps its own). */
+  barWeight: Record<WeightUnit, number>;
 }
 
 export const DEFAULT_SETTINGS: StrengthSettings = {
@@ -320,6 +326,8 @@ export const DEFAULT_SETTINGS: StrengthSettings = {
   autoStrava: false,
   countdownTimed: true,
   startOnWatch: true,
+  weightUnit: 'kg',
+  barWeight: { kg: 20, lb: 45 },
 };
 
 export async function loadSettings(db: SQLiteDatabase): Promise<StrengthSettings> {

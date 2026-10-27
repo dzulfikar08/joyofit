@@ -2,7 +2,8 @@
   "title": "Rutinitas",
   "duplicateName": "{{name}} (salinan)",
   "unit": {
-    "kg": "{{value}} kg"
+    "kg": "{{value}} kg",
+    "lb": "{{value}} lb"
   },
   "toast": {
     "duplicated": "Rutinitas diduplikasi",
@@ -105,13 +106,14 @@
     "exerciseNoteLabel": "Catatan untuk {{name}}",
     "setType": "Jenis set",
     "setTypeLabel": "Jenis set {{number}} dari {{name}}",
-    "weightLabel": "Beban set {{number}} dari {{name}}, kg",
+    "weightLabel": "Beban set {{number}} dari {{name}}, {{unit}}",
     "repsLabel": "Repetisi set {{number}} dari {{name}}",
     "secondsLabel": "Detik set {{number}} dari {{name}}",
     "removeSet": "Hapus set {{number}} dari {{name}}",
     "col": {
       "set": "Set",
       "kg": "kg",
+      "lb": "lb",
       "reps": "Repetisi",
       "seconds": "Detik"
     },
@@ -166,5 +168,33 @@
       "body": "Latihan: {{workouts}}, rutinitas: {{routines}}"
     },
     "error": "Impor belum selesai. Cek koneksimu lalu coba lagi. Yang sudah masuk tetap tersimpan."
+  },
+  "share": {
+    "text": "Bagikan",
+    "file": "Ekspor file",
+    "folder": "Ekspor folder (file)",
+    "error": "Tidak bisa membagikan: {{error}}",
+    "import": {
+      "button": "Impor rutinitas",
+      "title": "Impor rutinitas",
+      "errorTitle": "File tidak bisa diimpor",
+      "close": "Tutup",
+      "newFolder": "Folder baru: {{name}}",
+      "customTitle_other": "{{count}} gerakan akan dibuat sebagai gerakan buatanmu",
+      "keepNote": "Rutinitasmu yang sudah ada tidak diubah. Yang diimpor masuk sebagai rutinitas baru.",
+      "confirm_other": "Impor {{count}} rutinitas",
+      "done_other": "{{count}} rutinitas diimpor",
+      "error": {
+        "unreadable": "File tidak bisa dibuka. Pilih file lain.",
+        "too-large": "File terlalu besar untuk berisi rutinitas.",
+        "not-json": "Ini bukan file rutinitas JoyoFit: isinya tidak terbaca.",
+        "not-joyofit": "Ini bukan file rutinitas JoyoFit.",
+        "wrong-kind": "File JoyoFit ini bukan berisi rutinitas.",
+        "version": "File ini dibuat oleh versi JoyoFit yang tidak dikenal. Perbarui aplikasi lalu coba lagi.",
+        "shape": "Isi file rusak atau tidak lengkap. Tidak ada yang diimpor.",
+        "number": "File berisi angka yang tidak masuk akal. Tidak ada yang diimpor.",
+        "too-many": "File berisi terlalu banyak data. Tidak ada yang diimpor."
+      }
+    }
   }
 }

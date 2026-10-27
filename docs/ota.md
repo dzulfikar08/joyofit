@@ -25,7 +25,7 @@ Fine over the air: layout, copy, spacing, logic fixes, calculations, new screens
 - a new primary purpose, or a feature the store listing and review notes do not describe;
 - new permissions or a new use of an existing one (Bluetooth, location, Health, notifications), new data collection or sharing (Play Data safety, App Store privacy labels), new SDKs or trackers, new cloud endpoints for data the policies list;
 - anything that opens a store of other code, or bypasses OS signing or sandboxing;
-- native code (`modules/huawei-wear`, `plugins/`), `app.json` native settings, native dependencies (they cannot ship over the air anyway, see below).
+- native code (`modules/huawei-wear`, `modules/rest-timer`, `targets/`, `plugins/`), `app.json` native settings, native dependencies (they cannot ship over the air anyway, see below).
 
 Wording above is our reading of the policies; read the current Apple and Google text before a gray-area change.
 
@@ -182,6 +182,8 @@ go on a branch cut at `276b89e3`.
 Anything that changes the runtimeVersion, or is on the "not over the air" list above, needs a new binary: build through `scripts/build-release.sh` / `scripts/build-ios-mac.sh` / the `Release *` workflows, and from that commit on updates target the new runtime. Binaries that stay on an older runtime keep getting updates from their own branch, see "Which branch publishes to which runtime" (`ota/1.0` for the pre-sensors builds).
 
 Binaries built before expo-updates was added have no OTA and never will.
+
+Native-only features that a JS update can call but not bring: the lock-screen rest timer (`modules/rest-timer`, the iOS Live Activity target `targets/rest-timer`; docs/strength.md, "Rest timer on the lock screen"). An OTA bundle that calls it on a binary built before it existed falls back to the notification at the end of the rest, with no error.
 
 `scripts/build-ios-linux.sh` refuses to run: the Xcode-free pipeline does not embed the expo-updates resources (`app.manifest`, runtime in `Expo.plist`) [inference: a binary without them would start with updates on and nothing embedded]. Build iOS on the Mac or in the `Release iOS` workflow. `JOYO_ALLOW_IOS_LINUX_WITHOUT_UPDATES=1` overrides.
 

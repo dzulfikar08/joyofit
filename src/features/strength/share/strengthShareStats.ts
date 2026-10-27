@@ -2,10 +2,11 @@
  * What the strength share card and the Strava description say about a workout: the headline numbers, the best sets and
  * the record count. Pure: text comes from the `strengthshare` namespace in the given locale, numbers from `@/i18n/format`.
  */
-import { epley1rm, isCounted, roundKg, workoutTotals, type PersonalRecord } from '../calc';
+import { epley1rm, isCounted, workoutTotals, type PersonalRecord } from '../calc';
 import type { Catalog } from '../catalog';
 import { timerText } from '../logFormat';
 import type { StrengthSet, StrengthWorkout } from '../types';
+import { displayWeight, getWeightUnit, kgToUnit } from '../units';
 import { fmtClock, fmtDate, fmtDuration, fmtInt, fmtNumber, getT } from '@/i18n';
 
 type Locale = 'id' | 'en';
@@ -76,17 +77,18 @@ export function topSets(workout: Pick<StrengthWorkout, 'exercises'>, catalog: Pi
     .map(({ exerciseId, set }) => ({ exercise: catalog.name(exerciseId, locale) ?? t('unknownExercise'), load: setLoad(set, locale) }));
 }
 
-/** "60 kg x 8", "60 kg x 45 s", "12 reps" or "45 s". */
+/** "60 kg x 8", "60 kg x 45 s", "12 reps" or "45 s"; the weight in the chosen unit (`units.ts`). */
 export function setLoad(set: Pick<StrengthSet, 'weightKg' | 'reps' | 'seconds'>, locale: Locale): string {
   const t = getT(locale, 'strengthshare');
-  const weight = set.weightKg !== null && set.weightKg > 0 ? fmtNumber(roundKg(set.weightKg), 1, locale) : null;
+  const weight = set.weightKg !== null && set.weightKg > 0 ? fmtNumber(displayWeight(set.weightKg), 1, locale) : null;
+  const unit = getWeightUnit();
   const reps = set.reps !== null && set.reps > 0 ? set.reps : null;
   const seconds = set.seconds !== null && set.seconds > 0 ? fmtInt(set.seconds, locale) : null;
-  if (weight && reps) return t('setWeightReps', { weight, reps: fmtInt(reps, locale) });
-  if (weight && seconds) return t('setWeightSeconds', { weight, seconds });
+  if (weight && reps) return t('setWeightReps', { weight, unit, reps: fmtInt(reps, locale) });
+  if (weight && seconds) return t('setWeightSeconds', { weight, unit, seconds });
   if (reps) return t('setReps', { count: reps, reps: fmtInt(reps, locale) });
   if (seconds) return t('setSeconds', { seconds });
-  return weight ? t('setWeight', { weight }) : '';
+  return weight ? t('setWeight', { weight, unit }) : '';
 }
 
 export function strengthShareStats(workout: StrengthWorkout, catalog: Catalog, locale: Locale, records: readonly PersonalRecord[]): StrengthShareStats {
@@ -101,7 +103,7 @@ export function strengthShareStats(workout: StrengthWorkout, catalog: Catalog, l
   const time = workout.durationSec > 0 ? stat('time', fmtDuration(workout.durationSec, locale)) : null;
 
   const stats: StrengthShareStat[] = [];
-  if (totals.volume > 0) stats.push(stat('volume', fmtInt(totals.volume, locale), 'kg'));
+  if (totals.volume > 0) stats.push(stat('volume', fmtInt(kgToUnit(totals.volume), locale), getWeightUnit()));
   else if (totals.reps > 0) stats.push(stat('reps', fmtInt(totals.reps, locale)));
   else if (totals.seconds > 0) stats.push(stat('hold', timerText(totals.seconds)));
   else if (time) stats.push(time);
@@ -133,7 +135,7 @@ export function strengthDescription(workout: StrengthWorkout, catalog: Catalog, 
   if (totals.sets > 0) {
     lines.push(
       totals.volume > 0
-        ? t('description.totalsVolume', { volume: fmtInt(totals.volume, locale), count: totals.sets, reps: fmtInt(totals.reps, locale) })
+        ? t('description.totalsVolume', { volume: fmtInt(kgToUnit(totals.volume), locale), unit: getWeightUnit(), count: totals.sets, reps: fmtInt(totals.reps, locale) })
         : totals.reps === 0 && totals.seconds > 0
           ? t('description.totalsTime', { count: totals.sets, time: timerText(totals.seconds) })
           : t('description.totalsReps', { count: totals.sets, reps: fmtInt(totals.reps, locale) }),

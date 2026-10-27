@@ -81,7 +81,7 @@ function liftLines(subject: Pick<StickerSubject, 'data'>, locale: Locale): { hea
   const s = subject.data.strength as JsonObject;
   const th = (subject.data.th ?? {}) as JsonObject;
   const lead: string[] = [];
-  if (pos(s.volumeKg)) lead.push(t('threads.caption.part.volume', { value: fmtInt(s.volumeKg, locale) }));
+  if (pos(s.volume)) lead.push(t('threads.caption.part.volume', { value: fmtInt(s.volume, locale), unit: str(s.unit) ?? 'kg' }));
   if (pos(s.sets)) lead.push(t('threads.caption.part.sets', { count: s.sets }));
   if (pos(s.reps)) lead.push(t('threads.caption.part.reps', { count: s.reps }));
   else if (pos(s.seconds)) lead.push(t('threads.caption.part.hold', { value: formatDuration(s.seconds) }));
@@ -95,7 +95,7 @@ function liftLines(subject: Pick<StickerSubject, 'data'>, locale: Locale): { hea
   if (pos(s.kcal)) parts.push(t('threads.caption.part.kcal', { value: fmtInt(s.kcal, locale) }));
 
   const ctx = th.ctx as JsonObject | undefined;
-  const context = ctx && pos(ctx.volumeKg) && pos(ctx.sessions) ? t('threads.caption.context.volume', { volume: fmtInt(ctx.volumeKg, locale), count: ctx.sessions }) : null;
+  const context = ctx && pos(ctx.volume) && pos(ctx.sessions) ? t('threads.caption.context.volume', { volume: fmtInt(ctx.volume, locale), unit: str(ctx.unit) ?? 'kg', count: ctx.sessions }) : null;
   return { head, stats: parts.length > 0 ? parts.join(', ') : null, context };
 }
 

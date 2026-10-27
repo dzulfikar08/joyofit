@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 
+import { kgToUnit, setWeightUnit } from '@/features/strength/units';
 import { applyLocale } from '@/i18n';
 
 import { buildThreadsRun, mergeRows, slideData, smoothSeries, weeklyContext, SPLIT_ROWS_MAX, type SplitRow } from '../data/threads';
@@ -9,7 +10,10 @@ import { RIDE_POWER, RUN_LONG, RUN_MARATHON, RUN_SPLITS, STRENGTH_FULLBODY, STRE
 import { buildCaption, questionsFor, THREADS_TEXT_MAX } from './caption';
 import { enabledSlides, initialChoices, moveChoice, offeredSlides, reconcileChoices, slideSetData, THREADS_DEFAULT_SLIDES, THREADS_MAX_SLIDES, toggleChoice, type SlideChoice } from './slides';
 
-afterEach(() => applyLocale('id'));
+afterEach(() => {
+  applyLocale('id');
+  setWeightUnit('kg');
+});
 
 const th = (data: JsonObject) => data.th as JsonObject;
 
@@ -110,12 +114,24 @@ describe('slide data', () => {
     const rows = data.liftRows as JsonObject[];
     expect(rows).toHaveLength(6);
     expect((data.liftRows2 as JsonObject[]).map((r) => r.name)).toHaveLength(2);
-    expect(rows[0]).toMatchObject({ name: 'Bench press', pr: 1, volumeKg: 1555 });
+    expect(rows[0]).toMatchObject({ name: 'Bench press', pr: 1, volume: 1555, unit: 'kg' });
     expect(rows[0]!.sets).toBe('1 \u00d7 5 \u00d7 80 kg  \u00b7  2 \u00d7 5 \u00d7 82,5 kg  \u00b7  1 \u00d7 4 \u00d7 82,5 kg');
     // Warm-ups are not listed; a bodyweight set has no weight; a timed set shows seconds.
     expect(rows[5]!.sets).toBe('1 \u00d7 12  \u00b7  1 \u00d7 10  \u00b7  1 \u00d7 9');
-    expect(rows[5]).not.toHaveProperty('volumeKg');
+    expect(rows[5]).not.toHaveProperty('volume');
     expect(th(STRENGTH_SPARSE().data).has).not.toHaveProperty('context');
+  });
+
+  test('in lb the lift rows and the caption carry lb numbers', async () => {
+    setWeightUnit('lb');
+    const data = th(STRENGTH_PUSH().data);
+    const rows = data.liftRows as JsonObject[];
+    expect(rows[0]).toMatchObject({ unit: 'lb', volume: Math.round(kgToUnit(1555, 'lb')) });
+    expect(rows[0]!.sets as string).toContain(' lb');
+    expect(rows[0]!.sets as string).not.toContain(' kg');
+    await applyLocale('en');
+    const head = buildCaption(STRENGTH_PUSH(), { locale: 'en', question: null, hashtag: false }).split('\n')[0]!;
+    expect(head).toMatch(/volume 12,9\d\d lb/);
   });
 
   test('twenty exercises: three slides and the rest counted, never silently dropped', () => {

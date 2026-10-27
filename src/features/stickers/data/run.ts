@@ -1,5 +1,6 @@
 import type { WorkoutRow } from '@/db/queries';
 import { workoutTotals } from '@/features/strength/calc';
+import { getWeightUnit, kgToUnit } from '@/features/strength/units';
 import type { StrengthWorkout } from '@/features/strength/types';
 import { getT, type Locale } from '@/i18n';
 import { downsample, formatElapsed, kmSplits, type RoutePoint, type WorkoutSummary } from '@/features/workouts/summary';
@@ -155,7 +156,10 @@ function swimFields(summary: WorkoutSummary, out: JsonObject): void {
 /** Working sets, reps and volume of the strength log merged with the workout (warm-up sets do not count). */
 function liftFields(strength: Pick<StrengthWorkout, 'exercises'>, out: JsonObject): void {
   const totals = workoutTotals(strength);
-  if (pos(totals.volume)) out.volumeKg = round1(totals.volume);
+  if (pos(totals.volume)) {
+    out.volume = round1(kgToUnit(totals.volume));
+    out.unit = getWeightUnit();
+  }
   if (pos(totals.sets)) out.sets = totals.sets;
   if (pos(totals.reps)) out.reps = totals.reps;
   if (pos(totals.exercises)) out.exercises = totals.exercises;

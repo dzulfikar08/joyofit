@@ -57,7 +57,7 @@ const M = {
   strokes: metric('strokes', 'int', 'strokes'),
   swolf: metric('swolf', 'int', 'swolf'),
   pool: metric('poolM', 'int', 'pool', 'm'),
-  volume: metric('volumeKg', 'int', 'volume', 'kg'),
+  volume: { ...metric('volume', 'int', 'volume'), unit: '{run.unit}' },
   sets: metric('sets', 'int', 'sets'),
   reps: metric('reps', 'int', 'reps'),
 } satisfies Record<string, Metric>;

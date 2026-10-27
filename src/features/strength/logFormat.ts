@@ -4,8 +4,8 @@
  */
 import { fmtInt, fmtNumber, getLocale, t } from '@/i18n';
 
-import { roundKg } from './calc';
 import { clampRest, MAX_REST_SEC, MIN_REST_SEC } from './draft';
+import { displayWeight, getWeightUnit, inputWeight, unitToKg, type WeightUnit } from './units';
 import type { PrKind } from './calc';
 import type { SetType, StrengthDraft, StrengthExercise, StrengthSet } from './types';
 
@@ -31,13 +31,25 @@ export function parseSeconds(text: string): number | null {
   return rest.length > 0 || minutes === null || seconds === null ? null : minutes * 60 + seconds;
 }
 
-/** A weight as the field shows it: up to two decimals, the language's decimal separator, no grouping. */
+/** A number as the field shows it: up to two decimals, the language's decimal separator, no grouping. */
 export function inputText(n: number | null, separator: string = getLocale() === 'id' ? ',' : '.'): string {
   if (n === null) return '';
   return String(Math.round(n * 100) / 100).replace('.', separator);
 }
 
+/** Stored kg as the weight box shows it, in the chosen unit (`inputWeight`): `62,5` kg, `135` lb. */
+export const weightInputText = (kg: number | null, separator?: string, unit: WeightUnit = getWeightUnit()): string =>
+  inputText(kg === null ? null : inputWeight(kg, unit), separator);
+
+/** The kg cap is the stored value's; the box takes any weight in the chosen unit and caps it after the conversion. */
 export const clampWeight = (n: number | null): number | null => (n === null ? null : Math.min(MAX_WEIGHT_KG, Math.round(n * 100) / 100));
+
+/** What was typed in the weight box (in `unit`) as the kg to store, clamped; null for nothing. */
+export function parseWeight(text: string, unit: WeightUnit = getWeightUnit()): number | null {
+  const n = parseNumber(text);
+  return clampWeight(n === null ? null : unitToKg(n, unit));
+}
+
 export const clampReps = (n: number | null): number | null => (n === null ? null : Math.min(MAX_REPS, Math.round(n)));
 export const clampSeconds = (n: number | null): number | null => (n === null ? null : Math.min(MAX_SECONDS, Math.round(n)));
 
@@ -102,7 +114,7 @@ export function defaultWorkoutName(nowMs: number): string {
   }
 }
 
-export const weightText = (kg: number): string => t('strength:unit.kg', { value: fmtNumber(roundKg(kg), 1) });
+export const weightText = (kg: number): string => t(`strength:unit.${getWeightUnit()}`, { value: fmtNumber(displayWeight(kg), 1) });
 
 export const secondsText = (sec: number): string => t('strength:unit.sec', { value: fmtInt(sec) });
 
@@ -111,7 +123,7 @@ export function previousForMeasure<T extends { reps: number | null; seconds: num
   return timed ? { ...set, reps: null } : { ...set, seconds: null };
 }
 
-/** What an earlier set was: "60 kg x 8", "8" (bodyweight), "0:45" (timed), "60 kg x 0:45". Null for a set with nothing in it. */
+/** What an earlier set was: "60 kg x 8" (or lb), "8" (bodyweight), "0:45" (timed), "60 kg x 0:45". Null for a set with nothing in it. */
 export function previousLabel(set: Pick<StrengthSet, 'weightKg' | 'reps' | 'seconds'>, timed: boolean): string | null {
   const weight = set.weightKg !== null && set.weightKg > 0 ? set.weightKg : null;
   const amount = timed && set.seconds !== null ? timerText(set.seconds) : set.reps !== null ? fmtInt(set.reps) : set.seconds !== null ? timerText(set.seconds) : null;
@@ -168,7 +180,7 @@ export const RPE_CHOICES: readonly number[] = [6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 1
 
 export const rpeText = (rpe: number): string => fmtNumber(rpe, 1);
 
-/** A record's value: kg, reps or mm:ss. */
+/** A record's value: weight in the chosen unit, reps or mm:ss. */
 export function prValueText(kind: PrKind, value: number): string {
   if (kind === 'reps') return t('strength:unit.reps', { count: Math.round(value), value: fmtInt(value) });
   if (kind === 'time') return timerText(value);

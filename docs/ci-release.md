@@ -98,10 +98,12 @@ base64 -w0 ~/Downloads/AuthKey_BUU2CPKLGM.p8 | gh secret set ASC_KEY_BASE64 --en
 
 Same split as `scripts/build-ios-mac.sh` (`docs/ios-mac.md`), because a fresh runner has no keychain identity and the API key cannot create a cloud-managed distribution certificate (`Cloud signing permission error`; the team also already holds the maximum of three Apple Distribution certificates):
 
-1. The archive is signed automatically with the API key (`xcodebuild -allowProvisioningUpdates`, Apple Development profile).
-2. The export is signed manually. The job imports `IOS_DIST_CERT_P12_BASE64` into a temporary keychain, `scripts/ios/asc-ci-profile.py` finds that certificate on App Store Connect by serial and reuses or creates the App Store profile `joyo-ci <bundle id> <cert id>` (separate from the `joyo-mac` and Linux profiles, so no flow invalidates another's), and `mac-build.sh` exports with `EXPORT_PROFILE`. The script then checks the IPA (Apple Distribution authority, no device list, `get-task-allow` false, entitlements, bundle contents).
+The app embeds the rest-timer Live Activity extension (`targets/rest-timer`, target `RestTimerActivity`, bundle id `com.joyodigitama.joyofit.resttimer`), so there are two bundle ids and two App Store profiles. The extension needs no capability, no App Group and no entitlement (Live Activities are enabled by `NSSupportsLiveActivities` in the app's Info.plist only).
 
-No owner step is needed: the `.p12` was made from the certificate and key the Linux pipeline already uses. To rebuild it (new certificate, new password):
+1. With `EXPORT_PROFILE` and `EXPORT_WIDGET_PROFILE` set (the CI and `scripts/build-ios-mac.sh` path), `mac-build.sh` sets both targets to manual signing (Apple Distribution identity, the target's profile) before the archive, so `xcodebuild` never signs in to the account. Without them it archives automatically with the API key and exports automatically.
+2. The job imports `IOS_DIST_CERT_P12_BASE64` into a temporary keychain, `scripts/ios/asc-ci-profile.py` finds that certificate on App Store Connect by serial and, for each of the two bundle ids, reuses or creates the App Store profile `joyo-ci <bundle id> <cert id>` (separate from the `joyo-mac` and Linux profiles, so no flow invalidates another's). It registers the extension's bundle id in App Store Connect when it is missing (`asc-mac-profile.py` does the same through `asc.bundle_id`). `mac-build.sh` exports with both profiles in `provisioningProfiles`, then checks the IPA: Apple Distribution authority, no device list, `get-task-allow` false, entitlements and bundle contents of the app, and bundle id, version, extension point and signature of `PlugIns/RestTimerActivity.appex`.
+
+No owner step is needed (the extension's App ID is created by the scripts with the API key, which has access to Certificates, Identifiers & Profiles): the `.p12` was made from the certificate and key the Linux pipeline already uses. To rebuild it (new certificate, new password):
 
 ```bash
 cd ~/.config/joyorogo-ios/distribution

@@ -4,7 +4,8 @@ import { Animated, StyleSheet, TextInput, type StyleProp, type ViewStyle } from 
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { fontSize, useTheme } from '@/theme';
 
-import { clampReps, clampWeight, digitsClock, digitsFromSeconds, inputText, MAX_DURATION_DIGITS, parseNumber, secondsFromDigits, timerText } from '../logFormat';
+import { clampReps, digitsClock, digitsFromSeconds, inputText, MAX_DURATION_DIGITS, parseNumber, parseWeight, secondsFromDigits, timerText, weightInputText } from '../logFormat';
+import { useWeightUnit } from '../useWeightUnit';
 
 export type FieldKind = 'weight' | 'reps' | 'seconds';
 
@@ -21,14 +22,18 @@ interface NumberFieldProps {
   style?: StyleProp<ViewStyle>;
 }
 
-/** What the box keeps as text: digits for a time (see `secondsFromDigits`), the typed number otherwise. */
+/**
+ * What the box keeps as text: digits for a time (see `secondsFromDigits`), the typed number otherwise. A weight is typed and shown in
+ * the chosen unit while `value` and `onChange` stay kg.
+ */
 const parse = (kind: FieldKind, text: string): number | null => {
   if (kind === 'seconds') return secondsFromDigits(text);
-  const n = parseNumber(text);
-  return kind === 'weight' ? clampWeight(n) : clampReps(n);
+  if (kind === 'weight') return parseWeight(text);
+  return clampReps(parseNumber(text));
 };
 
-const textOf = (kind: FieldKind, value: number | null): string => (kind === 'seconds' ? digitsFromSeconds(value) : inputText(value));
+const textOf = (kind: FieldKind, value: number | null): string =>
+  kind === 'seconds' ? digitsFromSeconds(value) : kind === 'weight' ? weightInputText(value) : inputText(value);
 
 /**
  * A number box of the set table: comma or dot decimals, everything selected on focus. A time is typed like a kitchen timer ("1", "3", "0"
@@ -38,6 +43,8 @@ const textOf = (kind: FieldKind, value: number | null): string => (kind === 'sec
 export function NumberField({ kind, value, hint, label, done, flash, onChange, style }: NumberFieldProps) {
   const { colors, fonts, radius } = useTheme();
   const reduced = useReducedMotion();
+  // The box is memoised with its row: a switch of kg and lb has to reach it from here (the text is shown again in the new unit).
+  const unit = useWeightUnit();
   const [text, setText] = useState(() => textOf(kind, value));
   const [focused, setFocused] = useState(false);
   const [shake] = useState(() => new Animated.Value(0));
@@ -47,8 +54,8 @@ export function NumberField({ kind, value, hint, label, done, flash, onChange, s
   // The value changed from outside (a tap on "previous", a tick that filled the row, a stopwatch): show it.
   useEffect(() => {
     if (parse(kind, text) !== value) setText(textOf(kind, value));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only an outside change of `value` matters
-  }, [value, kind]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only an outside change of `value` (or of the unit) matters
+  }, [value, kind, unit]);
 
   useEffect(() => {
     if (flash === lastFlash.current) return;

@@ -9,9 +9,14 @@
   },
   "unit": {
     "kg": "{{value}} kg",
+    "lb": "{{value}} lb",
     "sec": "{{value}} s",
     "reps_one": "{{value}} rep",
     "reps_other": "{{value}} reps"
+  },
+  "units": {
+    "title": "Weight unit",
+    "hint": "Used for every weight in the logger, history, routines and the share card. Weights are stored in kg, so you can switch any time and your old numbers stay the same."
   },
   "previous": {
     "weightBy": "{{weight}} x {{amount}}"
@@ -32,6 +37,7 @@
     "set": "Set",
     "previous": "Previous",
     "kg": "kg",
+    "lb": "lb",
     "reps": "Reps",
     "time": "Time",
     "rpe": "RPE",
@@ -39,7 +45,7 @@
     "setLabel": "Set {{label}}, {{type}}. Tap to change",
     "usePrevious": "Use {{value}} from last time",
     "noPrevious": "No earlier data",
-    "weightField": "Weight of set {{label}}, kg",
+    "weightField": "Weight of set {{label}}, {{unit}}",
     "repsField": "Reps of set {{label}}",
     "secondsField": "Time of set {{label}}, seconds",
     "rpeField": "RPE of set {{label}}",
@@ -121,6 +127,12 @@
     "askMessage": "If the screen is off or you are in another app, JoyoFit can send a notification when the rest timer ends.",
     "askConfirm": "Yes, notify me",
     "askCancel": "No thanks"
+  },
+  "liveRest": {
+    "channel": "Rest timer on the lock screen",
+    "title": "Rest",
+    "body": "Between sets",
+    "bodyNamed": "After {{name}}"
   },
   "toast": {
     "needValue": "Enter reps or time first.",
@@ -328,5 +340,27 @@
     "intro": "The watch is recording Strength training. Pick a routine to tick off here; the watch's heart rate and time show in the header.",
     "start": "Start with this routine",
     "none": "No routine"
+  },
+  "plates": {
+    "title": "Plate calculator",
+    "empty": "Enter a weight for a set first, then the plates per side show here.",
+    "target": "Weight",
+    "value": "{{value}} {{unit}}",
+    "unit": {
+      "kg": "kg",
+      "lb": "lb"
+    },
+    "pictureLabel": "One side of the barbell with its plates",
+    "perSide": "Per side",
+    "count": "× {{n}}",
+    "barOnly": "The bar alone, no plates.",
+    "belowBar": "This weight is lighter than the bar ({{bar}}).",
+    "inexact": "Not exact. The plates reach {{reached}}, {{left}} short.",
+    "bar": "Bar",
+    "barHint": "Saved for this unit",
+    "barLess": "Lighter bar",
+    "barMore": "Heavier bar",
+    "open": "Plate calculator for {{name}}",
+    "chip": "Plates"
   }
 }

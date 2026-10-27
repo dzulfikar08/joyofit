@@ -11,6 +11,7 @@ import { HIT, spacing, tintColors, useColors, useTheme, type Tint } from '@/them
 import { setLabels } from '../draft';
 import { restLabel, type PreviousSet } from '../logFormat';
 import type { SetTimer } from '../setTimer';
+import { useWeightUnit } from '../useWeightUnit';
 import type { StrengthExercise } from '../types';
 import { MeasureToggle } from './MeasureToggle';
 import { COLUMN, SetRow, type SetRowActions } from './SetRow';
@@ -23,6 +24,8 @@ export interface ExerciseCardActions extends SetRowActions {
   onRest: (exerciseKey: string) => void;
   /** Measures the exercise in seconds (`true`) or repetitions (`false`); the screen confirms first when sets hold values. */
   onMeasure: (exerciseKey: string, timed: boolean) => void;
+  /** Opens the plate calculator for the exercise's loads. */
+  onPlates: (exerciseKey: string) => void;
 }
 
 /** One colour per superset letter; they cycle. */
@@ -49,6 +52,8 @@ interface ExerciseCardProps {
 
 function ExerciseCardView({ entry, name, muscles, timed, timer, superset, previous, restSec, showRpe, flash, actions }: ExerciseCardProps) {
   const { t } = useTranslation('strength');
+  // The card is memoised: the column header has to follow a switch of kg and lb on its own.
+  const unit = useWeightUnit();
   const { colors, radius } = useTheme();
   const labels = setLabels(entry.sets);
   const rail = superset ? tintColors(colors, RAIL_TINTS[(superset.charCodeAt(0) - 65) % RAIL_TINTS.length]!).base : null;
@@ -104,6 +109,18 @@ function ExerciseCardView({ entry, name, muscles, timed, timer, superset, previo
             {restLabel(restSec)}
           </AppText>
         </PressableScale>
+        {!timed && entry.sets.some((set) => set.weightKg !== null && set.weightKg > 0) ? (
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel={t('plates.open', { name })}
+            onPress={() => actions.onPlates(entry.key)}
+            style={[styles.pill, { backgroundColor: colors.muted }]}>
+            <Ionicons name="barbell-outline" size={14} color={colors.mutedForeground} />
+            <AppText variant="label" muted>
+              {t('plates.chip')}
+            </AppText>
+          </PressableScale>
+        ) : null}
       </View>
 
       <PressableScale
@@ -125,7 +142,7 @@ function ExerciseCardView({ entry, name, muscles, timed, timer, superset, previo
             {t('table.previous')}
           </AppText>
           <AppText variant="label" muted style={styles.hField}>
-            {t('table.kg')}
+            {t(`table.${unit}`)}
           </AppText>
           <AppText variant="label" muted style={styles.hField}>
             {timed ? t('table.time') : t('table.reps')}
