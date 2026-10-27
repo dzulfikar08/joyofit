@@ -16,3 +16,4 @@ export * from './src/HuaweiWearQuickReplies.types';
 export * from './src/HuaweiWearImport.types';
 export * from './src/HuaweiWearFamily.types';
 export * from './src/HuaweiWearNotifications.types';
+export * from './src/HuaweiWearMusic.types';

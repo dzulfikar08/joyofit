@@ -73,6 +73,8 @@ public final class WearRuntime: @unchecked Sendable {
     /// Fall detection (DataSync config) and the morning sleep report (DataSync event); the SOS relay is not possible on iOS.
     public private(set) var safety: SafetyFeatures!
     public private(set) var sleepReport: SleepReportFeature!
+    /// Songs on the watch (lab, off by default): the music store's info, list, upload and delete.
+    public private(set) var watchMusic: WatchMusicController!
     /// Calorie intake on the watch (meals, goals, the watch's quick-log).
     public private(set) var diet: DietSync!
     /// A workout started on the watch, followed live (and the phone's GPS for it).
@@ -179,6 +181,7 @@ public final class WearRuntime: @unchecked Sendable {
         dataSync.register(safety)
         sleepReport = SleepReportFeature(settings: extrasSettings, syncStore: syncStore, events: fanOut)
         dataSync.register(sleepReport)
+        watchMusic = WatchMusicController(settings: extrasSettings, link: link, events: fanOut)
         liveWorkout = LiveWorkout(
             dataSync: dataSync, events: fanOut, settings: settings, setHeartRateActive: { [watchSettings] in watchSettings?.liveHeartRate.setWorkoutActive($0) }
         )

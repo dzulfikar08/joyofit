@@ -1,82 +1,119 @@
-# Music on the watch: feasibility and plan
+# Music on the watch
 
-Status: **remote control (`25/01`, `25/02`, `25/03`) implemented on Android (`WatchMediaControl.kt`, `MediaBridge.kt`, `MusicControl.java`); song storage upload (`25/04..0D`) plan only. Android only; iOS cannot control another app's playback. UNVERIFIED on a watch (acks `7F = 0x000186A0` on success or `0` on failure, whereas GB always acks `0x000186A0`).** Asked by a user (Salim, Watch Fit 2): "can I put songs on the watch?". Sources: Gadgetbridge
-(`HuaweiMusicManager`, `HuaweiMusicUtils`, `packets/MusicControl`, `HuaweiSupportProvider.onInstallApp`, `HuaweiState`), JoyoFit's
-`protocol/README.md` and the Fit 4 / Fit 4 Pro observations in it. Nothing here was run against a watch.
+Status:
 
-## Short answer
+- **Remote control** (`25/01`, `25/02`, `25/03`): implemented on Android (`WatchMediaControl.kt`, `MediaBridge.kt`, `MusicControl.java`).
+  iOS cannot control another app's playback. UNVERIFIED on a watch (acks `7F = 0x000186A0` on success or `0` on failure, whereas GB always
+  acks `0x000186A0`).
+- **Songs on the watch** (`25/04`, `25/05`, `25/08`, `25/09`, `25/0D` and FileUpload `28` with file type `2`): implemented on Android and iOS
+  behind the Experimental switch **Musik di jam (uji lab)** (JRG-417), off by default. **UNVERIFIED on any watch**: everything below is
+  Gadgetbridge's behaviour, ported, and tested only against golden frames and a fake watch. Needs a new store build (native code).
 
-Yes in principle, on the watches that list the Music service (`25`) with command `04`: Gadgetbridge uploads MP3 files to Huawei watches over
-the same file-upload service JoyoFit already uses for watch faces (`28`, file type `2`), and lists and deletes songs over service `25`.
-JoyoFit implements `25/01`, `25/02` and `25/03` for phone media control; the song-upload packets (`25/04..0D`) are not implemented yet. Whether a given watch can store songs is only known at connect time (SupportedCommands), not
-from the model name.
+Asked by a user (Salim, Watch Fit 2): "can I put songs on the watch?", and wanted for phone-free runs on the Fit 4 Pro.
 
-## Which of our watches
+## Sources
 
-There is no per-model music flag in Gadgetbridge or in `WatchModels.kt`; support is read from the watch at every connect:
+- Gadgetbridge, commit `c8e59392b7437b04c9735dcaf5f33555799ba9a9` (2026-10-26), AGPL-3.0-or-later:
+  [`packets/MusicControl.java`](https://codeberg.org/Freeyourgadget/Gadgetbridge/src/commit/c8e59392b7437b04c9735dcaf5f33555799ba9a9/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/devices/huawei/packets/MusicControl.java),
+  [`HuaweiMusicUtils.java`](https://codeberg.org/Freeyourgadget/Gadgetbridge/src/commit/c8e59392b7437b04c9735dcaf5f33555799ba9a9/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/devices/huawei/HuaweiMusicUtils.java),
+  [`HuaweiMusicManager.java`](https://codeberg.org/Freeyourgadget/Gadgetbridge/src/commit/c8e59392b7437b04c9735dcaf5f33555799ba9a9/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/service/devices/huawei/HuaweiMusicManager.java),
+  `HuaweiSupportProvider.onInstallApp` (music branch: file type 2, the error codes), `HuaweiFwHelper.parseAsMusic` and
+  `util/audio/MusicUtils.audioInfoFromUri` (file name, title, artist "Unknown" fallback), `AsynchronousResponse` (`25/09`),
+  `requests/{GetMusicInfoParams,GetExtendedMusicInfoParams,GetMusicList,SendMusicOperation,SendUploadMusicFileInfoResponse}`,
+  `HuaweiState.{supportsMusicUploading,supportsMoreMusic}`, `activities/musicmanager/MusicManagerActivity` (operation 4 on playlist 0 =
+  delete from the watch), `res/values/strings.xml` (`music_huawei_device_info`: "Watch storage: %2$d MB").
+- Huawei support, ["What format of music file does the watch support?"](https://consumer.huawei.com/uk/support/content/en-gb00756685/):
+  "MP3 or AAC music file with resolution below 320Kbps". Huawei's Fit 4 / Fit 4 Pro spec pages do not state the music storage size
+  ([specs](https://consumer.huawei.com/en/wearables/watch-fit4-pro/specs/); GSMArena: "Unspecified storage").
+- The Fit 4 / Fit 4 Pro user guide says music syncing to the watch is not offered when the watch is paired with an iPhone (Huawei's app
+  choice). JoyoFit talks to the watch directly, so the iOS build sends songs too; whether the watch accepts them from an iPhone is part of
+  the device test.
+- JoyoFit's own `protocol/README.md` ("Songs on the watch") and the Fit 4 / Fit 4 Pro observations in it.
 
-| Gate (GB `HuaweiState`) | Meaning |
-| --- | --- |
-| SupportedServices lists `25` | the watch has the Music service at all |
-| SupportedCommands `25/04` (`supportsMusicUploading`) | it takes uploaded songs: this is the one that matters |
-| SupportedCommands `25/02` (`supportsMusic`) | it shows what the phone plays (remote control), unrelated to stored songs |
-| ExpandCapability 122 (`supportsMoreMusic`) | paged song list of up to 250 songs |
+No Huawei app code was read for this feature.
 
-What is known:
+## What the watch must report
 
-- Watch Fit 4 (SYA-B29, 2026-10-14) and Watch Fit 4 Pro (2026-10-16, same list over Classic and LE) list service `25`
-  (`protocol/README.md`, Observations). Whether `25/04` is among their commands was not logged.
-- Watch Fit 2 (the user's): unknown. Band-class watches (Band 8 to 11, Honor Band) have no music storage as far as Huawei's product
-  pages go [INFERENCE, not checked against a Band]; they would simply not list `25/04`.
-- **Free first step, shipped with the language change:** init now logs `Language and music: 0C=[...] 25=[...] moreMusic(ExpandCapability 122)=...`
-  (`HuaweiInitializer`), so the next support report of any watch answers the question. Ask Salim for a report after he updates.
+There is no per-model music flag; the watch says it at every connect:
 
-## What Gadgetbridge does (the protocol to port)
+| Gate | Meaning | JoyoFit |
+| --- | --- | --- |
+| SupportedCommands `25/04` (GB `supportsMusicUploading`) | the watch stores uploaded songs | without it every music call rejects `ERR_UNSUPPORTED` and the screen says the watch does not take songs |
+| SupportedCommands `25/0D` | per-format limits and the playlist limit | read when listed; a missing answer is logged and skipped |
+| ExpandCapability 122 (GB `supportsMoreMusic`) | the song list is paged up to 250 frames | changes the paging (below) |
+| `25/04` answer | `01` list frames, `02` free space (MB per GB), `03` format bits, `04` max songs, `05` songs on the watch | shown on the screen; the format bits and free space are checked before an upload |
 
-1. **Capabilities.** `25/04` MusicInfoParams (request tags `01`..`03`, response: `01` frame count, `02` free space, `03` format bit set, `04` max
-   songs, `05` current songs, optional `86{87{08 start, 09 end, 0a count, 0b hash}}` pages) and, if listed, `25/0D` ExtendedMusicInfoParams
-   (`01` free space, `02` formats, `03` max songs, `04` max playlists, `86{87{08 format index, 09 sample rates "44100,48000", 0a encode, 0b bitrate,
-   0c channels}}` per-format limits). Format bits (GB: "most unknown"): `mp3 wav aac sbc msbc hwa cvsd | pcm ape m4a flac opus ogg butt | amr imy`.
-2. **Upload.** `28/02` FileInfoSend with file type `2` (music) and the file name, then the usual `28/03` hash, `28/04` ack, `28/05` chunk,
-   `28/06` data, `28/07` result. JoyoFit's `FileUploader` does exactly this for watch faces (type `1`) and photos (type `3`) and takes any type.
-   During the upload the watch sends `25/09` UploadMusicFileInfo request (`01` song index, `02` file name; GB answers it from
-   `HuaweiMusicManager.uploadMusicInfo`, exact timing not read); the phone answers with `01` index,
-   `03` title, `04` artist (read from the file's tags). Errors: `140004` too many songs, `140008` already on the watch, `140009` not enough space.
-3. **List.** `25/05` MusicList (`01` start frame, `04` end index; answer `82{83{04 id, 05 title, 06 artist, 07 file name}}`), paged by frame
-   (GB stops at 250 frames with ExpandCapability 122); `25/06` playlists and `25/07` playlist songs.
-4. **Delete / playlists.** `25/08` MusicOperation: `01` operation, `02` playlist index (operations 1 to 4), `03` playlist name (operations 0 and 2),
-   `04` song ids as 16-bit values (operations 3 and 4); answer `7f = 100000` is ok. Which number means "delete a song" is not in the packet
-   class (my reading of the tags: 0 new playlist, 1 delete playlist, 2 rename, 3 add songs, 4 remove songs [INFERENCE]); read GB's
-   `GBDeviceMusicUpdate` callers and check on a watch before relying on it.
+The init log already prints `Language and music: 0C=[...] 25=[...] moreMusic(ExpandCapability 122)=...` (`HuaweiInitializer`), and the
+music screen logs the raw `25/04` / `25/0D` answers (`Music: 25/04: ...`, `Music: 25/0D: ...`), so one support report answers what a
+watch takes. Fit 4 and Fit 4 Pro list service `25`; whether `25/04` is among their commands was not logged before this change.
 
-GB does not convert audio: the file must already be in a format and sample rate the watch lists. JoyoFit's MVP should say so, and refuse
-files outside the limits from `25/0D` instead of uploading and failing.
+Format bits (`03` of `25/04`, `02` of `25/0D`), seven per byte, bit 7 = another byte follows; GB marks the table "most unknown":
+byte 0 `mp3 wav aac sbc msbc hwa cvsd`, byte 1 `pcm ape m4a flac opus ogg butt`, byte 2 `amr imy`.
 
-## MVP: a "Musik" screen
+## Protocol (as ported)
 
-Scope: pick MP3 files from the phone, upload with progress, list what is on the watch, delete a song. No playlists, no conversion, no
-album art, no playback control.
+1. **Capabilities.** `25/04` request `01 02 03` (empty tags); answer as above plus optional `86{87{08 start, 09 end, 0a count, 0b hash}}`
+   pages (logged, unused, as in GB). `25/0D` request `01..05`; answer `01` free space, `02` formats, `03` max songs, `04` max playlists, `05`
+   unknown byte, `86{87{08 format index, 09 sample rates "44100,48000", 0a encode, 0b bitrate, 0c channels, 0d second bitrate}}`.
+2. **List.** `25/05` request `01` start frame (16 bit), `04` end index (16 bit, first 65535); answer `01`, `04`, `82{83{04 id, 05 title,
+   06 artist, 07 file name}}`. Paging exactly as GB's `HuaweiMusicManager`: frames 0 up to the frame count (at most 250 with
+   ExpandCapability 122). Without 122 the list ends at a page whose end index equals the one asked for (GB compares the signed 16-bit answer
+   with the int it sent, so 65535 never matches) or that holds one song; a two-song page moves the next end index to the second song's id.
+   Songs are kept once per id.
+3. **Upload.** `28/02` FileInfoSend `01` file name (the picked file's name), `02` size, `03` type `2`; then the usual `28/03` hash, `28/04`
+   parameters / ack, `28/05` chunk requests, `28/06` chunks, `28/07` result (`FileUploader`, shared with watch faces). While it runs the watch
+   sends `25/09` (`01` song index, `02` file name); the phone answers `25/09 {01 index, 03 title, 04 artist}` when the name is the file being
+   sent (GB does not answer any other). If no `25/09` came during the transfer, JoyoFit waits 5 s more for it (GB's timing was not read).
+   Errors from the watch (`28/02` or `28/08` code): `140004` too many songs, `140008` already on the watch, `140009` not enough space.
+4. **Delete.** `25/08` `01` operation `4`, `02` playlist `0` ("all songs"), `04` song ids as big-endian 16-bit values; answer `7f = 100000`
+   is ok. Operations 0 to 3 (new, delete, rename playlist, add songs to a playlist) and `25/06` / `25/07` (playlists) are not used.
 
-| Piece | Work |
-| --- | --- |
-| `MusicControl` packets for `25/04`, `25/0D`, `25/05`, `25/08`, `25/09` (Java, from GB; Swift mirror for iOS) | 0.5 day Android |
-| `WatchMusic.kt`: read capabilities, page the list, delete, upload through `FileUploader` with file type `2`, answer `25/09` from the file's ID3 tags (`MediaMetadataRetriever`), pre-check format, sample rate, bitrate, free space, song count | 2 days |
-| Module API (`getMusic`, `uploadSong`, `deleteSong`, events reuse `onUploadProgress` / `onUploadResult`) and `HuaweiWearMusic.types.ts` | 0.5 day |
-| Screen in the Watch tab: `expo-document-picker` (already a dependency, used for watch faces), list with title and artist, per-song delete, a progress bar, "not supported on this watch" state from the capability read, i18n `id` + `en` | 1.5 days |
-| Tests: Kotlin codec tests with golden frames from GB's classes, JS tests for the screen state; i18n parity | 1 day |
-| Real-watch run (Fit 4 Pro first; Salim's Fit 2 through a test build), fixes | 1 to 2 days |
+Cancel: there is no "abort upload" packet in GB. Cancelling stops answering the watch's chunk requests; the watch is expected to drop the
+partial file when its own wait runs out [INFERENCE, unverified]. A song cut short is never complete, so its SHA-256 cannot match.
 
-**Android total: about 6 to 7 working days.** iOS adds about 2 to 3 days (Swift packets and tests on the Linux package, document picker,
-file access). Needs a **new native build** (new Kotlin and Swift code, new module functions); the screen alone could go over the air only
-after every user has the native part.
+## Files JoyoFit sends
 
-## Risks and open questions
+- **MP3, M4A or AAC only**, by name *and* content: an MPEG Layer III frame after an optional ID3v2 tag is MP3, an MP4 `ftyp` box is M4A, an
+  ADTS header is AAC. A `.mp3` that holds AAC is refused with "rename it". FLAC, WAV, OGG, Opus and anything else are refused. **Nothing is
+  converted**: no pure-JS or OS encoder exists without a new native dependency.
+- The format must be in the watch's format bits when it sent any (strict: a `.m4a` is refused when the watch lists `aac` but not `m4a`).
+- At most 64 MiB (the upload holds the file in memory) and at most the free space the watch reported.
+- Sample rate and bitrate against the `25/0D` limits are logged only (`Music: 25/0D limits for mp3: ...`), never refused: GB's meaning of
+  those fields is a guess. Huawei's own advice is MP3 or AAC below 320 kbit/s.
+- Title and artist come from the file's tags (Android `MediaMetadataRetriever`, iOS AVFoundation common metadata); without them the file
+  name without extension and "Unknown", as GB sends.
 
-- A song is held in memory by `UploadFile` (one `ByteArray`): fine for 3 to 10 MB, a concern for long mixes. Streaming from the file would
-  need a change to `FileUploader`.
-- Upload speed over the link is not measured. A 5 MB song over the Fit 4 Pro's RFCOMM link may take minutes [INFERENCE]; the background service
-  must hold the link and a wake lock for the whole upload, and a lost link has to leave no half song (the watch answers `28/08` errors).
-- Which formats and sample rates each watch accepts is only known from `25/0D` and GB's own table is partly guesswork ("not sure" fields):
-  the first build must log the raw answer so the table can be corrected from reports.
-- Whether the watch's music app needs a Huawei Music account or a region is unknown; GB has no account step for uploads, but a Fit 2 was never tried.
-- Songs are the user's own files; JoyoFit copies nothing from any service. Marketing: do not promise streaming or playlists.
+Privacy: the files go from the phone to the watch over Bluetooth only. Nothing is uploaded to any server; the app keeps no copy beyond the
+picker's cache.
+
+## App
+
+Settings → Tentang & lanjutan (About & advanced) → Eksperimental → **Musik di jam (uji lab)** switch, then the **Musik di jam (lab)** row: free space, song slots used (bar),
+formats the watch takes, the song list with per-song delete, **Tambah lagu** (pick several files; each is checked first, then sent one
+after another with progress and a Cancel button), and a result per file. Native: `WatchMusic.kt`, `WatchMusicController.kt`,
+`WatchMusicModuleApi.kt`; iOS `HuaweiProtocol/WatchMusic.swift`, `Packets/MusicPackets.swift`, `WatchMusicController.swift`. JS:
+`src/features/watchmusic/`. Tests: `WatchMusicTest.kt`, `PacketsMusicTests.swift`, `WatchMusicTests.swift` (golden frames from
+`GoldenGen/src/GoldenMusic.java`), `src/features/watchmusic/*.test.ts`.
+
+## Device test (Fit 4 Pro, firmware 6.1.0.117)
+
+Needs the test build of this branch (not OTA). Android first, then iOS.
+
+1. Connect the watch. Settings → Tentang & lanjutan → Log, filter `Language and music`: note `25=[...]` (is `04` listed? `0d`?) and
+   `moreMusic(ExpandCapability 122)=`.
+2. Eksperimental → switch **Musik di jam (uji lab)** on → open **Musik di jam (lab)**. Expected: free space, formats, an empty or current song list.
+   Log: `Music: 25/04: frameCount=... availableSpace=... MB formats=[...] maxMusicCount=... currentMusicCount=...`, `Music: 25/0D: ...`,
+   `Music: 25/05 frame 0 ...`, `Music: list: N songs in P pages`.
+3. **Tambah lagu**: pick one MP3 (128 to 320 kbit/s, 3 to 5 MB, with ID3 title and artist). Expected: progress, then the song in the list.
+   Log: `Music: upload <name>: <bytes> bytes, mp3 (...)`, `Upload: start <name>: type=2 ...`, `Upload: FileUploadConsultAck: ... unitSize=...`,
+   `Music: 25/09 song index N '<name>': answered title '...', artist '...'` (or `no 25/09 during the upload`), `Upload: complete <name> ...`,
+   `Music: upload <name> done in S s (B/s): 28/07 status ...`. On the watch: Music app → the song plays with its title and artist.
+4. Pick an M4A and an AAC file (if the watch lists those formats), and a FLAC: the FLAC is refused before sending.
+5. Pick several MP3s at once, press **Batal** during the second: the first stays, the second is `cancelled`, the rest skipped. Reopen the
+   screen after 1 minute: the cancelled song must not be listed (log `Music: cancel requested`, `upload of <name> cancelled after ...`).
+6. Upload the same file again: expect the `140008` message ("already on the watch").
+7. Delete a song: log `Music: 25/08 delete [id]: watch answered code=100000 ...`; the song disappears from the list and from the watch.
+8. Send the support report (Settings → Tentang & lanjutan → Log → share) and attach it to JRG-417 with the timings (bytes per second).
+
+What would change the code: a different free-space unit (compare `availableSpace` before and after a 5 MB song), `25/09` arriving after
+`28/07` or never, paging that misses songs past the first page, `28/08` codes not listed above, the watch keeping a cancelled partial file.

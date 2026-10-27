@@ -1,5 +1,6 @@
-// Switches and small state of fall detection and the morning sleep report. Port of the matching part of WatchExtrasSettings.kt: own keys in the
-// shared `joyofit_settings` defaults suite (like `WeatherSettings`). The SOS relay switch is not stored: iOS apps cannot send SMS.
+// Switches and small state of fall detection, the morning sleep report and the songs-on-the-watch lab. Port of the matching part of
+// WatchExtrasSettings.kt: own keys in the shared `joyofit_settings` defaults suite (like `WeatherSettings`). The SOS relay switch is not
+// stored: iOS apps cannot send SMS.
 import Foundation
 
 public final class WatchExtrasSettings: @unchecked Sendable {
@@ -11,6 +12,7 @@ public final class WatchExtrasSettings: @unchecked Sendable {
         static let fallUpdated = "extras_fall_updated"
         static let sleepReport = "extras_sleep_report"
         static let sleepLastEnd = "extras_sleep_last_end"
+        static let watchMusicLab = "extras_watch_music_lab"
     }
 
     public init(defaults: UserDefaults? = nil) {
@@ -39,5 +41,11 @@ public final class WatchExtrasSettings: @unchecked Sendable {
     public var sleepReportLastEnd: Int64 {
         get { Int64(defaults.object(forKey: Key.sleepLastEnd) as? Int ?? 0) }
         set { defaults.set(Int(newValue), forKey: Key.sleepLastEnd) }
+    }
+
+    /// Songs on the watch (`WatchMusicController`, docs/watch-music.md). Off: a lab test, unverified on any watch.
+    public var watchMusicLab: Bool {
+        get { defaults.bool(forKey: Key.watchMusicLab) }
+        set { defaults.set(newValue, forKey: Key.watchMusicLab) }
     }
 }

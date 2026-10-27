@@ -1,0 +1,496 @@
+{
+ "responses": [
+  {
+   "service": 37,
+   "name": "info full",
+   "ok": true,
+   "fields": {
+    "frameCount": 2,
+    "params": {
+     "currentMusicCount": 12,
+     "availableSpace": 1500,
+     "supportedFormats": [
+      "mp3",
+      "aac",
+      "m4a"
+     ],
+     "maxMusicCount": 500,
+     "maxPlaylistCount": 0,
+     "unknown": 0,
+     "formatsRestrictions": null
+    },
+    "pageStruct": null
+   },
+   "command": 4,
+   "tlv": "010200020204000005dc03028504040201f40502000c"
+  },
+  {
+   "service": 37,
+   "name": "info mp3 only, one-byte values",
+   "ok": true,
+   "fields": {
+    "frameCount": 1,
+    "params": {
+     "currentMusicCount": 0,
+     "availableSpace": 200,
+     "supportedFormats": ["mp3"],
+     "maxMusicCount": 100,
+     "maxPlaylistCount": 0,
+     "unknown": 0,
+     "formatsRestrictions": null
+    },
+    "pageStruct": null
+   },
+   "command": 4,
+   "tlv": "0101010201c8030101040164050100"
+  },
+  {
+   "service": 37,
+   "name": "info three format bytes",
+   "ok": true,
+   "fields": {
+    "frameCount": 0,
+    "params": {
+     "currentMusicCount": 0,
+     "availableSpace": 0,
+     "supportedFormats": [
+      "mp3",
+      "wav",
+      "aac",
+      "sbc",
+      "msbc",
+      "hwa",
+      "cvsd",
+      "pcm",
+      "ape",
+      "m4a",
+      "flac",
+      "opus",
+      "ogg",
+      "butt",
+      "amr",
+      "imy"
+     ],
+     "maxMusicCount": 0,
+     "maxPlaylistCount": 0,
+     "unknown": 0,
+     "formatsRestrictions": null
+    },
+    "pageStruct": null
+   },
+   "command": 4,
+   "tlv": "010200000304ffff0301"
+  },
+  {
+   "service": 37,
+   "name": "info empty format bits",
+   "ok": true,
+   "fields": {
+    "frameCount": 0,
+    "params": {
+     "currentMusicCount": 0,
+     "availableSpace": 0,
+     "supportedFormats": null,
+     "maxMusicCount": 0,
+     "maxPlaylistCount": 0,
+     "unknown": 0,
+     "formatsRestrictions": null
+    },
+    "pageStruct": null
+   },
+   "command": 4,
+   "tlv": "010200000300"
+  },
+  {
+   "service": 37,
+   "name": "info with pages",
+   "ok": true,
+   "fields": {
+    "frameCount": 2,
+    "params": {
+     "currentMusicCount": 0,
+     "availableSpace": 900,
+     "supportedFormats": [
+      "mp3",
+      "aac"
+     ],
+     "maxMusicCount": 0,
+     "maxPlaylistCount": 0,
+     "unknown": 0,
+     "formatsRestrictions": null
+    },
+    "pageStruct": [
+     {
+      "startFrame": 0,
+      "hashCode": "01020304",
+      "count": 20,
+      "endFrame": 19
+     },
+     {
+      "startFrame": 20,
+      "hashCode": null,
+      "count": 5,
+      "endFrame": 24
+     }
+    ]
+   },
+   "command": 4,
+   "tlv": "010200020204000003840301058622871208020000090200130a0200140b0401020304870c08020014090200180a020005"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 37,
+   "name": "info without frame count",
+   "ok": false,
+   "parseException": true,
+   "command": 4,
+   "tlv": "020400000384"
+  },
+  {
+   "service": 37,
+   "name": "extended full",
+   "ok": true,
+   "fields": {"params": {
+    "currentMusicCount": 0,
+    "availableSpace": 1200,
+    "supportedFormats": [
+     "mp3",
+     "aac"
+    ],
+    "maxMusicCount": 500,
+    "maxPlaylistCount": 10,
+    "unknown": 1,
+    "formatsRestrictions": [
+     {
+      "channels": 2,
+      "unknownBitrate": -1,
+      "musicEncode": 1,
+      "name": "mp3",
+      "bitrate": 320,
+      "sampleRates": [
+       "44100",
+       "48000"
+      ],
+      "formatIdx": 0
+     },
+     {
+      "channels": 2,
+      "unknownBitrate": 128,
+      "musicEncode": -1,
+      "name": "aac",
+      "bitrate": 256,
+      "sampleRates": ["44100"],
+      "formatIdx": 2
+     },
+     {
+      "channels": 2,
+      "unknownBitrate": -1,
+      "musicEncode": -1,
+      "name": null,
+      "bitrate": -1,
+      "sampleRates": null,
+      "formatIdx": 40
+     }
+    ]
+   }},
+   "command": 13,
+   "tlv": "0104000004b0020105030201f404010a0501018635871a080100090b34343130302c34383030300a01010b0201400c01028712080102090534343130300b0201000d0200808703080128"
+  },
+  {
+   "service": 37,
+   "name": "extended free space only",
+   "ok": true,
+   "fields": {"params": {
+    "currentMusicCount": 0,
+    "availableSpace": 64,
+    "supportedFormats": null,
+    "maxMusicCount": 0,
+    "maxPlaylistCount": 0,
+    "unknown": 0,
+    "formatsRestrictions": null
+   }},
+   "command": 13,
+   "tlv": "01020040"
+  },
+  {
+   "service": 37,
+   "name": "list two songs",
+   "ok": true,
+   "fields": {
+    "startFrame": 0,
+    "endIndex": -1,
+    "songs": [
+     {
+      "fileName": "lari_pagi.mp3",
+      "artist": "Joyo Band",
+      "id": 1,
+      "title": "Lari Pagi"
+     },
+     {
+      "fileName": "bengawan.mp3",
+      "artist": "Gesang",
+      "id": 2,
+      "title": "Bengawan Solo"
+     }
+    ]
+   },
+   "command": 5,
+   "tlv": "010200000402ffff825683290402000105094c617269205061676906094a6f796f2042616e64070d6c6172695f706167692e6d7033832904020002050d42656e676177616e20536f6c6f0606476573616e67070c62656e676177616e2e6d7033"
+  },
+  {
+   "service": 37,
+   "name": "list one song, unicode",
+   "ok": true,
+   "fields": {
+    "startFrame": 1,
+    "endIndex": 37,
+    "songs": [{
+     "fileName": "ünï.m4a",
+     "artist": "Ärtist",
+     "id": 300,
+     "title": "Ünïcødé ♪ 歌"
+    }]
+   },
+   "command": 5,
+   "tlv": "0102000104020025822f832d0402012c0513c39c6ec3af63c3b864c3a920e299aa20e6ad8c0607c38472746973740709c3bc6ec3af2e6d3461"
+  },
+  {
+   "service": 37,
+   "name": "list song without title and artist",
+   "ok": true,
+   "fields": {
+    "startFrame": 0,
+    "endIndex": 2,
+    "songs": [{
+     "fileName": "nameless.mp3",
+     "artist": "",
+     "id": 9,
+     "title": ""
+    }]
+   },
+   "command": 5,
+   "tlv": "01020000040200028214831204020009070c6e616d656c6573732e6d7033"
+  },
+  {
+   "service": 37,
+   "name": "list empty",
+   "ok": true,
+   "fields": {
+    "startFrame": 0,
+    "endIndex": 0,
+    "songs": []
+   },
+   "command": 5,
+   "tlv": "0102000004020000"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 37,
+   "name": "list song without id",
+   "ok": false,
+   "parseException": true,
+   "command": 5,
+   "tlv": "01020000040200018213831105054e6f2069640601780705782e6d7033"
+  },
+  {
+   "service": 37,
+   "name": "operation delete ok",
+   "ok": true,
+   "fields": {
+    "playlistIndex": 0,
+    "resultCode": 100000,
+    "operation": 4,
+    "playlistName": null,
+    "musicIds": [
+     7,
+     300
+    ]
+   },
+   "command": 8,
+   "tlv": "7f04000186a00101040202000004040007012c"
+  },
+  {
+   "service": 37,
+   "name": "operation error only",
+   "ok": true,
+   "fields": {
+    "playlistIndex": -1,
+    "resultCode": 140001,
+    "operation": -1,
+    "playlistName": null,
+    "musicIds": null
+   },
+   "command": 8,
+   "tlv": "7f04000222e1"
+  },
+  {
+   "service": 37,
+   "name": "operation odd id bytes",
+   "ok": true,
+   "fields": {
+    "playlistIndex": -1,
+    "resultCode": 100000,
+    "operation": 4,
+    "playlistName": null,
+    "musicIds": [7]
+   },
+   "command": 8,
+   "tlv": "7f04000186a00101040403000701"
+  },
+  {
+   "service": 37,
+   "name": "upload info request",
+   "ok": true,
+   "fields": {
+    "songFileName": "lari_pagi.mp3",
+    "songIndex": 3
+   },
+   "command": 9,
+   "tlv": "01020003020d6c6172695f706167692e6d7033"
+  },
+  {
+   "exception": "MissingTagException",
+   "service": 37,
+   "name": "upload info request without name",
+   "ok": false,
+   "parseException": true,
+   "command": 9,
+   "tlv": "01020003"
+  }
+ ],
+ "requests": [
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a0009002504010002000300ddd7"],
+   "service": 37,
+   "name": "info params",
+   "command": 4,
+   "tlv": "010002000300"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000d00250d01000200030004000500c3e7"],
+   "service": 37,
+   "name": "extended info params",
+   "command": 13,
+   "tlv": "01000200030004000500"
+  },
+  {
+   "startFrame": 0,
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000b002505010200000402fffffcc9"],
+   "service": 37,
+   "endIndex": 65535,
+   "name": "list 0 to 65535",
+   "command": 5,
+   "tlv": "010200000402ffff"
+  },
+  {
+   "startFrame": 1,
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000b00250501020001040200253f50"],
+   "service": 37,
+   "endIndex": 37,
+   "name": "list 1 to 37",
+   "command": 5,
+   "tlv": "0102000104020025"
+  },
+  {
+   "startFrame": 249,
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000b002505010200f9040203e85f99"],
+   "service": 37,
+   "endIndex": 1000,
+   "name": "list 249 to 1000",
+   "command": 5,
+   "tlv": "010200f9040203e8"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000e00250801010402020000040200075721"],
+   "service": 37,
+   "name": "delete [7]",
+   "ids": [7],
+   "command": 8,
+   "tlv": "0101040202000004020007"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a001200250801010402020000040600010002012cc960"],
+   "service": 37,
+   "name": "delete [1, 2, 300]",
+   "ids": [
+    1,
+    2,
+    300
+   ],
+   "command": 8,
+   "tlv": "01010402020000040600010002012c"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000e002508010104020200000402ffff3ac9"],
+   "service": 37,
+   "name": "delete [65535]",
+   "ids": [65535],
+   "command": 8,
+   "tlv": "010104020200000402ffff"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a001d0025090102000303094c617269205061676904094a6f796f2042616e64bc5f"],
+   "songIndex": 3,
+   "artist": "Joyo Band",
+   "service": 37,
+   "name": "upload info 3 Lari Pagi",
+   "title": "Lari Pagi",
+   "command": 9,
+   "tlv": "0102000303094c617269205061676904094a6f796f2042616e64"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a001e00250901020000030d42656e676177616e20536f6c6f0406476573616e6743bd"],
+   "songIndex": 0,
+   "artist": "Gesang",
+   "service": 37,
+   "name": "upload info 0 Bengawan Solo",
+   "title": "Bengawan Solo",
+   "command": 9,
+   "tlv": "01020000030d42656e676177616e20536f6c6f0406476573616e67"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a00250025090102000c0313c39c6ec3af63c3b864c3a920e299aa20e6ad8c0407c3847274697374041b"],
+   "songIndex": 12,
+   "artist": "Ärtist",
+   "service": 37,
+   "name": "upload info 12 Ünïcødé ♪ 歌",
+   "title": "Ünïcødé ♪ 歌",
+   "command": 9,
+   "tlv": "0102000c0313c39c6ec3af63c3b864c3a920e299aa20e6ad8c0407c3847274697374"
+  },
+  {
+   "sliced": true,
+   "encrypted": true,
+   "frames": ["5a000b00250901020005030004008408"],
+   "songIndex": 5,
+   "artist": "",
+   "service": 37,
+   "name": "upload info 5 ",
+   "title": "",
+   "command": 9,
+   "tlv": "0102000503000400"
+  }
+ ]
+}

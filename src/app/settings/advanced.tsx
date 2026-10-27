@@ -48,6 +48,16 @@ function readOfflineMapLab(): boolean | null {
   }
 }
 
+/** The watch-music lab switch, or null on a binary without it (OTA bundle on an older build) or when the status cannot be read. */
+function readWatchMusicLab(): boolean | null {
+  if (!hasNative('getWatchMusic')) return null;
+  try {
+    return HuaweiWear.getWatchMusic().enabled;
+  } catch {
+    return null;
+  }
+}
+
 /** The watch-navigation lab switch, or null on a binary without it or when the status cannot be read. */
 function readWatchNavLab(): boolean | null {
   if (!hasNative('setWatchNavLab')) return null;
@@ -78,6 +88,8 @@ export default function AdvancedScreen() {
   const [mapLabError, setMapLabError] = useState<string | null>(null);
   const [navLab, setNavLab] = useState(readWatchNavLab);
   const [navLabError, setNavLabError] = useState<string | null>(null);
+  const [musicLab, setMusicLab] = useState(readWatchMusicLab);
+  const [musicLabError, setMusicLabError] = useState<string | null>(null);
 
   useNativeRefresh(
     useCallback(() => {
@@ -87,6 +99,7 @@ export default function AdvancedScreen() {
       setPgnssLab(readAgpsPgnssLab());
       setMapLab(readOfflineMapLab());
       setNavLab(readWatchNavLab());
+      setMusicLab(readWatchMusicLab());
     }, []),
   );
 
@@ -150,6 +163,17 @@ export default function AdvancedScreen() {
     }
   };
 
+  const toggleMusicLab = async (enabled: boolean) => {
+    setMusicLabError(null);
+    try {
+      await HuaweiWear.setWatchMusicLab(enabled);
+    } catch (e) {
+      setMusicLabError(errorMessage(e));
+    } finally {
+      setMusicLab(readWatchMusicLab());
+    }
+  };
+
   const toggleNavLab = async (enabled: boolean) => {
     setNavLabError(null);
     // Off ends a running session: the watch gets its `end` before the native side unregisters.
@@ -172,6 +196,11 @@ export default function AdvancedScreen() {
     const result = await dbHealth.repair();
     setRepairHealthy(result.kind === 'healthy');
   };
+
+  // The rows the switches above turned on, grouped as one block: each row's place in it picks its rounded corners.
+  const labRows = (['courses', 'maps', 'music'] as const).filter((row) =>
+    row === 'courses' ? courses.enabled : row === 'maps' ? mapLab === true : musicLab === true,
+  );
 
   return (
     <Screen>
@@ -229,6 +258,13 @@ export default function AdvancedScreen() {
               {mapLabError ? <Notice tone="danger">{mapLabError}</Notice> : null}
             </>
           ) : null}
+          {musicLab !== null ? (
+            <>
+              <SwitchRow label={t('advanced.watchMusicLab')} value={musicLab} onValueChange={(enabled) => void toggleMusicLab(enabled)} />
+              <Notice tone={musicLab ? 'danger' : 'info'}>{t('advanced.watchMusicLabRisk')}</Notice>
+              {musicLabError ? <Notice tone="danger">{musicLabError}</Notice> : null}
+            </>
+          ) : null}
           {navLab !== null ? (
             <>
               <SwitchRow label={t('advanced.watchNavLab')} value={navLab} onValueChange={(enabled) => void toggleNavLab(enabled)} />
@@ -249,7 +285,7 @@ export default function AdvancedScreen() {
           </Details>
         </Section>
       ) : null}
-      {withWatch && (courses.enabled || mapLab) ? (
+      {withWatch && labRows.length > 0 ? (
         <View>
           {courses.enabled ? (
             <NavRow
@@ -258,7 +294,7 @@ export default function AdvancedScreen() {
               title={t('advanced.courses')}
               subtitle={t('advanced.coursesSubtitle')}
               onPress={() => router.push('/settings/courses')}
-              style={groupedRowStyle(theme, 0, mapLab ? 2 : 1)}
+              style={groupedRowStyle(theme, labRows.indexOf('courses'), labRows.length)}
             />
           ) : null}
           {mapLab ? (
@@ -268,7 +304,17 @@ export default function AdvancedScreen() {
               title={t('advanced.offlineMapLab')}
               subtitle={t('advanced.offlineMapLabSubtitle')}
               onPress={() => router.push('/settings/offline-maps')}
-              style={groupedRowStyle(theme, courses.enabled ? 1 : 0, courses.enabled ? 2 : 1)}
+              style={groupedRowStyle(theme, labRows.indexOf('maps'), labRows.length)}
+            />
+          ) : null}
+          {musicLab ? (
+            <NavRow
+              icon="musical-notes"
+              tint="workouts"
+              title={t('advanced.watchMusicLab')}
+              subtitle={t('advanced.watchMusicLabSubtitle')}
+              onPress={() => router.push('/settings/watch-music')}
+              style={groupedRowStyle(theme, labRows.indexOf('music'), labRows.length)}
             />
           ) : null}
         </View>

@@ -61,6 +61,7 @@ import type {
   OfflineMapSendResult,
 } from './HuaweiWearOfflineMaps.types';
 import type { WatchNavConfig, WatchNavStatus } from './HuaweiWearWatchNav.types';
+import type { WatchMusicInfo, WatchMusicList, WatchMusicStatus, WatchSongDeleteResult, WatchSongUploadResult } from './HuaweiWearMusic.types';
 
 declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   /**
@@ -639,6 +640,30 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   sendWatchNav(json: string): Promise<boolean>;
   /** Ends the session: unregisters the service. Resolves when none runs. */
   stopWatchNav(): Promise<void>;
+
+  /** Songs on the watch (lab): the switch, whether the connected watch lists 25/04 and 25/0D, ExpandCapability 122, a running upload. Synchronous. */
+  getWatchMusic(): WatchMusicStatus;
+  /** Off by default. Off: every music call rejects with ERR_UNSUPPORTED (a running upload is cancelled). */
+  setWatchMusicLab(enabled: boolean): Promise<void>;
+  /**
+   * The watch's music store: 25/04 (free space, formats, song counts, list pages) and, when listed, 25/0D (per-format limits). Rejects with
+   * ERR_UNSUPPORTED (switch off, or the watch does not list 25/04), ERR_NOT_CONNECTED, ERR_BUSY (an upload runs) and ERR_TIMEOUT.
+   */
+  watchMusicInfo(): Promise<WatchMusicInfo>;
+  /** `watchMusicInfo`, then every page of the song list (25/05) the way Gadgetbridge pages it. Same rejections. */
+  listWatchMusic(): Promise<WatchMusicList>;
+  /**
+   * Sends one picked audio file (`name` is its own file name, sent to the watch as is) over FileUpload as file type 2 and answers the
+   * watch's 25/09 with the title and artist from the file's tags. Nothing is converted. Progress arrives as `onUploadProgress`. Rejects with
+   * ERR_UNSUPPORTED, ERR_NOT_CONNECTED, ERR_BUSY, ERR_INVALID_ARGUMENT (not MP3, M4A or AAC by its content, a format the watch does not
+   * list, empty, over 64 MiB, more than the watch's free space), ERR_UPLOAD_REJECTED (the watch's code: 140004 too many songs, 140008 already
+   * there, 140009 no space) and ERR_TIMEOUT. Resolves with status `cancelled` after `cancelWatchMusicUpload`.
+   */
+  uploadWatchSong(uri: string, name: string): Promise<WatchSongUploadResult>;
+  /** Stops a running `uploadWatchSong` (it resolves `cancelled`). Resolves true when one was running. */
+  cancelWatchMusicUpload(): Promise<boolean>;
+  /** Deletes songs from the watch (25/08 operation 4 on playlist 0, as Gadgetbridge's "delete from device"). Same rejections as `watchMusicInfo`. */
+  deleteWatchSongs(ids: number[]): Promise<WatchSongDeleteResult>;
 }
 
 export default requireNativeModule<HuaweiWearModule>('HuaweiWear');

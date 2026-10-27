@@ -142,6 +142,20 @@ final class InertStatusTests: XCTestCase {
             )
             return link.status()
         }()
+        // Songs on the watch (lab): the status with nothing connected, and the result objects with every nullable field null and set.
+        let musicInfo = MusicInfo(
+            freeSpaceMb: 800, formats: ["mp3", "aac", "m4a"], maxSongs: 300, songCount: 4, maxPlaylists: 5, frameCount: 3,
+            limits: [
+                MusicFormatLimit(formatIndex: 0, format: "mp3", sampleRates: ["44100", "48000"], bitrate: 320, channels: 2),
+                MusicFormatLimit(formatIndex: 40, format: nil, sampleRates: [], bitrate: nil, channels: 2),
+            ],
+            extended: true
+        )
+        let bareMusicInfo = MusicInfo(freeSpaceMb: nil, formats: [], maxSongs: nil, songCount: nil, maxPlaylists: nil, frameCount: 0, limits: [], extended: false)
+        let song = SongFile(
+            fileName: "lari.mp3", data: [0xFF, 0xFB, 0x90, 0x64], probe: SongProbe(format: .mp3, sampleRate: 44100, detail: "x"), title: "Lari Pagi",
+            artist: "Unknown"
+        )
         let shapes: [String: Any] = [
             "PhoneFeatures": Inert.phoneFeatures(),
             "NotificationAccessStatus": Inert.notificationAccess(),
@@ -176,6 +190,16 @@ final class InertStatusTests: XCTestCase {
             "RunningCoursePushResult": P2pController.pushResultJS(messageId: 12, fileName: "12courseInfo.bin", bytes: 80, uploadStatus: nil, answer: nil),
             "RunningCoursePushResult#answered": P2pController.pushResultJS(messageId: 12, fileName: "12courseInfo.bin", bytes: 80, uploadStatus: 1, answer: [0x01, 0xAB]),
             "OfflineMapLabStatus": p2p.offlineMaps.status(),
+            "WatchMusicStatus": runtime.watchMusic.status(),
+            "WatchMusicInfo": musicInfo.toJS(),
+            "WatchMusicInfo#bare": bareMusicInfo.toJS(),
+            "WatchMusicList": WatchMusicController.listJS(
+                musicInfo, WatchSongList(songs: [WatchSong(id: 7, title: "Lari Pagi", artist: "Joyo Band", fileName: "lari.mp3")], pages: 1)
+            ),
+            "WatchSongUploadResult": WatchMusicController.uploadJS(song, status: "uploaded", ms: 1200, uploadStatus: 1, infoAnswered: true),
+            "WatchSongUploadResult#cancelled": WatchMusicController.uploadJS(song, status: "cancelled", ms: 300, uploadStatus: nil, infoAnswered: false),
+            "WatchSongDeleteResult": WatchMusicController.deleteJS(SongDeleteOutcome(ids: [7, 300], ok: true, code: 100_000)),
+            "WatchSongDeleteResult#noCode": WatchMusicController.deleteJS(SongDeleteOutcome(ids: [7], ok: false, code: nil)),
             "WatchNavStatus": p2p.watchNav.status(),
             "RoutesStatus": p2p.routesStatus(),
             "RoutePushResult": P2pController.routePushResult(

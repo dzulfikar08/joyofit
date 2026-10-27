@@ -417,6 +417,9 @@ class HuaweiWearModule : Module() {
     // Watch navigation (P2P with JoyoFit's watch app com.joyodigitama.navi; experimental switch) (WatchNavModuleApi.kt, WatchNav.kt).
     watchNavApi { runtime() }
 
+    // Songs on the watch (service 25 + FileUpload type 2; experimental switch): info, list, upload, cancel, delete (WatchMusicModuleApi.kt, WatchMusic.kt).
+    watchMusicApi { runtime() }
+
     OnDestroy {
       destroyed = true
       runtimeRef?.let {

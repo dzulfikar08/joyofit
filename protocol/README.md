@@ -86,8 +86,9 @@ ProductInfo with their own tag sets. None of this has been tried on a real band 
 | `19` HrRriTest | `01` open/close, `05` (pushed) | 1-minute HRV measurement (`HrvSpot.kt`, `HrvSpotCodec.kt`) | `19/01 {01: 3}` opens the RR stream, `19/05` pushes `82{83{04 rri ms (2 bytes), 05 sqi (1 byte)}, ...}` (GB `HrRriTest`), `19/01 {01: 4}` closes after 60 s. Live heart rate uses the same service (`19/01 {01: 1, 02: 2}`, `19/03`), so it is paused for the minute. Layout from GB; what the Fit 4 Pro really sends is logged (`HRV: report #n ...`), UNVERIFIED |
 | `20` Stress | `09` | AutomaticStress (`StressSwitch.kt`) | `{01: 1 on, 02: score, 03: 12 big-endian floats, 04: calibration time s}` or `{01: 2}` off. The features and score come from the same minute of RR intervals (GB `HuaweiStressHRVCalculation`, `HuaweiStressScoreCalculation`). Sent again on every connect while the switch is on. The answer is logged; GB does not wait for one, UNVERIFIED on the Fit 4 Pro |
 | `25` MusicControl | `01` status (watch → phone), `02` info, `03` control (watch → phone) | phone media remote control (`WatchMediaControl.kt`, `MediaBridge.kt`) | Android only; iOS cannot control another app's playback. `01`: watch opens music screen (`7F` = `0x000186A0` ack, then `25/02`); `02`: `01` artist, `02` title, `03` playback state (`0` none, `1` stopped, `2` paused, `3` playing), `04` max volume, `05` current volume; `03`: `01` button (`1` play, `2` pause, `3` previous, `4` next, `5` volume up, `6` volume down, `100` exit), `02` volume; acks `7F` = `0x000186A0` on success or `0` on failure (GB always acks `0x000186A0`, UNVERIFIED on a watch), then `25/02` |
+| `25` MusicControl | `04` info params, `0D` extended info params, `05` song list, `08` operation, `09` upload info (watch → phone) | songs on the watch, LAB (`WatchMusic.kt`, `WatchMusic.swift`) | Android and iOS, behind the Experimental switch; see Songs on the watch. UNVERIFIED on a watch |
 | `27` Watchface | `01` params, `02` list, `06` names, `03` operation, `05` confirm (pushed), `08` photo info, `09` photo save | watch faces, photo face | list, set active, delete, install confirmation, photo list; see Watch faces |
-| `28` FileUpload | `01` file request (pushed), `02` info, `03` hash, `04` ack, `05` chunk request (pushed), `06` chunk, `07` result, `08` error (pushed) | watch face upload, photo upload | the watch drives, the phone answers; `01`: the watch asks for a photo; see Watch faces |
+| `28` FileUpload | `01` file request (pushed), `02` info, `03` hash, `04` ack, `05` chunk request (pushed), `06` chunk, `07` result, `08` error (pushed) | watch face upload, photo upload, song upload (type `2`, lab) | the watch drives, the phone answers; `01`: the watch asks for a photo; see Watch faces |
 | `34` P2P | `01` | cmd 1 ping, 2 data, 3 answer | module traffic to the watch's apps: health dictionary, Healthy Living, courses; see P2P (service 0x34) |
 
 ## Notifications and profile
@@ -524,6 +525,24 @@ thunderstorm. Icon byte values are in `Weather.java` (`iconToByte`, unknown = `0
 - **Alarms** (service `08`): event alarms use watch index 1 to 5 (the smart alarm is separate, index 1 of `08/02`). A
   slot missing from the list is not an alarm, and a set replaces the whole event list. The app sends the list, then
   reads it back, because a missing acknowledgment is otherwise invisible.
+
+## Songs on the watch (service `25` + FileUpload type `2`; `WatchMusic.kt` / `WatchMusic.swift`) — LAB, off by default, UNVERIFIED on a watch
+
+Port of Gadgetbridge commit `c8e59392` (`MusicControl`, `HuaweiMusicUtils`, `HuaweiMusicManager`); plan, limits and device test in
+`docs/watch-music.md`. Gate: SupportedCommands `25/04` (GB `supportsMusicUploading`); `25/0D` is asked only when listed; ExpandCapability
+122 (`supportsMoreMusic`) changes the list paging.
+
+| Command | Phone → watch | Watch → phone |
+| --- | --- | --- |
+| `25/04` MusicInfoParams | `01`, `02`, `03` (empty) | `01` frame count, `02` free space (MB per GB), `03` format bits, `04` max songs, `05` songs, `86{87{08 start, 09 end, 0a count, 0b hash}}` |
+| `25/0D` ExtendedMusicInfoParams | `01`..`05` (empty) | `01` free space, `02` format bits, `03` max songs, `04` max playlists, `05` unknown, `86{87{08 format index, 09 sample rates, 0a encode, 0b bitrate, 0c channels, 0d bitrate 2}}` |
+| `25/05` MusicList | `01` start frame (u16), `04` end index (u16, first 65535) | `01`, `04`, `82{83{04 id, 05 title, 06 artist, 07 file name}}` |
+| `25/08` MusicOperation | `01` operation `4`, `02` playlist `0`, `04` ids (u16 big-endian each): delete from the watch | `7f` (100000 = ok), `01`, `02`, `04` |
+| `25/09` UploadMusicFileInfo | `01` song index, `03` title, `04` artist (the answer) | `01` song index, `02` file name (the question, during the upload) |
+| `28/02` FileInfoSend | `01` file name, `02` size, `03` type `2` | `7f` 100000, or `140004` too many songs, `140008` already there, `140009` no space |
+
+Format bits: seven per byte, bit 7 = more follow; byte 0 `mp3 wav aac sbc msbc hwa cvsd`, byte 1 `pcm ape m4a flac opus ogg butt`, byte 2
+`amr imy` (GB: "most unknown"). Frames of every request and parse of every answer: `Fixtures/packetsMusic.json` (from `GoldenMusic.java`).
 
 ## Watch faces
 

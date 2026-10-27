@@ -32,7 +32,8 @@
     "homeCards": "Arrange Home cards",
     "hrZones": "HR zones",
     "coach": "Coach",
-    "offlineMapLab": "Offline maps (lab)"
+    "offlineMapLab": "Offline maps (lab)",
+    "watchMusicLab": "Music on the watch (lab)"
   },
   "index": {
     "title": "More",
@@ -91,6 +92,9 @@
     "detailsDev": "Running courses: unverified, the course format comes from static analysis of Huawei Health. The watch may refuse it. Bluetooth LE link: connect over Bluetooth LE GATT (service FE86) instead of the watch's own link. Disconnect and connect again to apply. Steps go to logcat tag JoyoFitBle.",
     "offlineMapLab": "Offline maps on the watch (lab test)",
     "offlineMapLabSubtitle": "Download maps built from OpenStreetMap and send them to the watch",
+    "watchMusicLab": "Music on the watch (lab test)",
+    "watchMusicLabRisk": "Off by default. When on, you can copy your own song files to the watch, see the songs on the watch and delete them. Files go only from the phone to the watch over Bluetooth; nothing is uploaded to a server. JoyoFit does not convert songs: only MP3, M4A and AAC are sent, other formats are refused. The way songs are sent comes from public research, not from the watch maker, and is unproven on any watch; the watch may refuse a file. Turn it on only to test.",
+    "watchMusicLabSubtitle": "Copy your own MP3, M4A or AAC files to the watch",
     "offlineMapLabRisk": "Off by default. When on, JoyoFit talks to the watch's offline-map app (the way the watch maker's app sends its maps). The lab screen downloads map files that JoyoFit builds from OpenStreetMap from JoyoFit's server (api.fit.joyorogo.com; the request carries no location, ID or account, the server sees your IP address) and sends them to the watch. The map format comes from public research, not from the watch maker; the watch may refuse a file or its map app may misbehave. Delete the map from the lab screen to undo. Unproven on any watch: turn it on only to test.",
     "watchNavLab": "Watch navigation (lab)",
     "watchNavLabRisk": "Off by default. When on, a route's page has a \"Start watch navigation\" button: the phone follows your GPS along the route and sends turn instructions to the JoyoNavi app on the watch. For street names and a new route when you leave it, the route's points and your position go to the public OSRM service (routing.openstreetmap.de, FOSSGIS), as when drawing a route. The watch app cannot be installed yet (the Huawei developer account is not ready), so this is for testing only."
@@ -1222,5 +1226,65 @@
     "nearNote": "worked out on this phone, your location is never sent",
     "nearNotAllowed": "The nearest regions show here once JoyoFit may use your location. This screen does not ask for it, and the location is never sent.",
     "attributionDated": "Map data © OpenStreetMap contributors, available under the Open Database License (ODbL). Data as of {{date}}."
+  },
+  "watchMusic": {
+    "unavailable": "This build has no watch-music lab.",
+    "off": "Switch on \"Music on the watch (lab test)\" under About & advanced → Experimental first.",
+    "notConnected": "Connect the watch first.",
+    "noSupport": "This watch does not take songs from the phone.",
+    "loading": "Reading the songs on the watch…",
+    "loadFailed": "Could not read the songs on the watch. {{message}}",
+    "refresh": "Refresh",
+    "storageTitle": "Music storage",
+    "freeSpace": "{{mb}} MB free",
+    "freeSpaceUnknown": "Free space unknown",
+    "songsOfMax": "{{n}} of {{max}} songs",
+    "songs_one": "{{count}} song",
+    "songs_other": "{{count}} songs",
+    "formats": "Formats the watch takes: {{formats}}",
+    "formatsUnknown": "The watch did not say which formats it takes.",
+    "songsTitle": "Songs on the watch",
+    "empty": "No songs on the watch yet.",
+    "deleteSong": "Delete {{title}} from the watch",
+    "deleteTitle": "Delete the song from the watch?",
+    "deleteBody": "\"{{title}}\" is removed from the watch. The file on the phone stays.",
+    "deleted": "\"{{title}}\" was deleted from the watch.",
+    "deleteNotOk": "The watch did not confirm deleting \"{{title}}\" (code {{code}}).",
+    "add": "Add songs",
+    "uploading": "Song {{index}} of {{total}}: {{name}}",
+    "progress": "{{done}} of {{total}} MB",
+    "preparing": "Preparing…",
+    "cancelling": "Cancelling…",
+    "rejectedTitle": "Not sent",
+    "resultsTitle": "Upload results",
+    "stoppedCancelled": "Cancelled. The remaining songs were not sent.",
+    "stoppedDisconnected": "The watch disconnected. The remaining songs were not sent.",
+    "status": {
+      "uploaded": "Sent",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "skipped": "Not sent"
+    },
+    "reject": {
+      "noExtension": "{{name}}: the file name has no extension, so its format is unknown. Use MP3, M4A or AAC; JoyoFit does not convert songs.",
+      "format": "{{name}}: {{ext}} is not supported. Use MP3, M4A or AAC; JoyoFit does not convert songs.",
+      "notOnWatch": "{{name}}: this watch does not take {{ext}}. It takes: {{formats}}.",
+      "empty": "{{name}}: the file is empty.",
+      "tooBig": "{{name}}: over {{max}} MB, too big to send.",
+      "noSpace": "{{name}} ({{mb}} MB): not enough free space on the watch."
+    },
+    "errors": {
+      "tooMany": "The watch cannot hold more songs (code 140004). Delete a song first.",
+      "alreadyThere": "This song is already on the watch (code 140008).",
+      "noSpace": "Not enough free space on the watch (code 140009).",
+      "rejected": "The watch refused the file. {{message}}",
+      "invalid": "The file cannot be sent. {{message}}",
+      "busy": "The watch is taking another file. Try again in a moment.",
+      "notConnected": "The watch is not connected.",
+      "disconnected": "The connection to the watch dropped.",
+      "timeout": "The watch stopped answering. Try again.",
+      "unsupported": "The music lab is off, or this watch does not take songs."
+    },
+    "details": "Lab test: this way of sending songs is unproven on any watch, so the watch may refuse a file. Songs go only from the phone to the watch over Bluetooth; nothing is uploaded to any server. JoyoFit does not convert songs: a file must already be MP3, M4A or AAC in a format the watch takes. Title and artist come from the file's tags. Every message with the watch is in the log."
   }
 }

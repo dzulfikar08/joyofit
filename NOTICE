@@ -18,6 +18,11 @@ RouteFile.kt and RouteFile.swift (the route file sent to the watch) are ports of
 HuaweiRouteTrack.java, and the route push in P2pController follows its HuaweiP2PFitnessData.java; verbatim copies of the two
 converter classes live in modules/huawei-wear/ios/HuaweiProtocol/GoldenGen/vendor/ only to generate the test fixtures.
 
+The song storage on the watch (MusicControl.java commands 04, 05, 08, 09 and 0D, HuaweiMusicUtils.java, WatchMusic.kt and the
+Swift twins MusicPackets.swift and WatchMusic.swift) follows Gadgetbridge's packets/MusicControl.java, HuaweiMusicUtils.java,
+HuaweiMusicManager.java, the music requests and AsynchronousResponse at upstream commit c8e59392b7437b04c9735dcaf5f33555799ba9a9
+(AGPL-3.0-or-later, copyright Damien Gaignon, Martin.JM, Me7c7).
+
 The Bluetooth scale decoders in src/features/scale/ (protocols/*.ts, bodyComposition.ts) are TypeScript ports of
 openScale (https://github.com/oliexdev/openScale, Copyright (C) olie.xdev, GPL-3.0-or-later, which is compatible with this
 project's AGPL-3.0-or-later): the handlers under android_app/app/src/main/java/com/health/openscale/core/bluetooth/scales/ and

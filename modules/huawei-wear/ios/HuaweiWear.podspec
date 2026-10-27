@@ -20,7 +20,8 @@ Pod::Spec.new do |s|
   s.dependency 'ExpoModulesCore'
   # The SQLite library joyofit.db is opened with from JS; native code uses the same copy (SQLiteDatabase.swift), never Apple's libsqlite3.
   s.dependency 'ExpoSQLite'
-  s.frameworks = 'CoreBluetooth', 'CoreLocation', 'HealthKit', 'Security', 'UIKit'
+  # AVFoundation: the title and artist tags of a song sent to the watch (WatchMusicController.swift).
+  s.frameworks = 'AVFoundation', 'CoreBluetooth', 'CoreLocation', 'HealthKit', 'Security', 'UIKit'
 
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'SWIFT_COMPILATION_MODE' => 'wholemodule' }
 

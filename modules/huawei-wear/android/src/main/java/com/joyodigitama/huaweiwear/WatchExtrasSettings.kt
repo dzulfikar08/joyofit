@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 
 /**
- * Switches and small state of the fall detection / SOS relay, the morning sleep report, DST sync and the
- * menstrual calendar. Own SharedPreferences file so these features never touch the other settings.
+ * Switches and small state of the fall detection / SOS relay, the morning sleep report, DST sync, the
+ * menstrual calendar and the songs-on-the-watch lab. Own SharedPreferences file so these features never touch the other settings.
  */
 internal class WatchExtrasSettings(context: Context) {
   private val prefs: SharedPreferences =
@@ -46,6 +46,11 @@ internal class WatchExtrasSettings(context: Context) {
     get() = MenstrualCodec.Switches.fromBitfield(prefs.getInt(KEY_CYCLE_SWITCHES, DEFAULT_SWITCHES.bitfield(true)))
     set(value) = prefs.edit().putInt(KEY_CYCLE_SWITCHES, value.bitfield(true)).apply()
 
+  /** Songs on the watch ([WatchMusicController], docs/watch-music.md). Off: a lab test, unverified on any watch. */
+  var watchMusicLab: Boolean
+    get() = prefs.getBoolean(KEY_WATCH_MUSIC_LAB, false)
+    set(value) = prefs.edit().putBoolean(KEY_WATCH_MUSIC_LAB, value).apply()
+
   private companion object {
     const val PREFS_NAME = "joyofit_watch_extras"
     const val KEY_FALL_SWITCH = "fall_switch"
@@ -55,6 +60,7 @@ internal class WatchExtrasSettings(context: Context) {
     const val KEY_SLEEP_LAST_END = "sleep_last_end"
     const val KEY_CYCLE = "cycle"
     const val KEY_CYCLE_SWITCHES = "cycle_switches"
+    const val KEY_WATCH_MUSIC_LAB = "watch_music_lab"
     val DEFAULT_SWITCHES = MenstrualCodec.Switches()
   }
 }

@@ -656,6 +656,28 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await runtime.p2p.offlineMaps.delete(mapId: mapId, mapType: mapType) }
         }
 
+        // MARK: songs on the watch (lab)
+
+        // Experimental, off by default (WatchMusicController.swift): the music store over service 0x25, the song over FileUpload type 2.
+        Function("getWatchMusic") { () -> [String: Any] in runtime.watchMusic.status() }
+        AsyncFunction("setWatchMusicLab") { (enabled: Bool) async throws -> Void in
+            runtime.watchMusic.setEnabled(enabled)
+        }
+        AsyncFunction("watchMusicInfo") { () async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchMusic.info() }
+        }
+        AsyncFunction("listWatchMusic") { () async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchMusic.list() }
+        }
+        // `onUploadProgress` and `onUploadResult` like a watch face install; resolves `cancelled` after `cancelWatchMusicUpload`.
+        AsyncFunction("uploadWatchSong") { (uri: String, name: String) async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchMusic.upload(uri: uri, name: name) }
+        }
+        AsyncFunction("cancelWatchMusicUpload") { () -> Bool in runtime.watchMusic.cancel() }
+        AsyncFunction("deleteWatchSongs") { (ids: [Int]) async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchMusic.delete(ids: ids) }
+        }
+
         // MARK: watch navigation (experimental, off by default; WatchNav.swift)
 
         Function("getWatchNav") { () -> [String: Any] in runtime.p2p.watchNav.status() }

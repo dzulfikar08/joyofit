@@ -662,7 +662,8 @@ public class HuaweiPacket {
                         this.isEncrypted = this.attemptDecrypt(); // Helps with debugging
                         return this;
                 }
-            // Modified for watch-fit (AGPL-3.0-or-later): dispatches MusicControl packets (status 01, info 02, control 03).
+            // Modified for watch-fit (AGPL-3.0-or-later): dispatches MusicControl packets (status 01, info 02, control 03) and, as GB master
+            // does, the song storage ones (04 info params, 05 list, 08 operation, 09 upload file info, 0D extended info params).
             case MusicControl.id:
                 switch (this.commandId) {
                     case MusicControl.MusicStatusResponse.id:
@@ -671,6 +672,16 @@ public class HuaweiPacket {
                         return new MusicControl.MusicInfo.Response(paramsProvider).fromPacket(this);
                     case MusicControl.Control.id:
                         return new MusicControl.Control.Response(paramsProvider).fromPacket(this);
+                    case MusicControl.MusicInfoParams.id:
+                        return new MusicControl.MusicInfoParams.Response(paramsProvider).fromPacket(this);
+                    case MusicControl.MusicList.id:
+                        return new MusicControl.MusicList.Response(paramsProvider).fromPacket(this);
+                    case MusicControl.MusicOperation.id:
+                        return new MusicControl.MusicOperation.Response(paramsProvider).fromPacket(this);
+                    case MusicControl.UploadMusicFileInfo.id:
+                        return new MusicControl.UploadMusicFileInfo.UploadMusicFileInfoRequest(paramsProvider).fromPacket(this);
+                    case MusicControl.ExtendedMusicInfoParams.id:
+                        return new MusicControl.ExtendedMusicInfoParams.Response(paramsProvider).fromPacket(this);
                     default:
                         this.isEncrypted = this.attemptDecrypt(); // Helps with debugging
                         return this;

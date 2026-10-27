@@ -32,7 +32,8 @@
     "homeCards": "Atur kartu Beranda",
     "hrZones": "Zona HR",
     "coach": "Coach",
-    "offlineMapLab": "Peta offline (lab)"
+    "offlineMapLab": "Peta offline (lab)",
+    "watchMusicLab": "Musik di jam (lab)"
   },
   "index": {
     "title": "Lainnya",
@@ -91,6 +92,9 @@
     "detailsDev": "Rute lari: belum terverifikasi, format rute berasal dari analisis statis Huawei Health. Jam bisa saja menolaknya. Tautan Bluetooth LE: terhubung lewat Bluetooth LE GATT (layanan FE86), bukan tautan bawaan jam. Putuskan lalu hubungkan lagi agar berlaku. Langkahnya masuk ke logcat dengan tag JoyoFitBle.",
     "offlineMapLab": "Peta offline di jam (uji lab)",
     "offlineMapLabSubtitle": "Unduh peta dari OpenStreetMap dan kirim ke jam",
+    "watchMusicLab": "Musik di jam (uji lab)",
+    "watchMusicLabRisk": "Mati secara bawaan. Saat menyala, kamu bisa menyalin file lagu milikmu sendiri ke jam, melihat lagu di jam, dan menghapusnya. File hanya berpindah dari HP ke jam lewat Bluetooth; tidak ada yang diunggah ke server. JoyoFit tidak mengonversi lagu: hanya MP3, M4A, dan AAC yang dikirim, format lain ditolak. Cara kirimnya berasal dari riset publik, bukan dari pembuat jam, dan belum terbukti di jam mana pun; jam bisa menolak file. Nyalakan hanya untuk menguji.",
+    "watchMusicLabSubtitle": "Salin MP3, M4A, atau AAC milikmu ke jam",
     "offlineMapLabRisk": "Mati secara bawaan. Saat menyala, JoyoFit berbicara dengan aplikasi peta offline di jam (seperti aplikasi pembuat jam mengirim petanya). Layar lab mengunduh file peta yang dibuat JoyoFit dari OpenStreetMap dari server JoyoFit (api.fit.joyorogo.com; permintaannya tidak membawa lokasi, ID, atau akun, server melihat alamat IP-mu) lalu mengirimnya ke jam. Format petanya berasal dari riset publik, bukan dari pembuat jam; jam bisa menolak file atau aplikasi petanya bisa bermasalah. Hapus peta dari layar lab untuk membatalkan. Belum terbukti di jam mana pun: nyalakan hanya untuk menguji.",
     "watchNavLab": "Navigasi di jam (lab)",
     "watchNavLabRisk": "Mati secara bawaan. Saat menyala, halaman rute punya tombol \"Mulai navigasi di jam\": HP mengikuti GPS-mu di sepanjang rute dan mengirim petunjuk belok ke aplikasi JoyoNavi di jam. Untuk nama jalan dan rute baru saat keluar jalur, titik-titik rute dan posisimu dikirim ke layanan OSRM publik (routing.openstreetmap.de, FOSSGIS), seperti saat menggambar rute. Aplikasi jamnya belum bisa dipasang (akun pengembang Huawei belum siap), jadi ini baru untuk uji coba."
@@ -1195,5 +1199,64 @@
     "nearNote": "dihitung di HP ini, lokasi tidak dikirim",
     "nearNotAllowed": "Wilayah terdekat muncul di sini kalau JoyoFit sudah boleh memakai lokasi. Layar ini tidak memintanya, dan lokasi tidak pernah dikirim.",
     "attributionDated": "Data peta © kontributor OpenStreetMap, di bawah Open Database License (ODbL). Data per {{date}}."
+  },
+  "watchMusic": {
+    "unavailable": "Versi aplikasi ini belum punya lab musik di jam.",
+    "off": "Nyalakan dulu \"Musik di jam (uji lab)\" di Tentang & lanjutan → Eksperimental.",
+    "notConnected": "Hubungkan jam dulu.",
+    "noSupport": "Jam ini tidak menerima lagu dari HP.",
+    "loading": "Membaca lagu di jam…",
+    "loadFailed": "Lagu di jam tidak terbaca. {{message}}",
+    "refresh": "Muat ulang",
+    "storageTitle": "Penyimpanan musik",
+    "freeSpace": "Ruang kosong {{mb}} MB",
+    "freeSpaceUnknown": "Ruang kosong tidak diketahui",
+    "songsOfMax": "{{n}} dari {{max}} lagu",
+    "songs_other": "{{count}} lagu",
+    "formats": "Format yang diterima jam: {{formats}}",
+    "formatsUnknown": "Jam tidak menyebut format yang diterimanya.",
+    "songsTitle": "Lagu di jam",
+    "empty": "Belum ada lagu di jam.",
+    "deleteSong": "Hapus {{title}} dari jam",
+    "deleteTitle": "Hapus lagu dari jam?",
+    "deleteBody": "\"{{title}}\" dihapus dari jam. File di HP tidak ikut terhapus.",
+    "deleted": "\"{{title}}\" sudah dihapus dari jam.",
+    "deleteNotOk": "Jam tidak mengonfirmasi penghapusan \"{{title}}\" (kode {{code}}).",
+    "add": "Tambah lagu",
+    "uploading": "Lagu {{index}} dari {{total}}: {{name}}",
+    "progress": "{{done}} dari {{total}} MB",
+    "preparing": "Menyiapkan…",
+    "cancelling": "Membatalkan…",
+    "rejectedTitle": "Tidak dikirim",
+    "resultsTitle": "Hasil pengiriman",
+    "stoppedCancelled": "Dibatalkan. Lagu sisanya tidak dikirim.",
+    "stoppedDisconnected": "Jam terputus. Lagu sisanya tidak dikirim.",
+    "status": {
+      "uploaded": "Terkirim",
+      "cancelled": "Dibatalkan",
+      "failed": "Gagal",
+      "skipped": "Tidak dikirim"
+    },
+    "reject": {
+      "noExtension": "{{name}}: nama file tanpa ekstensi, jadi formatnya tidak dikenali. Pakai MP3, M4A, atau AAC; JoyoFit tidak mengonversi lagu.",
+      "format": "{{name}}: format {{ext}} tidak didukung. Pakai MP3, M4A, atau AAC; JoyoFit tidak mengonversi lagu.",
+      "notOnWatch": "{{name}}: jam ini tidak menerima {{ext}}. Format yang diterima jam: {{formats}}.",
+      "empty": "{{name}}: file kosong.",
+      "tooBig": "{{name}}: lebih dari {{max}} MB, terlalu besar untuk dikirim.",
+      "noSpace": "{{name}} ({{mb}} MB): ruang kosong di jam tidak cukup."
+    },
+    "errors": {
+      "tooMany": "Jam sudah tidak bisa menyimpan lagu lagi (kode 140004). Hapus lagu dulu.",
+      "alreadyThere": "Lagu ini sudah ada di jam (kode 140008).",
+      "noSpace": "Ruang kosong di jam tidak cukup (kode 140009).",
+      "rejected": "Jam menolak file. {{message}}",
+      "invalid": "File tidak bisa dikirim. {{message}}",
+      "busy": "Jam sedang menerima file lain. Coba lagi sebentar lagi.",
+      "notConnected": "Jam tidak terhubung.",
+      "disconnected": "Sambungan ke jam terputus.",
+      "timeout": "Jam berhenti menjawab. Coba lagi.",
+      "unsupported": "Lab musik mati, atau jam ini tidak menerima lagu."
+    },
+    "details": "Uji lab: cara mengirim lagu ini belum terbukti di jam mana pun, jadi jam bisa menolak file. Lagu hanya berpindah dari HP ke jam lewat Bluetooth; tidak ada yang diunggah ke server mana pun. JoyoFit tidak mengonversi lagu: file harus sudah MP3, M4A, atau AAC dan formatnya diterima jam. Judul dan artis diambil dari tag file. Setiap pesan dengan jam tercatat di log."
   }
 }
