@@ -130,6 +130,8 @@ class Builder:
             run([os.path.join(self.args.converter, "scripts", "extract_geojson.sh"), pbf, geojson], logfile)
             run([sys.executable, os.path.join(self.args.converter, "build_country.py"), geojson, "--out", target, "--country", name,
                  "--zooms", ZOOMS, "--langs", LANGS, "--default-lang", "id"], logfile)
+            # The converter stamps the build hour; the extract's date makes a rebuild of the same extract byte-identical.
+            mapinfo.set_version(target, mapinfo.version_of(self.osm_date))
         finally:
             if os.path.exists(geojson):
                 os.remove(geojson)

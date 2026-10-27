@@ -54,6 +54,21 @@ def set_name(path: str, name: str) -> None:
         f.write(raw + b"\0" * (NAME_BYTES - len(raw)))
 
 
+def version_of(osm_date: str) -> int:
+    """The header version for maps built from an extract of `osm_date` ("2026-10-25T21:21:21Z" → 26102521): YYMMDDHH like the
+    converter's own build-time stamp, but the same for every build of the same extract, so a rebuild is byte-identical (the converter is
+    otherwise deterministic) and publish.py skips it by SHA-256."""
+    t = datetime.datetime.strptime(osm_date, "%Y-%m-%dT%H:%M:%SZ")
+    return (t.year % 100) * 1_000_000 + t.month * 10_000 + t.day * 100 + t.hour
+
+
+def set_version(path: str, version: int) -> None:
+    with open(path, "r+b") as f:
+        if f.read(6) != b"offvmp":
+            raise ValueError(f"{path}: no offvmp header")
+        f.write(struct.pack("<I", version))
+
+
 def catalog_entry(path: str, map_id: str, bbox: List[float], osm_date: str, name: Optional[str] = None,
                   code: Optional[str] = None, province: Optional[str] = None, kind: Optional[str] = None,
                   part: Optional[dict] = None) -> dict:

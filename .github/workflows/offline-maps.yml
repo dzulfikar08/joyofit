@@ -1,11 +1,14 @@
-# Offline watch maps (tools/offline-maps/README.md, docs/offline-maps.md).
+# Offline watch maps (tools/offline-maps/README.md, docs/offline-maps.md "Automatic refresh").
 #
 # - smoke: on pull requests that touch tools/offline-maps/, builds Kota Ambon (8171) from Geofabrik's small Maluku extract (27 MB) on
-#   Linux, checks the report and that a second run skips it. No secrets, nothing published.
-# - monthly: on the 2nd of each month (and by hand with "full"), rebuilds every Kabupaten/Kota from the Indonesia extract and publishes
-#   what changed to R2. Publishing needs the repository secret CLOUDFLARE_R2_TOKEN (an API token with "Workers R2 Storage: Edit" on the
-#   JoyoFit account); without it the job builds, prints the report and publishes nothing. The owner's Linux box with the systemd timer
-#   in the README is the alternative; run one of the two, not both.
+#   Linux, checks the map, that a second run skips it and that publish.py's two phases run (dry run). No secrets, nothing published.
+# - refresh: on the 2nd of each month at 19:00 UTC (3rd, 02:00 WIB) and by hand (Actions → Offline maps → Run workflow; inputs
+#   `provinces` and `dry_run`). `plan` downloads the Geofabrik Indonesia extract once and hands it to the shards as an artifact (one
+#   download per run, as Geofabrik asks); one `shard` per province builds its regions and uploads the maps whose SHA-256 changed; `catalog`
+#   then writes watch/catalog.json once from every shard that finished, so a failed shard keeps its regions' previous entries.
+#   Publishing needs CLOUDFLARE_R2_TOKEN (an API token with "Workers R2 Storage: Edit" on the JoyoFit account) in the `maps`
+#   environment (no reviewers, master only); a dry run needs no secret and publishes nothing.
+# The owner's Linux box (systemd timer in the README) runs the same scripts; use one of the two, not both.
 name: Offline maps
 
 on:
@@ -17,8 +20,12 @@ on:
     - cron: "0 19 2 * *"
   workflow_dispatch:
     inputs:
-      full:
-        description: "Rebuild and publish every region (as the monthly run)"
+      provinces:
+        description: 'Provinces to rebuild, comma-separated as in regions.json ("Gorontalo, Bali"); empty = all 38'
+        type: string
+        default: ""
+      dry_run:
+        description: "Dry run: build and report, upload nothing, leave the catalog as it is"
         type: boolean
         default: false
 
@@ -26,13 +33,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: offline-maps-${{ github.ref }}-${{ github.event_name }}
+  group: offline-maps-${{ github.event_name == 'pull_request' && github.ref || 'refresh' }}
   cancel-in-progress: false
 
 jobs:
   smoke:
     name: Smoke build (Kota Ambon, Linux)
-    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && !inputs.full)
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -59,36 +66,193 @@ jobs:
               header = mapinfo.read_header(path)
               assert entry["code"] == "8171" and entry["province"] == "Maluku" and entry["kind"] == "kota", entry
               assert entry["sha256"] == mapinfo.sha256_of(path)[0] and header["zooms"] == [10, 12, 14, 16], header
+              assert header["version"] == entry["version"] == mapinfo.version_of(entry["osmDate"]), (header, entry)
               print(map_id, entry["name"], entry["sizeBytes"], header)
           PY
       - name: A second run skips the region
         run: |
           tools/offline-maps/build-all.sh --pbf "$RUNNER_TEMP/maluku.osm.pbf" --only 8171 | tee "$RUNNER_TEMP/again.log"
           grep -q "1 up to date, 0 to build" "$RUNNER_TEMP/again.log"
+      - name: A forced rebuild is byte-identical
+        run: |
+          before="$(sha256sum tools/offline-maps/out/2000000000000008171.bin)"
+          tools/offline-maps/build-all.sh --pbf "$RUNNER_TEMP/maluku.osm.pbf" --only 8171 --force
+          [ "$(sha256sum tools/offline-maps/out/2000000000000008171.bin)" = "$before" ]
+      - name: Publish, both phases, dry run (reads the public catalog)
+        run: |
+          tools/offline-maps/publish.py --all --upload-only --dry-run
+          tools/offline-maps/publish.py --all --catalog-only --dry-run
+          python3 -c "import json; m = json.load(open('tools/offline-maps/out/catalog.json'))['maps']; assert any(e['id'] == '2000000000000008171' for e in m); print(len(m), 'maps')"
 
-  monthly:
-    name: Rebuild and publish every region
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.full)
+  plan:
+    name: Plan and download the extract
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
-    timeout-minutes: 340
+    timeout-minutes: 30
+    outputs:
+      shards: ${{ steps.shards.outputs.shards }}
+      publish: ${{ steps.shards.outputs.publish }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: One shard per province
+        id: shards
+        env:
+          PROVINCES: ${{ inputs.provinces }}
+          PUBLISH: ${{ github.event_name == 'schedule' || !inputs.dry_run }}
+        run: |
+          python3 - <<'PY'
+          import collections, json, os, re
+          regions = json.load(open("tools/offline-maps/regions.json"))["regions"]
+          count = collections.Counter(r["province"] for r in regions)
+          wanted = [p.strip() for p in os.environ.get("PROVINCES", "").split(",") if p.strip()]
+          lower = {p.lower(): p for p in count}
+          unknown = [w for w in wanted if w.lower() not in lower]
+          if unknown:
+              raise SystemExit(f"unknown provinces {unknown}; regions.json has {sorted(count)}")
+          provinces = sorted({lower[w.lower()] for w in wanted} if wanted else count, key=lambda p: (-count[p], p))  # biggest first
+          shards = [{"province": p, "slug": re.sub(r"[^a-z0-9]+", "-", p.lower()).strip("-"), "regions": count[p]} for p in provinces]
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"shards={json.dumps(shards)}\npublish={os.environ['PUBLISH']}\n")
+          print(f"{len(shards)} shards, {sum(s['regions'] for s in shards)} regions, publish={os.environ['PUBLISH']}")
+          PY
+      - name: Download the Geofabrik Indonesia extract (once per run)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
+          curl -fsSLR -o "$RUNNER_TEMP/indonesia-latest.osm.pbf" https://download.geofabrik.de/asia/indonesia-latest.osm.pbf
+          ls -l "$RUNNER_TEMP/indonesia-latest.osm.pbf"
+          echo "OSM data of $(osmium fileinfo -g header.option.osmosis_replication_timestamp "$RUNNER_TEMP/indonesia-latest.osm.pbf")" | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: extract
+          path: ${{ runner.temp }}/indonesia-latest.osm.pbf
+          compression-level: 0 # already compressed
+          retention-days: 1 # long enough to re-run failed shards
+          if-no-files-found: error
+
+  shard:
+    name: ${{ matrix.province }}
+    needs: plan
+    runs-on: ubuntu-24.04 # 4 CPUs, 16 GB RAM
+    timeout-minutes: 120
+    environment: ${{ needs.plan.outputs.publish == 'true' && 'maps' || '' }}
+    strategy:
+      fail-fast: false
+      max-parallel: 12 # of the account's 20 concurrent jobs, leaving room for CI
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.shards) }}
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_TOKEN }}
+      PUBLISH: ${{ needs.plan.outputs.publish }}
+      PROVINCE: ${{ matrix.province }}
+    steps:
+      - name: Publishing needs the R2 token
+        if: env.PUBLISH == 'true' && env.CLOUDFLARE_API_TOKEN == ''
+        run: |
+          echo "::error::Add the secret CLOUDFLARE_R2_TOKEN to the 'maps' environment (docs/offline-maps.md, Automatic refresh), or run with dry_run"
+          exit 1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool python3-venv time
+      - run: bun install --frozen-lockfile
+        working-directory: server
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: extract
+          path: ${{ runner.temp }}
+      - name: Watch RAM and disk
+        run: |
+          (while sleep 2; do echo "$(free -m | awk '/^Mem:/ {print $3}') $(df -m --output=used / | tail -1)"; done > "$RUNNER_TEMP/usage.log") &
+          df -h / && free -m
+      - name: Build ${{ matrix.province }} (${{ matrix.regions }} regions, 4 jobs)
+        id: build
+        run: |
+          status=0
+          /usr/bin/time -v -o "$RUNNER_TEMP/time.log" tools/offline-maps/build-all.sh --pbf "$RUNNER_TEMP/indonesia-latest.osm.pbf" \
+            --province "$PROVINCE" --jobs 4 || status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          [ "$status" = 0 ] || echo "::warning::some regions of $PROVINCE failed; their previous catalog entries stay (report below)"
+      - name: Upload the changed maps
+        run: |
+          flags=(); [ "$PUBLISH" = true ] || flags=(--dry-run)
+          tools/offline-maps/publish.py --all --upload-only "${flags[@]}"
+      - name: Hand the catalog entries to the catalog job
+        run: mkdir -p tools/offline-maps/out/reports && cp tools/offline-maps/out/report.json "tools/offline-maps/out/reports/${{ matrix.slug }}.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: maps-${{ matrix.slug }}
+          path: |
+            tools/offline-maps/out/*.json
+            tools/offline-maps/out/state/
+            tools/offline-maps/out/published/
+            tools/offline-maps/out/reports/
+            !tools/offline-maps/out/report.json
+          retention-days: 7
+          if-no-files-found: error
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### $PROVINCE"
+            [ -f tools/offline-maps/out/report.json ] && python3 -c "
+          import json; r = json.load(open('tools/offline-maps/out/report.json'))
+          print(f\"{r['built']}/{r['regions']} regions, {r['maps']} maps, {r['totalBytes'] / 2**20:.1f} MiB in {r['seconds']} s; failed: {r['failed'] or 'none'}\")"
+            [ -f "$RUNNER_TEMP/time.log" ] && grep -E 'Elapsed|Maximum resident|User time|System time' "$RUNNER_TEMP/time.log"
+            [ -f "$RUNNER_TEMP/usage.log" ] && awk '$1 > m {m = $1} $2 > d {d = $2} END {print "peak RAM in use " m " MiB, peak disk used " d " MiB"}' "$RUNNER_TEMP/usage.log"
+            true
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Fail when a region failed
+        if: steps.build.outputs.status != '0'
+        run: exit 1
+
+  catalog:
+    name: Write the catalog
+    needs: [plan, shard]
+    if: ${{ !cancelled() && needs.plan.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: ${{ needs.plan.outputs.publish == 'true' && 'maps' || '' }}
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_TOKEN }}
+      PUBLISH: ${{ needs.plan.outputs.publish }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool python3-venv
       - run: bun install --frozen-lockfile
         working-directory: server
-      - name: Build (4 jobs on the runner's 4 CPUs and 16 GB)
-        run: tools/offline-maps/build-all.sh --jobs 4 || echo "::warning::some regions failed; see the report"
-      - run: cat tools/offline-maps/out/report.json
-      - name: Publish what changed
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: maps-*
+          merge-multiple: true
+          path: tools/offline-maps/out
+      - name: Write watch/catalog.json once
         run: |
-          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "::warning::no CLOUDFLARE_R2_TOKEN secret: built, not published"
-            tools/offline-maps/publish.py --all --dry-run
-            exit 0
+          if ! ls tools/offline-maps/out/state/*.json > /dev/null 2>&1; then
+            echo "::error::no shard finished; the catalog stays as it is"
+            exit 1
           fi
-          tools/offline-maps/publish.py --all
+          flags=(); [ "$PUBLISH" = true ] || flags=(--dry-run)
+          tools/offline-maps/publish.py --all --catalog-only "${flags[@]}"
+      - name: Summary
+        if: always()
+        run: |
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import glob, json
+          reports = [json.load(open(p)) for p in sorted(glob.glob("tools/offline-maps/out/reports/*.json"))]
+          if reports:
+              print(f"**{sum(r['built'] for r in reports)}/{sum(r['regions'] for r in reports)} regions** from {len(reports)} shards, "
+                    f"{sum(r['maps'] for r in reports)} maps, {sum(r['totalBytes'] for r in reports) / 2**30:.2f} GiB, "
+                    f"{sum(r['seconds'] for r in reports)} build-seconds; OSM data of {reports[0]['osmDate']}")
+              failed = [f for r in reports for f in r["failed"]]
+              print(f"failed regions: {failed or 'none'}")
+          PY
+      - name: Fail when a shard failed
+        if: needs.shard.result != 'success'
+        run: |
+          echo "::error::a shard failed (${{ needs.shard.result }}); its regions keep their previous catalog entries. Re-run the failed jobs within a day (the extract artifact expires)."
+          exit 1
