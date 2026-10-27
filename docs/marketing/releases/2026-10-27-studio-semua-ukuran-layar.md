@@ -5,7 +5,7 @@ shipped: 2026-10-27
 available: web
 tier: free
 post: todo
-atur:
+atur: JRG-459
 ---
 
 **Apa:** JoyoFit Studio (app.fit.joyorogo.com/studio) sekarang bisa mendesain face untuk layar lain selain Watch Fit 4: layar bulat seri GT (466, 454, 390), seri Band (194 × 368 dan Band 11 286 × 482), atau ukuran dan bentuk sendiri (kotak membulat, bulat, atau persegi dengan sudut yang bisa diatur). Template ikut menyesuaikan, dan desain yang sudah ada bisa diskalakan ke layar baru.
