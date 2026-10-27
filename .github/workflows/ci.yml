@@ -164,7 +164,8 @@ jobs:
 
   swift-protocol:
     name: Swift tests (HuaweiProtocol)
-    runs-on: ubuntu-latest
+    # The toolchain is the ubuntu24.04 build; it links libxml2.so.2, which newer runner images no longer carry.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -185,6 +186,7 @@ jobs:
             curl -fsSL https://download.swift.org/swift-6.4.1-release/ubuntu2404/swift-6.4.1-RELEASE/swift-6.4.1-RELEASE-ubuntu24.04.tar.gz \
               | tar -xz --strip-components=1 -C ~/swift-toolchain
           fi
+          sudo apt-get install -y --no-install-recommends libxml2
           echo "$HOME/swift-toolchain/usr/bin" >> "$GITHUB_PATH"
           ~/swift-toolchain/usr/bin/swift --version
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -196,7 +198,8 @@ jobs:
 
   swift-logic:
     name: Swift tests (ModuleLogicTests, inert shapes)
-    runs-on: ubuntu-latest
+    # The toolchain is the ubuntu24.04 build; it links libxml2.so.2, which newer runner images no longer carry.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -221,6 +224,7 @@ jobs:
             curl -fsSL https://download.swift.org/swift-6.4.1-release/ubuntu2404/swift-6.4.1-RELEASE/swift-6.4.1-RELEASE-ubuntu24.04.tar.gz \
               | tar -xz --strip-components=1 -C ~/swift-toolchain
           fi
+          sudo apt-get install -y --no-install-recommends libxml2
           echo "$HOME/swift-toolchain/usr/bin" >> "$GITHUB_PATH"
           ~/swift-toolchain/usr/bin/swift --version
       - run: sudo apt-get install -y --no-install-recommends libsqlite3-dev
