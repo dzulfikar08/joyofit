@@ -88,16 +88,18 @@ export {
 
 export {
   DESCRIPTION_ENTRY,
-  FIT4_PREVIEW,
   HONOR_WATCHFACE_ENTRY,
   HUAWEI_WATCHFACE_ENTRY,
   NESTED_BINARY_ENTRY,
   createHwt,
   getEntry,
+  previewSizes,
   readHwt,
   setEntry,
   writeHwt,
   type CreateHwtOptions,
+  type PreviewSize,
+  type PreviewSizes,
   type HwtPackage,
 } from "./hwt";
 

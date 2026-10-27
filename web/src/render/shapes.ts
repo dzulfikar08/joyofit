@@ -1,5 +1,51 @@
+import type { ScreenSpec } from "@/model/screens";
 import type { HandElement, IconName, RingElement } from "@/model/types";
 import { newSprite, remember, type Ctx2D, type Sprite } from "./canvas";
+
+/** Exponent of the squircle corners: 2 is a circle, 4 the iOS-style superellipse; 3 sits between, a soft but clearly squared corner. */
+const SQUIRCLE_EXPONENT = 3;
+const CORNER_STEPS = 32;
+
+const fixed = (n: number) => String(Math.round(n * 100) / 100);
+
+/**
+ * The outline of a watch screen as SVG path data in px, scaled by `scale`: an ellipse for `circle`, a rectangle with circular
+ * corners for `rect`, and for `squircle` straight edges that bend into superellipse corners `cornerRadius` long. Both the canvas
+ * (`screenPath`) and the DOM (an inline SVG path) draw from this one string.
+ */
+export function screenPathData(screen: ScreenSpec, scale = 1): string {
+  const w = screen.width * scale;
+  const h = screen.height * scale;
+  if (screen.shape === "circle") {
+    const rx = w / 2;
+    const ry = h / 2;
+    return `M0 ${fixed(ry)}A${fixed(rx)} ${fixed(ry)} 0 1 1 ${fixed(w)} ${fixed(ry)}A${fixed(rx)} ${fixed(ry)} 0 1 1 0 ${fixed(ry)}Z`;
+  }
+  const r = Math.max(0, Math.min(screen.cornerRadius * scale, w / 2, h / 2));
+  if (r === 0) return `M0 0H${fixed(w)}V${fixed(h)}H0Z`;
+  if (screen.shape === "rect") {
+    const [a, b, c, d] = [fixed(r), fixed(w - r), fixed(h - r), fixed(w)];
+    return `M${a} 0H${b}A${a} ${a} 0 0 1 ${d} ${a}V${c}A${a} ${a} 0 0 1 ${b} ${fixed(h)}H${a}A${a} ${a} 0 0 1 0 ${c}V${a}A${a} ${a} 0 0 1 ${a} 0Z`;
+  }
+  const e = 2 / SQUIRCLE_EXPONENT;
+  // One corner as points: centre of the corner box, signs of the quadrant, and the angle swept (clockwise on screen).
+  const corner = (cx: number, cy: number, sx: number, sy: number, reverse: boolean) => {
+    let d = "";
+    for (let i = 0; i <= CORNER_STEPS; i++) {
+      const theta = ((reverse ? CORNER_STEPS - i : i) / CORNER_STEPS) * (Math.PI / 2);
+      const x = cx + sx * r * Math.cos(theta) ** e;
+      const y = cy + sy * r * Math.sin(theta) ** e;
+      d += `L${fixed(x)} ${fixed(y)}`;
+    }
+    return d;
+  };
+  return `M${fixed(r)} 0H${fixed(w - r)}${corner(w - r, r, 1, -1, true)}V${fixed(h - r)}${corner(w - r, h - r, 1, 1, false)}H${fixed(r)}${corner(r, h - r, -1, 1, true)}V${fixed(r)}${corner(r, r, -1, -1, false)}Z`;
+}
+
+/** `screenPathData` as a canvas path, in the screen's own pixels: `ctx.clip(screenPath(screen))` masks a face to the screen's shape. */
+export function screenPath(screen: ScreenSpec): Path2D {
+  return new Path2D(screenPathData(screen));
+}
 
 /** A decoded uploaded image: what the sprite renderer needs, independent of the DOM. */
 export interface AssetImage {

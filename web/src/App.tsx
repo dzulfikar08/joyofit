@@ -10,6 +10,7 @@ import { LayerPanel } from "@/editor/LayerPanel";
 import { PropertyPanel } from "@/editor/PropertyPanel";
 import { SimPanel, StageControls } from "@/editor/SimPanel";
 import { Stage, useStageZoom } from "@/editor/Stage";
+import { ScreenDialog, ScreenOutline, screenName } from "@/editor/ScreenDialog";
 import { TemplatesDialog } from "@/editor/TemplatesDialog";
 import { liveAssetIds, startAutosave, useEditor } from "@/editor/store";
 import { useShortcuts } from "@/editor/shortcuts";
@@ -19,6 +20,7 @@ import { startCloudSync } from "@/cloud/sync";
 import { loadProjectAssets } from "@/model/assets";
 import { assetIdsOf, downloadBlob, parseProjectFile, ProjectFileError, serializeProject } from "@/model/projectFile";
 import { hwtFileName } from "@/model/defaults";
+import { sameScreen } from "@/model/screens";
 import { Button, buttonVariants } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { cn } from "@/ui/utils";
@@ -82,7 +84,8 @@ function Logo() {
 
 function StageArea() {
   const holder = useRef<HTMLDivElement>(null);
-  const zoom = useStageZoom(holder);
+  const screen = useEditor((s) => s.project.screen);
+  const zoom = useStageZoom(holder, screen);
   return (
     <div ref={holder} className="relative min-h-0 flex-1 overflow-hidden rounded-3xl bg-stage">
       <StageControls currentZoom={zoom} />
@@ -100,6 +103,8 @@ export function App() {
   const undo = useEditor((s) => s.undo);
   const redo = useEditor((s) => s.redo);
   const loadProject = useEditor((s) => s.loadProject);
+  const setScreen = useEditor((s) => s.setScreen);
+  const hasLayers = useEditor((s) => s.project.elements.some((e) => e.type !== "background"));
 
   const [help, setHelp] = useState(() => {
     try {
@@ -109,6 +114,7 @@ export function App() {
     }
   });
   const [templates, setTemplates] = useState(false);
+  const [screenOpen, setScreenOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [cloud, setCloud] = useState(false);
   const [panel, setPanel] = useState<Panel>("preview");
@@ -117,6 +123,7 @@ export function App() {
   const [dark, toggleTheme] = useTheme();
   const openInput = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
+  const { t: ts } = useTranslation("screen");
 
   useEffect(() => {
     void loadProjectAssets(assetIdsOf(useEditor.getState().project), { liveIds: liveAssetIds });
@@ -138,7 +145,7 @@ export function App() {
       }),
     [],
   );
-  useShortcuts(!help && !templates && !exporting && !cloud);
+  useShortcuts(!help && !templates && !screenOpen && !exporting && !cloud);
 
   const closeHelp = () => {
     setHelp(false);
@@ -163,6 +170,7 @@ export function App() {
   };
 
   const iconBtn = "size-10";
+  const screenSize = ts("size", { width: project.screen.width, height: project.screen.height });
 
   return (
     <div className="flex h-full flex-col gap-3 p-3">
@@ -198,6 +206,19 @@ export function App() {
         </div>
         <div className="flex-1" />
         <LanguageSwitch className={cn(iconBtn, "max-sm:order-2")} />
+        <Button
+          variant="secondary"
+          size="sm"
+          className="h-10"
+          onClick={() => setScreenOpen(true)}
+          data-testid="open-screen"
+          aria-label={ts("header.label", { name: screenName(project.screen, ts("custom")), size: screenSize })}
+          title={ts("title")}
+        >
+          <ScreenOutline screen={project.screen} scale={16 / Math.max(project.screen.width, project.screen.height)} />
+          <span className="hidden tabular-nums md:inline">{screenSize}</span>
+          <span className="hidden 2xl:inline">{screenName(project.screen, ts("custom"))}</span>
+        </Button>
         <Button variant="secondary" size="sm" className="h-10" onClick={() => setTemplates(true)} data-testid="open-templates" aria-label={t("header.templates")} title={t("header.templates")}>
           <LayoutTemplate />
           <span className="hidden md:inline lg:hidden xl:inline">{t("header.templates")}</span>
@@ -279,6 +300,17 @@ export function App() {
 
       <HelpDialog open={help} onClose={closeHelp} />
       <TemplatesDialog open={templates} onClose={() => setTemplates(false)} />
+      <ScreenDialog
+        open={screenOpen}
+        onClose={() => setScreenOpen(false)}
+        value={project.screen}
+        askFit={hasLayers}
+        onPick={(screen, fit) => {
+          if (sameScreen(screen, project.screen)) return;
+          setScreen(screen, fit);
+          toast.success(ts("changed", { name: screenName(screen, ts("custom")) }), { description: ts("changedHint") });
+        }}
+      />
       <CloudDialog open={cloud} onClose={() => setCloud(false)} />
       <ExportDialog open={exporting} onClose={() => setExporting(false)} project={project} sim={sim} />
       <Toaster position="bottom-center" theme={dark ? "dark" : "light"} />

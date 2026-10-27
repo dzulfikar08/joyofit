@@ -13,7 +13,6 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { Resvg } from "@resvg/resvg-js";
 import jpeg from "jpeg-js";
 import {
-  FIT4_PREVIEW,
   FaceBuilder,
   VALUE_TYPE,
   WIDGET_DATA_TYPE,
@@ -23,6 +22,7 @@ import {
   usedImageIndices,
   getLayout,
   imageIndex,
+  previewSizes,
   verifyWatchface,
   writeHwt,
   writeWatchface,
@@ -59,14 +59,16 @@ interface Previews {
   thumbnail: RgbaImage;
 }
 
+const PREVIEW = previewSizes(SCREEN.w, SCREEN.h);
+
 const blackPreviews = (): Previews => {
   const black = (w: number, h: number): RgbaImage => ({ width: w, height: h, data: new Uint8Array(w * h * 4).map((_, i) => (i % 4 === 3 ? 255 : 0)) });
   const j = (w: number, h: number) => toJpeg(black(w, h));
   return {
-    cover: j(FIT4_PREVIEW.cover.width, FIT4_PREVIEW.cover.height),
-    aod: j(FIT4_PREVIEW.aod.width, FIT4_PREVIEW.aod.height),
-    iconSmall: j(FIT4_PREVIEW.iconSmall.width, FIT4_PREVIEW.iconSmall.height),
-    thumbnail: black(FIT4_PREVIEW.thumbnail.width, FIT4_PREVIEW.thumbnail.height),
+    cover: j(PREVIEW.cover.width, PREVIEW.cover.height),
+    aod: j(PREVIEW.aod.width, PREVIEW.aod.height),
+    iconSmall: j(PREVIEW.iconSmall.width, PREVIEW.iconSmall.height),
+    thumbnail: black(PREVIEW.thumbnail.width, PREVIEW.thumbnail.height),
   };
 };
 
@@ -179,8 +181,8 @@ const aod2x = renderFace(wf1, { mode: "aod", scale: 2, images: hi(2) });
 const previews: Previews = {
   cover: toJpeg(normal2x as RgbaImage),
   aod: toJpeg(aod2x as RgbaImage),
-  iconSmall: toJpeg(resample(normal2x, FIT4_PREVIEW.iconSmall.width, FIT4_PREVIEW.iconSmall.height)),
-  thumbnail: resample(normal2x, FIT4_PREVIEW.thumbnail.width, FIT4_PREVIEW.thumbnail.height),
+  iconSmall: toJpeg(resample(normal2x, PREVIEW.iconSmall.width, PREVIEW.iconSmall.height)),
+  thumbnail: resample(normal2x, PREVIEW.thumbnail.width, PREVIEW.thumbnail.height),
 };
 
 // Pass 2: the real package.

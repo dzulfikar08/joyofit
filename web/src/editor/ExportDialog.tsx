@@ -5,10 +5,11 @@ import { toast } from "sonner";
 import { i18n } from "@/i18n";
 import { hwtFileName } from "@/model/defaults";
 import { downloadBlob, serializeProject } from "@/model/projectFile";
+import { presetById, type ScreenSpec } from "@/model/screens";
 import type { Project, Sim } from "@/model/types";
-import { SCREEN_H, SCREEN_W } from "@/model/types";
 import { buildHwt, type ExportResult } from "@/export/build";
 import { buildPhotoFace, type PhotoFaceResult } from "@/export/photo";
+import { canSendPhotoFace, hwtTarget as hwtTargetOf } from "@/export/target";
 import { Button } from "@/ui/button";
 import { Dialog } from "@/ui/dialog";
 import { Segmented } from "@/ui/surface";
@@ -73,16 +74,27 @@ function useBuild<T>(enabled: boolean, build: () => Promise<T>, deps: unknown[])
   return state;
 }
 
-function PhotoChecklist({ result, renamed }: { result: PhotoFaceResult; renamed: boolean }) {
+/** Whether the screen has been tried on a watch: a preset checked with JoyoFit, an untested preset, or a custom size. */
+function ScreenStatus({ screen }: { screen: ScreenSpec }) {
   const { t } = useTranslation("export");
+  const preset = presetById(screen.presetId);
+  if (preset?.tested) return <Check ok="ok" detail={t("target.statusTestedDetail")}>{t("target.statusTested")}</Check>;
+  if (preset) return <Check ok="warn" detail={t("target.statusUntestedDetail", { devices: preset.devices })}>{t("target.statusUntested")}</Check>;
+  return <Check ok="warn" detail={t("target.statusCustomDetail")}>{t("target.statusCustom")}</Check>;
+}
+
+function PhotoChecklist({ result, screen, renamed }: { result: PhotoFaceResult; screen: ScreenSpec; renamed: boolean }) {
+  const { t } = useTranslation("export");
+  const sendsPhoto = canSendPhotoFace(screen);
   const included = result.layers.filter((l) => l.included);
   const problems = result.layers.filter((l) => !l.included && l.detail && !result.liveLeftOut.includes(l.name));
   const flagged = result.layers.filter((l) => l.included && l.detail);
   return (
     <ul className="divide-y divide-border" data-testid="checklist">
-      <Check ok="ok" detail={t("photo.sizeDetail")}>
+      <Check ok="ok" detail={sendsPhoto ? t("photo.sizeDetail") : t("photo.sizeDetailOther")}>
         {t("photo.size", { width: result.width, height: result.height })}
       </Check>
+      <ScreenStatus screen={screen} />
       <Check ok={renamed ? "warn" : "ok"} detail={renamed ? t("photo.fileNameRenamed") : undefined}>
         {t("photo.fileName", { name: result.fileName })}
       </Check>
@@ -117,15 +129,25 @@ function PhotoChecklist({ result, renamed }: { result: PhotoFaceResult; renamed:
           {l.name}
         </Check>
       ))}
-      <Check ok="ok" detail={t("photo.installDetail")}>
-        {t("photo.install")}
-      </Check>
+      {sendsPhoto ? (
+        <Check ok="ok" detail={t("photo.installDetail")}>
+          {t("photo.install")}
+        </Check>
+      ) : (
+        <Check ok="warn" detail={t("photo.notSentDetail")}>
+          {t("photo.notSent")}
+        </Check>
+      )}
     </ul>
   );
 }
 
-function HwtChecklist({ result, renamed }: { result: ExportResult; renamed: boolean }) {
+function HwtChecklist({ result, screen, renamed }: { result: ExportResult; screen: ScreenSpec; renamed: boolean }) {
   const { t } = useTranslation("export");
+  const preset = presetById(screen.presetId);
+  const resolutionDetail = preset
+    ? t("hwt.resolutionDetail", { code: result.target.code, devices: preset.devices })
+    : t("hwt.resolutionDetailCustom", { code: result.target.code });
   const experimental = result.elements.filter((e) => e.exported && e.level === "experimental");
   const left = result.elements.filter((e) => !e.exported);
   const partial = result.elements.filter((e) => e.exported && e.dropped.length > 0);
@@ -134,19 +156,17 @@ function HwtChecklist({ result, renamed }: { result: ExportResult; renamed: bool
       <Check ok="warn" detail={t("hwt.unsignedDetail")}>
         {t("hwt.unsigned")}
       </Check>
-      <Check ok="ok" detail={t("hwt.resolutionDetail")}>
-        {t("hwt.resolution", { width: SCREEN_W, height: SCREEN_H })}
+      <Check ok={result.target.status === "tested" ? "ok" : "warn"} detail={resolutionDetail}>
+        {t("hwt.resolution", { width: screen.width, height: screen.height })}
       </Check>
+      <ScreenStatus screen={screen} />
       <Check ok={renamed ? "warn" : "ok"} detail={renamed ? t("hwt.fileNameRenamed") : undefined}>
         {t("hwt.fileName", { name: result.fileName })}
       </Check>
-      <Check ok={result.stats.images > 200 ? "warn" : "ok"} detail={t("hwt.imagesDetail")}>
+      <Check ok={result.stats.images > 200 ? "warn" : "ok"} detail={result.target.limitsKnown ? t("hwt.imagesDetail") : undefined}>
         {t("hwt.images", { count: result.stats.images, size: kb(result.stats.totalBytes) })}
       </Check>
-      <Check
-        ok={result.notes.some((n) => n.limit) ? "error" : "ok"}
-        detail={t("hwt.largestDetail")}
-      >
+      <Check ok={result.notes.some((n) => n.limit) ? "error" : "ok"} detail={result.target.limitsKnown ? t("hwt.largestDetail") : t("hwt.largestDetailUnknown")}>
         {t("hwt.largest", { largest: kb(result.stats.largestImageBytes), memory: kb(result.stats.imageMemoryBytes) })}
       </Check>
       <Check ok="ok" detail={t("hwt.aodDetail")}>
@@ -168,7 +188,7 @@ function HwtChecklist({ result, renamed }: { result: ExportResult; renamed: bool
         </Check>
       ))}
       {result.notes
-        .filter((n) => !n.limit)
+        .filter((n) => !n.limit && !n.screenStatus)
         .map((n) => (
           <Check key={n.text} ok={n.level === "error" ? "error" : n.level === "warning" ? "warn" : "ok"}>
             {n.text}
@@ -190,8 +210,12 @@ function HwtChecklist({ result, renamed }: { result: ExportResult; renamed: bool
 
 export function ExportDialog({ open, onClose, project, sim }: { open: boolean; onClose: () => void; project: Project; sim: Sim }) {
   const { t } = useTranslation("export");
-  const [target, setTarget] = useState<Target>("photo");
+  const [requested, setRequested] = useState<Target>("photo");
   const [includeExperimental, setIncludeExperimental] = useState(true);
+  const hwtTarget = hwtTargetOf(project.screen);
+  const target: Target = hwtTarget.ok ? requested : "photo";
+  const setTarget = setRequested;
+  const sendsPhoto = canSendPhotoFace(project.screen);
 
   const photo = useBuild(open && target === "photo", () => buildPhotoFace(project, sim), [project, sim]);
   const hwt = useBuild(open && target === "hwt", () => buildHwt(project, sim, { includeExperimental }), [project, sim, includeExperimental]);
@@ -205,7 +229,9 @@ export function ExportDialog({ open, onClose, project, sim }: { open: boolean; o
   const downloadPhoto = () => {
     if (!photoResult) return;
     downloadBlob(photoResult.fileName, photoResult.png, "image/png");
-    toast.success(i18n.t("export:dialog.photoDownloaded", { file: photoResult.fileName }), { description: i18n.t("export:dialog.photoDownloadedHint") });
+    toast.success(i18n.t("export:dialog.photoDownloaded", { file: photoResult.fileName }), {
+      description: i18n.t(sendsPhoto ? "export:dialog.photoDownloadedHint" : "export:dialog.photoDownloadedOther"),
+    });
   };
   const downloadHwt = () => {
     if (!hwtResult) return;
@@ -262,15 +288,24 @@ export function ExportDialog({ open, onClose, project, sim }: { open: boolean; o
         className="mb-3"
         options={[
           { value: "photo", label: t("dialog.targetPhoto") },
-          { value: "hwt", label: t("dialog.targetHwt") },
+          { value: "hwt", label: t("dialog.targetHwt"), disabled: !hwtTarget.ok },
         ]}
       />
+      {!hwtTarget.ok && (
+        <div className="mb-3 flex gap-2.5 rounded-2xl bg-muted p-3 text-sm" data-testid="hwt-unavailable">
+          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-600" aria-hidden />
+          <div>
+            <p className="font-bold">{hwtTarget.reason}</p>
+            <p className="text-[0.8125rem] text-muted-foreground">{t("target.noScreenCodeDetail")}</p>
+          </div>
+        </div>
+      )}
       {state.status === "failed" && <Failed message={state.message} />}
       {state.status === "building" && <Building what={target === "photo" ? t("dialog.buildingPhoto") : t("dialog.buildingHwt")} />}
-      {target === "photo" && photoResult && <PhotoChecklist result={photoResult} renamed={renamed} />}
+      {target === "photo" && photoResult && <PhotoChecklist result={photoResult} screen={project.screen} renamed={renamed} />}
       {target === "hwt" && hwtResult && (
         <>
-          <HwtChecklist result={hwtResult} renamed={renamed} />
+          <HwtChecklist result={hwtResult} screen={project.screen} renamed={renamed} />
           <div className="mt-3 flex items-center justify-between gap-4 rounded-2xl bg-muted p-4">
             <div className="min-w-0">
               <p className="text-sm font-bold">{t("dialog.includeExperimental")}</p>

@@ -1,12 +1,14 @@
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { describe, expect, it } from "vitest";
 import { emptyProject, newDate, newHand, newImage, newRing, newTime, newWidget } from "@/model/defaults";
-import { SCREEN_H, SCREEN_W, type Element, type Project } from "@/model/types";
+import { presetById, presetScreen, type ScreenSpec } from "@/model/screens";
+import type { Element, Project } from "@/model/types";
 import { defaultSim } from "@/render/values";
 import { registerTestAsset } from "@/test/node-canvas";
 import { VALUE_TYPE } from "@joyofit/hwt";
 import { buildPhotoFace } from "./photo";
 import { isStaticElement } from "./support";
+import { canSendPhotoFace } from "./target";
 
 const sim = defaultSim();
 
@@ -51,7 +53,7 @@ describe("photo-face export", () => {
     const result = await buildPhotoFace({ ...emptyProject("My photo"), elements: [background, sticker, clock, ring] }, sim);
 
     expect(result.fileName).toBe("Myphoto.photo.png");
-    expect([result.width, result.height]).toEqual([SCREEN_W, SCREEN_H]);
+    expect([result.width, result.height]).toEqual([408, 480]);
     const img = await pixels(result.png);
     expect([img.width, img.height]).toEqual([408, 480]);
 
@@ -71,6 +73,30 @@ describe("photo-face export", () => {
 
     expect(result.liveLeftOut).toEqual(["Clock", ring.name]);
     expect(result.layers.filter((l) => l.included).map((l) => l.name)).toEqual(["Background", "Red sticker"]);
+  });
+
+  for (const [id, width, height] of [
+    ["gt466", 466, 466],
+    ["band194", 194, 368],
+  ] as const) {
+    it(`${id}: the PNG is ${width} x ${height} and its background fills it`, async () => {
+      const screen = presetScreen(presetById(id)!);
+      const background = { ...emptyProject().elements[0]!, fill: { kind: "solid", color: "#102030" } } as Element;
+      const result = await buildPhotoFace({ ...emptyProject("Other screen", screen), elements: [background] }, sim);
+      expect([result.width, result.height]).toEqual([width, height]);
+      const img = await pixels(result.png);
+      expect([img.width, img.height]).toEqual([width, height]);
+      expect(img.at(width - 1, height - 1)).toEqual([16, 32, 48, 255]);
+      expect(canSendPhotoFace(screen)).toBe(false);
+    });
+  }
+
+  it("a custom 300 x 300 screen gives a 300 x 300 PNG that JoyoFit can't send", async () => {
+    const screen: ScreenSpec = { presetId: null, width: 300, height: 300, shape: "squircle", cornerRadius: 60 };
+    const result = await buildPhotoFace(emptyProject("Custom", screen), sim);
+    expect([result.width, result.height]).toEqual([300, 300]);
+    expect(canSendPhotoFace(screen)).toBe(false);
+    expect(canSendPhotoFace(presetScreen(presetById("fit4")!))).toBe(true);
   });
 
   it("flattens transparency onto opaque black", async () => {

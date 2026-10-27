@@ -1,18 +1,18 @@
 export default {
-  title: "Bikin face untuk Watch Fit 4",
+  title: "Bikin face untuk jam Huawei kamu",
   description: "JoyoFit Studio menggambar face di browser kamu, lalu mengekspor gambar photo face untuk JoyoFit dan file Huawei .hwt untuk tool resmi Huawei. Tidak ada yang diunggah.",
   steps: {
-    design: { title: "Desain face di sini", body: "Mulai dari template atau face kosong. Tambahkan waktu, tanggal, jarum, data, dan ring, lalu cek di jam simulasi. Pratinjau Photo face di kanvas menunjukkan apa yang tersisa di photo face." },
-    export: { title: "Ekspor photo face", body: "Tekan Ekspor, biarkan Photo face terpilih, baca daftar periksanya, lalu unduh PNG. Ukurannya 408 × 480 dan hanya berisi gambar: latar dan gambar lain." },
+    design: { title: "Desain face di sini", body: "Pilih layar jam di header, lalu mulai dari template atau face kosong. Tambahkan waktu, tanggal, jarum, data, dan ring, lalu cek di jam simulasi. Pratinjau Photo face di kanvas menunjukkan apa yang tersisa di photo face." },
+    export: { title: "Ekspor photo face", body: "Tekan Ekspor, biarkan Photo face terpilih, baca daftar periksanya, lalu unduh PNG. Ukurannya sama dengan layar yang kamu pilih (408 × 480 untuk Watch Fit 4) dan hanya berisi gambar: latar dan gambar lain." },
     move: { title: "Kirim ke ponsel", body: "Kirim file ke ponsel yang menjalankan JoyoFit: lewat cloud drive, kabel, atau aplikasi chat apa saja." },
-    pick: { title: "Pilih di JoyoFit", body: "Buka JoyoFit, masuk ke Jam, lalu Photo face, dan pilih PNG-nya. Gambar berukuran pas 408 × 480 diunggah tanpa dipotong." },
+    pick: { title: "Pilih di JoyoFit", body: "Buka JoyoFit, masuk ke Jam, lalu Photo face, dan pilih PNG-nya. Di Watch Fit 4 dan Fit 4 Pro, gambar berukuran pas 408 × 480 diunggah tanpa dipotong." },
   },
   start: "Mulai mendesain",
   notice: {
     title: "Tidak resmi dan masih awal",
     signed: "Face ini tidak dibuat, ditandatangani, atau didukung Huawei, dan jam hanya menyimpan face yang ditandatangani Huawei: Fit 4 Pro menghapus file <b>.hwt</b> tanpa tanda tangan sekitar 3 detik setelah diaktifkan. Ekspor .hwt tetap ada untuk Huawei Theme Studio Pro dengan akun developer dan untuk memeriksa isi file. Output yang berfungsi dengan JoyoFit adalah photo face.",
     photo: "Photo face hanyalah gambar. Jam menggambar sendiri jam dan datanya di atasnya, jadi lapisan live Studio tidak ikut masuk ke PNG.",
-    devices: "Untuk saat ini hanya Watch Fit 4 dan Fit 4 Pro (408 × 480) yang didukung.",
+    devices: "Hanya Watch Fit 4 dan Fit 4 Pro (408 × 480) yang sudah dicoba. Kamu bisa mendesain untuk layar bulat (GT), Band, atau ukuran khusus, tapi belum ada yang mencobanya di jam, dan JoyoFit hanya bisa mengirim photo face ke Fit 4 dan Fit 4 Pro.",
     marks: "Untuk .hwt, beberapa elemen ditandai <b>{{preview}}</b> atau <b>{{unconfirmed}}</b>. Elemen Hanya pratinjau tidak pernah ditulis. Yang Belum dicoba di jam memakai id dari face contoh dan hanya ditulis kalau kamu biarkan sakelarnya menyala di dialog ekspor.",
     previewOnly: "Hanya pratinjau",
     unconfirmed: "Belum dicoba di jam",

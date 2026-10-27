@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "AGPL-3.0-or-later",
-  "description": "JoyoFit Studio: a web watch-face editor for the Watch Fit 4 / Fit 4 Pro. Exports a photo face for JoyoFit and a Huawei .hwt for Huawei's tools.",
+  "description": "JoyoFit Studio: a web watch-face editor for Huawei watches (Watch Fit 4 / Fit 4 Pro, round GT, Band, or a custom screen). Exports a photo face for JoyoFit and a Huawei .hwt for Huawei's tools.",
   "scripts": {
     "dev": "vite",
     "build": "tsrs --noEmit && vite build",

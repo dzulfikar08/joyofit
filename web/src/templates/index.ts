@@ -1,22 +1,25 @@
 import { i18n } from "@/i18n";
 import { VALUE_TYPE } from "@joyofit/hwt";
 import { addGeneratedAsset } from "@/model/assets";
-import { newBackground, newDate, newHand, newRing, newTime, newWidget, CENTER_X, CENTER_Y } from "@/model/defaults";
-import { PROJECT_VERSION, SCREEN_H, SCREEN_W, type Element, type Project } from "@/model/types";
+import { newBackground, newDate, newHand, newRing, newTime, newWidget } from "@/model/defaults";
+import { fitElements, fitOf } from "@/model/fit";
+import { DEFAULT_SCREEN, type ScreenSpec } from "@/model/screens";
+import { PROJECT_VERSION, type Element, type Project } from "@/model/types";
 import { fontsOf } from "@/editor/useFonts";
 import { newSprite } from "@/render/canvas";
 import { ensureFont } from "@/render/fonts";
 import { layoutOf } from "@/render/scene";
 
 /**
- * Starter faces designed for 408 x 480. Each is built from the same element factories the editor uses, so a
- * template is an ordinary project the user can change freely. Palette: JoyoFit's ink teal with per-metric colors.
+ * Starter faces. Each is laid out for the Watch Fit 4 screen (408 x 480) from the same element factories the editor uses, then fitted
+ * to the screen it is built for (`fitElements`: uniform scale by the smaller ratio, centred), so a template is an ordinary project the
+ * user can change freely. Palette: JoyoFit's ink teal with per-metric colors.
  */
 export interface Template {
   id: string;
   name: string;
   blurb: string;
-  build: () => Promise<Project>;
+  build: (screen?: ScreenSpec) => Promise<Project>;
 }
 
 const INK = "#F2F7F8";
@@ -27,16 +30,20 @@ const GREEN = "#6EE7A0";
 const AMBER = "#F5B35A";
 const TRACK = "#1D4250";
 
-function project(name: string, elements: Element[]): Project {
-  return { version: PROJECT_VERSION, name, author: "", elements };
+/** The face of a template: `elements` are laid out for the Fit 4 screen and fitted to `screen`. */
+function project(name: string, elements: Element[], screen: ScreenSpec): Project {
+  return { version: PROJECT_VERSION, name, author: "", screen, elements: fitElements(elements, DEFAULT_SCREEN, screen) };
 }
+
+const REF_CENTER_X = DEFAULT_SCREEN.width / 2;
+const REF_CENTER_Y = DEFAULT_SCREEN.height / 2;
 
 async function ready(elements: Element[]): Promise<void> {
   await Promise.all(fontsOf(elements).map(ensureFont));
 }
 
 /** Sets x so the element's layout is centred on `cx`. Needs the fonts loaded. */
-function centreX<T extends Element>(el: T, cx = CENTER_X): T {
+function centreX<T extends Element>(el: T, cx = REF_CENTER_X): T {
   const w = layoutOf(el)?.w ?? 0;
   return { ...el, x: Math.round(cx - w / 2) };
 }
@@ -54,14 +61,14 @@ const quiet: Template = {
   get blurb() {
     return i18n.t("templates:items.quiet.blurb");
   },
-  build: async () => {
+  build: async (screen = DEFAULT_SCREEN) => {
     const bg = { ...newBackground(), fill: { kind: "solid" as const, color: "#000000" } };
     let time = newTime({ name: i18n.t("templates:layers.time"), font: { family: "Outfit", weight: 300 }, size: 88, color: INK, tracking: 0, y: 0 });
     let date = newDate({ name: i18n.t("templates:layers.date"), font: { family: "Outfit", weight: 500 }, size: 24, color: MUTED, parts: ["weekday", "day"], tracking: -3 });
     await ready([time, date]);
-    time = centreX({ ...time, y: Math.round(CENTER_Y - bounds(time).h / 2 + 8) });
+    time = centreX({ ...time, y: Math.round(REF_CENTER_Y - bounds(time).h / 2 + 8) });
     date = centreX({ ...date, y: time.y - 46 });
-    return project(i18n.t("templates:items.quiet.name"), [bg, time, date]);
+    return project(i18n.t("templates:items.quiet.name"), [bg, time, date], screen);
   },
 };
 
@@ -73,7 +80,7 @@ const stackRing: Template = {
   get blurb() {
     return i18n.t("templates:items.stack-ring.blurb");
   },
-  build: async () => {
+  build: async (screen = DEFAULT_SCREEN) => {
     const bg = { ...newBackground(), fill: { kind: "gradient" as const, from: "#0F2F3A", to: "#02080A", angle: 180 } };
     const ring = newRing(VALUE_TYPE.stepsRatio, { x: 20, y: 48, size: 368, thickness: 16, color: TEAL, trackColor: TRACK });
     let time = newTime({
@@ -86,19 +93,23 @@ const stackRing: Template = {
     });
     let steps = newWidget(VALUE_TYPE.steps, { font: { family: "Big Shoulders Display", weight: 700 }, size: 30, color: TEAL, iconColor: TEAL, layout: "side" });
     await ready([time, steps]);
-    time = centreX({ ...time, y: Math.round(CENTER_Y - bounds(time).h / 2 - 30) });
+    time = centreX({ ...time, y: Math.round(REF_CENTER_Y - bounds(time).h / 2 - 30) });
     steps = centreX({ ...steps, y: time.y + bounds(time).h + 12 });
-    return project(i18n.t("templates:items.stack-ring.name"), [bg, ring, time, steps]);
+    return project(i18n.t("templates:items.stack-ring.name"), [bg, ring, time, steps], screen);
   },
 };
 
-/** Dial artwork: hour and minute ticks and four numerals, drawn once and used as the background photo. */
-async function dialAsset(): Promise<string> {
-  const { sprite, ctx } = newSprite(SCREEN_W, SCREEN_H);
+/** Dial artwork: hour and minute ticks and four numerals, drawn once and used as the background photo, sized to the screen. */
+async function dialAsset(screen: ScreenSpec): Promise<string> {
+  const { sprite, ctx } = newSprite(screen.width, screen.height);
   ctx.fillStyle = "#050B0D";
-  ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
-  const cx = CENTER_X;
-  const cy = CENTER_Y;
+  ctx.fillRect(0, 0, screen.width, screen.height);
+  // Drawn for the Fit 4 screen, then placed the way `fitElements` places the hands that sit on it.
+  const { k, dx, dy } = fitOf(DEFAULT_SCREEN, screen);
+  ctx.translate(dx, dy);
+  ctx.scale(k, k);
+  const cx = REF_CENTER_X;
+  const cy = REF_CENTER_Y;
   ctx.lineCap = "round";
   for (let i = 0; i < 60; i++) {
     const a = (i / 60) * Math.PI * 2;
@@ -131,8 +142,8 @@ const classic: Template = {
   get blurb() {
     return i18n.t("templates:items.classic.blurb");
   },
-  build: async () => {
-    const assetId = await dialAsset();
+  build: async (screen = DEFAULT_SCREEN) => {
+    const assetId = await dialAsset(screen);
     const bg = { ...newBackground(), fill: { kind: "image" as const, assetId, zoom: 1, offsetX: 0, offsetY: 0, dim: 0 } };
     let date = newDate({ font: { family: "Plus Jakarta Sans Variable", weight: 700 }, size: 22, color: AMBER, parts: ["weekday", "day"], tracking: -2 });
     await ready([date]);
@@ -140,14 +151,14 @@ const classic: Template = {
     const hour = newHand("hour", { length: 96, width: 14, tail: 16, color: INK, shape: "classic" });
     const minute = newHand("minute", { length: 156, width: 10, tail: 20, color: INK, shape: "classic" });
     const second = newHand("second", { length: 178, width: 3, tail: 38, color: AMBER, shape: "needle" });
-    return project(i18n.t("templates:items.classic.name"), [bg, date, hour, minute, second]);
+    return project(i18n.t("templates:items.classic.name"), [bg, date, hour, minute, second], screen);
   },
 };
 
 /** A dusk landscape drawn in code: sky gradient, a low sun and two ridges. Stands in until the user adds a photo. */
-async function backdropAsset(): Promise<string> {
-  const w = SCREEN_W * 2;
-  const h = SCREEN_H * 2;
+async function backdropAsset(screen: ScreenSpec): Promise<string> {
+  const w = screen.width * 2;
+  const h = screen.height * 2;
   const { sprite, ctx } = newSprite(w, h);
   const sky = ctx.createLinearGradient(0, 0, 0, h);
   sky.addColorStop(0, "#1B2A52");
@@ -187,15 +198,15 @@ const photo: Template = {
   get blurb() {
     return i18n.t("templates:items.photo.blurb");
   },
-  build: async () => {
-    const assetId = await backdropAsset();
+  build: async (screen = DEFAULT_SCREEN) => {
+    const assetId = await backdropAsset(screen);
     const bg = { ...newBackground(), fill: { kind: "image" as const, assetId, zoom: 1, offsetX: 0, offsetY: 0, dim: 0.12 } };
     let date = newDate({ font: { family: "Outfit", weight: 700 }, size: 26, color: "#FFFFFF", parts: ["weekday", "day"], tracking: -2, outline: { color: "#2A1633", width: 2 } });
     let time = newTime({ font: { family: "Outfit", weight: 700 }, layout: "stack", size: 104, color: "#FFFFFF", tracking: 0, outline: { color: "#2A1633", width: 3 } });
     await ready([time, date]);
     time = { ...time, x: 36, y: 62 };
     date = { ...date, x: 44, y: time.y + bounds(time).h + 16 };
-    return project(i18n.t("templates:items.photo.name"), [bg, date, time]);
+    return project(i18n.t("templates:items.photo.name"), [bg, date, time], screen);
   },
 };
 
@@ -207,7 +218,7 @@ const sport: Template = {
   get blurb() {
     return i18n.t("templates:items.sport.blurb");
   },
-  build: async () => {
+  build: async (screen = DEFAULT_SCREEN) => {
     const bg = { ...newBackground(), fill: { kind: "solid" as const, color: "#070D0F" } };
     let time = newTime({ font: { family: "Oswald", weight: 600 }, size: 92, color: INK, tracking: 2 });
     let date = newDate({ font: { family: "Oswald", weight: 400 }, size: 24, color: MUTED, parts: ["weekday", "day"], tracking: -1 });
@@ -224,7 +235,7 @@ const sport: Template = {
     const ringX = 214;
     const ringY = 246;
     steps = centreX({ ...steps, y: ringY + Math.round((ring.size - bounds(steps).h) / 2) }, ringX + ring.size / 2);
-    return project(i18n.t("templates:items.sport.name"), [bg, { ...ring, x: ringX, y: ringY }, time, date, steps, heart, battery]);
+    return project(i18n.t("templates:items.sport.name"), [bg, { ...ring, x: ringX, y: ringY }, time, date, steps, heart, battery], screen);
   },
 };
 
@@ -236,7 +247,7 @@ const orbit: Template = {
   get blurb() {
     return i18n.t("templates:items.orbit.blurb");
   },
-  build: async () => {
+  build: async (screen = DEFAULT_SCREEN) => {
     const bg = { ...newBackground(), fill: { kind: "gradient" as const, from: "#10242C", to: "#03090B", angle: 160 } };
     const outer = newRing(VALUE_TYPE.stepsRatio, { x: 16, y: 52, size: 376, thickness: 14, startAngle: 225, sweep: 270, color: TEAL, trackColor: TRACK });
     const inner = newRing(VALUE_TYPE.powerRatio, { x: 44, y: 80, size: 320, thickness: 10, startAngle: 225, sweep: 270, color: GREEN, trackColor: TRACK });
@@ -248,7 +259,7 @@ const orbit: Template = {
     const hour = newHand("hour", { length: 84, width: 12, tail: 14, color: INK, shape: "baton" });
     const minute = newHand("minute", { length: 130, width: 9, tail: 18, color: INK, shape: "baton" });
     const second = newHand("second", { length: 146, width: 3, tail: 30, color: AMBER, shape: "needle" });
-    return project(i18n.t("templates:items.orbit.name"), [bg, outer, inner, date, time, hour, minute, second]);
+    return project(i18n.t("templates:items.orbit.name"), [bg, outer, inner, date, time, hour, minute, second], screen);
   },
 };
 

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { emptyProject, newImage } from "@/model/defaults";
+import { emptyProject, newHand, newImage } from "@/model/defaults";
+import { DEFAULT_SCREEN, presetById, presetScreen } from "@/model/screens";
+import type { HandElement, TimeElement } from "@/model/types";
 import { useEditor } from "./store";
 
 function reset() {
@@ -59,6 +61,63 @@ describe("editor store", () => {
     const copy = useEditor.getState().project.elements.find((e) => e.name === "Image copy")!;
     const orig = useEditor.getState().project.elements.find((e) => e.id === "img")!;
     expect(copy.x).toBe(orig.x + 12);
+  });
+});
+
+describe("screen", () => {
+  beforeEach(reset);
+  const band = presetScreen(presetById("band194")!);
+  const round = presetScreen(presetById("gt466")!);
+
+  it("scaling the design to a new screen is one undo step and undo restores it exactly", () => {
+    const before = useEditor.getState().project;
+    useEditor.getState().setScreen(band, "scale");
+    const after = useEditor.getState().project;
+    expect(after.screen).toEqual(band);
+    const time = after.elements.find((e) => e.type === "time") as TimeElement;
+    const was = before.elements.find((e) => e.type === "time") as TimeElement;
+    expect(time.size).toBe(Math.round(was.size * (194 / 408)));
+    expect(time.x).toBeLessThan(was.x);
+    expect(useEditor.getState().past).toHaveLength(1);
+    useEditor.getState().undo();
+    expect(useEditor.getState().project).toBe(before);
+    expect(useEditor.getState().project.screen).toEqual(DEFAULT_SCREEN);
+    useEditor.getState().redo();
+    expect(useEditor.getState().project).toBe(after);
+  });
+
+  it("keeping positions changes only the screen", () => {
+    const before = useEditor.getState().project;
+    useEditor.getState().setScreen(round, "keep");
+    const after = useEditor.getState().project;
+    expect(after.screen).toEqual(round);
+    expect(after.elements).toEqual(before.elements);
+    expect(useEditor.getState().past).toHaveLength(1);
+  });
+
+  it("the same screen again is not an edit", () => {
+    useEditor.getState().setScreen(DEFAULT_SCREEN, "scale");
+    expect(useEditor.getState().past).toHaveLength(0);
+  });
+
+  it("new elements are fitted to the screen of the face", () => {
+    useEditor.getState().setScreen(band, "scale");
+    useEditor.getState().addCustom(newHand("minute"));
+    const hand = useEditor.getState().project.elements.find((e) => e.type === "hand") as HandElement;
+    expect(Math.abs(hand.x - 97)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(hand.y - 184)).toBeLessThanOrEqual(0.5);
+    useEditor.getState().addElement("time");
+    const time = useEditor.getState().project.elements.filter((e) => e.type === "time").at(-1) as TimeElement;
+    expect(time.size).toBeLessThan(72);
+  });
+
+  it("a new face on a screen starts with its time inside that screen", () => {
+    const project = emptyProject("b", band);
+    expect(project.screen).toEqual(band);
+    const time = project.elements.find((e) => e.type === "time") as TimeElement;
+    expect(time.x).toBeGreaterThanOrEqual(0);
+    expect(time.x).toBeLessThan(194);
+    expect(time.y).toBeLessThan(368);
   });
 });
 

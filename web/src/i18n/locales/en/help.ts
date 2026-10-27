@@ -1,18 +1,18 @@
 export default {
-  title: "Make a face for your Watch Fit 4",
+  title: "Make a face for your Huawei watch",
   description: "JoyoFit Studio draws the face in your browser and exports a photo-face picture for JoyoFit, and a Huawei .hwt file for Huawei's own tools. Nothing is uploaded.",
   steps: {
-    design: { title: "Design the face here", body: "Start from a template or an empty face. Add time, date, hands, data and rings, and check them against the simulated watch. The Photo face preview on the stage shows what a photo face keeps." },
-    export: { title: "Export the photo face", body: "Press Export, keep Photo face selected, read the checklist, then download the PNG. It is 408 × 480 and holds the pictures only: background and images." },
+    design: { title: "Design the face here", body: "Pick the watch screen in the header, then start from a template or an empty face. Add time, date, hands, data and rings, and check them against the simulated watch. The Photo face preview on the stage shows what a photo face keeps." },
+    export: { title: "Export the photo face", body: "Press Export, keep Photo face selected, read the checklist, then download the PNG. It is as large as the screen you picked (408 × 480 for the Watch Fit 4) and holds the pictures only: background and images." },
     move: { title: "Move it to your phone", body: "Send the file to the phone that runs JoyoFit: cloud drive, cable or any messenger." },
-    pick: { title: "Pick it in JoyoFit", body: "Open JoyoFit, go to Watch, then Photo face, and pick the PNG. A picture of exactly 408 × 480 is uploaded without cropping." },
+    pick: { title: "Pick it in JoyoFit", body: "Open JoyoFit, go to Watch, then Photo face, and pick the PNG. On the Watch Fit 4 and Fit 4 Pro, a picture of exactly 408 × 480 is uploaded without cropping." },
   },
   start: "Start designing",
   notice: {
     title: "Unofficial and early",
     signed: "These faces are not made, signed or endorsed by Huawei, and the watch only keeps a watch face Huawei signed: the Fit 4 Pro deletes an unsigned <b>.hwt</b> about 3 seconds after it is activated. The .hwt export stays for Huawei Theme Studio Pro with a developer account and for inspecting the file. The photo face is the output that works with JoyoFit.",
     photo: "A photo face is only a picture. The watch draws its own clock and data over it, so Studio's live layers are left out of the PNG.",
-    devices: "Only the Watch Fit 4 and Fit 4 Pro (408 × 480) are supported for now.",
+    devices: "Only the Watch Fit 4 and Fit 4 Pro (408 × 480) are tested. You can design for round (GT) and Band screens or a custom size, but nobody has tried those on a watch, and JoyoFit can send a photo face to the Fit 4 and Fit 4 Pro only.",
     marks: "For the .hwt, some elements are marked <b>{{preview}}</b> or <b>{{unconfirmed}}</b>. Preview only elements are never written. Unconfirmed ones use ids read from sample faces and are written only if you leave that switch on in the export dialog.",
     previewOnly: "Preview only",
     unconfirmed: "Unconfirmed on a watch",

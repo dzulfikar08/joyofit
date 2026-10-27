@@ -1,17 +1,18 @@
 import { i18n } from "@/i18n";
 import { getAsset } from "@/model/assets";
 import { hwtFileName } from "@/model/defaults";
-import { SCREEN_H, SCREEN_W, type Element, type Project, type Sim } from "@/model/types";
+import type { Element, Project, Sim } from "@/model/types";
 import { context2d, createSurface, surfaceToPng } from "@/render/canvas";
 import { drawElement } from "@/render/scene";
 import { shownSim } from "@/render/values";
 import { isStaticElement } from "./support";
 
 /**
- * Photo-face export: the static layers of the project flattened into one picture the size of the watch screen (408 x 480),
- * the file JoyoFit's Watch → Photo face uploads. The watch's photo-face image is RGB24 without alpha (`protocol/README.md`,
- * photo faces: option 1), so the picture is opaque: layers are composited onto black. The watch masks the screen's rounded
- * corners itself and draws its own clock and data over the photo, so neither is part of the picture.
+ * Photo-face export: the static layers of the project flattened into one picture the size of the project's screen (408 x 480 on
+ * the Watch Fit 4 / 4 Pro), the file JoyoFit's Watch → Photo face uploads. The watch's photo-face image is RGB24 without alpha
+ * (`protocol/README.md`, photo faces: option 1), so the picture is opaque: layers are composited onto black. The watch masks the
+ * screen's rounded corners itself and draws its own clock and data over the photo, so neither is part of the picture. JoyoFit
+ * sends photo faces to the Fit 4 / 4 Pro only (`canSendPhotoFace`); for any other screen the PNG is a plain download.
  */
 export interface PhotoLayer {
   id: string;
@@ -41,11 +42,12 @@ function imageMissing(el: Element): boolean {
 
 export async function buildPhotoFace(project: Project, stageSim: Sim): Promise<PhotoFaceResult> {
   const sim = shownSim(stageSim);
-  const surface = createSurface(SCREEN_W, SCREEN_H);
+  const { width, height } = project.screen;
+  const surface = createSurface(width, height);
   const ctx = context2d(surface);
   // Opaque black first: whatever the layers leave transparent ends up black, never undefined.
   ctx.fillStyle = "#000000";
-  ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+  ctx.fillRect(0, 0, width, height);
   ctx.imageSmoothingQuality = "high";
 
   const layers: PhotoLayer[] = [];
@@ -61,7 +63,7 @@ export async function buildPhotoFace(project: Project, stageSim: Sim): Promise<P
       // No dashed placeholder in the picture: the layer is left out instead.
       layers.push({ ...base, included: false, detail: el.assetId ? i18n.t("export:photo.imageNotLoaded") : i18n.t("export:photo.noImage") });
     } else {
-      drawElement(ctx, el, sim);
+      drawElement(ctx, el, sim, project.screen);
       layers.push({
         ...base,
         included: true,
@@ -73,8 +75,8 @@ export async function buildPhotoFace(project: Project, stageSim: Sim): Promise<P
   return {
     fileName: `${hwtFileName(project.name)}.photo.png`,
     png: await surfaceToPng(surface),
-    width: SCREEN_W,
-    height: SCREEN_H,
+    width,
+    height,
     layers,
     liveLeftOut,
   };

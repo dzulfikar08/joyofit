@@ -1,6 +1,7 @@
 import { fontsOf } from "@/editor/useFonts";
 import { blobToDataUrl } from "@/model/assets";
-import { SCREEN_H, SCREEN_W, type Project, type Sim } from "@/model/types";
+import type { ScreenSize } from "@/model/screens";
+import type { Project, Sim } from "@/model/types";
 import { context2d, createSurface, type Surface } from "@/render/canvas";
 import { ensureFont } from "@/render/fonts";
 import { drawProject } from "@/render/scene";
@@ -15,18 +16,28 @@ export interface ThumbStep {
   quality: number;
 }
 
-/** From the nicest picture to the smallest one that still shows the face; all keep the 408:480 aspect ratio. */
-export const THUMB_STEPS: readonly ThumbStep[] = [
-  { width: 102, height: 120, quality: 0.6 },
-  { width: 102, height: 120, quality: 0.4 },
-  { width: 85, height: 100, quality: 0.4 },
-  { width: 68, height: 80, quality: 0.35 },
-  { width: 51, height: 60, quality: 0.3 },
+/** Long side of each step, px, with the JPEG quality: from the nicest picture to the smallest one that still shows the face. */
+const THUMB_LONG_SIDES: ReadonlyArray<readonly [number, number]> = [
+  [120, 0.6],
+  [120, 0.4],
+  [100, 0.4],
+  [80, 0.35],
+  [60, 0.3],
 ];
 
-/** The first step whose encoding fits `limit`, or null when none does. */
-export async function fitThumbnail(encode: (step: ThumbStep) => Promise<string>, limit: number = THUMB_LIMIT): Promise<string | null> {
-  for (const step of THUMB_STEPS) {
+/** The steps for a screen: every one keeps the screen's aspect ratio (a Watch Fit 4 face gives 102 x 120 down to 51 x 60). */
+export function thumbSteps(screen: ScreenSize): ThumbStep[] {
+  const long = Math.max(screen.width, screen.height);
+  return THUMB_LONG_SIDES.map(([side, quality]) => ({
+    width: Math.max(1, Math.round((side * screen.width) / long)),
+    height: Math.max(1, Math.round((side * screen.height) / long)),
+    quality,
+  }));
+}
+
+/** The first step for `screen` whose encoding fits `limit`, or null when none does. */
+export async function fitThumbnail(screen: ScreenSize, encode: (step: ThumbStep) => Promise<string>, limit: number = THUMB_LIMIT): Promise<string | null> {
+  for (const step of thumbSteps(screen)) {
     const dataUrl = await encode(step);
     if (dataUrl.length <= limit) return dataUrl;
   }
@@ -45,12 +56,13 @@ export async function makeThumbnail(project: Project, stageSim: Sim): Promise<st
   try {
     // Digits drawn before their font arrived would be in the fallback font.
     await Promise.all(fontsOf(project.elements).map(ensureFont));
-    const full = createSurface(SCREEN_W, SCREEN_H);
+    const { width: fullW, height: fullH } = project.screen;
+    const full = createSurface(fullW, fullH);
     const fullCtx = context2d(full);
     fullCtx.fillStyle = "#000000";
-    fullCtx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+    fullCtx.fillRect(0, 0, fullW, fullH);
     drawProject(fullCtx, project, shownSim(stageSim));
-    return await fitThumbnail(async ({ width, height, quality }) => {
+    return await fitThumbnail(project.screen, async ({ width, height, quality }) => {
       const small: Surface = createSurface(width, height);
       const ctx = context2d(small);
       ctx.imageSmoothingEnabled = true;

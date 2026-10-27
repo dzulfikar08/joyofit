@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { HwtError, bytesEqual, utf8Decode } from "../src/bytes";
 import { RESOLUTIONS, parseDescription, patchDescription, renderDescription } from "../src/description";
-import { createHwt, getEntry, readHwt, setEntry, writeHwt } from "../src/hwt";
+import { createHwt, getEntry, previewSizes, readHwt, setEntry, writeHwt } from "../src/hwt";
 import { verifyWatchface } from "../src/builder";
 import { decodeImage, readImageHeader } from "../src/image";
 import { describeLayout, getLayout } from "../src/layout";
@@ -79,6 +79,31 @@ describe("createHwt", () => {
     const cover = Uint8Array.from([1]);
     expect(() => createHwt({ title: "x", cover, screen: "HWHD99" })).toThrow(/unknown screen/);
     expect(() => createHwt({ title: "x", cover, signature: new Uint8Array(3) })).toThrow(/signature/);
+  });
+
+  test("previewSizes keeps the measured Fit 4 Pro numbers and scales other screens by the same ratios", () => {
+    expect(previewSizes(408, 480)).toEqual({
+      cover: { width: 816, height: 960 },
+      aod: { width: 816, height: 960 },
+      iconSmall: { width: 331, height: 390 },
+      thumbnail: { width: 228, height: 269 },
+    });
+    expect(previewSizes(466, 466)).toEqual({
+      cover: { width: 932, height: 932 },
+      aod: { width: 932, height: 932 },
+      iconSmall: { width: 378, height: 379 },
+      thumbnail: { width: 260, height: 261 },
+    });
+    expect(previewSizes(194, 368).thumbnail).toEqual({ width: 108, height: 206 });
+    expect(previewSizes(120, 120).iconSmall).toEqual({ width: 97, height: 98 });
+  });
+
+  test("the default thumbnail follows the screen code's size", () => {
+    const cover = Uint8Array.from([1]);
+    const thumb = (screen: string) => readImageHeader(createHwt({ title: "x", cover, screen }).watchface!.images[0]!);
+    expect(readImageHeader(createHwt({ title: "x", cover }).watchface!.images[0]!)).toMatchObject({ width: 228, height: 269 });
+    expect(thumb("HWHD09")).toMatchObject({ width: 260, height: 261 });
+    expect(thumb("HWHD07")).toMatchObject({ width: 108, height: 206 });
   });
 
   test("setEntry adds and replaces entries", () => {

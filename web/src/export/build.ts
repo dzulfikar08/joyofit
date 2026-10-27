@@ -1,7 +1,6 @@
 import {
-  FIT4_PREVIEW,
-  FIT4_SCREEN,
   FaceBuilder,
+  previewSizes,
   VALUE_TYPE,
   checkFit4Limits,
   createHwt,
@@ -21,7 +20,8 @@ import {
 } from "@joyofit/hwt";
 import { getAsset } from "@/model/assets";
 import { hwtFileName } from "@/model/defaults";
-import { SCREEN_H, SCREEN_W, type Element, type HandElement, type Project, type Sim } from "@/model/types";
+import type { ScreenSize } from "@/model/screens";
+import type { Element, HandElement, Project, Sim } from "@/model/types";
 import { i18n } from "@/i18n";
 import { fieldDef } from "@/model/fields";
 import { fontsOf } from "@/editor/useFonts";
@@ -34,6 +34,7 @@ import type { Part } from "@/render/layout";
 import { shownSim, type DataRole } from "@/render/values";
 import { renderHand, renderRing } from "@/render/shapes";
 import { HAND_VALUE, minusDropped, elementSupport, isExportable, type SupportLevel } from "./support";
+import { hwtTarget, type HwtStatus } from "./target";
 
 export type NoteLevel = "info" | "warning" | "error";
 
@@ -42,6 +43,8 @@ export interface ExportNote {
   text: string;
   /** A Huawei size limit: shown after the other notes. */
   limit?: boolean;
+  /** Says the screen has not been tried on a watch: the export dialog shows that as its own row, so it skips this note. */
+  screenStatus?: boolean;
 }
 
 export interface ExportOptions {
@@ -79,6 +82,8 @@ export interface ExportResult {
   notes: ExportNote[];
   elements: ExportedElement[];
   stats: ExportStats;
+  /** The Huawei screen code and version the file is written for, and how far that can be trusted. */
+  target: { code: string; version: string; status: HwtStatus; limitsKnown: boolean };
   /** Layout and image table as JSON, for the troubleshooting sidecar. */
   debug: Record<string, unknown>;
 }
@@ -130,11 +135,11 @@ function ensureOnScreen(name: string, x: number, y: number): void {
 }
 
 /** Copy of the part of `sprite` that lies on the screen, with its new origin, or null when none does. */
-function cropToScreen(sprite: Sprite, x: number, y: number): { sprite: Sprite; x: number; y: number } | null {
+function cropToScreen(sprite: Sprite, x: number, y: number, screen: ScreenSize): { sprite: Sprite; x: number; y: number } | null {
   const left = Math.max(0, -x);
   const top = Math.max(0, -y);
-  const right = Math.min(sprite.width, SCREEN_W - x);
-  const bottom = Math.min(sprite.height, SCREEN_H - y);
+  const right = Math.min(sprite.width, screen.width - x);
+  const bottom = Math.min(sprite.height, screen.height - y);
   if (right <= left || bottom <= top) return null;
   if (left === 0 && top === 0 && right === sprite.width && bottom === sprite.height) return { sprite, x, y };
   const { sprite: out, ctx } = newSprite(right - left, bottom - top);
@@ -142,9 +147,12 @@ function cropToScreen(sprite: Sprite, x: number, y: number): { sprite: Sprite; x
   return { sprite: out, x: x + left, y: y + top };
 }
 
-/** One image per call, split into horizontal bands when the encoded image would exceed Huawei's single image limit. */
-function staticImage(e: ElementBuilder, sprite: Sprite, x: number, y: number, ambient: "normal" | "aod" | "both"): number {
-  const placed = cropToScreen(sprite, x, y);
+/**
+ * One image per call, split into horizontal bands when the encoded image would exceed Huawei's single image limit (750 KB, from
+ * the HWHD13 page). Other screens get the same cut-off: their own limit is not known, and a smaller image is never the problem.
+ */
+function staticImage(e: ElementBuilder, sprite: Sprite, x: number, y: number, ambient: "normal" | "aod" | "both", screen: ScreenSize): number {
+  const placed = cropToScreen(sprite, x, y, screen);
   if (!placed) return 0;
   const limit = FIT4_LIMITS.maxImageBytes * 0.92;
   const full = rgba(placed.sprite);
@@ -246,7 +254,7 @@ function emitHand(e: ElementBuilder, el: HandElement, mode: Mode): void {
   });
 }
 
-function emitElement(fb: FaceBuilder, el: Element): string[] {
+function emitElement(fb: FaceBuilder, el: Element, screen: ScreenSize): string[] {
   const left: string[] = [];
   switch (el.type) {
     case "background":
@@ -258,7 +266,7 @@ function emitElement(fb: FaceBuilder, el: Element): string[] {
       sprite.ctx.imageSmoothingQuality = "high";
       sprite.ctx.drawImage(img.source, 0, 0, sprite.sprite.width, sprite.sprite.height);
       fb.element("background", (e) => {
-        staticImage(e, sprite.sprite, Math.round(el.x), Math.round(el.y), "normal");
+        staticImage(e, sprite.sprite, Math.round(el.x), Math.round(el.y), "normal", screen);
       });
       break;
     }
@@ -294,7 +302,7 @@ function emitElement(fb: FaceBuilder, el: Element): string[] {
       fb.element("widget", (e) =>
         e.container(
           (c) => {
-            staticImage(c, ring.track, Math.round(el.x), Math.round(el.y), "normal");
+            staticImage(c, ring.track, Math.round(el.x), Math.round(el.y), "normal", screen);
             c.arc({
               image: rgba(ring.fill),
               rect: { x: Math.round(el.x), y: Math.round(el.y), width: size, height: size },
@@ -345,14 +353,15 @@ function litFraction(sprite: Sprite): number {
   return lit / (data.length / 4);
 }
 
-function renderPreview(elements: Element[], sim: Sim, width: number, height: number, background: string): Sprite {
+function renderPreview(project: Project, elements: Element[], sim: Sim, width: number, height: number, background: string): Sprite {
+  const { screen } = project;
   const surface = createSurface(width, height);
   const ctx = context2d(surface);
   ctx.fillStyle = background;
   ctx.fillRect(0, 0, width, height);
-  ctx.scale(width / SCREEN_W, height / SCREEN_H);
+  ctx.scale(width / screen.width, height / screen.height);
   ctx.imageSmoothingQuality = "high";
-  drawProject(ctx, { version: 1, name: "", author: "", elements }, sim);
+  drawProject(ctx, { ...project, elements }, sim);
   return { width, height, surface };
 }
 
@@ -362,6 +371,10 @@ function binaryOf(pkg: HwtPackage): WatchfaceBinary {
 }
 
 export async function buildHwt(project: Project, stageSim: Sim, options: ExportOptions): Promise<ExportResult> {
+  const screen = project.screen;
+  const target = hwtTarget(screen);
+  if (!target.ok) throw new Error(target.reason);
+  const preview = previewSizes(screen.width, screen.height);
   // The cover and the always-on preview show the time the stage shows: a running clock is read now.
   const sim = shownSim(stageSim);
   await Promise.all(fontsOf(project.elements).map(ensureFont));
@@ -382,29 +395,29 @@ export async function buildHwt(project: Project, stageSim: Sim, options: ExportO
     }
   }
 
-  const coverSprite = renderPreview(toExport, sim, FIT4_PREVIEW.cover.width, FIT4_PREVIEW.cover.height, "#000000");
+  const coverSprite = renderPreview(project, toExport, sim, preview.cover.width, preview.cover.height, "#000000");
   const cover = await surfaceToJpeg(coverSprite.surface, 0.92);
-  const aodSprite = renderPreview(aodElements(toExport), sim, FIT4_PREVIEW.aod.width, FIT4_PREVIEW.aod.height, BLACK_AOD);
+  const aodSprite = renderPreview(project, aodElements(toExport), sim, preview.aod.width, preview.aod.height, BLACK_AOD);
   const aod = await surfaceToJpeg(aodSprite.surface, 0.92);
   const aodLit = litFraction(aodSprite);
-  const iconSmall = await surfaceToJpeg(scaleSprite(coverSprite, FIT4_PREVIEW.iconSmall.width, FIT4_PREVIEW.iconSmall.height).surface, 0.92);
-  const thumbnail = rgba(scaleSprite(coverSprite, FIT4_PREVIEW.thumbnail.width, FIT4_PREVIEW.thumbnail.height));
+  const iconSmall = await surfaceToJpeg(scaleSprite(coverSprite, preview.iconSmall.width, preview.iconSmall.height).surface, 0.92);
+  const thumbnail = rgba(scaleSprite(coverSprite, preview.thumbnail.width, preview.thumbnail.height));
 
   const title = project.name.trim() || "My face";
-  const pkg = createHwt({ title, titleCn: title.slice(0, 8), author: project.author.trim(), screen: FIT4_SCREEN, cover, aod, iconSmall, thumbnail });
+  const pkg = createHwt({ title, titleCn: title.slice(0, 8), author: project.author.trim(), screen: target.code, version: target.version, cover, aod, iconSmall, thumbnail });
   const fb = new FaceBuilder(binaryOf(pkg));
 
   const background = toExport.find((el) => el.type === "background");
   const bgFill = background?.type === "background" ? background.fill : { kind: "solid" as const, color: "#000000" };
-  const bgSprite = renderBackgroundSprite(bgFill);
+  const bgSprite = renderBackgroundSprite(bgFill, screen);
   const bgImage = rgba(bgSprite);
   // The samples point the background's customisation preview at the background image itself (one shared slot).
   const bgPreview = encodeImage(bgImage).length <= FIT4_LIMITS.maxImageBytes * 0.92 ? bgImage : undefined;
   fb.element(
     "background",
     (e) => {
-      staticImage(e, bgSprite, 0, 0, "normal");
-      staticImage(e, solid(SCREEN_W, SCREEN_H, BLACK_AOD), 0, 0, "aod");
+      staticImage(e, bgSprite, 0, 0, "normal", screen);
+      staticImage(e, solid(screen.width, screen.height, BLACK_AOD), 0, 0, "aod", screen);
     },
     bgPreview ? { preview: bgPreview } : {},
   );
@@ -416,7 +429,7 @@ export async function buildHwt(project: Project, stageSim: Sim, options: ExportO
     if (el.type === "background") continue;
     const base = { id: el.id, name: el.name, type: el.type };
     try {
-      const left = emitElement(fb, el);
+      const left = emitElement(fb, el, screen);
       const support = elementSupport(el);
       const dropped = [...new Set(left)];
       report.push({ ...base, exported: true, detail: support.level === "experimental" ? support.note : "", level: support.level, dropped });
@@ -449,14 +462,21 @@ export async function buildHwt(project: Project, stageSim: Sim, options: ExportO
     level: aodLit > AOD_LIT_LIMIT ? "warning" : "info",
     text: i18n.t(aodLit > AOD_LIT_LIMIT ? "export:build.aodHigh" : "export:build.aodOk", { percent: Math.round(aodLit * 100) }),
   });
-  // The codec's limit report is English only; the same checks are restated here from its numbers so the text follows the language.
-  const limitProblems: string[] = [];
-  if (limits.binaryBytes > FIT4_LIMITS.maxBinaryBytes) limitProblems.push(i18n.t("export:build.limitBinary", { bytes: limits.binaryBytes, limit: FIT4_LIMITS.maxBinaryBytes }));
-  if (limits.hwtBytes !== undefined && limits.hwtBytes > FIT4_LIMITS.maxHwtBytes) limitProblems.push(i18n.t("export:build.limitPackage", { bytes: limits.hwtBytes, limit: FIT4_LIMITS.maxHwtBytes }));
-  if (limits.imageMemoryBytes > FIT4_LIMITS.maxImageMemoryBytes) limitProblems.push(i18n.t("export:build.limitMemory", { bytes: limits.imageMemoryBytes, limit: FIT4_LIMITS.maxImageMemoryBytes }));
-  for (const problem of limitProblems) notes.push({ level: "error", text: i18n.t("export:build.limitPrefix", { problem }), limit: true });
-  if (limits.layerBytes > FIT4_LIMITS.maxLayerBytes) {
-    notes.push({ level: "warning", text: i18n.t("export:build.limitLayer", { bytes: limits.layerBytes, limit: FIT4_LIMITS.maxLayerBytes }) });
+  if (target.status === "untested") notes.push({ level: "warning", text: i18n.t("export:build.notTried", { code: target.code }), screenStatus: true });
+  if (target.status === "experimental") notes.push({ level: "warning", text: i18n.t("export:build.experimentalCode", { code: target.code, version: target.version }) });
+  if (target.limitsKnown) {
+    // The codec's limit report is English only; the same checks are restated here from its numbers so the text follows the language.
+    const limitProblems: string[] = [];
+    if (limits.binaryBytes > FIT4_LIMITS.maxBinaryBytes) limitProblems.push(i18n.t("export:build.limitBinary", { bytes: limits.binaryBytes, limit: FIT4_LIMITS.maxBinaryBytes }));
+    if (limits.hwtBytes !== undefined && limits.hwtBytes > FIT4_LIMITS.maxHwtBytes) limitProblems.push(i18n.t("export:build.limitPackage", { bytes: limits.hwtBytes, limit: FIT4_LIMITS.maxHwtBytes }));
+    if (limits.imageMemoryBytes > FIT4_LIMITS.maxImageMemoryBytes) limitProblems.push(i18n.t("export:build.limitMemory", { bytes: limits.imageMemoryBytes, limit: FIT4_LIMITS.maxImageMemoryBytes }));
+    for (const problem of limitProblems) notes.push({ level: "error", text: i18n.t("export:build.limitPrefix", { problem }), limit: true });
+    if (limits.layerBytes > FIT4_LIMITS.maxLayerBytes) {
+      notes.push({ level: "warning", text: i18n.t("export:build.limitLayer", { bytes: limits.layerBytes, limit: FIT4_LIMITS.maxLayerBytes }) });
+    }
+  } else {
+    // The sizes in `stats` are measurements; only Huawei's HWHD13 page says what is too big.
+    notes.push({ level: "warning", text: i18n.t("export:build.limitsUnknown") });
   }
 
   const images = wfBytes.images;
@@ -480,9 +500,11 @@ export async function buildHwt(project: Project, stageSim: Sim, options: ExportO
     notes,
     elements: report,
     stats,
+    target: { code: target.code, version: target.version, status: target.status, limitsKnown: target.limitsKnown },
     debug: {
       generator: "JoyoFit Studio",
-      screen: FIT4_SCREEN,
+      screen: target.code,
+      screenSize: { width: screen.width, height: screen.height },
       title,
       options,
       sim,

@@ -8,5 +8,5 @@ function shape(project: Project): string {
 
 /** True while the project is still the face a new session starts with: opening something over it loses nothing. */
 export function isPristine(project: Project): boolean {
-  return shape(project) === shape(emptyProject());
+  return shape(project) === shape(emptyProject(undefined, project.screen));
 }

@@ -2,9 +2,10 @@ import { create } from "zustand";
 import { i18n } from "@/i18n";
 import { retainAssets } from "@/model/assets";
 import { emptyProject, newElement, uid } from "@/model/defaults";
+import { fitElements } from "@/model/fit";
 import { assetIdsOf, restoreProject } from "@/model/projectFile";
+import { DEFAULT_SCREEN, sameScreen, type ScreenSize, type ScreenSpec } from "@/model/screens";
 import type { Element, ElementType, Project, Sim } from "@/model/types";
-import { SCREEN_W } from "@/model/types";
 import { elementBounds } from "@/render/scene";
 import { defaultSim } from "@/render/values";
 
@@ -40,6 +41,7 @@ export interface EditorState {
   commit: (next: Project, coalesceKey?: string) => void;
   patchProject: (patch: Partial<Pick<Project, "name" | "author">>, coalesceKey?: string) => void;
   addElement: (type: ElementType) => void;
+  /** Adds an element drawn for the Watch Fit 4 screen: it is fitted to the project's screen on the way in. */
   addCustom: (el: Element) => void;
   updateElement: (id: string, patch: Partial<Element>, coalesceKey?: string) => void;
   removeElement: (id: string) => void;
@@ -54,6 +56,11 @@ export interface EditorState {
   undo: () => void;
   redo: () => void;
   loadProject: (project: Project) => void;
+  /**
+   * Gives the face another screen in one undo step. `scale` fits the design to the new size (uniform scale by the smaller ratio,
+   * centred, see `fitElements`); `keep` leaves every element where it is.
+   */
+  setScreen: (screen: ScreenSpec, fit: "scale" | "keep") => void;
 }
 
 function normalise(project: Project): Project {
@@ -64,10 +71,10 @@ function normalise(project: Project): Project {
 }
 
 /** New text-like elements land centred left to right; their width is only known once laid out. */
-function centredHorizontally(el: Element, sim: Sim): Element {
+function centredHorizontally(el: Element, sim: Sim, screen: ScreenSize): Element {
   if (el.type !== "time" && el.type !== "date" && el.type !== "widget") return el;
   const b = elementBounds(el, sim);
-  return { ...el, x: Math.round((SCREEN_W - b.w) / 2) };
+  return { ...el, x: Math.round((screen.width - b.w) / 2) };
 }
 
 /** What the autosave held at start: nothing, a project that restored, or an entry that did not restore (its JSON is still in storage). */
@@ -145,8 +152,10 @@ export const useEditor = create<EditorState>((set, get) => ({
   addElement: (type) => get().addCustom(newElement(type)),
 
   addCustom: (el) => {
-    const placed = centredHorizontally(el, get().sim);
-    get().commit({ ...get().project, elements: [...get().project.elements, placed] });
+    const { project, sim } = get();
+    const [fitted] = fitElements([el], DEFAULT_SCREEN, project.screen);
+    const placed = centredHorizontally(fitted!, sim, project.screen);
+    get().commit({ ...project, elements: [...project.elements, placed] });
     set({ selectedId: placed.id });
   },
 
@@ -242,6 +251,13 @@ export const useEditor = create<EditorState>((set, get) => ({
     // The replaced project stays in the undo history, so its images stay too; anything older is garbage.
     const { project: open, past, future } = get();
     void retainAssets(new Set([open, ...past, ...future].flatMap(assetIdsOf)));
+  },
+
+  setScreen: (screen, fit) => {
+    const { project } = get();
+    if (sameScreen(project.screen, screen)) return;
+    const elements = fit === "scale" ? fitElements(project.elements, project.screen, screen) : project.elements;
+    get().commit({ ...project, screen, elements });
   },
 }));
 

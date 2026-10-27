@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { newImage, newTime } from "@/model/defaults";
+import { DEFAULT_SCREEN, presetById } from "@/model/screens";
 import { defaultSim } from "@/render/values";
 import { elementBounds } from "@/render/scene";
 import { hitTest, scaleElement, snapMove, snapTargets } from "./geometry";
@@ -7,12 +8,22 @@ import { hitTest, scaleElement, snapMove, snapTargets } from "./geometry";
 const sim = defaultSim();
 
 describe("snapping", () => {
-  const targets = snapTargets([{ x: 100, y: 300, w: 50, h: 40 }]);
+  const targets = snapTargets([{ x: 100, y: 300, w: 50, h: 40 }], DEFAULT_SCREEN);
 
   it("snaps an element's centre to the screen centre", () => {
-    const r = snapMove({ x: 150, y: 10, w: 100, h: 20 }, snapTargets([]), 6);
+    const r = snapMove({ x: 150, y: 10, w: 100, h: 20 }, snapTargets([], DEFAULT_SCREEN), 6);
     expect(r.dx).toBe(204 - 200);
     expect(r.guideX).toBe(204);
+  });
+
+  it("snaps to the centre and edges of whatever screen the face has", () => {
+    const band = presetById("band194")!;
+    const centred = snapMove({ x: 50, y: 10, w: 100, h: 20 }, snapTargets([], band), 6);
+    expect(centred.guideX).toBe(97);
+    expect(centred.dx).toBe(97 - 100);
+    const bottom = snapMove({ x: 10, y: 345, w: 40, h: 20 }, snapTargets([], band), 6);
+    expect(bottom.guideY).toBe(368);
+    expect(bottom.dy).toBe(3);
   });
 
   it("snaps edges to the screen edge and to other elements", () => {
@@ -23,7 +34,7 @@ describe("snapping", () => {
   });
 
   it("does nothing outside the threshold", () => {
-    const r = snapMove({ x: 120, y: 100, w: 40, h: 40 }, snapTargets([]), 6);
+    const r = snapMove({ x: 120, y: 100, w: 40, h: 40 }, snapTargets([], DEFAULT_SCREEN), 6);
     expect(r).toEqual({ dx: 0, dy: 0, guideX: null, guideY: null });
   });
 });
@@ -53,8 +64,8 @@ describe("scaling", () => {
   it("scales a time element by its font size and keeps the anchored corner", () => {
     const time = newTime({ x: 60, y: 120, size: 60 });
     const before = elementBounds(time, sim);
-    const bigger = scaleElement(time, 1.5, "ne", sim);
-    expect((bigger as typeof time).size).toBe(90);
+    const bigger = scaleElement(time, 1.5, "ne", sim) as typeof time;
+    expect(bigger.size).toBe(90);
     const after = elementBounds(bigger, sim);
     expect(after.x).toBeCloseTo(before.x, 0);
     expect(after.y + after.h).toBeCloseTo(before.y + before.h, 0);

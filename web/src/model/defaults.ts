@@ -1,11 +1,11 @@
 import { i18n } from "@/i18n";
 import { DEFAULT_FONT } from "@/render/fonts";
 import { VALUE_TYPE } from "@joyofit/hwt";
+import { fitElements } from "./fit";
 import { fieldDef, type FieldDef } from "./fields";
+import { DEFAULT_SCREEN, type ScreenSpec } from "./screens";
 import {
   PROJECT_VERSION,
-  SCREEN_H,
-  SCREEN_W,
   type BackgroundElement,
   type DateElement,
   type Element,
@@ -25,8 +25,9 @@ export function uid(): string {
 }
 
 const INK = "#F2F7F8";
-export const CENTER_X = SCREEN_W / 2;
-export const CENTER_Y = SCREEN_H / 2;
+/** New elements are drawn for the Watch Fit 4 screen; the editor fits them to the project's screen when it adds them (`fitElements`). */
+const REF_CENTER_X = DEFAULT_SCREEN.width / 2;
+const REF_CENTER_Y = DEFAULT_SCREEN.height / 2;
 
 export function newBackground(): BackgroundElement {
   return {
@@ -96,8 +97,8 @@ export function newHand(hand: HandKind, patch: Partial<HandElement> = {}): HandE
     hand,
     visible: true,
     locked: false,
-    x: CENTER_X,
-    y: CENTER_Y,
+    x: REF_CENTER_X,
+    y: REF_CENTER_Y,
     assetId: null,
     pivotX: 0,
     pivotY: 0,
@@ -114,8 +115,8 @@ export function newImage(assetId: string | null, w: number, h: number, patch: Pa
     name: i18n.t("editor:defaults.image"),
     visible: true,
     locked: false,
-    x: Math.round((SCREEN_W - w) / 2),
-    y: Math.round((SCREEN_H - h) / 2),
+    x: Math.round((DEFAULT_SCREEN.width - w) / 2),
+    y: Math.round((DEFAULT_SCREEN.height - h) / 2),
     assetId,
     w,
     h,
@@ -212,12 +213,13 @@ export function newElement(type: ElementType): Element {
   }
 }
 
-export function emptyProject(name: string = i18n.t("editor:defaults.project")): Project {
+export function emptyProject(name: string = i18n.t("editor:defaults.project"), screen: ScreenSpec = DEFAULT_SCREEN): Project {
   return {
     version: PROJECT_VERSION,
     name,
     author: "",
-    elements: [newBackground(), newTime()],
+    screen,
+    elements: fitElements([newBackground(), newTime()], DEFAULT_SCREEN, screen),
   };
 }
 

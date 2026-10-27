@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { assetsVersion, getAsset, subscribeAssets } from "@/model/assets";
 import { isStaticElement } from "@/export/support";
-import { SCREEN_H, SCREEN_W, type Element } from "@/model/types";
+import type { ScreenSize } from "@/model/screens";
+import type { Element } from "@/model/types";
 import { drawProject, elementBounds, type Rect } from "@/render/scene";
+import { screenPath, screenPathData } from "@/render/shapes";
 import { shownSim } from "@/render/values";
 import type { Ctx2D } from "@/render/canvas";
 import { useTranslation } from "react-i18next";
@@ -11,8 +13,6 @@ import { useEditor } from "./store";
 import { hitTest, isScalable, otherBounds, scaleElement, snapMove, snapTargets, type Corner, type SnapTargets } from "./geometry";
 import { useFontEpoch } from "./useFonts";
 
-/** The Fit 4 Pro screen is a rounded rectangle; this corner radius is an approximation for the mask. */
-export const SCREEN_RADIUS = 76;
 const STAGE_PAD = 40;
 const SNAP_PX = 6;
 const CORNERS: Corner[] = ["nw", "ne", "sw", "se"];
@@ -22,7 +22,7 @@ type Drag =
   | { kind: "scale"; el: Element; corner: Corner; anchor: { x: number; y: number }; corner0: { x: number; y: number } }
   | { kind: "bgpan"; id: string; px: number; py: number; offsetX: number; offsetY: number };
 
-export function useStageZoom(container: React.RefObject<HTMLElement | null>): number {
+export function useStageZoom(container: React.RefObject<HTMLElement | null>, screen: ScreenSize): number {
   const zoom = useEditor((s) => s.zoom);
   const [fit, setFit] = useState(1);
   useLayoutEffect(() => {
@@ -30,13 +30,13 @@ export function useStageZoom(container: React.RefObject<HTMLElement | null>): nu
     if (!node) return;
     const measure = () => {
       const r = node.getBoundingClientRect();
-      setFit(Math.max(0.3, Math.min(2.5, Math.min((r.width - STAGE_PAD * 2) / SCREEN_W, (r.height - STAGE_PAD * 2) / SCREEN_H))));
+      setFit(Math.max(0.3, Math.min(2.5, Math.min((r.width - STAGE_PAD * 2) / screen.width, (r.height - STAGE_PAD * 2) / screen.height))));
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(node);
     return () => ro.disconnect();
-  }, [container]);
+  }, [container, screen.width, screen.height]);
   return zoom === "fit" ? fit : zoom;
 }
 
@@ -49,6 +49,9 @@ export function Stage({ zoom: z }: { zoom: number }) {
     () => (photoPreview ? { ...fullProject, elements: fullProject.elements.filter(isStaticElement) } : fullProject),
     [fullProject, photoPreview],
   );
+  const screen = fullProject.screen;
+  const clip = useMemo(() => screenPath(screen), [screen]);
+  const outline = useMemo(() => screenPathData(screen), [screen]);
   const selectedId = useEditor((s) => s.selectedId);
   const sim = useEditor((s) => s.sim);
   const snapping = useEditor((s) => s.snapping);
@@ -87,8 +90,8 @@ export function Stage({ zoom: z }: { zoom: number }) {
     const node = canvas.current;
     if (!node) return;
     const scale = z * Math.min(window.devicePixelRatio || 1, 2);
-    const w = Math.round(SCREEN_W * scale);
-    const h = Math.round(SCREEN_H * scale);
+    const w = Math.round(screen.width * scale);
+    const h = Math.round(screen.height * scale);
     if (node.width !== w || node.height !== h) {
       node.width = w;
       node.height = h;
@@ -96,10 +99,14 @@ export function Stage({ zoom: z }: { zoom: number }) {
     const ctx = node.getContext("2d");
     if (!ctx) return;
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    ctx.clearRect(0, 0, SCREEN_W, SCREEN_H);
+    ctx.clearRect(0, 0, screen.width, screen.height);
+    // The preview shows the screen's shape: whatever lies outside the squircle, circle or rounded rectangle is not on the watch.
+    ctx.save();
+    ctx.clip(clip);
     ctx.imageSmoothingQuality = "high";
     drawProject(ctx as Ctx2D, project, effectiveSim());
-  }, [project, z, effectiveSim]);
+    ctx.restore();
+  }, [project, screen, clip, z, effectiveSim]);
 
   // One paint per state change; a steady loop only while the clock is live.
   useEffect(() => {
@@ -158,13 +165,13 @@ export function Stage({ zoom: z }: { zoom: number }) {
       x: hit.x,
       y: hit.y,
       bounds,
-      others: snapTargets(otherBounds(project.elements, hit.id, s)),
+      others: snapTargets(otherBounds(project.elements, hit.id, s), screen),
     };
     beginDrag();
   };
 
   const startScale = (e: React.PointerEvent, corner: Corner) => {
-    if (!selected) return;
+    if (!selected || selected.type === "background") return;
     e.stopPropagation();
     (scroller.current as HTMLElement).setPointerCapture(e.pointerId);
     const b = elementBounds(selected, effectiveSim());
@@ -200,9 +207,9 @@ export function Stage({ zoom: z }: { zoom: number }) {
       const bg = project.elements.find((el) => el.id === d.id);
       const img = bg?.type === "background" && bg.fill.kind === "image" ? getAsset(bg.fill.assetId) : null;
       if (!bg || bg.type !== "background" || bg.fill.kind !== "image" || !img) return;
-      const scale = Math.max(SCREEN_W / img.width, SCREEN_H / img.height) * Math.max(1, bg.fill.zoom);
-      const freeX = (img.width * scale - SCREEN_W) / 2;
-      const freeY = (img.height * scale - SCREEN_H) / 2;
+      const scale = Math.max(screen.width / img.width, screen.height / img.height) * Math.max(1, bg.fill.zoom);
+      const freeX = (img.width * scale - screen.width) / 2;
+      const freeY = (img.height * scale - screen.height) / 2;
       const clamp = (v: number) => Math.max(-1, Math.min(1, v));
       updateElement(d.id, {
         fill: {
@@ -234,20 +241,21 @@ export function Stage({ zoom: z }: { zoom: number }) {
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      <div
-        ref={frame}
-        className="relative m-auto shrink-0"
-        style={{ width: px(SCREEN_W), height: px(SCREEN_H), margin: STAGE_PAD }}
-      >
-        <div
-          className="absolute inset-0 overflow-hidden bg-black"
-          style={{
-            borderRadius: px(SCREEN_RADIUS),
-            boxShadow: `0 0 0 ${Math.max(6, px(9))}px #121a1d, 0 0 0 ${Math.max(7, px(10))}px rgb(255 255 255 / 9%), 0 24px 60px rgb(0 0 0 / 55%)`,
-          }}
+      <div ref={frame} className="relative m-auto shrink-0" style={{ width: px(screen.width), height: px(screen.height), margin: STAGE_PAD }}>
+        {/* The screen's edge: a bezel ring and a soft shadow drawn from the same outline the face is clipped to. */}
+        <svg
+          aria-hidden
+          className="pointer-events-none absolute inset-0 overflow-visible"
+          width={px(screen.width)}
+          height={px(screen.height)}
+          viewBox={`0 0 ${screen.width} ${screen.height}`}
+          style={{ filter: "drop-shadow(0 24px 30px rgb(0 0 0 / 55%))" }}
         >
-          <canvas ref={canvas} data-testid="face-canvas" role="img" aria-label={t("stage.preview")} className="block size-full" />
-        </div>
+          <path d={outline} fill="none" stroke="rgb(255 255 255 / 9%)" strokeWidth={(2 * Math.max(7, px(10))) / z} strokeLinejoin="round" />
+          <path d={outline} fill="none" stroke="#121a1d" strokeWidth={(2 * Math.max(6, px(9))) / z} strokeLinejoin="round" />
+          <path d={outline} fill="#000" />
+        </svg>
+        <canvas ref={canvas} data-testid="face-canvas" role="img" aria-label={t("stage.preview")} className="absolute inset-0 block size-full" />
 
         {/* Overlay: selection, handles, guides. Not clipped, so handles near the corners stay reachable. */}
         <div className="pointer-events-none absolute inset-0">

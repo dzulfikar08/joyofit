@@ -1,12 +1,14 @@
 import { createCanvas, ImageData } from "@napi-rs/canvas";
 import { VALUE_TYPE, decodeImage, describeLayout, getLayout, readHwt, type NamedObject, type RgbaImage } from "@joyofit/hwt";
 import { describe, expect, it } from "vitest";
-import { SCREEN_H, SCREEN_W } from "@/model/types";
+import { DEFAULT_SCREEN } from "@/model/screens";
 import { renderProjectSprite, handAngle } from "@/render/scene";
 import { spriteRgba } from "@/render/canvas";
 import { clockFields, defaultSim, fieldFraction, fieldValue } from "@/render/values";
 import { TEMPLATES } from "@/templates";
 import { buildHwt } from "./build";
+
+const { width: SCREEN_W, height: SCREEN_H } = DEFAULT_SCREEN;
 
 /**
  * Re-reads an exported .hwt the way the watch is documented to read it (layers in order, images by reference, digits by

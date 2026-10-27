@@ -1,6 +1,7 @@
 import { i18n } from "@/i18n";
 import { assetsToDataUrls, importAssetDataUrls } from "./assets";
 import { LEGACY_RING_SOURCES, LEGACY_WIDGET_SOURCES, fieldDef } from "./fields";
+import { parseScreen } from "./screens";
 import { PROJECT_VERSION, type Element, type Project } from "./types";
 
 /** `.json` project file: the project plus every uploaded image it uses, embedded as data URLs. */
@@ -73,6 +74,8 @@ export function restoreProject(raw: unknown): Project {
     version: PROJECT_VERSION,
     name: typeof project.name === "string" ? project.name : i18n.t("file.defaultName"),
     author: typeof project.author === "string" ? project.author : "",
+    // Projects saved before screens existed have none: they were all made for the Watch Fit 4.
+    screen: parseScreen(project.screen),
     elements,
   };
 }

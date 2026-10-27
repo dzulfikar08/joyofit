@@ -1,7 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { createCanvas } from "@napi-rs/canvas";
 import {
-  FIT4_PREVIEW,
   FIT4_SCREEN,
   VALUE_TYPE,
   decodeImage,
@@ -9,6 +8,7 @@ import {
   getLayout,
   describeLayout,
   parseWatchface,
+  previewSizes,
   readHwt,
   verifyWatchface,
   writeWatchface,
@@ -17,6 +17,7 @@ import {
 import { describe, expect, it } from "vitest";
 import { emptyProject, newDate, newHand, newImage, newRing, newTime, newWidget } from "@/model/defaults";
 import { LEGACY_CALORIES_ID } from "@/model/fields";
+import { presetById, presetScreen, type ScreenSpec } from "@/model/screens";
 import type { Element, Project } from "@/model/types";
 import { defaultSim } from "@/render/values";
 import { TEMPLATES } from "@/templates";
@@ -81,7 +82,7 @@ describe("export assembly", () => {
 
       // Slot 0 is the picker thumbnail.
       const thumb = decodeImage(wf.images[0]!);
-      expect({ w: thumb.width, h: thumb.height }).toEqual({ w: FIT4_PREVIEW.thumbnail.width, h: FIT4_PREVIEW.thumbnail.height });
+      expect({ w: thumb.width, h: thumb.height }).toEqual({ w: previewSizes(408, 480).thumbnail.width, h: previewSizes(408, 480).thumbnail.height });
 
       // Every image reference in the layout names a real slot and decodes.
       const refs = new Set<number>();
@@ -249,5 +250,132 @@ describe("export assembly", () => {
   it("names the file with letters and digits only", async () => {
     const result = await buildHwt({ ...emptyProject("My cool face #1!"), name: "My cool face #1!" }, sim, { includeExperimental: true });
     expect(result.fileName).toBe("Mycoolface1.hwt");
+  });
+});
+
+/**
+ * Width and height of a preview. In a browser it is a JPEG (size from the first SOF marker); the node canvas these tests run on
+ * writes a PNG for the same request, which carries its size in the IHDR chunk.
+ */
+function imageSize(bytes: Uint8Array): [number, number] {
+  const u32 = (at: number) => ((bytes[at]! << 24) | (bytes[at + 1]! << 16) | (bytes[at + 2]! << 8) | bytes[at + 3]!) >>> 0;
+  if (bytes[0] === 0x89 && bytes[1] === 0x50) return [u32(16), u32(20)];
+  let i = 2;
+  while (i + 9 < bytes.length) {
+    if (bytes[i] !== 0xff) {
+      i++;
+      continue;
+    }
+    const marker = bytes[i + 1]!;
+    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) return [(bytes[i + 7]! << 8) | bytes[i + 8]!, (bytes[i + 5]! << 8) | bytes[i + 6]!];
+    i += 2 + ((bytes[i + 2]! << 8) | bytes[i + 3]!);
+  }
+  throw new Error("no SOF marker");
+}
+
+const onScreen = (screen: ScreenSpec, ...elements: Element[]): Project => {
+  const base = emptyProject("Screen test", screen);
+  return { ...base, elements: [base.elements[0]!, ...elements] };
+};
+
+const preset = (id: string): ScreenSpec => presetScreen(presetById(id)!);
+
+describe("export for other screens", () => {
+  it("writes the Watch Fit 4 face as before: HWHD13, version 2.1.1, tested, Huawei's limits checked", async () => {
+    const result = await buildHwt(onScreen(preset("fit4"), newTime({ x: 40, y: 120 })), sim, { includeExperimental: true });
+    const pkg = readHwt(result.bytes);
+    expect(pkg.description).toMatchObject({ screen: FIT4_SCREEN, version: "2.1.1" });
+    expect(result.target).toEqual({ code: "HWHD13", version: "2.1.1", status: "tested", limitsKnown: true });
+    expect(imageSize(getEntry(pkg, "preview/cover.jpg")!)).toEqual([816, 960]);
+    expect(imageSize(getEntry(pkg, "preview/icon_small.jpg")!)).toEqual([331, 390]);
+    expect(result.notes.some((n) => /not known to Studio|Not tried|Experimental|has not tried/.test(n.text))).toBe(false);
+  });
+
+  for (const [id, code, width, height, thumb] of [
+    ["gt466", "HWHD09", 466, 466, { width: 260, height: 261 }],
+    ["band194", "HWHD07", 194, 368, { width: 108, height: 206 }],
+  ] as const) {
+    it(`${id}: ${code} .hwt with ${width} x ${height} images, no Fit 4 limit errors, marked untested`, async () => {
+      const result = await buildHwt(onScreen(preset(id), newTime({ x: 20, y: 60 })), sim, { includeExperimental: true });
+      const pkg = readHwt(result.bytes);
+      expect(pkg.description.screen).toBe(code);
+      expect(result.target).toMatchObject({ code, status: "untested", limitsKnown: false });
+
+      const wf = pkg.watchface!;
+      expect(verifyWatchface(writeWatchface(wf)).problems).toEqual([]);
+      const picker = decodeImage(wf.images[0]!);
+      expect({ width: picker.width, height: picker.height }).toEqual(thumb);
+      expect(imageSize(getEntry(pkg, "preview/cover.jpg")!)).toEqual([width * 2, height * 2]);
+      expect(imageSize(getEntry(pkg, "preview/aod.jpg")!)).toEqual([width * 2, height * 2]);
+
+      const background = layers(result.bytes).filter(({ label, layer }) => label === "ELEMENT_LABEL_BACKGROUND" && bodyOf(layer).ambient_mode === "NORMAL_ONLY");
+      expect(background).toHaveLength(1);
+      const bg = decodeImage(wf.images[Number(bodyOf(background[0]!.layer).res_name) - 1]!);
+      expect({ width: bg.width, height: bg.height }).toEqual({ width, height });
+
+      expect(result.notes.filter((n) => n.level === "error" || n.limit)).toEqual([]);
+      expect(result.notes.some((n) => n.screenStatus && n.text.includes(code))).toBe(true);
+      expect(result.notes.some((n) => n.text === "Size limits for this screen are not known to Studio; Huawei's tool may refuse it.")).toBe(true);
+      expect(result.debug).toMatchObject({ screen: code, screenSize: { width, height } });
+    });
+  }
+
+  it("crops to the project's screen, not to 408 x 480", async () => {
+    await registerTestAsset("wide", Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAFklEQVR4nGP4z8Dwn4EBCBgYGBgYGAAAFgAC/yvH4gAAAABJRU5ErkJggg==",
+      "base64",
+    ));
+    const sticker = newImage("wide", 100, 100, { x: 150, y: 300 });
+    const result = await buildHwt(onScreen(preset("band194"), sticker), sim, { includeExperimental: true });
+    const wf = readHwt(result.bytes).watchface!;
+    const single = layers(result.bytes).filter(({ label, layer }) => label === "ELEMENT_LABEL_BACKGROUND" && layer.draw_type === "DRAW_TYPE_SINGLE_RES" && bodyOf(layer).ambient_mode === "NORMAL_ONLY");
+    const sizes = single.map(({ layer }) => decodeImage(wf.images[Number(bodyOf(layer).res_name) - 1]!)).map((i) => `${i.width}x${i.height}`);
+    // Background, then the sticker cut to the 44 x 68 px left of the 194 x 368 screen.
+    expect(sizes).toContain("44x68");
+  });
+
+  it("splits a photo background into bands that use the screen's width and height", async () => {
+    const noise = createCanvas(480, 480);
+    const nctx = noise.getContext("2d");
+    const pixels = nctx.createImageData(480, 480);
+    let seed = 777;
+    for (let i = 0; i < pixels.data.length; i += 4) {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      pixels.data[i] = seed & 255;
+      pixels.data[i + 1] = (seed >> 8) & 255;
+      pixels.data[i + 2] = (seed >> 16) & 255;
+      pixels.data[i + 3] = 255;
+    }
+    nctx.putImageData(pixels, 0, 0);
+    await registerTestAsset("noise466", noise.toBuffer("image/png"));
+
+    const project = onScreen(preset("gt466"));
+    project.elements[0] = { ...project.elements[0]!, fill: { kind: "image", assetId: "noise466", zoom: 1, offsetX: 0, offsetY: 0, dim: 0 } } as Element;
+    const result = await buildHwt(project, sim, { includeExperimental: true });
+    const wf = readHwt(result.bytes).watchface!;
+    expect(wf.images.every((b) => b.length <= 750 * 1024)).toBe(true);
+    const normal = layers(result.bytes).filter(({ label, layer }) => label === "ELEMENT_LABEL_BACKGROUND" && bodyOf(layer).ambient_mode === "NORMAL_ONLY");
+    expect(normal.length).toBeGreaterThanOrEqual(2);
+    const rows = normal.map(({ layer }) => {
+      const body = bodyOf(layer);
+      const img = decodeImage(wf.images[Number(body.res_name) - 1]!);
+      return { y: (body.res_position as { y: number }).y, h: img.height, w: img.width };
+    });
+    expect(rows[0]!.y).toBe(0);
+    expect(rows.reduce((n, r) => n + r.h, 0)).toBe(466);
+    expect(rows.every((r) => r.w === 466)).toBe(true);
+  });
+
+  it("a custom size that matches a Huawei screen code exports as experimental with that code", async () => {
+    const custom: ScreenSpec = { presetId: null, width: 466, height: 466, shape: "circle", cornerRadius: 0 };
+    const result = await buildHwt(onScreen(custom, newTime({ x: 20, y: 60 })), sim, { includeExperimental: true });
+    expect(readHwt(result.bytes).description).toMatchObject({ screen: "HWHD09", version: "2.1.1" });
+    expect(result.target).toEqual({ code: "HWHD09", version: "2.1.1", status: "experimental", limitsKnown: false });
+    expect(result.notes.some((n) => /^Experimental: .*HWHD09.*2\.1\.1/.test(n.text))).toBe(true);
+  });
+
+  it("refuses a custom size Huawei has no screen code for, with the reason", async () => {
+    const custom: ScreenSpec = { presetId: null, width: 300, height: 300, shape: "squircle", cornerRadius: 60 };
+    await expect(buildHwt(onScreen(custom), sim, { includeExperimental: true })).rejects.toThrow("Huawei has no screen code for 300 × 300");
   });
 });

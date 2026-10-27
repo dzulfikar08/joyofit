@@ -2,12 +2,12 @@
  * The JoyoFit Studio document model. Everything here is plain JSON so a project can be autosaved, undone
  * (snapshots are cheap because updates are immutable) and exported as a `.json` file.
  *
- * Coordinates are watch pixels on the 408 x 480 screen of the Watch Fit 4 / Fit 4 Pro (GB code HWHD13).
+ * Coordinates are pixels of the project's own screen (`Project.screen`, see `screens.ts`), top left at 0,0.
  * Elements are listed bottom to top.
  */
 
-export const SCREEN_W = 408;
-export const SCREEN_H = 480;
+import type { ScreenSpec } from "./screens";
+
 export const PROJECT_VERSION = 1;
 
 export type FontRef = { family: string; weight: number };
@@ -163,6 +163,8 @@ export interface Project {
   /** Free-form title; the .hwt file name is derived from it (letters and digits only). */
   name: string;
   author: string;
+  /** The watch screen the face is designed for: its size, shape and corner radius. Elements are placed in its pixels. */
+  screen: ScreenSpec;
   elements: Element[];
 }
 

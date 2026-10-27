@@ -167,7 +167,7 @@ Enum images are indexed by value (`images[v]`); weekday and month tables have an
 
 `watchface.bin` ≤ 9.5 MB; `.hwt` ≤ 10 MB; one image ≤ 750 KB *after compression* (the encoded blob; GT2e experiments in the research doc crash at ~850 KB, safe at ~690 KB, consistent); Σ w·h·4 of the images used ≤ 4 MiB ("PSRAM");
 "total layer size" ≤ 25,600 bytes by a per-control cost model (`estimateLayerBytes`). Several third-party Fit 4 Pro samples exceed that model's estimate (SpaceRed: 28,236) although they are reported to run, so the model is reported as a warning only.
-`checkFit4Limits` implements all of it.
+`checkFit4Limits` implements all of it for HWHD13. No other screen's limits are known to this package, so there is no check for them.
 
 ## API
 
@@ -185,7 +185,8 @@ import { readHwt, writeHwt, createHwt, FaceBuilder, VALUE_TYPE, verifyWatchface,
 | Layout | `getLayout(wf)`/`setLayout`, `describeLayout` (named JSON, `$unknown` for unexplained fields), `readV1Elements`, `collectImageRefs`, `usedImageIndices`, `remapImageRefs` |
 | Low-level edits | `addImage(wf, rgba\|blob) → index`, `replaceImage(wf, index, ...) → {resized,...}`, `addStaticImage(wf, {x, y, image, position})` (v1 and v2) |
 | From scratch (v2) | `new FaceBuilder(wf)`: `.image()`, `.element(label, build, {preview, position})`, `.commit()`; layer builders `singleImage`, `hand`, `arc`, `digits`, `selected`, `container` with `ambient: "normal"\|"aod"\|"both"` |
-| Tables | `VALUE_TYPES`, `VALUE_TYPE`, `WIDGET_DATA_TYPE`, `RESOLUTIONS`, `FIT4_LIMITS`, `FIT4_PREVIEW` |
+| Tables | `VALUE_TYPES`, `VALUE_TYPE`, `WIDGET_DATA_TYPE`, `RESOLUTIONS`, `FIT4_LIMITS` |
+| Previews | `previewSizes(width, height)`: cover/aod, icon_small and thumbnail sizes for a screen (measured for 408 x 480, the same ratios elsewhere) |
 
 ```ts
 const pkg = createHwt({ title: "Mine", author: "me", cover: coverJpg, aod: aodJpg, iconSmall: iconJpg, thumbnail: rgba228x269 });

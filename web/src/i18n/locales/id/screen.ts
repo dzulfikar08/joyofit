@@ -1,0 +1,47 @@
+export default {
+  title: "Layar jam",
+  description: "Pilih layar yang dituju face ini. Semua yang kamu taruh diukur dalam piksel layar itu.",
+  custom: "Khusus",
+  size: "{{width}} × {{height}}",
+  groups: {
+    squircle: "Squircle (Watch Fit)",
+    round: "Bulat (GT)",
+    band: "Band",
+    custom: "Khusus",
+  },
+  tested: "Sudah dicoba di jam",
+  untested: "Belum dicoba di jam",
+  shape: {
+    label: "Bentuk",
+    squircle: "Squircle",
+    circle: "Lingkaran",
+    rect: "Persegi panjang sudut bulat",
+  },
+  width: "Lebar",
+  height: "Tinggi",
+  range: "{{min}} sampai {{max}} px",
+  cornerRadius: "Radius sudut",
+  notice: {
+    untested: "Layar ini belum pernah dicoba di jam sungguhan dari Studio. Ukurannya diambil dari tabel resolusi jam Huawei.",
+    custom: "Ukuran khusus tidak terikat ke jam mana pun.",
+    noPhoto: "Aplikasi JoyoFit di ponsel hanya mengirim photo face ke Watch Fit 4 dan Fit 4 Pro. Untuk layar ini PNG tetap bisa diunduh, tapi JoyoFit belum bisa mengirimnya ke jam.",
+  },
+  fit: {
+    label: "Face ini sudah punya layer. Apa yang terjadi pada layer itu?",
+    scale: "Skalakan desain ke layar baru",
+    scaleHint: "Semuanya membesar atau mengecil bersama dan tetap di tengah.",
+    keep: "Pertahankan posisi",
+    keepHint: "Layer tetap di piksel yang sama. Sebagian bisa keluar dari layar baru.",
+  },
+  apply: "Pakai layar ini",
+  cancel: "Batal",
+  header: {
+    label: "Layar: {{name}}, {{size}} px. Ganti layar",
+  },
+  changed: "Layar diganti ke {{name}}",
+  changedHint: "Tekan Ctrl+Z untuk kembali.",
+  templates: {
+    label: "Layar",
+    change: "Ganti layar",
+  },
+} as const;

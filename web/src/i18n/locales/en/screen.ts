@@ -1,0 +1,47 @@
+export default {
+  title: "Watch screen",
+  description: "Pick the screen this face is made for. Everything you place is measured in that screen's pixels.",
+  custom: "Custom",
+  size: "{{width}} × {{height}}",
+  groups: {
+    squircle: "Squircle (Watch Fit)",
+    round: "Round (GT)",
+    band: "Band",
+    custom: "Custom",
+  },
+  tested: "Tested on a watch",
+  untested: "Not tried on a watch",
+  shape: {
+    label: "Shape",
+    squircle: "Squircle",
+    circle: "Circle",
+    rect: "Rounded rectangle",
+  },
+  width: "Width",
+  height: "Height",
+  range: "{{min}} to {{max}} px",
+  cornerRadius: "Corner radius",
+  notice: {
+    untested: "Nobody has tried this screen on a real watch from Studio yet. The size comes from Huawei's table of watch resolutions.",
+    custom: "A custom size is not tied to any watch.",
+    noPhoto: "JoyoFit's phone app sends a photo face to the Watch Fit 4 and Fit 4 Pro only. For this screen you can still download the PNG, but JoyoFit can't send it to the watch yet.",
+  },
+  fit: {
+    label: "This face already has layers. What should happen to them?",
+    scale: "Scale the design to the new screen",
+    scaleHint: "Everything grows or shrinks together and stays centred.",
+    keep: "Keep positions",
+    keepHint: "Layers stay at the same pixels. Some may fall outside the new screen.",
+  },
+  apply: "Use this screen",
+  cancel: "Cancel",
+  header: {
+    label: "Screen: {{name}}, {{size}} px. Change the screen",
+  },
+  changed: "Screen changed to {{name}}",
+  changedHint: "Press Ctrl+Z to go back.",
+  templates: {
+    label: "Screen",
+    change: "Change screen",
+  },
+} as const;

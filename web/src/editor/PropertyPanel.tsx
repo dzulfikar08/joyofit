@@ -393,10 +393,11 @@ function WidgetFields({ el, set }: { el: WidgetElement; set: Patch<WidgetElement
 
 function RingFields({ el, set }: { el: RingElement; set: Patch<RingElement> }) {
   const { t, i18n } = useTranslation("props");
+  const longSide = useEditor((s) => Math.max(s.project.screen.width, s.project.screen.height));
   return (
     <Section title={t("section.ring")}>
       <FieldPicker label={t("common.shows")} value={el.valueType} options={ratioFields()} onChange={(def) => set({ valueType: def.id, name: i18n.t("editor:defaults.ring", { label: def.label }) })} />
-      <SliderField label={t("ring.diameter")} value={el.size} min={48} max={480} unit="px" onChange={(size) => set({ size })} />
+      <SliderField label={t("ring.diameter")} value={el.size} min={48} max={Math.max(96, longSide)} unit="px" onChange={(size) => set({ size })} />
       <SliderField label={t("ring.thickness")} value={el.thickness} min={2} max={60} unit="px" onChange={(thickness) => set({ thickness })} />
       <SliderField label={t("ring.startAngle")} value={el.startAngle} min={0} max={359} unit="°" onChange={(startAngle) => set({ startAngle })} />
       <SliderField label={t("ring.sweep")} value={el.sweep} min={30} max={360} unit="°" onChange={(sweep) => set({ sweep })} />

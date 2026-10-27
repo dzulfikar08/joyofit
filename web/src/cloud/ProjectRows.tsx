@@ -26,10 +26,11 @@ interface Props {
   onDelete: (meta: CloudMeta) => void;
 }
 
+/** A fixed box the picture sits in whole: the thumbnail has the aspect of the face's screen (band, round, squircle), so it is contained, not cropped. */
 function Thumb({ meta }: { meta: CloudMeta }) {
   return (
     <div className="relative grid aspect-[408/480] w-12 shrink-0 self-start place-items-center overflow-hidden rounded-xl bg-stage text-stage-muted" data-testid={`cloud-thumb-${meta.id}`}>
-      {meta.thumb ? <img src={meta.thumb} alt="" className="absolute inset-0 size-full object-cover" /> : <Watch className="size-5" aria-hidden />}
+      {meta.thumb ? <img src={meta.thumb} alt="" className="absolute inset-0 size-full object-contain" /> : <Watch className="size-5" aria-hidden />}
     </div>
   );
 }

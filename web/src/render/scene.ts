@@ -1,7 +1,7 @@
 import { getAsset } from "@/model/assets";
+import type { ScreenSize } from "@/model/screens";
 import {
-  SCREEN_H,
-  SCREEN_W,
+  type BackgroundElement,
   type BackgroundFill,
   type Element,
   type HandElement,
@@ -25,7 +25,7 @@ export interface Rect {
 
 const RAD = Math.PI / 180;
 
-export function drawBackground(ctx: Ctx2D, fill: BackgroundFill, w = SCREEN_W, h = SCREEN_H): void {
+export function drawBackground(ctx: Ctx2D, fill: BackgroundFill, w: number, h: number): void {
   if (fill.kind === "solid") {
     ctx.fillStyle = fill.color;
     ctx.fillRect(0, 0, w, h);
@@ -60,9 +60,9 @@ export function drawBackground(ctx: Ctx2D, fill: BackgroundFill, w = SCREEN_W, h
   }
 }
 
-export function renderBackgroundSprite(fill: BackgroundFill): Sprite {
-  const { sprite, ctx } = newSprite(SCREEN_W, SCREEN_H);
-  drawBackground(ctx, fill);
+export function renderBackgroundSprite(fill: BackgroundFill, screen: ScreenSize): Sprite {
+  const { sprite, ctx } = newSprite(screen.width, screen.height);
+  drawBackground(ctx, fill, screen.width, screen.height);
   return sprite;
 }
 
@@ -91,11 +91,9 @@ function ringSprite(el: RingElement) {
   return renderRing(el);
 }
 
-/** Bounds on screen (hands: the box of the rotated sprite at the simulated time). */
-export function elementBounds(el: Element, sim: Sim): Rect {
+/** Bounds on screen (hands: the box of the rotated sprite at the simulated time). The background has none: it is the screen. */
+export function elementBounds(el: Exclude<Element, BackgroundElement>, sim: Sim): Rect {
   switch (el.type) {
-    case "background":
-      return { x: 0, y: 0, w: SCREEN_W, h: SCREEN_H };
     case "image":
       return { x: el.x, y: el.y, w: el.w, h: el.h };
     case "ring":
@@ -197,11 +195,11 @@ export function drawImageElement(ctx: Ctx2D, el: ImageElement): void {
   else drawMissing(ctx, { x: el.x, y: el.y, w: el.w, h: el.h });
 }
 
-export function drawElement(ctx: Ctx2D, el: Element, sim: Sim): void {
+export function drawElement(ctx: Ctx2D, el: Element, sim: Sim, screen: ScreenSize): void {
   if (!el.visible) return;
   switch (el.type) {
     case "background":
-      drawBackground(ctx, el.fill);
+      drawBackground(ctx, el.fill, screen.width, screen.height);
       return;
     case "image":
       drawImageElement(ctx, el);
@@ -237,12 +235,13 @@ export function drawElement(ctx: Ctx2D, el: Element, sim: Sim): void {
 }
 
 export function drawProject(ctx: Ctx2D, project: Project, sim: Sim): void {
-  for (const el of project.elements) drawElement(ctx, el, sim);
+  for (const el of project.elements) drawElement(ctx, el, sim, project.screen);
 }
 
 /** Whole face at 1x as pixels, used by previews and the export check. */
 export function renderProjectSprite(project: Project, sim: Sim): Sprite {
-  const surface = createSurface(SCREEN_W, SCREEN_H);
+  const { width, height } = project.screen;
+  const surface = createSurface(width, height);
   drawProject(context2d(surface), project, sim);
-  return { width: SCREEN_W, height: SCREEN_H, surface };
+  return { width, height, surface };
 }

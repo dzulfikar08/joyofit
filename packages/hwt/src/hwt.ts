@@ -105,16 +105,39 @@ export function setEntry(pkg: HwtPackage, name: string, data: Uint8Array): void 
 // ---------------------------------------------------------------------------------------------------------------------
 // Creation from scratch
 
+/** Pixel size of one of the preview images. */
+export interface PreviewSize {
+  width: number;
+  height: number;
+}
+
+/** Sizes of the three preview JPEGs and of the in-binary thumbnail (image slot 0) for a screen. */
+export interface PreviewSizes {
+  cover: PreviewSize;
+  aod: PreviewSize;
+  iconSmall: PreviewSize;
+  thumbnail: PreviewSize;
+}
+
 /**
- * Sizes of the three preview JPEGs and of the in-binary thumbnail (image slot 0) for 408 x 480 faces, taken from the 10
- * Fit 4 Pro samples (all identical): cover/aod 816 x 960, icon_small 331 x 390, thumbnail 228 x 269.
+ * Sizes of the previews for a face of `width` x `height` pixels. Measured on the 10 Fit 4 Pro samples (408 x 480, all
+ * identical): cover/aod 816 x 960, icon_small 331 x 390, thumbnail 228 x 269. Other screens scale by the same ratios (cover and
+ * aod 2x, icon_small 331/408 and 390/480, thumbnail 228/408 and 269/480, rounded); only the 408 x 480 numbers are measured here.
+ * Other samples show different thumbnails (250 x 250 on round faces, 126 x 238 on the Band 9), so for those screens the
+ * thumbnail is an approximation.
  */
-export const FIT4_PREVIEW = {
-  cover: { width: 816, height: 960 },
-  aod: { width: 816, height: 960 },
-  iconSmall: { width: 331, height: 390 },
-  thumbnail: { width: 228, height: 269 },
-} as const;
+export function previewSizes(width: number, height: number): PreviewSizes {
+  const scaled = (w: number, h: number): PreviewSize => ({
+    width: Math.max(1, Math.round((width * w) / 408)),
+    height: Math.max(1, Math.round((height * h) / 480)),
+  });
+  return {
+    cover: { width: width * 2, height: height * 2 },
+    aod: { width: width * 2, height: height * 2 },
+    iconSmall: scaled(331, 390),
+    thumbnail: scaled(228, 269),
+  };
+}
 
 export interface CreateHwtOptions {
   title: string;
@@ -122,7 +145,7 @@ export interface CreateHwtOptions {
   titleCn?: string;
   author?: string;
   designer?: string;
-  /** Default `HWHD13` (Watch Fit 3/4/4 Pro/5, 408 x 480). */
+  /** Default `HWHD13` (Watch Fit 3/4/4 Pro/5, 408 x 480). Must be a code in `RESOLUTIONS`. */
   screen?: string;
   /** `x.y.z`, default `2.1.1` (HWHD13 "2.1.z" per Huawei's version table). */
   version?: string;
@@ -133,7 +156,7 @@ export interface CreateHwtOptions {
   iconSmall?: Uint8Array;
   /**
    * Image slot 0: the thumbnail the watch shows in its face picker (never referenced by the layout). Default: opaque black,
-   * 228 x 269 for HWHD13. Pass your own render for a useful picker preview.
+   * `previewSizes` of the screen's size (228 x 269 for HWHD13). Pass your own render for a useful picker preview.
    */
   thumbnail?: RgbaImage;
   /** The 8 byte signature at the start of the bin area. Default `55 55 55 55 01 00 00 01` (all but one sample). */
@@ -168,7 +191,9 @@ export function createHwt(options: CreateHwtOptions): HwtPackage {
     briefinfo: options.briefinfo ?? "{}",
   };
   if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(description.title)) throw new HwtError("title contains control characters");
-  const thumb = options.thumbnail ?? solid(FIT4_PREVIEW.thumbnail.width, FIT4_PREVIEW.thumbnail.height, [0, 0, 0, 255]);
+  const screenSize = RESOLUTIONS[screen]!;
+  const thumbSize = previewSizes(screenSize.width, screenSize.height).thumbnail;
+  const thumb = options.thumbnail ?? solid(thumbSize.width, thumbSize.height, [0, 0, 0, 255]);
   const signature = options.signature ?? DEFAULT_SIGNATURE;
   if (signature.length !== SIGNATURE_SIZE) throw new HwtError(`signature must be ${SIGNATURE_SIZE} bytes`);
 

@@ -18,9 +18,9 @@ export interface ShrinkLevel {
 }
 
 /**
- * Applied in order, only while the document is over the limit. The face is 408 x 480: a photo at 2x that still covers it with
- * detail to spare, and a sticker rarely shows above 1x. The local project and the local `.json` export are never touched; only the
- * copy sent to the cloud is lighter.
+ * Applied in order, only while the document is over the limit. A face is at most 600 px on a side (408 x 480 on a Watch Fit 4): a photo
+ * at 2x of that still covers it with detail to spare, and a sticker rarely shows above 1x. The local project and the local `.json`
+ * export are never touched; only the copy sent to the cloud is lighter.
  */
 export const SHRINK_LEVELS: readonly ShrinkLevel[] = [
   { pngSide: 512, jpegSide: 1000, jpegQuality: 0.85 },
