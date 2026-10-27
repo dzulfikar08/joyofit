@@ -1,3 +1,5 @@
+import * as Clipboard from 'expo-clipboard';
+import * as Linking from 'expo-linking';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +19,7 @@ import { errorMessage, formatCount, formatDateTime } from '@/format';
 import { useWatchPresence } from '@/features/device/useWatchPresence';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { SignInButtons } from '@/features/settings/SignInButtons';
+import { PRO_SUPPORT } from '@/features/pro/support';
 import { UpgradeCard } from '@/features/pro/UpgradeCard';
 import { useCloud } from '@/state/CloudProvider';
 import { useTheme } from '@/theme';
@@ -51,6 +54,7 @@ export function CloudSection() {
   const presence = useWatchPresence();
   const [cycleOn, setCycleOn] = useState(cycleSyncEnabled);
   const [cycleError, setCycleError] = useState<string | null>(null);
+  const [emailCopied, setEmailCopied] = useState(false);
   const [confirmingWipe, setConfirmingWipe] = useState(false);
   const [confirmingMobile, setConfirmingMobile] = useState(false);
   const busy = cloud.uploading || cloud.deleting || cloud.wiping;
@@ -87,6 +91,27 @@ export function CloudSection() {
         {cloud.error ? <Notice tone="danger">{cloud.error}</Notice> : null}
         {onlyHere ? <Notice icon="phone-portrait-outline">{t('cloud.onlyHere')}</Notice> : null}
         {cloud.pro === true ? <Notice icon="cloud-done-outline">{t('cloud.proSyncs')}</Notice> : null}
+        {cloud.pro === true ? (
+          <>
+            <Notice icon="chatbubble-ellipses-outline">{t('cloud.support.body')}</Notice>
+            <Button
+              label={t('cloud.support.open', { handle: PRO_SUPPORT.handle })}
+              variant="secondary"
+              icon="open-outline"
+              onPress={() => void Linking.openURL(PRO_SUPPORT.url)}
+            />
+            {cloud.email ? (
+              <Button
+                label={emailCopied ? t('cloud.support.copied') : t('cloud.support.copy')}
+                variant="ghost"
+                icon="copy-outline"
+                onPress={() => {
+                  void Clipboard.setStringAsync(cloud.email ?? '').then(() => setEmailCopied(true));
+                }}
+              />
+            ) : null}
+          </>
+        ) : null}
         {pairingNote ? <Notice icon="watch-outline">{t('cloud.pairingNote')}</Notice> : null}
         {cloud.restoring ? (
           <Notice icon="cloud-download-outline">

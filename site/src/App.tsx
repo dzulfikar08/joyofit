@@ -94,6 +94,7 @@ import { isPublicPath } from "./seo";
 import { Testimonials } from "./testimonials-section";
 import { TESTIMONIALS } from "./testimonials";
 import { AndroidMark, ANDROID_ROBOT_CREDIT, AppleMark, ButtonLink, GithubMark, Phone, Ring } from "./ui";
+import { PRO_SUPPORT, PRO_SUPPORT_LINE } from "./support";
 import roadmap from "../../docs/roadmap.json";
 import { IphonePage, StravaPage } from "./Waitlist";
 
@@ -1950,10 +1951,14 @@ function Options() {
             </p>
             <ul className="mt-5 space-y-2.5 text-sm">
               {[
-                "Termasuk di JoyoRogo Pro (cadangan cloud JoyoFit)",
-                "Server kami yang urus, tanpa setup",
-                "Masuk dengan akun JoyoRogo yang sama",
-                "Dukungan prioritas: laporan dan permintaan fiturmu didahulukan",
+                "Satu paket JoyoRogo Pro untuk JoyoRogo dan JoyoFit",
+                "Cadangan cloud latihan, tidur, perlengkapan, dan riwayat beban",
+                "Coach dan Tanya coach, Joyo AI, serta Koneksi AI",
+                "Proyek Studio di cloud dan unggah tampilan jam dari web",
+                "Detail latihan temanmu di feed: detak jantung, split, zona, dan rute yang mereka bagikan",
+                "Fitur makan JoyoRogo: jatah scan AI lebih banyak, saran makan dari skor JoyoFit, rencana makan dan daftar belanja",
+                "Server kami yang urus, tanpa setup. Masuk dengan akun JoyoRogo yang sama",
+                PRO_SUPPORT_LINE,
               ].map((line) => (
                 <li key={line} className="flex gap-2">
                   <Check className="mt-0.5 size-4 shrink-0 text-makan-ink" aria-hidden />
@@ -1966,7 +1971,14 @@ function Options() {
                 Ambil JoyoRogo Pro
               </ButtonLink>
               <p className="mt-2 text-center text-xs text-muted-foreground">
-                Harga dan paket mengikuti joyorogo.com/harga.
+                Harga dan paket mengikuti joyorogo.com/harga. Dukungan lewat{" "}
+                <a href={PRO_SUPPORT.url} className="font-semibold underline underline-offset-4" target="_blank" rel="noopener">
+                  Threads {PRO_SUPPORT.handle}
+                </a>
+                .
+              </p>
+              <p className="mt-2 text-center text-xs text-muted-foreground">
+                Tetap gratis: sinkron dari jam, Hari ini, tidur dan detak jantung, riwayat, ekspor, Health Connect dan Apple Health, Strava, pencatat latihan beban, serta editor Studio dan ekspor PNG.
               </p>
             </div>
           </section>

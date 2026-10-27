@@ -218,6 +218,12 @@
     "wipeTitle": "Delete cloud data?",
     "wipeMessage": "Removes your workouts, steps and sleep from the cloud. This phone's data and your account stay, and automatic sync is turned off so nothing is uploaded again until you turn it back on.",
     "details": "Cloud sync is part of JoyoRogo Pro. With a Pro account every workout is uploaded to your JoyoRogo account as one compressed file: its GPS track, heart rate, speed, cadence and power, and the analysis the app shows, so it survives a lost phone, shows on the JoyoRogo web and restores onto a new phone after you sign in. Steps, heart rate, SpO2, sleep and the watch's Bluetooth address go to the JoyoFit cloud with the same account. Without Pro nothing is uploaded and your workouts stay on this phone. While you are signed in the app also reads from the cloud: it downloads workouts this phone does not have, and removes the ones you deleted from the cloud elsewhere. JoyoFit also exchanges meals, weight and daily scores with JoyoRogo. With Pro, the settings that follow the account (profile, goals, theme, language, weather, cycle calendar), sticker templates, saved routes, HRV, sleep scores, health metrics and cycle data follow your account too, so several phones show the same thing; cycle data can be switched off with the Sync cycle data switch, which deletes its copy in the cloud. Watch pairing, the watch key and each phone's own settings do not sync. Delete cloud data removes your workouts, steps, sleep and the data that follows the account from the cloud and keeps this phone's data and your account; Delete JoyoRogo account removes the account and everything else (details at fit.joyorogo.com/privasi).",
+    "support": {
+      "body": "Priority support: send a DM on Threads and say the email of your JoyoRogo account. Pro DMs are answered within 1 working day.",
+      "open": "DM {{handle}} on Threads",
+      "copy": "Copy account email",
+      "copied": "Email copied"
+    },
     "onlyHere": "This data is only on this phone. Pro keeps it in the cloud.",
     "proSyncs": "Syncs: workouts, steps, sleep, gear, the coach plan, strength history, settings, sticker templates, routes and health data. Does not sync: watch pairing, the Health Connect or Apple Health connection, and each phone's own settings (Wi-Fi only, automatic sync, permissions).",
     "pairingNote": "Your history shows here, but the watch has to be paired on this phone. Watch pairing does not go to the cloud.",

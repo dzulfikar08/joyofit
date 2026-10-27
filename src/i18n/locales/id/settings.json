@@ -215,6 +215,12 @@
     "wipeTitle": "Hapus data cloud?",
     "wipeMessage": "Menghapus latihan, langkah, dan tidurmu dari cloud. Data di ponsel ini dan akunmu tetap ada, dan sinkron otomatis dimatikan supaya tidak ada yang diunggah lagi sampai kamu menyalakannya kembali.",
     "details": "Sinkron cloud adalah bagian dari JoyoRogo Pro. Dengan akun Pro, setiap latihan diunggah ke akun JoyoRogo kamu sebagai satu file terkompresi: jalur GPS, detak jantung, kecepatan, kadensi, daya, dan analisis yang ditampilkan aplikasi, sehingga aman kalau ponsel hilang, tampil di web JoyoRogo, dan dipulihkan ke ponsel baru setelah kamu masuk. Langkah, detak jantung, SpO2, tidur, dan alamat Bluetooth jam masuk ke cloud JoyoFit dengan akun yang sama. Tanpa Pro tidak ada yang diunggah dan latihanmu tetap di ponsel ini. Selama kamu masuk, aplikasi juga membaca dari cloud: mengunduh latihan yang belum ada di ponsel ini, dan menghapus yang sudah kamu hapus dari cloud di tempat lain. JoyoFit juga bertukar makanan, berat badan, dan skor harian dengan JoyoRogo. Dengan Pro, pengaturan yang ikut akun (profil, target, tema, bahasa, cuaca, kalender siklus), template stiker, rute tersimpan, HRV, skor tidur, metrik kesehatan, dan data siklus juga ikut akun, supaya beberapa HP menampilkan hal yang sama; data siklus bisa dimatikan lewat saklar Sinkron data siklus, yang menghapus salinannya di cloud. Pairing jam, kunci jam, dan pengaturan tiap HP tidak ikut. Hapus data cloud menghapus latihan, langkah, tidur, dan data yang ikut akun dari cloud dan menyimpan data di ponsel ini serta akunmu; Hapus akun JoyoRogo menghapus akun dan semua yang lain (detail di fit.joyorogo.com/privasi).",
+    "support": {
+      "body": "Dukungan prioritas: kirim DM di Threads dan sebutkan email akun JoyoRogo-mu. DM dari Pro dibalas paling lambat 1 hari kerja.",
+      "open": "DM {{handle}} di Threads",
+      "copy": "Salin email akun",
+      "copied": "Email tersalin"
+    },
     "onlyHere": "Data ini hanya di HP ini. Pro menyimpannya di cloud.",
     "proSyncs": "Ikut cloud: latihan, langkah, tidur, perlengkapan, rencana pelatih, angkat beban, pengaturan, template stiker, rute, dan data kesehatan. Tidak ikut: pairing jam, koneksi Health Connect atau Apple Health, dan pengaturan tiap HP (Hanya Wi-Fi, sinkron otomatis, izin).",
     "pairingNote": "Riwayat tampil di sini, tapi jam harus dipasangkan sendiri di HP ini. Pairing jam tidak ikut cloud.",
