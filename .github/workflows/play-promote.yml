@@ -1,0 +1,87 @@
+# Puts one versionCode already uploaded to Play (normally the alpha build) on the production track as a staged rollout,
+# in one committed edit. Nothing is uploaded. Commiting the edit sends the change to review and CANCELS any review in
+# progress (docs/ci-release.md), so run it once and upload nothing to Play until Google approves it.
+# The same service account (PLAY_SERVICE_ACCOUNT_JSON, `release` environment) has access to JoyoFit and JoyoRogo.
+name: Play promote to production
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "App"
+        type: choice
+        options: [com.joyodigitama.joyofit, com.joyodigitama.joyorogo]
+      version_code:
+        description: "versionCode to release (must already be on a Play track; see the Play tracks workflow)"
+        type: string
+        required: true
+      user_fraction:
+        description: "Staged rollout share, 0 < x < 1 (1 = full rollout)"
+        type: string
+        default: "0.2"
+      release_notes_id:
+        description: "What's new (id-ID), max 500 characters"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: play-promote-${{ inputs.package }}
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    environment: release
+    steps:
+      - name: Promote
+        env:
+          SA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PKG: ${{ inputs.package }}
+          CODE: ${{ inputs.version_code }}
+          FRACTION: ${{ inputs.user_fraction }}
+          NOTES: ${{ inputs.release_notes_id }}
+        run: |
+          pip install --quiet pyjwt==2.10.1 cryptography==46.0.3
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, os, time, urllib.error, urllib.parse, urllib.request
+          import jwt
+          code, fraction, notes = os.environ["CODE"].strip(), float(os.environ["FRACTION"]), os.environ["NOTES"].strip()
+          if not code.isdigit(): raise SystemExit(f"version_code must be digits, got {code!r}")
+          if not 0 < fraction <= 1: raise SystemExit("user_fraction must be in (0, 1]")
+          if not 0 < len(notes) <= 500: raise SystemExit("release_notes_id must be 1..500 characters")
+          sa = json.loads(os.environ["SA"])
+          now = int(time.time())
+          assertion = jwt.encode({"iss": sa["client_email"], "scope": "https://www.googleapis.com/auth/androidpublisher",
+                                  "aud": sa["token_uri"], "iat": now, "exp": now + 600}, sa["private_key"], algorithm="RS256")
+          body = urllib.parse.urlencode({"grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer", "assertion": assertion}).encode()
+          token = json.load(urllib.request.urlopen(urllib.request.Request(sa["token_uri"], data=body)))["access_token"]
+          base = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{os.environ['PKG']}"
+          def call(method, path, payload=None):
+              data = json.dumps(payload).encode() if payload is not None else (b"" if method == "POST" else None)
+              req = urllib.request.Request(base + path, method=method, data=data,
+                                           headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"})
+              try:
+                  with urllib.request.urlopen(req) as res:
+                      raw = res.read()
+              except urllib.error.HTTPError as e:
+                  raise SystemExit(f"{method} {path}: {e.code} {e.read().decode()[:800]}")
+              return json.loads(raw) if raw else None
+          edit = call("POST", "/edits")["id"]
+          committed = False
+          try:
+              tracks = call("GET", f"/edits/{edit}/tracks")["tracks"]
+              held = {c for t in tracks for r in t.get("releases", []) for c in r.get("versionCodes", [])}
+              if code not in held: raise SystemExit(f"versionCode {code} is on no track; tracks hold {sorted(held)}")
+              release = {"versionCodes": [code], "releaseNotes": [{"language": "id-ID", "text": notes}]}
+              release.update({"status": "completed"} if fraction == 1 else {"status": "inProgress", "userFraction": fraction})
+              call("PUT", f"/edits/{edit}/tracks/production", {"track": "production", "releases": [release]})
+              call("POST", f"/edits/{edit}:commit")
+              committed = True
+              print(f"Committed: production = {code}, {'full rollout' if fraction == 1 else f'{fraction:.0%} staged rollout'}. "
+                    "Sent to review; upload nothing to Play until it is approved.")
+          finally:
+              if not committed: call("DELETE", f"/edits/{edit}")
+          PY
