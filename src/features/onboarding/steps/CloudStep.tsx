@@ -1,4 +1,3 @@
-import * as Linking from 'expo-linking';
 import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -13,7 +12,8 @@ import { cloudStepState } from '@/features/onboarding/cloudStep';
 import { proOffer } from '@/features/onboarding/pro';
 import { Bullet, StepIntro } from '@/features/onboarding/StepIntro';
 import { SignInButtons } from '@/features/settings/SignInButtons';
-import { openProUpgrade, proUpgradeAction } from '@/features/pro/offer';
+import { proUpgradeAction } from '@/features/pro/offer';
+import { openUpgrade } from '@/features/pro/openUpgrade';
 import { useCloud } from '@/state/CloudProvider';
 import { spacing } from '@/theme';
 import { HuaweiWear } from '@/wear';
@@ -23,7 +23,7 @@ const OFFER = proOffer(PLATFORM, HuaweiWear.distribution);
 
 /**
  * JoyoRogo Cloud: every workout, with its analysis, kept in the person's JoyoRogo account. Three faces (see `cloudStepState`): the
- * switch for Pro, an explanation and a store-compliant Pro pointer for Free (same rules as the Pro step), and sign-in. Never blocks.
+ * switch for Pro, an explanation and a store-compliant way to get Pro for Free (same rules as the Pro step), and sign-in. Never blocks.
  */
 export function CloudStep() {
   const { t } = useTranslation('onboarding');
@@ -96,21 +96,17 @@ export function CloudStep() {
           <Notice icon="lock-closed">
             {t('cloud.free')}
           </Notice>
-          {OFFER === 'mention' ? (
-            <AppText variant="caption" muted>
-              {t('cloud.managedIos')}
-            </AppText>
-          ) : null}
+          {OFFER === 'iap' ? <Button label={t('cloud.see')} variant="secondary" icon="arrow-forward" onPress={() => void openUpgrade(action)} /> : null}
           {OFFER === 'store' ? (
             <>
               <AppText variant="caption" muted>
                 {t('cloud.managedStore')}
               </AppText>
-              <Button label={t('cloud.openOnPlay')} variant="secondary" icon="logo-google-playstore" onPress={() => void openProUpgrade(action, Linking.openURL)} />
+              <Button label={t('cloud.openOnPlay')} variant="secondary" icon="logo-google-playstore" onPress={() => void openUpgrade(action)} />
             </>
           ) : null}
           {OFFER === 'web' ? (
-            <Button label={t('cloud.see')} variant="secondary" icon="open-outline" onPress={() => void openProUpgrade(action, Linking.openURL)} />
+            <Button label={t('cloud.see')} variant="secondary" icon="open-outline" onPress={() => void openUpgrade(action)} />
           ) : null}
         </>
       ) : null}

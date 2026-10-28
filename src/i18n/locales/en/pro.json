@@ -16,5 +16,63 @@
       "onboarding-cloud": "Back up every workout to the cloud with its route and analysis, then restore it on a new phone. Right now your workouts live on this phone only.",
       "family": "Monitoring up to 5 people, all notifications (heart rate, steps, sleep, blood oxygen), email, and up to 90 days of history are part of JoyoRogo Pro. Only the person monitoring subscribes: the people you monitor are never charged. The \"Not synced\" notification stays free."
     }
+  },
+  "paywall": {
+    "title": "JoyoRogo Pro",
+    "intro": "Pro adds the parts of JoyoFit that run on JoyoRogo's servers. Everything else in JoyoFit stays free.",
+    "unlocksTitle": "What Pro unlocks in JoyoFit",
+    "unlocks": {
+      "coach": "Coach: daily training advice, run and strength plans, and the Joyo AI chat on the JoyoRogo engine, from your watch data.",
+      "cloud": "Cloud backup of every workout with its route and analysis, restored on a new phone.",
+      "koneksi": "Koneksi AI: let Claude, ChatGPT or another AI app read your data and answer questions about it.",
+      "family": "Keluarga: monitor up to 5 people with all notifications and up to 90 days of history. The people you monitor are never charged."
+    },
+    "sameAccount": "This is the same JoyoRogo Pro that works in the JoyoRogo app and on the JoyoRogo website. It belongs to your JoyoRogo account, so it follows you across all of them.",
+    "plansTitle": "Choose a plan",
+    "plan": {
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "perMonth": "{{price}} per month",
+      "perYear": "{{price}} per year",
+      "save": "Save {{percent}}%",
+      "missing": "Not available right now"
+    },
+    "buy": "Subscribe",
+    "restore": "Restore purchases",
+    "manage": "Manage subscription",
+    "signIn": {
+      "title": "Sign in first",
+      "body": "Pro is tied to your JoyoRogo account and shared between JoyoFit, the JoyoRogo app and the website. Sign in with your JoyoRogo account to subscribe or restore a purchase."
+    },
+    "active": {
+      "title": "JoyoRogo Pro is active",
+      "body": "Pro is on for your JoyoRogo account: in JoyoFit, in the JoyoRogo app and on the website."
+    },
+    "activated": "Pro is on. Your screens are unlocking.",
+    "sandbox": {
+      "title": "Test purchase",
+      "body": "This was Apple's test environment: nothing was charged and Pro lasts 24 hours."
+    },
+    "pending": "The purchase is waiting for approval (for example Ask to Buy). Pro turns on once it is approved.",
+    "restored": "Purchases restored. Pro is on.",
+    "restoredNone": "No active subscription was found for this Apple ID.",
+    "restoredOtherAccount": "The subscription on this Apple ID is linked to a different JoyoRogo account, so it cannot unlock Pro on this one.",
+    "oldVersion": "This version of JoyoFit cannot take purchases. Update JoyoFit to the latest version.",
+    "unavailable": "Subscribing is not available right now. Try again later.",
+    "offline": "Could not check whether subscriptions are available. Check your connection.",
+    "retry": "Try again",
+    "productsMissing": "The subscriptions could not be loaded. Try again later.",
+    "disclosure": "Payment is charged to your Apple ID account when you confirm the purchase. The subscription renews automatically at the same price and period unless you cancel it at least 24 hours before the current period ends. Your account is charged for the renewal within 24 hours before the period ends. Manage or cancel it any time in Settings > Apple ID > Subscriptions.",
+    "terms": "Terms of Use",
+    "privacy": "Privacy Policy"
+  },
+  "error": {
+    "signIn": "Sign in with your JoyoRogo account first.",
+    "otherAccount": "This subscription is already linked to a different JoyoRogo account, so it cannot unlock Pro on this one.",
+    "invalid": "The purchase could not be verified, so Pro was not turned on. If you were charged, tap Restore purchases or contact support.",
+    "processing": "JoyoRogo is still processing the purchase. Pro turns on in a moment; if it does not, tap Restore purchases.",
+    "unavailable": "Pro cannot be turned on right now. If you were charged, it turns on by itself the next time you open JoyoFit.",
+    "unreachable": "JoyoRogo could not be reached. If you were charged, Pro turns on by itself the next time you open JoyoFit with a connection.",
+    "failed": "The purchase did not go through. Try again."
   }
 }

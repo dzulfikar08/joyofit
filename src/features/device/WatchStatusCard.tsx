@@ -8,6 +8,7 @@ import { StatusDot } from '@/components/StatusDot';
 import { Notice } from '@/components/States';
 import { isLinkLive, isLinkUp, linkLabel } from '@/features/device/linkState';
 import { activeWatchName } from '@/features/device/watchName';
+import { shownName } from '@/features/device/shownName';
 import { useBackgroundStatus } from '@/features/settings/useBackgroundStatus';
 import { formatSyncTime } from '@/format';
 import { fmtPercent } from '@/i18n';
@@ -51,10 +52,10 @@ export function WatchStatusCard() {
 
       <View style={styles.identity}>
         <AppText variant="heading" color={colors.heroForeground} numberOfLines={1}>
-          {device ? activeWatchName(device, watches) : t('watch:device.status.noWatch')}
+          {device ? shownName(activeWatchName(device, watches)) : t('watch:device.status.noWatch')}
         </AppText>
         <AppText variant="caption" color={colors.heroMuted} numberOfLines={1}>
-          {device ? (device.productModel ?? t('watch:device.status.modelUnknown')) : t('watch:device.status.connectBelow')}
+          {device ? (shownName(device.productModel) ?? t('watch:device.status.modelUnknown')) : t('watch:device.status.connectBelow')}
         </AppText>
       </View>
 
@@ -83,7 +84,7 @@ export function WatchStatusCard() {
           ) : null}
           {background.address ? (
             <AppText variant="caption" color={colors.heroMuted} numberOfLines={1}>
-              {t('watch:device.status.background', { name: background.name ?? background.address })}
+              {t('watch:device.status.background', { name: shownName(background.name) ?? background.address })}
             </AppText>
           ) : null}
         </View>

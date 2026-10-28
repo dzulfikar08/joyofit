@@ -9,6 +9,7 @@ import { Details } from '@/components/Details';
 import { NavRow } from '@/components/NavRow';
 import { Divider, Screen, Section } from '@/components/Screen';
 import { isIos } from '@/components/IosUnavailable';
+import { shownName } from '@/features/device/shownName';
 import { AvailableWatchesSection } from '@/features/device/AvailableWatchesSection';
 import { AgpsSection } from '@/features/device/AgpsSection';
 import { BatteryHelp } from '@/features/device/BatteryHelp';
@@ -84,10 +85,10 @@ function WatchHub() {
   const watchDetails = device ? (
     <Section title={t('watch:details.title')} icon="watch">
       <View style={styles.grid}>
-        <Pair label={t('watch:details.name')} value={device.name} />
-        <Pair label={t('watch:details.model')} value={device.model ?? device.productModel} />
+        <Pair label={t('watch:details.name')} value={shownName(device.name)} />
+        <Pair label={t('watch:details.model')} value={shownName(device.model ?? device.productModel)} />
         <Pair label={t('watch:details.support')} value={supportLabel(device.support)} />
-        {device.model ? <Pair label={t('watch:details.productCode')} value={device.productModel} /> : null}
+        {device.model ? <Pair label={t('watch:details.productCode')} value={shownName(device.productModel)} /> : null}
         <Pair label={t('watch:details.software')} value={device.softwareVersion} />
         <Pair label={t('watch:details.hardware')} value={device.hardwareVersion} />
         <Pair label={t('watch:details.serial')} value={device.serialNumber} />

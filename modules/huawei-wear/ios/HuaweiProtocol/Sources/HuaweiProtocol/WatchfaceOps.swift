@@ -148,15 +148,15 @@ struct Announcement {
     let needReceive: Int?
 }
 
-/// Huawei Health's reading of a refused announcement (100007 and 100014 are signature failures; it passes 100015 on to its UI as well).
+/// The watch maker's own app reads a refused announcement this way (100007 and 100014 are signature failures; it passes 100015 on to its UI as well).
 public func describeAnnounceCode(_ code: Int) -> String {
     switch code {
     case 100_007, 100_014:
-        return "The watch refused the face before the upload (code \(code)). Huawei Health treats 100007 and 100014 as a watch face "
-            + "signature failure: it fetches a signature for the face from Huawei's servers and sends it in this request, which "
+        return "The watch refused the face before the upload (code \(code)). The watch's own app treats 100007 and 100014 as a watch face "
+            + "signature failure: it fetches a signature for the face from the watch maker's servers and sends it in this request, which "
             + "JoyoFit cannot do."
     case 100_015:
-        return "The watch refused the face before the upload (code 100015). Huawei Health shows this code in its own UI; its meaning is not documented."
+        return "The watch refused the face before the upload (code 100015). The watch's own app shows this code in its own UI; its meaning is not documented."
     default:
         return "The watch refused the face before the upload with code \(code); what it means is not documented."
     }
@@ -446,9 +446,9 @@ public final class WatchfaceOps: @unchecked Sendable {
         if !signs.isEmpty { text += " (\(signs.joined(separator: " and ")))" }
         text += "."
         if screen?.supportsSignature == true {
-            text += " This watch reports the watch face signature capability and expects a Huawei-issued signature in the 27/03 "
-                + "announcement, as Huawei Health sends it. JoyoFit cannot get one, so a face that Huawei did not sign is thrown "
-                + "away. Huawei's test procedure for .hwt files uses Huawei Health logged in with a Huawei developer account."
+            text += " This watch reports the watch face signature capability and expects a signature from the watch maker in the 27/03 "
+                + "announcement, as the watch's own app sends it. JoyoFit cannot get one, so a face the watch maker did not sign is thrown "
+                + "away. The watch maker's test procedure for .hwt files uses its own app signed in with a developer account."
         }
         return text
     }
@@ -459,8 +459,8 @@ public final class WatchfaceOps: @unchecked Sendable {
         if outcome.confirmReportType == nil { text += " and sent no install confirmation (27/05)" }
         text += "."
         if screen?.supportsSignature == true {
-            text += " This watch reports the watch face signature capability. Huawei Health sends a Huawei-issued signature with "
-                + "the 27/03 request; JoyoFit cannot, so the watch may be discarding faces that carry none."
+            text += " This watch reports the watch face signature capability. The watch's own app sends a signature from the watch maker "
+                + "with the 27/03 request; JoyoFit cannot, so the watch may be discarding faces that carry none."
         }
         return text
     }

@@ -26,7 +26,7 @@ const OG_IMAGE = {
   path: "/og.png",
   width: 1200,
   height: 630,
-  alt: "JoyoFit: pengganti Huawei Health untuk jam Huawei, open source.",
+  alt: "JoyoFit: aplikasi independen yang menyinkronkan jam pintar ke HP lewat Bluetooth, open source.",
 };
 
 export type Page = {
@@ -44,35 +44,35 @@ export type Page = {
 
 const STATIC_PAGES = {
   "/": {
-    title: "JoyoFit: Pengganti Huawei Health untuk Jam Huawei, Open Source",
+    title: "JoyoFit: Sinkron Jam Pintar ke HP lewat Bluetooth, Open Source",
     ogTitle: "JoyoFit: Jam-mu. Data-mu. HP-mu.",
     name: "Beranda",
     description:
-      "Pengganti Huawei Health open source: sinkron langkah, tidur, detak jantung, SpO2, dan olahraga dari Huawei Watch Fit 4 Pro, Band 8, Band 11 Pro, dan Watch Fit 2 (jam lain eksperimen) ke HP Android dan iPhone. Ada pencatat latihan beban yang jalan tanpa jam, Coach, dan roadmap terbuka.",
+      "Aplikasi independen open source yang menyinkronkan jam pintar yang kompatibel lewat Bluetooth ke HP Android dan iPhone, tanpa akun tambahan: langkah, tidur, detak jantung, SpO2, dan olahraga. Ada pencatat latihan beban yang jalan tanpa jam, Coach, dan roadmap terbuka.",
   },
   [PANDUAN_PATH]: {
-    title: "Pakai Huawei Watch Fit 4 Pro Tanpa Huawei Health | Panduan JoyoFit",
+    title: "Panduan Pasang dan Pakai JoyoFit: Pairing, Sinkron, Strava",
     name: "Panduan",
     description:
-      "Langkah memakai Huawei Watch Fit 4 Pro tanpa Huawei Health: pasang JoyoFit, panduan awal, pairing, sinkron, Strava, impor riwayat, Social, dan masalah umum. English guide below.",
+      "Langkah memakai jam pintar dengan JoyoFit: pasang JoyoFit, panduan awal, pairing, sinkron, Strava, impor riwayat, Social, dan masalah umum. English guide below.",
   },
   [STRAVA_PATH]: {
-    title: "Sinkron Jam Huawei ke Strava dengan JoyoFit (Daftar Tunggu)",
+    title: "Kirim Olahraga dari Jam ke Strava dengan JoyoFit (Daftar Tunggu)",
     name: "Strava",
     description:
-      "Kirim olahraga dari jam Huawei ke Strava lewat JoyoFit, gratis selama slot masih ada: jarak, waktu aktif, kalori, langkah, detak jantung, dan rute dari jam. Slot Strava terbatas, ada daftar tunggu.",
+      "Kirim olahraga dari jam ke Strava lewat JoyoFit, gratis selama slot masih ada: jarak, waktu aktif, kalori, langkah, detak jantung, dan rute dari jam. Slot Strava terbatas, ada daftar tunggu.",
   },
   [IPHONE_PATH]: {
-    title: "Huawei Watch di iPhone: JoyoFit Beta Publik TestFlight",
+    title: "JoyoFit untuk iPhone: Beta Publik TestFlight",
     name: "iPhone",
     description:
-      "Pakai Huawei Watch di iPhone tanpa Huawei Health: JoyoFit sudah bisa dicoba lewat beta publik TestFlight, baru diuji dengan Watch Fit 4 Pro. Versi App Store 1.0 sedang menunggu review Apple.",
+      "JoyoFit untuk iPhone sudah bisa dicoba lewat beta publik TestFlight, baru diuji dengan satu model jam. Versi App Store belum rilis.",
   },
   [JAM_PATH]: {
-    title: "Jam Huawei dan Honor yang Didukung JoyoFit, Turunan Gadgetbridge",
+    title: "Jam yang Didukung JoyoFit, Turunan Gadgetbridge",
     name: "Jam yang didukung",
     description:
-      "Daftar jam Huawei dan Honor di JoyoFit, mengikuti katalog Gadgetbridge: Watch Fit 4 Pro, Band 8, Band 11 Pro, dan Watch Fit 2 sudah diuji, sisanya eksperimen. Cara mengirim laporan dukungan.",
+      "Daftar jam pintar yang bisa dipakai dengan JoyoFit, mengikuti katalog Gadgetbridge: empat model sudah diuji, sisanya eksperimen. Cara mengirim laporan dukungan.",
   },
   [TIMBANGAN_PATH]: {
     title: "Timbangan Bluetooth yang Didukung JoyoFit: Xiaomi, Renpho, Yunmai, dan Lainnya",
@@ -84,7 +84,7 @@ const STATIC_PAGES = {
     title: "Dukung Jam Barumu di JoyoFit",
     name: "Dukung jam",
     description:
-      "Jam Huawei atau Honor-mu belum diuji di JoyoFit? Laporkan dari aplikasi, pinjamkan jam untuk diuji, atau patungan lewat Trakteer. Daftar jam yang diuji dan eksperimen.",
+      "Jam-mu belum diuji di JoyoFit? Laporkan dari aplikasi, pinjamkan jam untuk diuji, atau patungan lewat Trakteer. Daftar jam yang diuji dan eksperimen.",
   },
   [SELF_HOST_PATH]: {
     title: "Pasang Cloud JoyoFit di CloudAgni Sendiri",
@@ -103,7 +103,7 @@ const STATIC_PAGES = {
     name: "Keluarga",
     noindex: true,
     description:
-      "Seseorang mengundangmu berbagi kabar lewat JoyoFit: beberapa angka harian dari jam Huawei-mu. Kamu yang menentukan apa yang dibagikan.",
+      "Seseorang mengundangmu berbagi kabar lewat JoyoFit: beberapa angka harian dari jam-mu. Kamu yang menentukan apa yang dibagikan.",
   },
   [BLOG_PATH]: {
     title: "Blog JoyoFit: kabar fitur dan cara pakai",
@@ -207,7 +207,8 @@ function homeJsonLd(): object[] {
     {
       "@context": "https://schema.org",
       "@type": "FAQPage",
-      mainEntity: FAQ.map((item) => ({
+      // Entries that name a watch brand (the model-compatibility answers) stay on the page but out of the markup.
+      mainEntity: FAQ.filter((item) => !/huawei|honor/i.test(`${item.q} ${item.a} ${item.link?.label ?? ""}`)).map((item) => ({
         "@type": "Question",
         name: item.q,
         acceptedAnswer: {

@@ -55,7 +55,7 @@ export const InstalledFaceCard = memo(function InstalledFaceCard({
   const displayAuthor = match
     ? match.author
     : face.factory
-      ? 'Huawei Firmware'
+      ? t('watch:faces.builtInAuthor')
       : 'Custom Watchface';
 
   const previewTarget: WatchfaceItem = match ?? {

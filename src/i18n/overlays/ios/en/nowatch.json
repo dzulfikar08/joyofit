@@ -1,0 +1,9 @@
+{
+  "supported": {
+    "intro": "JoyoFit talks directly to compatible watches. Only one model has been tested on a real watch. See which watches are tested at fit.joyorogo.com/jam.",
+    "footer": "A watch that is not tested is still tried. Other watches, and earbuds, cannot be paired. JoyoFit is useful without a watch too: log strength workouts, use Coach and browse the exercise library."
+  },
+  "intro": {
+    "body": "Strength logging, Coach and the exercise library work without a watch. A compatible watch adds steps, sleep, heart rate and daily readiness to Today."
+  }
+}

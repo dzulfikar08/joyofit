@@ -20,6 +20,7 @@ import { useWatchRowActions } from '@/features/device/useWatchRowActions';
 import { familyOfModel, pairingModeOf } from '@/features/device/watchCatalogue';
 import { WATCH_FAMILIES } from '@/features/device/watchFamilies';
 import { watchListName } from '@/features/device/watchName';
+import { shownName } from '@/features/device/shownName';
 import { WatchStatusCard } from '@/features/device/WatchStatusCard';
 import { AddManuallySheet } from '@/features/onboarding/pair/AddManuallySheet';
 import { ConfirmOnWatchPanel } from '@/features/onboarding/pair/ConfirmOnWatchPanel';
@@ -104,7 +105,7 @@ function Scan({ bonded, settingUp, linked }: { bonded: BondedDevices; settingUp:
 
   if (settingUp) {
     const active = cards.find((c) => c.device.address === watch.activeAddress);
-    const name = active ? watchListName({ name: active.device.name, model: active.model }) : watch.device?.name || t('pair.confirm.thisWatch');
+    const name = active ? shownName(watchListName({ name: active.device.name, model: active.model })) : shownName(watch.device?.name) || t('pair.confirm.thisWatch');
     return <ConfirmOnWatchPanel name={name} linkState={watch.linkState} onCancel={actions.disconnect} />;
   }
 
@@ -170,7 +171,7 @@ function PickedModel({ model, onChange, onClear }: { model: string; onChange: ()
       <View style={styles.head}>
         <WatchGlyph size={56} highlighted />
         <View style={styles.text}>
-          <AppText variant="heading">{model}</AppText>
+          <AppText variant="heading">{shownName(model)}</AppText>
           {family ? (
             <AppText variant="caption" muted>
               {t(`nowatch:supported.status.${family.support}`)}

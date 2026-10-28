@@ -1,4 +1,5 @@
 {
+  "supportedLink": "See which watches work",
   "progress": {
     "stepOf": "Step {{index}} of {{total}}",
     "label": "Setup progress"
@@ -145,7 +146,6 @@
     "addsTitle": "What Pro adds",
     "adds1": "Cloud backup of your watch data (steps, heart rate, blood oxygen, sleep and workouts) to your own JoyoRogo account. JoyoFit uploads it today; restoring it into the app is not built yet.",
     "adds2": "Meal suggestions in JoyoRogo built from today's JoyoFit scores. Without Pro the diary shows a short hint instead.",
-    "mention": "JoyoRogo Pro is available in JoyoRogo.",
     "managed": "JoyoRogo Pro is managed in the JoyoRogo app.",
     "active": "Cloud backup is on for this account.",
     "locked": "This account is not on Pro, so nothing is uploaded. Everything else works as before.",
@@ -183,7 +183,6 @@
     "backupOff": "Backup is off. Workouts stay on this phone. You can turn it back on in More, Cloud sync.",
     "checking": "Checking your JoyoRogo account...",
     "free": "Workout cloud is a JoyoRogo Pro feature. Your account is not on Pro, so workouts stay on this phone only and everything keeps working as usual. If you get Pro later, existing workouts are uploaded too.",
-    "managedIos": "JoyoRogo Pro is managed inside JoyoRogo.",
     "managedStore": "JoyoRogo Pro is managed in the JoyoRogo app.",
     "openOnPlay": "Open JoyoRogo on Google Play",
     "see": "See JoyoRogo Pro",

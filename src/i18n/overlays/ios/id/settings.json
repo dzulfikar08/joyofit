@@ -1,0 +1,76 @@
+{
+  "screens": {
+    "importHuawei": "Impor dari aplikasi jam"
+  },
+  "index": {
+    "rows": {
+      "importHuawei": {
+        "title": "Impor dari aplikasi jam",
+        "subtitle": "Bawa riwayat jam kamu ke JoyoFit, gratis"
+      },
+      "importAppleHealth": {
+        "subtitle": "Bawa riwayat yang disimpan aplikasi resmi jam kamu di Apple Health, sekali saja"
+      }
+    }
+  },
+  "advanced": {
+    "agnssLabRisk": "Mati secara bawaan. Kalau dinyalakan dan jam meminta jenis HW_AGNSS, JoyoFit mengirim data satelit yang dibuat server JoyoFit dari data siaran publik (IGS/BKG), bukan dari pembuat jam. HP mengambilnya dari server JoyoFit tanpa data pribadi apa pun; server melihat alamat IP. Jam tidak memeriksa data ini, dan data yang salah pernah membuat GPS jam lain macet. Reset pabrik memulihkan jam. Belum terbukti di jam mana pun: nyalakan hanya untuk uji coba.",
+    "pgnssLabRisk": "Mati secara bawaan, terpisah dari saklar di atas. Kalau dinyalakan dan jam meminta jenis HW_PGNSS_PRED, JoyoFit mengirim enam berkas prediksi orbit satelit untuk 3 hari ke depan yang dihitung server JoyoFit dari data publik, disusun seperti berkas milik pembuat jam tetapi bukan dari pembuat jam. HP mengambilnya (sekitar 800 KB) dari server JoyoFit tanpa data pribadi apa pun; server melihat alamat IP. Lebih berisiko daripada HW_AGNSS: prediksinya belum terverifikasi, jam menyimpannya berhari-hari tanpa memeriksanya, dan data yang salah pernah membuat GPS jam lain macet. Reset pabrik memulihkan jam. Belum terbukti di jam mana pun: nyalakan hanya untuk uji coba.",
+    "details": "Rute lari: belum terverifikasi, format rute berasal dari analisis statis aplikasi resmi jam. Jam bisa saja menolaknya.",
+    "detailsDev": "Rute lari: belum terverifikasi, format rute berasal dari analisis statis aplikasi resmi jam. Jam bisa saja menolaknya. Tautan Bluetooth LE: terhubung lewat Bluetooth LE GATT (layanan FE86), bukan tautan bawaan jam. Putuskan lalu hubungkan lagi agar berlaku. Langkahnya masuk ke logcat dengan tag JoyoFitBle.",
+    "watchNavLabRisk": "Mati secara bawaan. Saat menyala, halaman rute punya tombol \"Mulai navigasi di jam\": HP mengikuti GPS-mu di sepanjang rute dan mengirim petunjuk belok ke aplikasi JoyoNavi di jam. Untuk nama jalan dan rute baru saat keluar jalur, titik-titik rute dan posisimu dikirim ke layanan OSRM publik (routing.openstreetmap.de, FOSSGIS), seperti saat menggambar rute. Aplikasi jamnya belum bisa dipasang (akun developer pembuat jam belum siap), jadi ini baru untuk uji coba."
+  },
+  "goals": {
+    "defaults": "Bawaan jam"
+  },
+  "appleImport": {
+    "intro": "Aplikasi resmi jam kamu di iPhone menyimpan langkah, detak jantung, tidur, oksigen darah, dan latihanmu di Apple Health. Bawa riwayat itu ke JoyoFit sekali saja. JoyoFit meminta izin membaca Apple Health saat kamu menekan tombol di bawah, membacanya di ponsel ini, dan tidak mengirim apa pun ke mana pun.",
+    "nothing": "Tidak ada yang ditemukan. Pastikan JoyoFit boleh membaca Apple Health (Kesehatan, foto profil kamu, Aplikasi, JoyoFit) dan aplikasi resmi jam menyimpan ke Apple Health."
+  },
+  "healthyLiving": {
+    "details": "Nyala secara bawaan. Menyalakan berlaku saat tersambung berikutnya, mematikan langsung berlaku. Jam meminta tugasnya sendiri; tombol ini mengirim tugas hari ini tanpa menunggu permintaan. Belum terverifikasi di jam: berdasarkan protokol aplikasi resmi jam."
+  },
+  "huaweiImport": {
+    "requestTitle": "Minta datamu dari pembuat jam",
+    "requestIntro": "Detak jantung, tidur, langkah, latihan, dan berat badan dari akun aplikasi resmi jam kamu. Gratis, berjalan di ponsel ini, tidak mengirim apa pun.",
+    "steps": {
+      "1": "Ketuk tombol di bawah dan masuk dengan akun pembuat jam kamu.",
+      "3": "Atur kata sandi untuk ZIP dan ingat baik-baik: pembuat jam tidak bisa menampilkannya lagi dan file tidak bisa dibuka tanpanya.",
+      "4": "Tunggu email dari pembuat jam. Bisa sampai 7 hari, dan tautannya berlaku 21 hari. Ekspor besar datang sebagai beberapa bagian ZIP masing-masing sampai 5 GB.",
+      "5": "Sebelum melepas pasangan jam dari aplikasi resminya, buka aplikasi itu dan tarik ke bawah untuk sinkron sekali lagi. Data yang hanya ada di jam dan belum masuk ke akunmu akan hilang saat dilepas."
+    },
+    "errors": {
+      "password": "Kata sandi itu tidak bisa membuka ZIP. Pakai yang kamu atur saat meminta data dari pembuat jam.",
+      "format": "File ini bukan ekspor data dari aplikasi resmi jam. Pilih ZIP dari email pembuat jam, yang berisi data Health kamu."
+    }
+  },
+  "notifApps": {
+    "ios": {
+      "encoding": {
+        "c1": "nomor aplikasi jam, 1 = mati",
+        "c2": "nomor aplikasi jam, 0 = mati"
+      }
+    }
+  },
+  "notifications": {
+    "ios": {
+      "details": "iOS tidak mengizinkan JoyoFit membaca atau meneruskan notifikasi kamu. Jam membacanya sendiri dari iPhone lewat Bluetooth, kalau iOS mengizinkan; JoyoFit tidak pernah melihat isinya. Aplikasi mana yang muncul dipilih di Pengaturan iPhone, Notifikasi.\n\nSakelar ini mengubah pengaturan notifikasi bawaan jam, yang diatur aplikasi resminya. Pengaturan itu dibiarkan sampai kamu mengubahnya di sini.\n\nNotifikasi ringkasan pagi belum tersedia di iOS."
+    }
+  },
+  "strava": {
+    "addDeviceHint": "Contoh: Direkam dengan jam saya. Dibuat di bawah deskripsimu, tidak pernah di judul."
+  },
+  "hrZones": {
+    "method": {
+      "maxBody": "Zona 1 sampai 5 mulai di 50, 60, 70, 80, dan 90 persen dari HR maksimal. Ini bawaan jam.",
+      "hrrBody": "Pemanasan mulai di 50 persen cadangan HR (HR maks dikurangi HR istirahat), lalu zona 2 sampai 6 mulai di 59, 74, 84, 88, dan 95 persen, semuanya ditambah HR istirahat. Urutan dan nama zona sama seperti di jam dan aplikasi resminya. Lebih pas kalau HR istirahatmu rendah."
+    },
+    "rates": {
+      "restDefault": "Bawaan jam",
+      "details": "HR maks dari 100 sampai {{max}} bpm. HR istirahat dari {{restMin}} sampai {{restMax}} bpm dan paling sedikit {{gap}} bpm di bawah HR maks, seperti di jam. Tanaka memakai 208 - 0,7 x usia; rumus 220 - usia agak kasar, terutama untuk yang sudah berumur atau terlatih."
+    },
+    "lthr": {
+      "estimate": "Perkiraan jam (85 persen cadangan HR)"
+    }
+  }
+}

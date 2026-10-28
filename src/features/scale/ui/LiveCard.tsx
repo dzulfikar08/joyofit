@@ -6,6 +6,7 @@ import { Button } from '@/components/Button';
 import { Section } from '@/components/Screen';
 import { fmtDecimal } from '@/i18n/format';
 import { scaleLabel, type SavedScale } from '@/features/scale/store';
+import { shownName } from '@/features/device/shownName';
 import type { ScaleLive } from '@/state/ScaleProvider';
 import { spacing } from '@/theme';
 
@@ -40,7 +41,7 @@ export function LiveCard({ scale, kindLabel, weightOnly, needsKey, live, testing
         ? t('live.settled')
         : t('live.unsettled');
   return (
-    <Section title={scaleLabel(scale)} icon="scale-outline">
+    <Section title={shownName(scaleLabel(scale))} icon="scale-outline">
       {kindLabel ? (
         <AppText variant="caption" muted>
           {weightOnly ? t('card.kindWeightOnly', { label: kindLabel }) : t('card.kind', { label: kindLabel })}

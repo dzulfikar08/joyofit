@@ -1,0 +1,10 @@
+{
+  "guide": {
+    "steps": {
+      "s3": "On the screen before the start, tap the settings icon (gear) on the right. On a watch with the newest system software, swipe that screen up and tap More."
+    }
+  },
+  "watchNav": {
+    "placeholder": "The JoyoNavi app cannot be installed on the watch yet (the watch maker's developer account is not ready). The phone already works out the instructions, but the watch will not take them yet."
+  }
+}

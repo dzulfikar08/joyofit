@@ -1,0 +1,20 @@
+{
+  "consent": {
+    "intro": "{{name}} wants to keep an eye on how you are doing through your watch. You decide what is shared."
+  },
+  "invite": {
+    "shareWatcherAsk": "I would like to see how you are doing through your watch, using JoyoFit. You decide what is shared.",
+    "shareMonitoredAsk": "I am inviting you to see how I am doing through my watch, using JoyoFit.",
+    "previewWatcher": "{{name}} wants to keep an eye on how you are doing through your watch.",
+    "previewMonitored": "{{name}} is inviting you to follow how they are doing through their watch."
+  },
+  "home": {
+    "emptyDescription": "Invite your parents. You will see a short summary from their watch, and get alerts when something looks unusual. They decide what is shared."
+  },
+  "me": {
+    "emptyDescription": "You can invite someone to see a short summary from your watch. You decide what is shared, and you can stop at any time."
+  },
+  "fmt": {
+    "settingsIdle": "Keep an eye on your parents through their watch"
+  }
+}

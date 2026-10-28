@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { IconChip } from '@/components/IconChip';
 import { canConnect, supportLabel } from '@/features/device/modelSupport';
+import { shownName } from '@/features/device/shownName';
 import { spacing } from '@/theme';
 import type { BondedDevice, LinkState } from '@/wear';
 
@@ -46,10 +47,10 @@ export function BondedRow({
         <IconChip icon="watch" tint={isActive ? 'link' : 'neutral'} />
         <View style={styles.text}>
           <AppText variant="bodyStrong" numberOfLines={1}>
-            {device.name || t('watch:device.bonded.unnamed')}
+            {shownName(device.name) || t('watch:device.bonded.unnamed')}
           </AppText>
           <AppText variant="mono" muted numberOfLines={1}>
-            {device.address} · {device.model ? `${device.model}, ${supportLabel(device.support)}` : supportLabel(device.support)}
+            {device.address} · {device.model ? `${shownName(device.model)}, ${supportLabel(device.support)}` : supportLabel(device.support)}
           </AppText>
           {device.reason ? (
             <AppText variant="caption" muted>

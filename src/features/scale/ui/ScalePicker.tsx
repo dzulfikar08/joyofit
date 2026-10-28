@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { Divider, Section } from '@/components/Screen';
 import { fmtDecimal } from '@/i18n/format';
 import { protocolById } from '@/features/scale/registry';
+import { shownName } from '@/features/device/shownName';
 import type { Granted } from '@/features/sensors/permissions';
 import { Signal } from '@/features/sensors/ui/parts';
 import { spacing } from '@/theme';
@@ -76,9 +77,9 @@ export function ScalePicker({ discovery, currentId, onPermission, onPick }: Scal
                   {index > 0 ? <Divider /> : null}
                   <View style={styles.row}>
                     <View style={styles.text}>
-                      <AppText variant="bodyStrong">{device.name ?? t('picker.unnamed')}</AppText>
+                      <AppText variant="bodyStrong">{shownName(device.name) ?? t('picker.unnamed')}</AppText>
                       <AppText variant="caption" muted>
-                        {protocolById(device.protocolId ?? '')?.weightOnly ? t('picker.kindWeightOnly', { label: device.protocolLabel }) : device.protocolLabel}
+                        {protocolById(device.protocolId ?? '')?.weightOnly ? t('picker.kindWeightOnly', { label: shownName(device.protocolLabel) }) : shownName(device.protocolLabel)}
                       </AppText>
                       {needsKey(device.protocolId) ? (
                         <AppText variant="caption" muted>

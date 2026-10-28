@@ -188,6 +188,7 @@
       "nothing": "Tidak ada"
     },
     "title": "Sinkron cloud",
+    "manageSubscription": "Kelola langganan JoyoRogo Pro",
     "notConfigured": "Build ini tidak punya URL server cloud. Deploy server/, atur EXPO_PUBLIC_JOYOFIT_CLOUD_URL, lalu build ulang.",
     "uploading": "Mengunggah {{done}} dari {{total}}",
     "refused_other": "{{n}} latihan tidak bisa diunggah. Akan dicoba lagi besok, atau lebih cepat setelah update aplikasi.",
@@ -821,7 +822,7 @@
     "granted": "Diberikan",
     "notGranted": "Belum diberikan",
     "openSettings": "Buka Pengaturan",
-    "allowLocation": "Izinkan lokasi",
+    "locationWhy": "Cuaca untuk ponsel ini memakai perkiraan lokasimu, dibulatkan sekitar 1 km sebelum dikirim ke Open-Meteo. Kamu juga bisa memilih kota.",
     "city": "Kota",
     "cityName": "Nama kota",
     "cityPlaceholder": "Kota, atau Kota, Negara",

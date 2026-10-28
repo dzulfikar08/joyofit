@@ -53,7 +53,7 @@
     "center": "Pusatkan ke titik awal"
   },
   "permission": {
-    "title": "Izinkan lokasi",
+    "title": "Lokasimu",
     "body": "JoyoFit butuh lokasimu untuk membuat loop dari tempatmu berdiri. Lokasi dibaca di ponsel; titik awal rute baru dikirim ke layanan rute saat kamu mencari rute.",
     "allow": "Lanjut",
     "denied": "Izin lokasi ditolak. Buka pengaturan untuk mengizinkannya, atau pakai titik Rumah.",

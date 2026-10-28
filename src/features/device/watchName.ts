@@ -135,3 +135,15 @@ export function activeWatchName(
 ): string {
   return watchDisplayName({ name: device.name, model: device.model, alias: watches.find((w) => w.address === device.address)?.alias });
 }
+
+const LEADING_BRAND = /^(?:huawei|honor)(?:\s*\/\s*(?:huawei|honor))?\s+/i;
+
+/**
+ * The name without its leading maker word ("Huawei Watch Fit 4 Pro" and "HUAWEI WATCH FIT 4 Pro-B29F" lose "Huawei ", "Honor Band 9" loses
+ * "Honor ", "Huawei/Honor WSP Scale" loses both). Only a whole leading word followed by a space goes, so "Honorable" stays; a name that
+ * is nothing but the brand stays as it is. Display only: matching and what is sent to the watch or the cloud keep the full name.
+ */
+export function withoutBrand(name: string): string {
+  const stripped = name.replace(LEADING_BRAND, '');
+  return stripped.trim() === '' ? name : stripped;
+}

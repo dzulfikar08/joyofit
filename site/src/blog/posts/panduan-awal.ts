@@ -4,7 +4,7 @@ export const panduanAwal: Post = {
   slug: "panduan-awal",
   title: "Panduan awal di JoyoFit: dari lepas jam sampai sinkron pertama",
   description:
-    "Saat pertama dibuka, JoyoFit menuntun langkah awal: lepas jam dari Huawei Health, pairing, sinkron pertama, izin, dan masuk JoyoRogo. Bisa dilewati, bisa dilanjutkan, dan dibuka lagi dari Pengaturan.",
+    "Saat pertama dibuka, JoyoFit menuntun langkah awal: lepas jam dari aplikasi bawaannya, pairing, sinkron pertama, izin, dan masuk JoyoRogo. Bisa dilewati, bisa dilanjutkan, dan dibuka lagi dari Pengaturan.",
   date: "2026-10-18",
   tag: "Pasang",
   body: [

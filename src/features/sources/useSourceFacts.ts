@@ -8,6 +8,7 @@ import { isIos } from '@/components/IosUnavailable';
 import { countWatchWorkoutsSince, listDailySteps, listSleepSince } from '@/db/queries';
 import { stravaUploadSummary, type StravaUploadSummary } from '@/db/strava';
 import { activeWatchName, watchDisplayName } from '@/features/device/watchName';
+import { shownName } from '@/features/device/shownName';
 import { useWatchPresence } from '@/features/device/useWatchPresence';
 import { countNightsSince } from '@/features/today/nightHrv';
 import { startOfLocalDay } from '@/features/today/stats';
@@ -87,7 +88,7 @@ export function useSourceFacts(): SourceFactsState {
       nowSec,
       watch: {
         // The name Today's card shows: the person's rename, else the model, never the Bluetooth codename.
-        name: device ? activeWatchName(device, watches) : primary ? watchDisplayName({ name: primary.name, alias: primary.alias, model: primary.productModel }) : null,
+        name: shownName(device ? activeWatchName(device, watches) : primary ? watchDisplayName({ name: primary.name, alias: primary.alias, model: primary.productModel }) : null),
         paired: presence === 'watch',
         lastSyncSec: lastSync,
         stepDays: week.stepDays,
@@ -115,7 +116,7 @@ export function useSourceFacts(): SourceFactsState {
         lastError: diary?.lastError ?? null,
       },
       scale: {
-        name: scale.scale ? (scale.scale.alias ?? scale.scale.name) : null,
+        name: shownName(scale.scale ? (scale.scale.alias ?? scale.scale.name) : null),
         lastWeighMs: scale.weighIns[0]?.takenAt ?? null,
         weighIns: scale.weighIns.filter((w) => w.takenAt >= weekAgoMs).length,
         waiting: scale.rogoWaiting,

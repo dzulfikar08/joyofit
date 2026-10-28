@@ -2,7 +2,7 @@ import type { Post } from "../types.ts";
 
 export const stravaFit: Post = {
   slug: "strava-file-fit",
-  title: "Kirim olahraga jam Huawei ke Strava sebagai file FIT",
+  title: "Kirim olahraga dari jam ke Strava sebagai file FIT",
   description:
     "JoyoFit mengunggah setiap olahraga ke Strava sebagai file FIT berisi angka dari jam: jarak, waktu aktif, kalori, detak jantung, elevasi, kadensi, dan rute. Gratis selama slot masih ada; unggah manual selalu bisa.",
   date: "2026-10-18",

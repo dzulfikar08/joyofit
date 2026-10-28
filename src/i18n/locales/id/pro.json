@@ -16,5 +16,63 @@
       "onboarding-cloud": "Cadangkan setiap latihan ke cloud, lengkap dengan rute dan analisisnya, lalu pulihkan di HP baru. Sekarang latihanmu hanya ada di ponsel ini.",
       "family": "Memantau sampai 5 orang, semua pemberitahuan (detak jantung, langkah, tidur, kadar oksigen), email, dan riwayat sampai 90 hari ada di JoyoRogo Pro. Yang berlangganan hanya yang memantau: orang yang kamu pantau tidak pernah dikenai biaya. Pemberitahuan \"Belum sinkron\" tetap gratis."
     }
+  },
+  "paywall": {
+    "title": "JoyoRogo Pro",
+    "intro": "Pro menambah bagian JoyoFit yang berjalan di server JoyoRogo. Semua yang lain di JoyoFit tetap gratis.",
+    "unlocksTitle": "Yang dibuka Pro di JoyoFit",
+    "unlocks": {
+      "coach": "Coach: saran latihan harian, rencana lari dan latihan kekuatan, dan chat Joyo AI dengan mesin JoyoRogo, semuanya dari data jam kamu.",
+      "cloud": "Cadangan cloud setiap latihan lengkap dengan rute dan analisisnya, dipulihkan di HP baru.",
+      "koneksi": "Koneksi AI: biarkan Claude, ChatGPT, atau aplikasi AI lain membaca datamu dan menjawab pertanyaan tentangnya.",
+      "family": "Keluarga: pantau sampai 5 orang dengan semua pemberitahuan dan riwayat sampai 90 hari. Orang yang kamu pantau tidak pernah dikenai biaya."
+    },
+    "sameAccount": "Ini JoyoRogo Pro yang sama dengan yang berlaku di aplikasi JoyoRogo dan di situs JoyoRogo. Pro milik akun JoyoRogo kamu, jadi ikut ke semuanya.",
+    "plansTitle": "Pilih paket",
+    "plan": {
+      "monthly": "Bulanan",
+      "yearly": "Tahunan",
+      "perMonth": "{{price}} per bulan",
+      "perYear": "{{price}} per tahun",
+      "save": "Hemat {{percent}}%",
+      "missing": "Belum tersedia sekarang"
+    },
+    "buy": "Berlangganan",
+    "restore": "Pulihkan pembelian",
+    "manage": "Kelola langganan",
+    "signIn": {
+      "title": "Masuk dulu",
+      "body": "Pro terikat ke akun JoyoRogo kamu dan dipakai bersama oleh JoyoFit, aplikasi JoyoRogo, dan situsnya. Masuk dengan akun JoyoRogo untuk berlangganan atau memulihkan pembelian."
+    },
+    "active": {
+      "title": "JoyoRogo Pro aktif",
+      "body": "Pro menyala untuk akun JoyoRogo kamu: di JoyoFit, di aplikasi JoyoRogo, dan di situsnya."
+    },
+    "activated": "Pro menyala. Layar-layarmu sedang terbuka.",
+    "sandbox": {
+      "title": "Pembelian uji coba",
+      "body": "Ini lingkungan uji coba Apple: tidak ada yang ditagih dan Pro berlaku 24 jam."
+    },
+    "pending": "Pembelian menunggu persetujuan (misalnya Ask to Buy). Pro menyala setelah disetujui.",
+    "restored": "Pembelian dipulihkan. Pro menyala.",
+    "restoredNone": "Tidak ditemukan langganan aktif di Apple ID ini.",
+    "restoredOtherAccount": "Langganan di Apple ID ini terhubung ke akun JoyoRogo lain, jadi tidak bisa membuka Pro di akun ini.",
+    "oldVersion": "Versi JoyoFit ini belum bisa menerima pembelian. Perbarui JoyoFit ke versi terbaru.",
+    "unavailable": "Berlangganan belum tersedia sekarang. Coba lagi nanti.",
+    "offline": "Tidak bisa memeriksa apakah langganan tersedia. Periksa koneksimu.",
+    "retry": "Coba lagi",
+    "productsMissing": "Langganan tidak bisa dimuat. Coba lagi nanti.",
+    "disclosure": "Pembayaran ditagihkan ke akun Apple ID kamu saat kamu mengonfirmasi pembelian. Langganan diperpanjang otomatis dengan harga dan periode yang sama, kecuali kamu membatalkannya paling lambat 24 jam sebelum periode berjalan berakhir. Akunmu ditagih untuk perpanjangan dalam 24 jam sebelum periode berakhir. Kelola atau batalkan kapan saja di Pengaturan > Apple ID > Langganan.",
+    "terms": "Ketentuan Penggunaan",
+    "privacy": "Kebijakan Privasi"
+  },
+  "error": {
+    "signIn": "Masuk dulu dengan akun JoyoRogo kamu.",
+    "otherAccount": "Langganan ini sudah terhubung ke akun JoyoRogo lain, jadi tidak bisa membuka Pro di akun ini.",
+    "invalid": "Pembelian tidak bisa diverifikasi, jadi Pro belum menyala. Kalau kamu sudah ditagih, ketuk Pulihkan pembelian atau hubungi dukungan.",
+    "processing": "JoyoRogo masih memproses pembelian. Pro menyala sebentar lagi; kalau belum, ketuk Pulihkan pembelian.",
+    "unavailable": "Pro belum bisa dinyalakan sekarang. Kalau kamu sudah ditagih, Pro menyala sendiri saat kamu membuka JoyoFit berikutnya.",
+    "unreachable": "JoyoRogo tidak terjangkau. Kalau kamu sudah ditagih, Pro menyala sendiri saat kamu membuka JoyoFit dengan koneksi.",
+    "failed": "Pembelian tidak berhasil. Coba lagi."
   }
 }

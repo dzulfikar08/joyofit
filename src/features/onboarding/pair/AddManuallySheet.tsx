@@ -1,14 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { isIos } from '@/components/IosUnavailable';
 import { Input } from '@/components/Input';
 import { Card } from '@/components/Screen';
+import { shownName } from '@/features/device/shownName';
 import { searchCatalogue } from '@/features/device/watchCatalogue';
+import { SUPPORTED_LIST_URL } from '@/features/device/watchFamilies';
 import { WatchGlyph } from '@/features/onboarding/pair/WatchGlyph';
 import { spacing, useColors } from '@/theme';
 
@@ -66,7 +69,7 @@ export function AddManuallySheet({ visible, onPick, onClose }: AddManuallySheetP
               <View style={styles.groupHead}>
                 <WatchGlyph size={48} highlighted={group.family.support === 'tested'} />
                 <View style={styles.groupText}>
-                  <AppText variant="bodyStrong">{group.family.name}</AppText>
+                  <AppText variant="bodyStrong">{shownName(group.family.name)}</AppText>
                   <AppText variant="caption" muted>
                     {t(`nowatch:supported.status.${group.family.support}`)}
                   </AppText>
@@ -76,20 +79,21 @@ export function AddManuallySheet({ visible, onPick, onClose }: AddManuallySheetP
                 <Pressable
                   key={model}
                   accessibilityRole="button"
-                  accessibilityLabel={model}
+                  accessibilityLabel={shownName(model)}
                   onPress={() => {
                     onPick(model);
                     setQuery('');
                   }}
                   style={({ pressed }) => [styles.model, { borderTopColor: colors.hairline }, pressed && { backgroundColor: colors.muted }]}>
                   <AppText variant="body" style={styles.groupText}>
-                    {model}
+                    {shownName(model)}
                   </AppText>
                   <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
                 </Pressable>
               ))}
             </Card>
           ))}
+          {isIos ? <Button label={t('onboarding:supportedLink')} icon="list" onPress={() => void Linking.openURL(SUPPORTED_LIST_URL)} /> : null}
         </ScrollView>
       </View>
     </Modal>

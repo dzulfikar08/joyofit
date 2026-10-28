@@ -1,0 +1,7 @@
+{
+  "noWatch": {
+    "connect": {
+      "subtitle": "Optional. Steps, sleep and heart rate show up here once your watch is connected."
+    }
+  }
+}

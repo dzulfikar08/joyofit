@@ -198,10 +198,13 @@ JoyoRogo sign-in, JoyoRogo Pro (hidden when the build has no cloud server), Done
   follows pairing.
 - **Background** comes straight after pairing, while the person is still paying attention to the watch link, where Huawei Health shows its keep-alive tips.
 - **JoyoRogo Pro** (`pro.ts`): the price and the AI scan limits are read from `GET https://api.joyorogo.com/api/config` (`founderPriceIdr`, `founderYearlyPriceIdr`, `founderDailyCap`,
-  `freeDailyScans`, `promo`), never written in the app. By store: iOS only says Pro is available in JoyoRogo, with no price and no link
-  ([App Store Review Guideline 3.1.1](https://developer.apple.com/app-store/review/guidelines/#in-app-purchase)); a Google Play build shows no price and links to the JoyoRogo app's Play
-  listing ([Play Payments policy, section 4](https://support.google.com/googleplay/android-developer/answer/9858738)); only a sideloaded Android build shows the price and a button to
-  `joyorogo.com/pro` (`utm_campaign=evergreen-onboarding`). Using JoyoFit stays free either way.
+  `freeDailyScans`, `promo`), never written in the app. By store: iOS sells Pro itself with its own In-App Purchase subscriptions
+  ([App Store Review Guideline 3.1.1](https://developer.apple.com/app-store/review/guidelines/#in-app-purchase)): the button opens the in-app paywall (`src/app/pro.tsx`,
+  [docs/pro-ios.md](pro-ios.md)), the only place with a price (StoreKit's), and nothing sends an iOS user to another app or a web checkout; a Google Play build shows no price and links to the
+  JoyoRogo app's Play listing ([Play Payments policy, section 4](https://support.google.com/googleplay/android-developer/answer/9858738)); only a sideloaded Android build shows the price
+  and a button to `joyorogo.com/pro` (`utm_campaign=evergreen-onboarding`). Using JoyoFit stays free either way. The "Upgrade to Pro" cards elsewhere
+  (`UpgradeCard`: Coach, cloud backup, Keluarga, Koneksi AI, workout detail) follow the same rule: on iOS they open the paywall, without a price on the card; on Android they open JoyoRogo
+  (`joyorogo://founder?from=joyofit`) or, when JoyoRogo is not installed, its Play listing (`src/features/pro/offer.ts`).
 
 ### Background mode
 

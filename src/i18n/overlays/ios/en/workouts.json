@@ -1,0 +1,12 @@
+{
+  "detail": {
+    "dynamics": {
+      "explain": "The watch sends these while you run, and JoyoFit averages them per minute. They only show when your watch sends them. For workouts synced before this feature, the figures can be fetched again from the watch for as long as it still holds them. Balance: the first figure is the left side as the watch sends it; we have not matched it against the watch's own app yet."
+    }
+  },
+  "record": {
+    "setup": {
+      "gnssWhyBody": "Your watch only gets GPS assistance data from its own app. JoyoFit sends your phone's location and time to help the first fix. Nothing is wrong with the watch."
+    }
+  }
+}

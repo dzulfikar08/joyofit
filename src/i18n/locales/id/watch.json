@@ -243,6 +243,7 @@
     }
   },
   "faces": {
+    "builtInAuthor": "Bawaan jam",
     "active": "Aktif",
     "installResult": "{{name}}: {{message}}",
     "unsignedTitle": "Jam ini butuh tampilan resmi Huawei",

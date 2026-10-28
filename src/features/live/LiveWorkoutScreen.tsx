@@ -130,7 +130,7 @@ export function LiveWorkoutScreen() {
 }
 
 function LiveBody({ session, title }: { session: LiveSession; title: string }) {
-  const { t } = useTranslation('sharing');
+  const { t } = useTranslation(['sharing', 'common']);
   const colors = useColors();
   const nowMs = useNow(TICK_MS);
   const editor = useFieldEditor();
@@ -244,7 +244,7 @@ function LiveBody({ session, title }: { session: LiveSession; title: string }) {
             <Button label={t('live.steps.openSettings')} icon="settings-outline" variant="secondary" onPress={() => void Linking.openSettings()} />
           ) : (
             <Button
-              label={t('live.steps.allow')}
+              label={t('common:actions.next')}
               icon="footsteps-outline"
               variant="secondary"
               onPress={() => void allowLiveSteps().then((answer) => setStepsRefused(answer !== 'granted'))}

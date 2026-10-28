@@ -1,0 +1,45 @@
+{
+  "welcome": {
+    "intro": "JoyoFit works with your watch directly, without its own app. This guide takes a few minutes and you can skip any step.",
+    "covers1": "Releasing the watch from its own app, and keeping your old history."
+  },
+  "unbind": {
+    "title": "Release the watch from its own app",
+    "intro": "A watch talks to one app at a time. While your watch's own app holds it, the watch refuses JoyoFit.",
+    "step1": "Open your watch's own app and pull down on its first screen to sync once more. Anything that is only on the watch and not yet in your account is lost when you unbind.",
+    "step2": "Optional: keep your history. The watch maker can send everything your watch's own app stored as a ZIP file, which JoyoFit imports on this phone. It can take up to 7 days to arrive, so request it now and import it whenever it comes.",
+    "step3": "In your watch's own app, open the watch under Devices and unbind (remove) it. If it is still connected to another phone, disconnect it there too.",
+    "showImport": "Request or import my history from the watch's app",
+    "note": "Not sure the unbind worked? Go on: pairing tells you if the watch still refuses. Importing later is always possible from More, Import from your watch's app."
+  },
+  "pair": {
+    "help": "Check that it is unbound from the app you paired it with before and not connected to another phone or app, that it is awake and close, and try Connect again. If it still refuses after a restart of the watch, a reset of the watch from its own Settings is the last resort. A reset erases the data stored on the watch (workouts and days that were never synced), so sync first if you can, and do not start here.",
+    "confirm": {
+      "helpUnpaired": "Check that your watch's own app, or another phone, no longer holds the watch. Unbind it there, then tap Connect again."
+    },
+    "manual": {
+      "none": "No model matches. A watch that is not listed is still tried: close this list and scan."
+    },
+    "mode": {
+      "huaweiWatch": "A watch that is ready to pair shows a pairing screen (a QR code or its Bluetooth name) once its language is chosen. If it shows its normal watch face, it is still paired with a phone: unbind it in the app you paired it with before first, which usually resets it to that screen.",
+      "huaweiBand": "A band that is ready to pair shows a pairing screen once it is switched on and its language is chosen. If it shows the time, it is still paired with a phone: unbind it in the app you paired it with before first. Bands do not appear in the phone's Bluetooth settings; only JoyoFit's scan finds them.",
+      "honor": "Compatible watches and bands work alike: a pairing screen once the language is chosen. One that shows the time is still paired and has to be unbound in its own app first. The newest watches (see fit.joyorogo.com/jam) cannot be paired yet."
+    }
+  },
+  "done": {
+    "tip": {
+      "watchLater": {
+        "text": "More, Watch: pair a compatible watch, or request support for yours."
+      }
+    },
+    "where": {
+      "unbind": "More, Import from your watch's app"
+    },
+    "name": {
+      "unbind": "Watch app history"
+    }
+  },
+  "phone": {
+    "later": "Got a compatible watch later? Pair it from More, Watch any time, without repeating this guide."
+  }
+}

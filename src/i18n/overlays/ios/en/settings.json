@@ -1,0 +1,76 @@
+{
+  "screens": {
+    "importHuawei": "Import from your watch's app"
+  },
+  "index": {
+    "rows": {
+      "importHuawei": {
+        "title": "Import from your watch's app",
+        "subtitle": "Bring your watch history into JoyoFit, free"
+      },
+      "importAppleHealth": {
+        "subtitle": "Bring the history your watch's own app saved in Apple Health, once"
+      }
+    }
+  },
+  "advanced": {
+    "agnssLabRisk": "Off by default. When on and the watch asks for the HW_AGNSS kind, JoyoFit sends satellite data that JoyoFit's server builds from public broadcast data (IGS/BKG), not from the watch maker. The phone fetches it from JoyoFit's server with no personal data; the server sees the IP address. The watch does not check this data, and wrong data has wedged the GPS of other watches. A factory reset recovers the watch. Unproven on any watch: turn it on only to test.",
+    "pgnssLabRisk": "Off by default, separate from the switch above. When on and the watch asks for the HW_PGNSS_PRED kind, JoyoFit sends six files of predicted satellite orbits for the next 3 days that JoyoFit's server computes from public data, laid out like the watch maker's own files but not from the watch maker. The phone fetches them (about 800 KB) from JoyoFit's server with no personal data; the server sees the IP address. Riskier than HW_AGNSS: the predictions are unverified, the watch keeps them for days and does not check them, and wrong data has wedged the GPS of other watches. A factory reset recovers the watch. Unproven on any watch: turn it on only to test.",
+    "details": "Running courses: unverified, the course format comes from static analysis of the watch's own app. The watch may refuse it.",
+    "detailsDev": "Running courses: unverified, the course format comes from static analysis of the watch's own app. The watch may refuse it. Bluetooth LE link: connect over Bluetooth LE GATT (service FE86) instead of the watch's own link. Disconnect and connect again to apply. Steps go to logcat tag JoyoFitBle.",
+    "watchNavLabRisk": "Off by default. When on, a route's page has a \"Start watch navigation\" button: the phone follows your GPS along the route and sends turn instructions to the JoyoNavi app on the watch. For street names and a new route when you leave it, the route's points and your position go to the public OSRM service (routing.openstreetmap.de, FOSSGIS), as when drawing a route. The watch app cannot be installed yet (the watch maker's developer account is not ready), so this is for testing only."
+  },
+  "goals": {
+    "defaults": "Watch defaults"
+  },
+  "appleImport": {
+    "intro": "Your watch's own app on iPhone saves your steps, heart rate, sleep, blood oxygen and workouts in Apple Health. Bring that history into JoyoFit once. JoyoFit asks for permission to read Apple Health when you tap the button below, reads it on this phone and sends nothing anywhere.",
+    "nothing": "Nothing was found. Check that JoyoFit may read Apple Health (Health, your profile picture, Apps, JoyoFit) and that your watch's own app saves to Apple Health."
+  },
+  "healthyLiving": {
+    "details": "On by default. Switching on takes effect on the next connect, switching off at once. The watch asks for its tasks itself; the button sends today's tasks without waiting for a request. Unverified on the watch: based on the protocol of the watch's own app."
+  },
+  "huaweiImport": {
+    "requestTitle": "Request your data from the watch maker",
+    "requestIntro": "Heart rate, sleep, steps, workouts and weight from your watch's own app account. Free, runs on this phone, sends nothing.",
+    "steps": {
+      "1": "Tap the button below and sign in with your watch maker account.",
+      "3": "Set a password for the ZIP and remember it: the watch maker cannot show it again and the file does not open without it.",
+      "4": "Wait for the email from the watch maker. This can take up to 7 days, and the link works for 21 days. Large exports come as several ZIP parts of up to 5 GB each.",
+      "5": "Before you unbind the watch from its own app, open that app and pull down to sync once more. What is only on the watch and not yet in your account is lost when you unbind it."
+    },
+    "errors": {
+      "password": "That password did not open the ZIP. Use the one you set when you requested your data from the watch maker.",
+      "format": "This file is not a data export from your watch's own app. Pick the ZIP from the watch maker's email, the one with your Health data."
+    }
+  },
+  "notifApps": {
+    "ios": {
+      "encoding": {
+        "c1": "watch app number, 1 = off",
+        "c2": "watch app number, 0 = off"
+      }
+    }
+  },
+  "notifications": {
+    "ios": {
+      "details": "iOS does not let JoyoFit read or forward your notifications. The watch reads them from the iPhone itself, over Bluetooth, when iOS allows it; JoyoFit never sees their content. Which apps appear is chosen in iPhone Settings, Notifications.\n\nThe switch changes the watch's own notification setting, the one set by its own app. It is left alone until you change it here.\n\nThe morning summary notification is not available on iOS yet."
+    }
+  },
+  "strava": {
+    "addDeviceHint": "For example: Recorded with my watch. Added below your description, never in the title."
+  },
+  "hrZones": {
+    "method": {
+      "maxBody": "Zones 1 to 5 start at 50, 60, 70, 80 and 90 percent of your maximum heart rate. This is your watch's default.",
+      "hrrBody": "Warm-up starts at 50 percent of your heart rate reserve (max HR minus resting HR), then zones 2 to 6 start at 59, 74, 84, 88 and 95 percent, all added to your resting HR. The zone order and names match the watch and its own app. A better fit when your resting HR is low."
+    },
+    "rates": {
+      "restDefault": "Watch default",
+      "details": "Max HR runs from 100 to {{max}} bpm. Resting HR runs from {{restMin}} to {{restMax}} bpm and sits at least {{gap}} bpm under max HR, as on the watch. Tanaka uses 208 - 0.7 x age; 220 - age is a rough rule, especially for older or well-trained people."
+    },
+    "lthr": {
+      "estimate": "Watch estimate (85 percent of the reserve)"
+    }
+  }
+}

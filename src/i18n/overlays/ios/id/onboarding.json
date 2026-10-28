@@ -1,0 +1,45 @@
+{
+  "welcome": {
+    "intro": "JoyoFit terhubung langsung ke jammu, tanpa aplikasi resminya. Panduan ini butuh beberapa menit dan setiap langkah boleh dilewati.",
+    "covers1": "Melepas jam dari aplikasi resminya, sambil menyimpan riwayat lamamu."
+  },
+  "unbind": {
+    "title": "Lepas jam dari aplikasi resminya",
+    "intro": "Jam hanya bicara dengan satu aplikasi. Selama aplikasi resmi jammu memegangnya, jam menolak JoyoFit.",
+    "step1": "Buka aplikasi resmi jammu dan tarik layar pertamanya ke bawah untuk sinkron sekali lagi. Data yang hanya ada di jam dan belum masuk ke akunmu hilang saat kamu melepas pasangan.",
+    "step2": "Opsional: simpan riwayatmu. Pembuat jam bisa mengirim semua yang tersimpan di aplikasi resmi jammu sebagai file ZIP, yang diimpor JoyoFit di HP ini. File itu bisa butuh sampai 7 hari, jadi minta sekarang dan impor kapan pun sudah datang.",
+    "step3": "Di aplikasi resmi jammu, buka jam di bagian Perangkat lalu lepas (hapus) pasangannya. Kalau jam masih terhubung ke HP lain, putuskan di sana juga.",
+    "showImport": "Minta atau impor riwayat dari aplikasi jam saya",
+    "note": "Tidak yakin pasangan sudah terlepas? Lanjut saja: saat dipasangkan akan ketahuan kalau jam masih menolak. Impor nanti tetap bisa dari Lainnya, Impor dari aplikasi jam."
+  },
+  "pair": {
+    "help": "Pastikan pasangannya sudah dilepas dari aplikasi yang dulu kamu pakai untuk memasangkannya dan jam tidak terhubung ke HP atau aplikasi lain, jam menyala dan dekat, lalu coba Hubungkan lagi. Kalau masih menolak setelah jam dihidupkan ulang, reset jam dari Pengaturan di jam adalah jalan terakhir. Reset menghapus data yang tersimpan di jam (latihan dan hari yang belum pernah disinkronkan), jadi sinkronkan dulu kalau bisa, dan jangan mulai dari sini.",
+    "confirm": {
+      "helpUnpaired": "Pastikan aplikasi resmi jammu, atau HP lain, sudah tidak memegang jam. Lepas pasangannya di sana, lalu ketuk Hubungkan lagi."
+    },
+    "manual": {
+      "none": "Tidak ada model yang cocok. Jam yang tidak ada di daftar tetap dicoba: tutup daftar ini lalu cari."
+    },
+    "mode": {
+      "huaweiWatch": "Jam yang siap dipasangkan menampilkan layar pemasangan (kode QR atau nama Bluetooth-nya) setelah bahasanya dipilih. Kalau jam menampilkan tampilan jam biasa, ia masih terpasang ke sebuah HP: lepas pasangannya di aplikasi yang dulu kamu pakai untuk memasangkannya dulu, yang biasanya mengembalikan jam ke layar itu.",
+      "huaweiBand": "Band yang siap dipasangkan menampilkan layar pemasangan setelah dinyalakan dan bahasanya dipilih. Kalau band menampilkan jam, ia masih terpasang ke sebuah HP: lepas pasangannya di aplikasi yang dulu kamu pakai untuk memasangkannya dulu. Band tidak muncul di pengaturan Bluetooth HP; hanya pencarian JoyoFit yang menemukannya.",
+      "honor": "Jam dan band yang cocok bekerja serupa: layar pemasangan muncul setelah bahasanya dipilih. Yang menampilkan jam masih terpasang dan harus dilepas dulu di aplikasi resminya. Jam terbaru (lihat fit.joyorogo.com/jam) belum bisa dipasangkan."
+    }
+  },
+  "done": {
+    "tip": {
+      "watchLater": {
+        "text": "Lainnya, Jam: pasangkan jam yang cocok, atau minta dukungan untuk jam-mu."
+      }
+    },
+    "where": {
+      "unbind": "Lainnya, Impor dari aplikasi jam"
+    },
+    "name": {
+      "unbind": "Riwayat aplikasi jam"
+    }
+  },
+  "phone": {
+    "later": "Punya jam yang cocok nanti? Pasangkan dari Lainnya, Jam kapan saja, tanpa mengulang panduan ini."
+  }
+}

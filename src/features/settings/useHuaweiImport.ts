@@ -107,7 +107,7 @@ export function useHuaweiImport() {
    * opaque id (`1ec426fd-...`), so the name the sender gave the file comes from the provider (`huaweiExportDisplayName`).
    */
   const select = useCallback((uri: string) => {
-    let name = 'Huawei export.zip'; // i18n-ok: fallback file name
+    let name = 'export.zip'; // i18n-ok: fallback file name
     let size: number | null = null;
     try {
       const f = new File(uri);

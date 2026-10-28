@@ -6,13 +6,15 @@ import type { i18n as I18n, TFunction } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 import { DEFAULT_LOCALE, deviceLanguages, LOCALES, resolveLocale, type Locale } from './locale';
+import { applyOverlay } from './overlay';
+import { platformOverlay } from './platformOverlay';
 import { DEFAULT_NAMESPACE, NAMESPACES, resources, type Namespace } from './resources';
 import './types';
 
 export type { TFunction } from 'i18next';
 
 const OPTIONS = {
-  resources,
+  resources: applyOverlay(resources, platformOverlay),
   supportedLngs: [...LOCALES],
   fallbackLng: DEFAULT_LOCALE,
   ns: NAMESPACES,

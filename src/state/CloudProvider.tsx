@@ -52,6 +52,9 @@ import { useWatch } from '@/state/WatchProvider';
 /** Wait this long after a local sync (or app start) so bursts of events become one upload. */
 const UPLOAD_DEBOUNCE_MS = 2_000;
 
+/** How long the cloud Worker may keep answering "not Pro" for an account (`ACCESS_LOCKED_CACHE_TTL_MS` in server/src/limits.ts, plus a margin). */
+const LOCKED_ANSWER_CACHE_MS = 11_000;
+
 /** `cloud_state` key prefix of "this account's history was restored onto this phone"; one per account id. */
 const RESTORE_DONE_PREFIX = 'restore_done:';
 /** How far back the first sync of an account restores steps and sleep. */
@@ -127,6 +130,11 @@ export interface CloudContextValue {
   signOut: (options?: { deleteLocalData?: boolean }) => Promise<void>;
   /** Runs a sync now, whatever the Wi-Fi only setting says (the caller has asked the person). */
   syncNow: () => Promise<void>;
+  /**
+   * Pro may have just changed (a purchase or restore was credited): clears the lock, syncs and re-reads the account's Pro state so
+   * gated screens open without a restart. When the cloud Worker still answers "locked" from its short cache, asks once more after it.
+   */
+  refreshPro: () => Promise<void>;
 }
 
 const CloudContext = createContext<CloudContextValue | null>(null);
@@ -347,6 +355,18 @@ export function CloudProvider({ children }: { children: ReactNode }) {
     running.current = run;
     return run;
   }, [db, refresh, refreshStatus, markLocked, reviewAccount, restoreIfFirst]);
+
+  const refreshPro = useCallback(async () => {
+    markLocked(false);
+    await syncNow();
+    await refreshStatus();
+    if (!lockedRef.current) return;
+    const { promise: cacheExpired, resolve } = Promise.withResolvers<void>();
+    setTimeout(resolve, LOCKED_ANSWER_CACHE_MS);
+    await cacheExpired;
+    markLocked(false);
+    await syncNow();
+  }, [markLocked, syncNow, refreshStatus]);
 
   /** A run nobody asked for: only when automatic sync is on, and on Wi-Fi or Ethernet when "Wi-Fi only" is. */
   const autoSyncNow = useCallback(async () => {
@@ -626,6 +646,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       deleteAccount,
       signOut,
       syncNow,
+      refreshPro,
     }),
     [
       signedIn,
@@ -651,6 +672,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       deleteAccount,
       signOut,
       syncNow,
+      refreshPro,
     ],
   );
 

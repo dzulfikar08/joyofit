@@ -86,7 +86,7 @@ public enum WatchfacePackages {
     /// binary directly. Throws `ERR_INVALID_ARGUMENT` with a message for the user when the file is no watch face.
     public static func parse(_ bytes: Bytes) throws -> WatchfacePackage {
         guard let descriptionBytes = entry(bytes, "description.xml") else {
-            throw bad("This is not a watch face package: there is no description.xml in it. Export it as a .hwt file from Huawei Theme Studio Pro.")
+            throw bad("This is not a watch face package: there is no description.xml in it. Export it as a .hwt file from the watch maker's watch-face designer.")
         }
         let description = try parseDescription(descriptionBytes)
         let entryName = description.isHonor ? honorEntry : huaweiEntry
@@ -136,7 +136,7 @@ public enum WatchfacePackages {
         if !WatchfaceResolutions.isValid(description.screen, deviceScreen) {
             throw bad(
                 "This watch face is made for a \(WatchfaceResolutions.screenByThemeVersion(description.screen)) screen (\(description.screen)), "
-                    + "but the watch reports \(deviceScreen). Make it in Theme Studio Pro for this watch's screen."
+                    + "but the watch reports \(deviceScreen). Make it in the watch-face designer for this watch's screen."
             )
         }
     }
@@ -192,7 +192,7 @@ public enum WatchfacePackages {
         let others = otherVersions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "" : " (and \(otherVersions))"
         throw bad(
             "This watch face was made for watch face version \(face.0).\(face.1) (description.xml version \(description.version)), "
-                + "but the watch supports up to \(maxVersion)\(others). Export it again from Theme Studio Pro for this watch."
+                + "but the watch supports up to \(maxVersion)\(others). Export it again from the watch-face designer for this watch."
         )
     }
 }

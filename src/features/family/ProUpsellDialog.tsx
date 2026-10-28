@@ -13,7 +13,7 @@ export function ProUpsellDialog({ visible, onClose }: { visible: boolean; onClos
       <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel={t('actions.close')}>
         {/* A press on the card itself must not reach the scrim. */}
         <Pressable accessibilityViewIsModal style={styles.card} onPress={() => {}}>
-          <UpgradeCard moment="family" />
+          <UpgradeCard moment="family" onOpened={onClose} />
           <Button label={t('actions.close')} onPress={onClose} />
         </Pressable>
       </Pressable>

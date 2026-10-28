@@ -1,4 +1,3 @@
-import * as Linking from 'expo-linking';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -11,7 +10,8 @@ import { Notice } from '@/components/States';
 import { JOYOROGO_URL } from '@/cloud/config';
 import { Bullet, StepIntro } from '@/features/onboarding/StepIntro';
 import { fetchProConfig, priceLine, proOffer, scansLine, type ProConfig } from '@/features/onboarding/pro';
-import { openProUpgrade, proUpgradeAction } from '@/features/pro/offer';
+import { proUpgradeAction } from '@/features/pro/offer';
+import { openUpgrade } from '@/features/pro/openUpgrade';
 import { useCloud } from '@/state/CloudProvider';
 import { spacing } from '@/theme';
 import { HuaweiWear } from '@/wear';
@@ -20,10 +20,10 @@ const PLATFORM = isIos ? 'ios' : 'android';
 const OFFER = proOffer(PLATFORM, HuaweiWear.distribution);
 
 /**
- * JoyoRogo Pro, described honestly and never required. The button goes through `openProUpgrade` like every other Pro offer in JoyoFit: the
- * JoyoRogo app's own Pro screen when it is installed (the purchase and the signed-in account are already there), else the Play listing in a
- * Play build or, in a sideloaded build, the web page; plain text on iOS (see `proOffer` for the stores' rules). Prices and limits come
- * from JoyoRogo's live config, never from this app's code.
+ * JoyoRogo Pro, described honestly and never required. The button goes through `openUpgrade` like every other Pro offer in JoyoFit: the
+ * in-app paywall on iOS (StoreKit), else the JoyoRogo app's own Pro screen when it is installed, the Play listing in a Play build or, in
+ * a sideloaded build, the web page (see `proOffer` for the stores' rules). Prices and limits come from JoyoRogo's live config, never
+ * from this app's code; the iOS price is StoreKit's, shown on the paywall only.
  */
 export function ProStep() {
   const { t } = useTranslation('onboarding');
@@ -59,11 +59,6 @@ export function ProStep() {
           <Bullet label={'\u2022'}>{scansLine(config)}</Bullet>
         </View>
         {price ? <AppText variant="bodyStrong">{price}</AppText> : null}
-        {OFFER === 'mention' ? (
-          <AppText variant="caption" muted>
-            {t('pro.mention')}
-          </AppText>
-        ) : null}
         {OFFER === 'store' ? (
           <AppText variant="caption" muted>
             {t('pro.managed')}
@@ -75,9 +70,10 @@ export function ProStep() {
         <Notice icon="lock-closed">{t('pro.locked')}</Notice>
       ) : null}
       {!cloud.signedIn ? <Notice icon="information-circle">{t('pro.signInFirst')}</Notice> : null}
-      {OFFER === 'web' ? <Button label={t('pro.see')} variant="secondary" icon="open-outline" onPress={() => void openProUpgrade(action, Linking.openURL)} /> : null}
+      {OFFER === 'iap' ? <Button label={t('pro.see')} variant="secondary" icon="arrow-forward" onPress={() => void openUpgrade(action)} /> : null}
+      {OFFER === 'web' ? <Button label={t('pro.see')} variant="secondary" icon="open-outline" onPress={() => void openUpgrade(action)} /> : null}
       {OFFER === 'store' ? (
-        <Button label={t('pro.getOnPlay')} variant="secondary" icon="logo-google-playstore" onPress={() => void openProUpgrade(action, Linking.openURL)} />
+        <Button label={t('pro.getOnPlay')} variant="secondary" icon="logo-google-playstore" onPress={() => void openUpgrade(action)} />
       ) : null}
     </>
   );

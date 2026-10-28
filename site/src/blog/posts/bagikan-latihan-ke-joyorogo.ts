@@ -2,7 +2,7 @@ import type { Post } from "../types.ts";
 
 export const bagikanLatihan: Post = {
   slug: "bagikan-latihan-ke-joyorogo",
-  title: "Bagikan latihan dari jam Huawei ke JoyoRogo",
+  title: "Bagikan latihan dari jam ke JoyoRogo",
   description:
     "Dari layar latihan di JoyoFit, ketuk Share to JoyoRogo untuk memposting latihan ke grup atau publik. Detak jantung dan rute ikut kalau kamu mau. Melihatnya di postingan orang lain butuh JoyoRogo Pro.",
   date: "2026-10-18",

@@ -16,9 +16,9 @@ const LIVE = {
 };
 
 describe('store rules for the Pro step', () => {
-  test('iOS only mentions Pro: no price, no link, whatever the distribution constant says', () => {
-    expect(proOffer('ios', 'sideload')).toBe('mention');
-    expect(proOffer('ios', 'play')).toBe('mention');
+  test('iOS sells Pro with its own in-app purchase, whatever the distribution constant says', () => {
+    expect(proOffer('ios', 'sideload')).toBe('iap');
+    expect(proOffer('ios', 'play')).toBe('iap');
   });
 
   test('a Google Play build describes Pro and points at the store listing only', () => {

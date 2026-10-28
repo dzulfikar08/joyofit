@@ -294,7 +294,7 @@ final class WearLinkTests: XCTestCase {
         XCTAssertEqual(FirstBindMessage.marker, "no longer knows this phone's pairing")
         XCTAssertEqual(bindStop(firstBindStop(), mode: .interactive).message, FirstBindMessage.notBound)
         XCTAssertFalse(FirstBindMessage.notBound.contains(FirstBindMessage.marker))
-        XCTAssertTrue(FirstBindMessage.backgroundNote(lostBinding: true).contains("Huawei Health"))
+        XCTAssertNotEqual(FirstBindMessage.backgroundNote(lostBinding: true), FirstBindMessage.backgroundNote(lostBinding: false))
         XCTAssertEqual(FirstBindMessage.backgroundNote(lostBinding: false), "The watch does not know this phone. Connect from the app to bind it.")
     }
 

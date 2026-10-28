@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 
-import { modelOfBluetoothName, watchDisplayName, watchListName, WATCH_MODEL_PREFIXES } from './watchName';
+import { modelOfBluetoothName, watchDisplayName, watchListName, withoutBrand, WATCH_MODEL_PREFIXES } from './watchName';
 
 const KOTLIN = readFileSync(
   new URL('../../../modules/huawei-wear/android/src/main/java/com/joyodigitama/huaweiwear/WatchModels.kt', import.meta.url),
@@ -61,5 +61,31 @@ describe('watchListName', () => {
   test('leaves aliases and unknown names alone', () => {
     expect(watchListName({ name: 'Seiya-B29F', alias: 'Lari' })).toBe('Lari');
     expect(watchListName({ name: 'Mystery-1234' })).toBe('Mystery-1234');
+  });
+});
+
+describe('withoutBrand', () => {
+  test('drops a leading Huawei or Honor in any case', () => {
+    expect(withoutBrand('Huawei Watch Fit 4 Pro')).toBe('Watch Fit 4 Pro');
+    expect(withoutBrand('HUAWEI WATCH FIT 4 Pro-B29F')).toBe('WATCH FIT 4 Pro-B29F');
+    expect(withoutBrand('Honor Band 9')).toBe('Band 9');
+    expect(withoutBrand('HONOR Scale 2')).toBe('Scale 2');
+    expect(withoutBrand('Honor MagicWatch 2')).toBe('MagicWatch 2');
+  });
+
+  test('drops the combined Huawei/Honor prefix', () => {
+    expect(withoutBrand('Huawei/Honor WSP Scale')).toBe('WSP Scale');
+  });
+
+  test('leaves names without a brand, longer words and brand-only names alone', () => {
+    expect(withoutBrand('Band 9-1A2B')).toBe('Band 9-1A2B');
+    expect(withoutBrand('Honorable Watch')).toBe('Honorable Watch');
+    expect(withoutBrand('Huaweii Watch')).toBe('Huaweii Watch');
+    expect(withoutBrand('Huawei')).toBe('Huawei');
+    expect(withoutBrand('')).toBe('');
+  });
+
+  test('only the leading word goes', () => {
+    expect(withoutBrand('My Huawei Watch')).toBe('My Huawei Watch');
   });
 });

@@ -3,51 +3,61 @@ import { proOffer } from '@/features/onboarding/pro';
 
 /**
  * Where in the app a Pro upgrade card sits. It names the copy and the `utm_campaign` / store campaign of the link, so the moment that
- * converts is visible in RevKlik, Play Console and App Store Connect.
+ * converts is visible in RevKlik and Play Console.
  */
 export type ProMoment = 'coach-chat' | 'coach' | 'coach-today' | 'cloud' | 'workout' | 'koneksi' | 'family' | 'onboarding' | 'onboarding-cloud';
 
 export type Distribution = 'play' | 'sideload';
 
-/** The JoyoRogo app's own screen for Pro. Tried first on every platform: someone who already has JoyoRogo lands on its Pro page. */
+/** The JoyoRogo app's own screen for Pro. Tried first on Android: someone who already has JoyoRogo lands on its Pro page. */
 export const JOYOROGO_APP_URL = 'joyorogo://founder?from=joyofit';
 
 export const JOYOROGO_PLAY_ID = 'com.joyodigitama.joyorogo';
 
-/**
- * JoyoRogo's App Store page (ASC app id 6823222101), live since version 1.0.0 was approved (2026-10-26); this is the one place
- * to change when the id or the page moves.
- */
-export const JOYOROGO_APP_STORE_URL = 'https://apps.apple.com/app/id6823222101';
-
 export const JOYOROGO_WEB_PRO_URL = 'https://joyorogo.com/pro';
 
-/** utm convention: docs/utm.md in the joyorogo repo (`evergreen-<where>`); the App Store takes the same name as its `ct` token. */
+/** The in-app paywall (`src/app/pro.tsx`): where iOS buys JoyoRogo Pro with StoreKit. */
+export const PRO_PAYWALL_ROUTE = '/pro';
+
+/** utm convention: docs/utm.md in the joyorogo repo (`evergreen-<where>`). */
 export const campaignOf = (moment: ProMoment): string => `evergreen-pro-${moment}`;
 
-export interface ProUpgradeAction {
-  /**
-   * `app-or-store`: the JoyoRogo app or its store listing, which is where Pro is bought in a store build (Play Billing, StoreKit); no
-   * price is shown and no checkout is linked. `web`: a sideloaded build, which may show the live price and link to the web page.
-   */
-  kind: 'app-or-store' | 'web';
-  /** Tried first on every platform; rejects when the JoyoRogo app is not installed. */
-  appUrl: string;
-  /** Play: the store app's `market://` link; iOS: the App Store page; sideload: the web page with utm tags. */
-  primaryUrl: string;
-  /** Play only: the https listing, for a phone where `market://` has no handler. */
-  fallbackUrl: string | null;
-  /** Only a sideloaded build may show a price. */
-  showPrice: boolean;
-}
+/**
+ * `paywall`: iOS, the in-app paywall; the purchase is JoyoFit's own in-app purchase, nothing leaves the app. `app-or-store`: Google
+ * Play, the JoyoRogo app or its store listing, where Pro is bought with Play Billing; no price is shown and no checkout is linked.
+ * `web`: a sideloaded build, which may show the live price and link to the web page.
+ */
+export type ProUpgradeAction =
+  | { kind: 'paywall'; showPrice: false }
+  | {
+      kind: 'app-or-store';
+      /** Tried first; rejects when the JoyoRogo app is not installed. */
+      appUrl: string;
+      /** The store app's `market://` link. */
+      primaryUrl: string;
+      /** The https listing, for a phone where `market://` has no handler. */
+      fallbackUrl: string;
+      showPrice: false;
+    }
+  | {
+      kind: 'web';
+      appUrl: string;
+      /** The web page with utm tags. */
+      primaryUrl: string;
+      fallbackUrl: null;
+      /** Only a sideloaded build may show a price. */
+      showPrice: true;
+    };
 
 /**
- * What the upgrade button may do on this build. The stores' rules decide (see `proOffer`): Play and iOS never get a price or a link to
- * a web checkout, only the JoyoRogo app or its store page; a sideloaded APK gets the web page and the live price.
+ * What the upgrade button may do on this build. The stores' rules decide (see `proOffer`): iOS opens the paywall, which sells with
+ * StoreKit; Play never gets a price or a link to a web checkout, only the JoyoRogo app or its listing; a sideloaded APK gets the web
+ * page and the live price.
  */
 export function proUpgradeAction(platform: Platform, distribution: Distribution, moment: ProMoment): ProUpgradeAction {
   const campaign = campaignOf(moment);
   const offer = proOffer(platform, distribution);
+  if (offer === 'iap') return { kind: 'paywall', showPrice: false };
   if (offer === 'web') {
     return {
       kind: 'web',
@@ -57,31 +67,32 @@ export function proUpgradeAction(platform: Platform, distribution: Distribution,
       showPrice: true,
     };
   }
-  if (offer === 'store') {
-    const referrer = `utm_source%3Djoyofit%26utm_medium%3Dapp%26utm_campaign%3D${campaign}`;
-    return {
-      kind: 'app-or-store',
-      appUrl: JOYOROGO_APP_URL,
-      primaryUrl: `market://details?id=${JOYOROGO_PLAY_ID}&referrer=${referrer}`,
-      fallbackUrl: `https://play.google.com/store/apps/details?id=${JOYOROGO_PLAY_ID}&referrer=${referrer}`,
-      showPrice: false,
-    };
-  }
+  const referrer = `utm_source%3Djoyofit%26utm_medium%3Dapp%26utm_campaign%3D${campaign}`;
   return {
     kind: 'app-or-store',
     appUrl: JOYOROGO_APP_URL,
-    primaryUrl: `${JOYOROGO_APP_STORE_URL}?ct=joyofit-${campaign}`,
-    fallbackUrl: null,
+    primaryUrl: `market://details?id=${JOYOROGO_PLAY_ID}&referrer=${referrer}`,
+    fallbackUrl: `https://play.google.com/store/apps/details?id=${JOYOROGO_PLAY_ID}&referrer=${referrer}`,
     showPrice: false,
   };
 }
 
+export interface ProUpgradeOpeners {
+  /** `Linking.openURL`; rejects when nothing handles the link, which is how a missing app is told apart without `canOpenURL` (that would need a native `queries` entry). */
+  open: (url: string) => Promise<unknown>;
+  /** Shows the in-app paywall. */
+  showPaywall: () => void;
+}
+
 /**
- * Opens the first link that works: the JoyoRogo app, then the store or web page, then the https listing. `open` is `Linking.openURL`;
- * it rejects when nothing handles the link, which is how a missing app is told apart without `canOpenURL` (that would need a native
- * `queries` entry). Returns false when every link failed.
+ * Carries out `action`: the paywall, or the first link that works (the JoyoRogo app, then the store or web page, then the https
+ * listing). Returns false when every link failed.
  */
-export async function openProUpgrade(action: ProUpgradeAction, open: (url: string) => Promise<unknown>): Promise<boolean> {
+export async function openProUpgrade(action: ProUpgradeAction, { open, showPaywall }: ProUpgradeOpeners): Promise<boolean> {
+  if (action.kind === 'paywall') {
+    showPaywall();
+    return true;
+  }
   const urls = [action.appUrl, action.primaryUrl, ...(action.fallbackUrl ? [action.fallbackUrl] : [])];
   for (const url of urls) {
     try {

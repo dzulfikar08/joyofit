@@ -1,11 +1,11 @@
 # JoyoFit
 
-> JoyoFit adalah aplikasi open source (AGPL-3.0) untuk Android dan iPhone yang menggantikan Huawei Health (dan juga pencatat latihan beban yang jalan tanpa jam): jam Huawei terhubung langsung lewat Bluetooth ke HP, dan langkah, detak jantung, tidur, SpO2, dan olahraga disimpan di HP. Yang sudah diuji: Huawei Watch Fit 4 Pro, Band 8, Band 11 Pro, dan Watch Fit 2; jam Huawei dan Honor lain eksperimen. Cloud opsional. Protokol jamnya adalah port dari Gadgetbridge.
+> JoyoFit adalah aplikasi independen open source (AGPL-3.0) untuk Android dan iPhone yang menyinkronkan jam pintar yang kompatibel lewat Bluetooth ke HP, tanpa akun tambahan (dan juga pencatat latihan beban yang jalan tanpa jam). Langkah, detak jantung, tidur, SpO2, dan olahraga disimpan di HP. Empat model jam sudah diuji; jam lain eksperimen, daftarnya ada di halaman Jam yang didukung. Cloud opsional. Protokol jamnya adalah port dari Gadgetbridge. JoyoFit tidak dibuat, didukung, atau disponsori oleh Huawei maupun Honor.
 
 ## Halaman
 
 - [Beranda](https://fit.joyorogo.com/): fitur, tanya jawab, dan cara memakai.
-- [Panduan](https://fit.joyorogo.com/panduan): memakai Huawei Watch Fit 4 Pro tanpa Huawei Health, langkah demi langkah, termasuk panduan awal di aplikasi dan tab Social (Indonesia dan English).
+- [Panduan](https://fit.joyorogo.com/panduan): memasang dan memakai JoyoFit langkah demi langkah, termasuk panduan awal di aplikasi dan tab Social (Indonesia dan English).
 - [Blog](https://fit.joyorogo.com/blog): tulisan tentang fitur yang sudah bisa dipakai: JoyoFit Web, Ride, Coach, tab Social, bagikan latihan ke JoyoRogo, panduan awal, upload ke Strava, kartu bagikan, tidur dan HRV, pembaruan di aplikasi.
 - [JoyoFit Web](https://fit.joyorogo.com/blog/joyofit-web): analisis latihan di browser (app.fit.joyorogo.com, JoyoRogo Pro) dan Studio untuk merancang tampilan jam, gratis.
 - [Ride](https://fit.joyorogo.com/ride): permainan sepeda virtual indoor di browser, gratis; penjelasannya di [blog](https://fit.joyorogo.com/blog/joyofit-ride).
@@ -13,7 +13,7 @@
 - [Timbangan](https://fit.joyorogo.com/timbangan): timbangan badan Bluetooth yang dibaca JoyoFit lewat protokol openScale, per merek, dengan data yang didapat; baru satu jenis (Tuya beacon, HAN RIVER HRTZC01, berat saja) yang diuji di timbangan asli.
 - [Dukung jam](https://fit.joyorogo.com/dukung-jam): membantu jam baru masuk daftar uji.
 - [Strava](https://fit.joyorogo.com/strava): kirim olahraga dari jam ke Strava; slot penuh, ada daftar tunggu.
-- [iPhone](https://fit.joyorogo.com/iphone): beta publik TestFlight; versi App Store menunggu review Apple.
+- [iPhone](https://fit.joyorogo.com/iphone): beta publik TestFlight; versi App Store belum rilis.
 - [Pasang cloud sendiri](https://fit.joyorogo.com/self-host): server cloud JoyoFit di CloudAgni.
 - [Privasi](https://fit.joyorogo.com/privasi): data yang disimpan dan cara menghapusnya.
 

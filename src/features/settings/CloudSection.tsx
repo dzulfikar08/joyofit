@@ -1,5 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import * as Linking from 'expo-linking';
+import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +9,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Details } from '@/components/Details';
+import { isIos } from '@/components/IosUnavailable';
 import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
@@ -19,6 +21,7 @@ import { errorMessage, formatCount, formatDateTime } from '@/format';
 import { useWatchPresence } from '@/features/device/useWatchPresence';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { SignInButtons } from '@/features/settings/SignInButtons';
+import { PRO_PAYWALL_ROUTE } from '@/features/pro/offer';
 import { PRO_SUPPORT } from '@/features/pro/support';
 import { UpgradeCard } from '@/features/pro/UpgradeCard';
 import { useCloud } from '@/state/CloudProvider';
@@ -93,6 +96,7 @@ export function CloudSection() {
         {cloud.pro === true ? <Notice icon="cloud-done-outline">{t('cloud.proSyncs')}</Notice> : null}
         {cloud.pro === true ? (
           <>
+            {isIos ? <Button label={t('cloud.manageSubscription')} variant="secondary" icon="card-outline" onPress={() => router.navigate(PRO_PAYWALL_ROUTE)} /> : null}
             <Notice icon="chatbubble-ellipses-outline">{t('cloud.support.body')}</Notice>
             <Button
               label={t('cloud.support.open', { handle: PRO_SUPPORT.handle })}

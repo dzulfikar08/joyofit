@@ -12,6 +12,7 @@ import { Divider, Section } from '@/components/Screen';
 import { SwitchRow } from '@/components/SwitchRow';
 import { isLinkUp, linkLabel } from '@/features/device/linkState';
 import { watchListName } from '@/features/device/watchName';
+import { shownName } from '@/features/device/shownName';
 import { watchActionKey, watchLabel, type WatchRow } from '@/features/device/watches';
 import { RoutineNameDialog } from '@/features/strength/ui/RoutineNameDialog';
 import { formatSyncTime } from '@/format';
@@ -71,7 +72,7 @@ export function WatchesSection({ onAdd }: WatchesSectionProps) {
         title={t('multi.rename.title')}
         placeholder={t('multi.rename.placeholder')}
         confirmLabel={t('multi.rename.save')}
-        initial={renaming ? watchLabel(renaming) : ''}
+        initial={renaming ? shownName(watchLabel(renaming)) : ''}
         onConfirm={(name) => {
           const target = renaming;
           setRenaming(null);
@@ -82,7 +83,7 @@ export function WatchesSection({ onAdd }: WatchesSectionProps) {
       <ConfirmDialog
         visible={removing !== null}
         title={t('multi.remove.title')}
-        message={t('multi.remove.message', { name: removing ? watchLabel(removing) : '' })}
+        message={t('multi.remove.message', { name: removing ? shownName(watchLabel(removing)) : '' })}
         confirmLabel={t('multi.remove.confirm')}
         onConfirm={() => {
           const target = removing;
@@ -109,7 +110,7 @@ function WatchItem({ watch: w, several, busy, onRename, onRemove }: WatchItemPro
   const live = useWatch();
   const active = live.activeAddress === w.address && live.linkState !== 'disconnected';
   const linked = active && isLinkUp(live.linkState);
-  const label = watchListName(w);
+  const label = shownName(watchListName(w));
 
   const status = [
     w.isPrimary && several ? t('multi.badge.primary') : null,
@@ -127,7 +128,7 @@ function WatchItem({ watch: w, several, busy, onRename, onRemove }: WatchItemPro
           </AppText>
           {w.alias ? (
             <AppText variant="caption" muted numberOfLines={1}>
-              {w.name}
+              {shownName(w.name)}
             </AppText>
           ) : null}
           {status.length > 0 ? (

@@ -28,6 +28,7 @@ import { BikeRideProvider } from '@/features/bikecomputer/BikeRideProvider';
 import { lockPortrait } from '@/features/bikecomputer/ui/orientation';
 import { flushSupportReports } from '@/features/device/aturReports';
 import { LiveExtrasFeed } from '@/features/live/liveExtras';
+import { AppleBillingSync } from '@/features/pro/AppleBillingSync';
 import { LivePill } from '@/features/record/ui/LivePill';
 import { useHydrateWeightUnit } from '@/features/strength/useWeightUnit';
 import { RoomCaptureRunner } from '@/features/thermometer/RoomCaptureRunner';
@@ -201,6 +202,8 @@ function RootNavigator() {
                   {/* The bedroom thermometer's readings (foreground scan, overnight file); idle without a paired thermometer. */}
                   <RoomCaptureRunner />
                   <WeightUnitSync />
+                  {/* iOS: hands JoyoRogo the StoreKit purchases it has not credited yet (once per start and account). */}
+                  <AppleBillingSync />
                   {/* A watch-started workout's average and highest heart rate, and the phone's step counter while it runs on foot. */}
                   <LiveExtrasFeed />
                   <TabBarInsetProvider>
@@ -258,6 +261,8 @@ function RootNavigator() {
                     />
                     {/* The Watch hub: opened from More; the bar keeps More marked while it is on screen (tabBarRoutes). `/watch` and `/watch/*` links still land here. */}
                     <Tabs.Screen name="watch" options={{ href: null }} />
+                    {/* The JoyoRogo Pro paywall (iOS in-app purchase); opened from every Upgrade button on iOS, draws its own header. */}
+                    <Tabs.Screen name="pro" options={{ href: null }} />
                     {/* Old deep links; each redirects to where the screen lives now. */}
                     <Tabs.Screen name="today" options={{ href: null }} />
                     <Tabs.Screen name="log" options={{ href: null }} />

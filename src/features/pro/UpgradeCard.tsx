@@ -1,4 +1,3 @@
-import * as Linking from 'expo-linking';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -9,7 +8,8 @@ import { IconChip } from '@/components/IconChip';
 import { isIos } from '@/components/IosUnavailable';
 import { Card } from '@/components/Screen';
 import { priceLine } from '@/features/onboarding/pro';
-import { openProUpgrade, proUpgradeAction, type ProMoment } from '@/features/pro/offer';
+import { proUpgradeAction, type ProMoment } from '@/features/pro/offer';
+import { openUpgrade } from '@/features/pro/openUpgrade';
 import { useDismissal } from '@/features/pro/useDismissal';
 import { useProConfig } from '@/features/pro/useProConfig';
 import { spacing } from '@/theme';
@@ -20,14 +20,16 @@ interface UpgradeCardProps {
   moment: ProMoment;
   /** Adds "Nanti", which hides the card for two weeks. Only for a card that is inline and blocks nothing. */
   dismissible?: boolean;
+  /** Runs when the button opens something, for a card inside a dialog that must close over the screen it leads to. */
+  onOpened?: () => void;
 }
 
 /**
- * The one JoyoRogo Pro offer inside JoyoFit, placed where Pro would have helped (see `ProMoment`). The button opens the JoyoRogo app
- * when it is installed, else its store page (Play, App Store) or, in a sideloaded build, the web page with the live price. What a
- * store build may show is decided in `proUpgradeAction`: no price and no web checkout on Play or iOS.
+ * The one JoyoRogo Pro offer inside JoyoFit, placed where Pro would have helped (see `ProMoment`). On iOS the button opens the
+ * in-app paywall (StoreKit). Elsewhere it opens the JoyoRogo app when it is installed, else its Play listing or, in a sideloaded build,
+ * the web page with the live price. What a build may show is decided in `proUpgradeAction`: no price and no web checkout on Play.
  */
-export function UpgradeCard({ moment, dismissible = false }: UpgradeCardProps) {
+export function UpgradeCard({ moment, dismissible = false, onOpened }: UpgradeCardProps) {
   const { t } = useTranslation('pro');
   const action = useMemo(() => proUpgradeAction(isIos ? 'ios' : 'android', HuaweiWear.distribution, moment), [moment]);
   const config = useProConfig(action.showPrice);
@@ -62,8 +64,13 @@ export function UpgradeCard({ moment, dismissible = false }: UpgradeCardProps) {
         <Button
           label={t('upgrade.cta')}
           variant="primary"
-          icon="open-outline"
-          onPress={() => void openProUpgrade(action, Linking.openURL).then((opened) => setFailed(!opened))}
+          icon={action.kind === 'paywall' ? 'arrow-forward' : 'open-outline'}
+          onPress={() =>
+            void openUpgrade(action).then((opened) => {
+              setFailed(!opened);
+              if (opened) onOpened?.();
+            })
+          }
           style={styles.grow}
         />
         {dismissible ? <Button label={t('upgrade.later')} variant="ghost" onPress={dismiss} /> : null}

@@ -54,6 +54,8 @@ import {
   JAM_PATH,
   JOYOROGO_URL,
   KELUARGA_PATH,
+  NON_AFFILIATION,
+  NON_AFFILIATION_EN,
   IOS_TESTFLIGHT_LIVE,
   IOS_TESTFLIGHT_URL,
   PANDUAN_PATH,
@@ -102,7 +104,7 @@ import { IphonePage, StravaPage } from "./Waitlist";
 const PRICE = { monthly: "Rp29.000", yearly: "Rp199.000", next: "Rp49.000", slots: 60 };
 
 const FACTS = [
-  { value: `${JAM_BISA_DICOBA} model`, label: "jam dan band Huawei dan Honor bisa dicoba", href: "/jam" },
+  { value: `${JAM_BISA_DICOBA} model`, label: "jam dan band kompatibel bisa dicoba", href: "/jam" },
   { value: "Live", label: "detak, kkal, lemak dan karbo saat olahraga" },
   { value: "AGPL-3.0", label: "kode terbuka" },
   { value: "Tanpa jam", label: "catat latihan beban dari HP saja", href: "#beban" },
@@ -156,7 +158,7 @@ const PROMISES = [
   {
     icon: ShieldCheck,
     title: "Langsung ke HP",
-    body: "Jam terhubung langsung lewat Bluetooth ke HP-mu. Huawei Health tidak perlu terpasang.",
+    body: "Jam terhubung langsung lewat Bluetooth ke HP-mu. Aplikasi bawaan jam tidak perlu terpasang.",
   },
   {
     icon: Bluetooth,
@@ -178,9 +180,9 @@ const LIVE: { Icon: LucideIcon; name: string; note: string }[] = [
 ];
 
 const FACES: { Icon: LucideIcon; name: string; note: string }[] = [
-  { Icon: Palette, name: "Watch face", note: "Daftar, pratinjau, ganti, dan hapus. File .hwt dicek dulu; jam menolak face yang tidak ditandatangani Huawei, dan aplikasi menjelaskannya." },
+  { Icon: Palette, name: "Watch face", note: "Daftar, pratinjau, ganti, dan hapus. File .hwt dicek dulu; jam menolak face yang tidak ditandatangani pabrikan jam, dan aplikasi menjelaskannya." },
   { Icon: Watch, name: "Ruang di jam", note: "Meter penyimpanan jam dan perkiraan apakah face baru masih muat." },
-  { Icon: Download, name: "Photo face jalan", note: "Pilih fotomu sendiri dan jam menggambar waktu dan datanya di atasnya. Face buatan sendiri harus lewat Huawei Health (lihat FAQ)." },
+  { Icon: Download, name: "Photo face jalan", note: "Pilih fotomu sendiri dan jam menggambar waktu dan datanya di atasnya. Face buatan sendiri harus lewat aplikasi bawaan jam (lihat FAQ)." },
 ];
 
 function Check2({ className }: { className?: string }) {
@@ -265,13 +267,13 @@ function Footer() {
             JoyoFit
           </p>
           <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted-foreground">
-            Jam Huawei dan Honor tanpa Huawei Health: langkah, detak jantung, dan{" "}
+            Sinkron jam pintar ke HP lewat Bluetooth: langkah, detak jantung, dan{" "}
             <span className="font-semibold text-tidur-ink">tidur</span> masuk ke HP, kalori{" "}
             <span className="font-semibold text-makan-ink">makan</span> dari JoyoRogo tampil di jam-mu.
           </p>
           <p className="mt-4 flex items-start gap-1.5 text-sm text-muted-foreground">
             <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
-            Dibuat di Malang oleh Dzulfikar. Turunan Gadgetbridge, lisensi AGPL-3.0. Tidak berafiliasi dengan Huawei atau Honor.
+            Dibuat di Malang oleh Dzulfikar. Turunan Gadgetbridge, lisensi AGPL-3.0. {NON_AFFILIATION}
           </p>
         </div>
         <nav aria-label="Tautan" className="contents">
@@ -381,7 +383,7 @@ function Hero() {
       <div>
         <h1 className="max-w-xl text-[2.625rem] leading-[1.04] font-extrabold tracking-tight text-balance md:text-[4rem]">
           <span className="mb-3 block text-base leading-snug font-bold tracking-normal text-primary md:text-lg">
-            Aplikasi pengganti Huawei Health
+            Aplikasi independen untuk jam pintar
           </span>
           <span className="block">Jam-mu.</span>
           <span className="block">Data-mu.</span>
@@ -389,9 +391,9 @@ function Hero() {
         </h1>
         {/* Headline and lead stay unfaded: the lead is the LCP element on mobile, and a text fade from opacity 0 would hide it from LCP. */}
         <p className="mt-5 max-w-lg text-lg leading-relaxed text-muted-foreground md:text-xl">
-          Pendamping jam Huawei yang jalan di HP sendiri. Langkah, detak jantung, tidur, dan olahraga
-          ditarik langsung lewat Bluetooth dan disimpan di HP. Tanpa Huawei Health, cloud hanya kalau
-          kamu mau. Belum punya jam? Catat latihan beban dari HP saja.
+          Aplikasi independen yang menyinkronkan jam pintar yang kompatibel ke HP-mu lewat Bluetooth, tanpa akun
+          tambahan. Langkah, detak jantung, tidur, dan olahraga disimpan di HP, cloud hanya kalau kamu mau. Belum
+          punya jam? Catat latihan beban dari HP saja.
         </p>
         <PlatformButtons location="hero" className="hero-rise mt-8 [--i:1]" />
         <div className="hero-rise mt-4 grid max-w-lg gap-3 text-sm leading-relaxed text-muted-foreground sm:grid-cols-2 [--i:2]">
@@ -411,13 +413,17 @@ function Hero() {
           </p>
           {IOS_TESTFLIGHT_LIVE && (
             <p className={cn(platform === "ios" && "-order-1")}>
-              <span className="font-bold text-foreground">iPhone:</span> beta publik TestFlight; versi App Store 1.0
-              sedang menunggu review Apple. iOS 16.4 ke atas.
+              <span className="font-bold text-foreground">iPhone:</span> beta publik TestFlight; versi App Store belum
+              rilis. iOS 16.4 ke atas.
             </p>
           )}
         </div>
         <p className="hero-rise mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground [--i:3]">
-          Gratis dan open source. Diuji di Watch Fit 4 Pro, Band 8, Band 11 Pro, dan Watch Fit 2, jam lain eksperimen.{" "}
+          Gratis dan open source. Empat model jam sudah diuji, jam lain eksperimen:{" "}
+          <a href={JAM_PATH} className="font-semibold text-foreground underline underline-offset-4">
+            lihat jam yang didukung
+          </a>
+          .{" "}
           <a
             href={DUKUNG_JAM_PATH}
             className="font-semibold text-foreground underline underline-offset-4"
@@ -781,7 +787,7 @@ function Features() {
           <ArrowRight className="size-5 shrink-0 text-makan-ink transition-transform group-hover:translate-x-0.5" aria-hidden />
         </a>
         <p className="mt-4 text-xs text-makan-ink">
-          Kartu kalori dibuat dari hasil reverse engineering Huawei Health dan belum diuji di Fit 4
+          Kartu kalori belum diuji di Watch Fit 4
           Pro.
         </p>
       </article>
@@ -1205,7 +1211,7 @@ const SEND_POINTS: { Icon: LucideIcon; title: string; body: string; href?: strin
   {
     Icon: ListChecks,
     title: "Panduan awal",
-    body: "Saat pertama dibuka, aplikasi menuntun dari lepas jam dari Huawei Health, pairing, dan sinkron pertama sampai izin dan masuk JoyoRogo. Bisa dilewati, dilanjutkan, dan dibuka lagi dari Settings.",
+    body: "Saat pertama dibuka, aplikasi menuntun dari lepas jam dari aplikasi bawaannya, pairing, dan sinkron pertama sampai izin dan masuk JoyoRogo. Bisa dilewati, dilanjutkan, dan dibuka lagi dari Settings.",
     href: "/blog/panduan-awal",
     label: "Soal panduan awal",
   },
@@ -1417,7 +1423,7 @@ const NEW_IN_APP: { Icon: LucideIcon; title: string; body: string }[] = [
   {
     Icon: Watch,
     title: "Pesan jam yang lebih jelas",
-    body: "Watch face yang tidak ditandatangani Huawei dijelaskan dalam bahasamu, dan pesan GNSS kedaluwarsa saat mulai olahraga luar ruangan punya petunjuk tenang: tunggu ikon GPS di jam.",
+    body: "Watch face yang tidak ditandatangani pabrikan jam dijelaskan dalam bahasamu, dan pesan GNSS kedaluwarsa saat mulai olahraga luar ruangan punya petunjuk tenang: tunggu ikon GPS di jam.",
   },
 ];
 
@@ -1551,7 +1557,7 @@ function JamTeaser() {
     <section data-section="jam" className="border-t border-border/70 py-14 md:py-16">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 md:flex-row md:items-center md:justify-between md:px-6">
         <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
-          Diuji di Watch Fit 4 Pro, Band 8, Band 11 Pro, dan Watch Fit 2. Puluhan jam Huawei dan Honor lain bisa dicoba.
+          Empat model jam sudah diuji dan puluhan jam lain bisa dicoba. Daftar lengkapnya ada di halaman jam yang didukung.
         </p>
         <div className="flex shrink-0 flex-wrap gap-3">
           <ButtonLink variant="secondary" href={JAM_PATH}>
@@ -1615,7 +1621,7 @@ function Code({ children }: { children: React.ReactNode }) {
 }
 
 const UNBIND_STEP =
-  "Lepas jam dari Huawei Health dulu (Unbind), lalu pasangkan di tab Watch. Jam hanya bisa terikat ke satu HP dalam satu waktu, jadi memasangkannya di sini menggantikan pairing yang lama.";
+  "Lepas jam dari aplikasi bawaannya dulu (Unbind; di jam Huawei lewat Huawei Health), lalu pasangkan di tab Watch. Jam hanya bisa terikat ke satu HP dalam satu waktu, jadi memasangkannya di sini menggantikan pairing yang lama.";
 
 const ANDROID_STEPS = [
   "Gabung grup Google joyofit-testers dengan akun Google yang kamu pakai di Play Store. Grup inilah yang memberi akses ke tes tertutup.",
@@ -1753,7 +1759,7 @@ function Install() {
             <div>
               <h3 className="text-2xl font-extrabold tracking-tight text-tidur-ink md:text-3xl">JoyoFit di iPhone (beta publik)</h3>
               <p className="mt-3 max-w-md text-[0.9375rem] leading-relaxed text-tidur-ink/85">
-                Versi iPhone sudah bisa dicoba lewat TestFlight, dan versi App Store 1.0 sedang menunggu review Apple.
+                Versi iPhone sudah bisa dicoba lewat TestFlight; versi App Store belum rilis.
                 Gratis, butuh iOS 16.4 ke atas, dan masukanmu membantu kami merapikannya.
               </p>
               <div className="mt-6">
@@ -2180,7 +2186,7 @@ function JamPage() {
           Kembali ke beranda
         </a>
         <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-balance md:text-[2.75rem] md:leading-[1.1]">
-          Jam Huawei dan Honor yang didukung JoyoFit
+          Jam yang didukung JoyoFit
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           Empat model sudah kami uji: Huawei Watch Fit 4 Pro, Band 8, Band 11 Pro, dan Watch Fit 2. Jam dan band lain di daftar Gadgetbridge masih
@@ -2255,11 +2261,14 @@ function JamPage() {
           Gadgetbridge, jadi ada di daftar Gadgetbridge belum berarti sudah diuji di JoyoFit: baru Watch Fit 4 Pro,
           Band 8, Band 11 Pro, dan Watch Fit 2 yang diuji. JoyoFit adalah turunannya, bukan Gadgetbridge itu sendiri. Aplikasinya menambahkan layar
           harian, olahraga langsung, ekspor ke Health Connect dan Strava, cloud opsional, dan versi iPhone.
-          Mau mencoba tanpa Huawei Health? Ikuti{" "}
+          Mau mencoba? Ikuti{" "}
           <a href={PANDUAN_PATH} className="font-semibold text-foreground underline underline-offset-4">
             panduan pasang dan pakai
           </a>
           .
+        </p>
+        <p className="mt-8 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+          {NON_AFFILIATION} <span lang="en">{NON_AFFILIATION_EN}</span>
         </p>
       </div>
     </section>
@@ -2444,8 +2453,8 @@ function DukungJamPage() {
 
 const SWITCH_STEPS = [
   {
-    title: "Lepas jam dari Huawei Health",
-    body: "Jam hanya bisa terpasang ke satu aplikasi dalam satu waktu, jadi putuskan dulu di Huawei Health (Unbind). Kamu tidak perlu akun Huawei di JoyoFit.",
+    title: "Lepas jam dari aplikasi bawaannya",
+    body: "Jam hanya bisa terpasang ke satu aplikasi dalam satu waktu, jadi putuskan dulu di aplikasi bawaan jam (Unbind; di jam Huawei lewat Huawei Health). Kamu tidak perlu akun pabrikan jam di JoyoFit.",
   },
   {
     title: "Pasangkan di JoyoFit",
@@ -2453,7 +2462,7 @@ const SWITCH_STEPS = [
   },
   {
     title: "Sinkron, data tetap di HP",
-    body: "Sinkron pertama menarik 7 hari terakhir. Riwayat lama dari Huawei Health bisa diimpor dari ekspor datanya, dan olahraga bisa dikirim ke Strava.",
+    body: "Sinkron pertama menarik 7 hari terakhir. Riwayat lama dari aplikasi bawaan jam bisa diimpor dari ekspor datanya, dan olahraga bisa dikirim ke Strava.",
   },
 ] as const;
 
@@ -2461,9 +2470,9 @@ function Switch() {
   return (
     <section data-section="pengganti" className="mx-auto w-full max-w-6xl px-4 py-16 md:px-6 md:py-24">
       <div className="max-w-2xl">
-        <SectionTitle>Pakai Huawei Watch tanpa Huawei Health</SectionTitle>
+        <SectionTitle>Pasang jam di JoyoFit dalam tiga langkah</SectionTitle>
         <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-          JoyoFit mengambil data langsung dari jam, jadi Huawei Health tidak perlu terpasang. Baru Huawei Watch Fit 4
+          JoyoFit mengambil data langsung dari jam, jadi aplikasi bawaan jam tidak perlu terpasang. Baru Huawei Watch Fit 4
           Pro yang sudah diuji; jam lain masih eksperimen.
         </p>
       </div>

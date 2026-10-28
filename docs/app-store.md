@@ -1,6 +1,6 @@
 # JoyoFit on the App Store: listing copy and answers
 
-What is entered in App Store Connect for app 6823324343 (version record 1.1, build 202610260531; texts updated 2026-10-26 after the rejection below). Regenerate the screenshots with `node .tmp/storeframes/render.mjs` from the repo root
+What is entered in App Store Connect for app 6823324343 (version record 1.1, build 202610260531; texts updated 2026-10-26 after the first rejection below; the Description and App Review notes sections were rewritten on 2026-10-28 after the second rejection and are pasted in with the next build, see its owner checklist). Regenerate the screenshots with `node .tmp/storeframes/render.mjs` from the repo root
 (frames in `.tmp/storeframes/frame.html`, source captures in `.tmp/storeframes/shots/`, output 1242x2688 for APP_IPHONE_65).
 
 The screenshots are real captures of the app's own screens (the JS UI is shared with Android), framed with a drawn iPhone status bar. They are not iPhone captures: replace them with real ones when convenient.
@@ -15,7 +15,7 @@ The screenshots are real captures of the app's own screens (the JS UI is shared 
 | Promotional text | Sinkron langkah, tidur, detak jantung, dan olahraga dari jam pintarmu ke iPhone lewat Bluetooth. Datanya tetap di HP. | Sync steps, sleep, heart rate and workouts from your smartwatch to your iPhone over Bluetooth. Your data stays on your phone. |
 
 Privacy policy https://fit.joyorogo.com/privasi; support and marketing URL https://fit.joyorogo.com. Category Health & Fitness. Free, all territories (base IDN). Age rating 4+ (health topics only).
-"Huawei" is kept out of the name, subtitle, keywords and promotional text (guidelines 4.1(b), 5.2); the description names it only in the compatibility note and says JoyoFit is not affiliated.
+No Huawei or Honor anywhere in the listing or the review notes (guideline 4.1(b), second rejection on 2026-10-28; 5.2): the compatible models are only on https://fit.joyorogo.com/jam.
 
 ## Description (id)
 
@@ -36,11 +36,13 @@ PRIVASI
 • Kebijakan privasi: https://fit.joyorogo.com/privasi
 
 CATATAN
-• Jam yang cocok: diuji dengan Huawei Watch Fit 4 Pro; model Huawei dan Honor lain masih percobaan. Daftar lengkap: https://fit.joyorogo.com/jam
+• Jam yang cocok: daftar jam yang sudah diuji dan yang masih percobaan ada di https://fit.joyorogo.com/jam
 • Karena batasan iOS, JoyoFit tidak bisa meneruskan notifikasi aplikasi lain, mencari iPhone dari jam, mengatur panggilan, atau mengirim SMS SOS. Untuk notifikasi, jam membacanya langsung dari iPhone lewat pengaturan bawaan iOS. Fitur siklus, makanan, dan beberapa lainnya belum ada di iPhone.
 • Bahasa aplikasi mengikuti HP: Indonesia atau Inggris.
-• JoyoFit adalah aplikasi independen, bukan buatan Huawei, tidak didukung atau disponsori Huawei, dan tidak berafiliasi dengan Huawei. Huawei adalah merek dagang Huawei Technologies Co., Ltd.
+• JoyoFit adalah aplikasi independen. Tidak dibuat, didukung, atau disponsori oleh pembuat jam mana pun, dan tidak berafiliasi dengan mereka.
 • JoyoFit bukan alat medis. Jangan dipakai untuk diagnosis atau pengobatan.
+
+JoyoRogo Pro (opsional): langganan bulanan atau tahunan lewat App Store di dalam JoyoFit, sama dengan JoyoRogo Pro di aplikasi JoyoRogo dan web. Diperpanjang otomatis kecuali dibatalkan paling lambat 24 jam sebelum periode berakhir; kelola di Pengaturan > Apple ID > Langganan. Ketentuan Penggunaan (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 Open source (AGPL-3.0): https://github.com/dzulfikar08/joyofit
 ```
@@ -64,11 +66,13 @@ PRIVACY
 • Privacy policy: https://fit.joyorogo.com/privasi
 
 NOTES
-• Compatible watches: tested with the Huawei Watch Fit 4 Pro; other Huawei and Honor models are experimental. Full list: https://fit.joyorogo.com/jam
+• Compatible watches: the tested and the experimental models are listed at https://fit.joyorogo.com/jam
 • Because of iOS limits, JoyoFit cannot forward other apps' notifications, find your iPhone from the watch, handle calls or send SOS texts. For notifications, the watch reads them from the iPhone itself through the built-in iOS setting. Cycle tracking, meals and a few other features are not on iPhone yet.
-• JoyoFit is an independent app. It is not made, endorsed or sponsored by Huawei and is not affiliated with Huawei. Huawei is a trademark of Huawei Technologies Co., Ltd.
+• JoyoFit is an independent app. It is not made, endorsed or sponsored by any watch maker and is not affiliated with one.
 • The app follows your phone's language: English or Indonesian.
 • JoyoFit is not a medical device. Do not use it for diagnosis or treatment.
+
+JoyoRogo Pro (optional): a monthly or yearly App Store subscription inside JoyoFit, the same JoyoRogo Pro as in the JoyoRogo app and on the web. It renews automatically unless cancelled at least 24 hours before the end of the period; manage it in Settings > Apple ID > Subscriptions. Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 Open source (AGPL-3.0): https://github.com/dzulfikar08/joyofit
 ```
@@ -76,11 +80,13 @@ Open source (AGPL-3.0): https://github.com/dzulfikar08/joyofit
 ## App Review notes
 
 ```
-JoyoFit is an independent, open-source app that syncs a compatible smartwatch with the iPhone over Bluetooth (tested with the Huawei Watch Fit 4 Pro). It is not made, endorsed or sponsored by Huawei.
+JoyoFit is an independent, open-source app that syncs a compatible smartwatch with the iPhone over Bluetooth (compatible models: https://fit.joyorogo.com/jam). It is not made, endorsed or sponsored by any watch maker.
 
-DEMO VIDEO (physical iPhone, iOS 27, build 1.1 202610260531, Huawei Watch Fit 4 Pro, the watch filmed with a second camera during pairing): https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-202610260531.mp4 . It shows pairing and the confirmation on the watch, the first sync, the Apple Health and Location permission requests, and the synced data.
+DEMO VIDEO (physical iPhone, build 1.1 (BUILD), with a compatible watch filmed by a second camera during pairing): https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-BUILD.mp4 . It shows pairing and the confirmation on the watch, the first sync, the Location and Apple Health permission requests, the synced data, and the BACKGROUND AUDIO part: a workout recorded on the phone with the metronome set to Sound, then the Home Screen and the locked screen while the click goes on.
 
-NO SIGN-IN, NO DEMO ACCOUNT. Watch sync and every screen in the video work without an account. Signing in with a JoyoRogo account only adds the optional cloud backup, Strava upload and the JoyoRogo Pro features (Coach, family sharing), which are bought in the JoyoRogo app; JoyoFit has no in-app purchases, no prices and no links to a web checkout.
+NO DEMO ACCOUNT NEEDED. Watch sync and every screen in the video work without an account. Signing in with a JoyoRogo account (Sign in with Apple works) only adds the optional cloud backup, Strava upload and the JoyoRogo Pro features (Coach and Joyo AI, cloud backup, family sharing beyond the free tier, AI connectors).
+
+IN-APP PURCHASE: JoyoRogo Pro is sold in JoyoFit as auto-renewable subscriptions (com.joyodigitama.joyofit.pro.monthly and .yearly, group "JoyoRogo Pro"). Path: sign in on Today's Coach card (Sign in with Apple), then Upgrade to Pro on that card (the same card is on Coach, cloud backup, Family and AI connections). The Pro screen shows both plans with Apple's prices, Restore purchases, the renewal terms and the Terms of Use and Privacy Policy links. Pro belongs to the JoyoRogo account, so it is also honoured when it was bought in our JoyoRogo app (App Store id6823222101, same developer), on Google Play or on joyorogo.com; JoyoFit never links to a purchase outside the App Store.
 
 WITHOUT A WATCH you can still see the setup guide, the Today, Workouts and Watch screens with their empty states, the watch scan (it finds nothing without a watch in range) and every Settings screen. Screens for features iOS does not allow (find my phone, calls, SOS texts) explain that instead of showing controls.
 
@@ -90,7 +96,7 @@ PERMISSIONS and why:
 - Motion & Fitness: steps and cadence of a run or walk the user records on the phone.
 - Apple Health: writes the watch's steps, distance, active energy, heart rate, SpO2, sleep and workouts when the user switches the export on; reads Apple Health history once, only when the user taps Import from Apple Health. Nothing read leaves the phone.
 - Camera and Photos: only when the user takes or picks a photo for a shared workout image or a watch face.
-- Background modes: bluetooth-central (reconnect and sync the remembered watch; keep a paired strap during a phone workout), location (only while a phone workout with GPS runs, blue indicator shown), audio (only the metronome click during a phone workout when the user sets it to Sound or Both; never records audio).
+- Background modes: bluetooth-central (reconnect and sync the remembered watch; keep a paired strap during a phone workout), location (only while a phone workout with GPS runs, blue indicator shown), audio (the cadence metronome of a workout recorded on the phone: with the metronome on Sound or Both, the click goes on with the screen locked or another app in front, mixed with the user's music; never records audio; shown in the BACKGROUND AUDIO part of the demo video. Path: Workouts, Record workout, Run, Continue on the location screen, Start, then Metronome on and Sound).
 - Encryption: the Bluetooth link to the watch uses AES and HMAC; ITSAppUsesNonExemptEncryption is false.
 
 DATA FROM THE WATCH: over Bluetooth Low Energy the watch sends steps, distance, calories, heart rate (continuous and resting), SpO2, sleep with stages, stress, workouts with GPS routes and per-second heart rate, and battery level. The app stores it on the phone and shows it on the Today, Workouts and sleep screens (daily totals, charts, readiness and strain scores computed on the phone). If the user turns it on, it writes the same data to Apple Health. The app sends the watch settings, alarms, weather, goals and the user's profile (height, weight, age) so the watch can compute calories. No health data leaves the phone unless the user opts into the cloud backup or Strava upload.
@@ -191,7 +197,7 @@ Apple could not get past the launch crash, so the listing and the review notes a
 
 **In the app (PR #27, `fix/ios-review-copycat`).** The two Bluetooth strings now say "your smartwatch or fitness band", the Apple Health read string "workouts your watch's own app saved there". iOS only (`ios.infoPlist`); it changes the native fingerprint, so it ships with the next build, not as an OTA.
 
-**Fallback if Apple still asks for authorization.** JoyoFit has no relationship with Huawei to show, so the answer would be to make the iOS UI brand-free: "compatible smartwatches" in onboarding, the Watch tab, Family and the import screens (an iOS-only i18n override for the 97 strings), the model list replaced by a link to https://fit.joyorogo.com/jam, and "Huawei" removed from the description except the website link. That is a few days of work and makes the app harder to use (the unbind and import steps must say which app to open), so do it only on a second rejection.
+**Fallback if Apple still asks for authorization.** JoyoFit has no relationship with Huawei to show, so the answer would be to make the iOS UI brand-free: "compatible smartwatches" in onboarding, the Watch tab, Family and the import screens (an iOS-only i18n override for the 97 strings), the model list replaced by a link to https://fit.joyorogo.com/jam, and "Huawei" removed from the description except the website link. That is a few days of work and makes the app harder to use (the unbind and import steps must say which app to open), so do it only on a second rejection. Done after the second rejection: see "Review 2026-10-28" below.
 
 **Reply to App Review (Resolution Center), to send with the resubmission:**
 
@@ -247,3 +253,93 @@ Done on 2026-10-26: PR #27 merged, build 1.1 (202610260531) attached, version re
 
 1. Optional: download the App Review crash logs (path above) and confirm they show `NoSceneLifecycleAdoption`.
 2. Wait for App Review's answer.
+
+## Review 2026-10-28: rejection of 1.1 (202610260531)
+
+Same submission `bf3d4eb5-74af-4016-898a-e4fef19aaa27`, reviewed on an iPad Air 11-inch (M3). Four issues:
+
+| Guideline | Apple's finding | Answer |
+|---|---|---|
+| 4.1(b) Copycats | "continues to include content that resembles Honor or Huawei without the necessary authorization"; asks us to demonstrate the relationship with the brand owners | There is none, so the iOS app and the listing now name neither brand |
+| 5.1.1(iv) | a custom message before the location request, proceeded with an "Allow location" button | The buttons before a permission request say Next or Continue |
+| 2.5.4 | `audio` in `UIBackgroundModes`, no feature with persistent audio found | Kept for the metronome; screen recording on a physical iPhone |
+| 2.1(b) Information Needed | five questions about paid content | Answers below |
+
+### 1. Copycats (4.1(b)), second time
+
+Apple did not accept the nominative-use reply ("While we understand your reasoning"), so the fallback above is done:
+
+- **Strings.** The iOS overlay (`docs/i18n.md`, "iOS overlay"): on iOS, 94 keys per locale are replaced (onboarding 20, watch 25, nowatch 3, settings 30, family 8, workouts 2, routes 2, scale 1, today 1, health 1, coach 1). Before it, 95 strings per locale named a brand; two remain, shown only on Android (`onboarding:background.notice`, `settings:safety.sosDetails`). `src/i18n/overlay.test.ts` fails when a brand word reaches a string iOS can show. Android keeps its copy.
+- **Names from code.** `shownName()` (`src/features/device/shownName.ts`) drops a leading Huawei/Honor on iOS wherever a catalogue model name or an advertised watch or scale name is shown (Today, Watch tab and its details, watch list, scan and pairing, scale screens, workout source, sticker device line). iOS shows no supported-model list: the "Add manually" sheet and the supported-watches card link to https://fit.joyorogo.com/jam. The author of a built-in watch face reads "Built in" (all platforms).
+- **Swift texts (iOS only).** The lost-pairing message and note, the watch face refusals and the watch face package errors say "the watch's own app" and "the watch maker".
+- **Listing.** Description (id, en) and App Review notes above; name, subtitle, keywords, promotional text and screenshots already had no brand.
+- **Left on purpose.** The "Add manually" sheet still lists model names without the brand ("Watch Fit 4 Pro", "MagicWatch 2"): pairing a watch the scan does not recognise needs that pick. Data written outside the app keeps its words (the Strava description line, the Apple Health device manufacturer, the "Workout (Huawei type N)" name of an unknown sport type, which Android writes too). Diagnostic log lines. The watch's own logo on the hardware in the video. The website (support and marketing URL) still names the brands, and App Review may read it [INFERENCE].
+
+### 2. Location pre-prompt (5.1.1(iv))
+
+| Screen (iOS) | Before | After |
+|---|---|---|
+| Settings, Weather, "This phone", location not allowed | "Allow location" button under "Location permission: Not granted" | a reason ("Weather for this phone uses your approximate location, rounded to about 1 km before it goes to Open-Meteo. You can also choose a city instead.") and **Next** |
+| Live screen of a watch-started workout, step counter | "Allow it to see them here." and **Allow step counter** | "To show them here, JoyoFit asks for access to it." and **Next** |
+| Routes, loop from where you stand | title "Allow location" (button already Continue) | title "Your location" |
+
+Already compliant: the recorder's location and Bluetooth screen (Continue), the phone-GPS explanation for watch workouts (Not now / Continue), family notifications (Next / Not now). After a refusal, Weather, the recorder and Loops offer Open Settings. Android-only screens (Phone, GPS assist, SOS SMS) are unchanged. The new copy applies on Android too.
+
+### 3. Background audio (2.5.4)
+
+Kept: the metronome (docs/live-run.md, "Metronome") clicks with every step beat in Sound or Both, mixed with music; without `audio` iOS mutes it once the app is in the background, which is where a runner has it (locked phone in a pocket, music app in front). The recording, on a physical iPhone with the new build, with Screen Recording from Control Center:
+
+| Shot | What must be visible and audible |
+|---|---|
+| 1 | JoyoFit: Workouts, Record workout, Run; Continue on the location screen; While Using the App |
+| 2 | "GPS ready", Start; on the live screen Metronome on, mode Sound; the click is heard |
+| 3 | Swipe up to the Home Screen: the click goes on for about 15 s (blue location indicator) |
+| 4 | Open another app (Music or Safari) for about 10 s: the click goes on |
+| 5 | Lock the screen for about 10 s: the click goes on; unlock, back to JoyoFit, Metronome off, finish and discard |
+
+Play the saved file before uploading and check the click is audible in it. Put it in the same video as a new pairing demo on the new build (the 2026-10-26 video shows the old branded screens), as the BACKGROUND AUDIO part, at `https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-<build>.mp4` (R2 bucket `joyofit-maps`, `review/`, a new name, see "Hosting" above).
+
+### 4. Business model (2.1(b)) and In-App Purchase
+
+Owner decision 2026-10-29: JoyoFit sells JoyoRogo Pro itself with In-App Purchase on iOS (guidelines 3.1.1 and 3.1.3(b): what is bought on other platforms may be honoured when it is also offered with In-App Purchase in the app). Flow and code: `docs/pro-ios.md`.
+
+- App Store Connect (done 2026-10-29 through the API): group "JoyoRogo Pro" `22523171` in app 6823324343; `com.joyodigitama.joyofit.pro.monthly` (`6828094682`, ONE_MONTH) and `.yearly` (`6828094623`, ONE_YEAR), level 1, not family sharable; localizations en-US and id; available in the same 175 territories as JoyoRogo's with JoyoRogo's exact price tier per territory (Rp29.000 / Rp199.000 in Indonesia, US$9.99 / US$59.99 in the USA); review note with the path above. State MISSING_METADATA until the review screenshot is added (owner checklist).
+- JoyoRogo server (joyorogo PR #28, deployed 2026-10-29, version `4058694f`): `APPLE_BUNDLE_IDS` accepts both apps; a product is valid only under its own bundle; JoyoFit purchases credit the same `founder_until` as JoyoRogo's. Production check: `/api/config` `appleBilling: true`, notifications 400 on a bad signature, redeem 401 without a session.
+- Not settable through the API (the PATCH answers 200 and stores nothing): App Store Server Notifications for JoyoFit. Owner checklist.
+
+### Reply to App Review (Resolution Center), to send with the resubmission
+
+```
+Hello,
+
+Thank you for the review. Build 1.1 (<build>) addresses the four issues.
+
+1. Guideline 4.1(b): we have no relationship with Huawei or Honor and cannot provide an authorization from them. We have therefore removed every reference to these brands from the app and from its metadata. The app now refers to "your watch" and "your watch's own app", it shows watch names without the maker's name, and the list of compatible models is replaced by a link to our website. The description and the review notes no longer mention either brand. The app uses no third-party logo, product image or trade dress; its name, icon and design are our own.
+
+2. Guideline 5.1.1(iv): the buttons shown before a permission request now say "Next" (weather location in Settings, the step counter of a live workout) or "Continue" (workout recording, loop routes). Each of these screens says why the permission is used, and the weather screen offers choosing a city instead. After a refusal the app offers a button to the Settings app instead of asking again.
+
+3. Guideline 2.5.4: the app has a feature that needs persistent background audio, the cadence metronome of a workout recorded on the phone. Set to Sound, it plays a click on every step beat, mixed with the user's music, and runners use it with the phone locked in a pocket or with a music app in front. The screen recording at https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-<build>.mp4 (physical iPhone, build 1.1 <build>, the BACKGROUND AUDIO part) shows the metronome started in a run, then the Home Screen, another app and the locked screen while the click goes on. The same link is in the App Review Information notes. To reach it: Workouts, Record workout, Run, Continue, Start, then Metronome on and Sound.
+
+4. Guideline 2.1(b), our business model:
+
+1) Who uses the paid features: people who use JoyoFit with a JoyoRogo account and choose the optional JoyoRogo Pro subscription. JoyoRogo is our nutrition and fitness app on the App Store (id6823222101, same developer). JoyoFit itself is free: pairing, watch sync, workouts, sleep, Apple Health and every other core feature work with no account and no payment.
+
+2) Where they buy them: in JoyoFit itself, with Apple In-App Purchase (JoyoRogo Pro monthly or yearly, auto-renewable). The same subscription is also sold in our JoyoRogo iOS app with In-App Purchase, in the JoyoRogo Android app with Google Play Billing, and on joyorogo.com.
+
+3) What a previous purchase gives access to in JoyoFit, with a JoyoRogo account that has Pro: Coach (daily training advice, run and strength plans) and the Joyo AI chat; cloud backup of workouts, sleep, routes and strength training (restoring earlier backups stays free); family sharing beyond the free tier (up to 5 people monitored, all alerts, email and 90 days of history); connecting other AI apps to the user's data; and other people's heart-rate charts and routes in the social feed.
+
+4) What is unlocked without In-App Purchase: nothing is sold in JoyoFit outside In-App Purchase. Because Pro belongs to the JoyoRogo account, a user who already bought it in JoyoRogo, on Google Play or on the web gets the features in 3) after signing in, as guideline 3.1.3(b) allows; the same features are offered in JoyoFit with In-App Purchase. JoyoFit never links to or mentions a way to buy outside the App Store.
+
+5) Physical goods: none. Nothing physical is sold in or with the app.
+
+Best regards,
+Dzulfikar Ats Tsauri
+```
+
+### Owner checklist
+
+1. Done 2026-10-29: JoyoRogo server deployed (PR #28); App Store Connect subscriptions created. Merge this change, run Release iOS (`release-ios.yml`, Mac) with the TestFlight upload, and note the build number (it replaces `<build>` and `BUILD` in the reply and the notes).
+2. App Store Connect, App Information, App Store Server Notifications: Production and Sandbox URL `https://api.joyorogo.com/api/billing/apple/notifications`, Version 2.
+3. On a physical iPhone with that build: sign in, open the Pro screen and take a screenshot of it (the review screenshot of both subscriptions); buy a plan in the Sandbox (TestFlight) and check Pro unlocks Coach; then record the video (pairing demo, then the BACKGROUND AUDIO shots above), check the click is audible in the file, upload it to `review/` in `joyofit-maps`, and check the link answers 200.
+4. App Store Connect: upload the Pro screenshot as the Review Screenshot of both subscriptions (or hand it over to be uploaded through the API); on version 1.1 attach the new build, select both subscriptions under "In-App Purchases and Subscriptions" (the first subscriptions must go with an app version), paste the Description (id, en) and App Review notes sections of this file.
+5. Post the reply above in the Resolution Center, then Update Review and resubmit. Record the dates here.

@@ -53,7 +53,7 @@
     "center": "Center on the start point"
   },
   "permission": {
-    "title": "Allow location",
+    "title": "Your location",
     "body": "JoyoFit needs your location to make a loop from where you stand. The location is read on your phone; only the start point of a new route is sent to the routing service when you look for a route.",
     "allow": "Continue",
     "denied": "Location permission was denied. Open settings to allow it, or use your Home point.",

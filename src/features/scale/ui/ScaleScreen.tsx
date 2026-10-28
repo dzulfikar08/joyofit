@@ -10,6 +10,7 @@ import { Segmented } from '@/components/Segmented';
 import { SwitchRow } from '@/components/SwitchRow';
 import { Notice } from '@/components/States';
 import { scaleUserFrom } from '@/features/scale/profile';
+import { shownName } from '@/features/device/shownName';
 import { PROTOCOLS, protocolById } from '@/features/scale/registry';
 import { secretFieldsFor } from '@/features/scale/secret';
 import { scaleLabel } from '@/features/scale/store';
@@ -68,7 +69,7 @@ export function ScaleScreen() {
       {s.scale ? (
         <LiveCard
           scale={s.scale}
-          kindLabel={protocol?.label ?? null}
+          kindLabel={shownName(protocol?.label)}
           weightOnly={protocol?.weightOnly === true}
           needsKey={s.secret === 'missing' || s.secret === 'rejected'}
           live={s.live}
@@ -154,7 +155,7 @@ export function ScaleScreen() {
           </AppText>
           {PROTOCOLS.map((p) => (
             <AppText key={p.id} variant="caption">
-              {`${p.label} (${p.brands.slice(0, 3).join(', ')})`}
+              {`${shownName(p.label)} (${p.brands.slice(0, 3).map(shownName).join(', ')})`}
             </AppText>
           ))}
         </Details>
@@ -165,7 +166,7 @@ export function ScaleScreen() {
         title={t('card.renameTitle')}
         placeholder={t('card.renameTitle')}
         confirmLabel={t('card.rename')}
-        initial={s.scale ? scaleLabel(s.scale) : ''}
+        initial={s.scale ? shownName(scaleLabel(s.scale)) : ''}
         onConfirm={(name) => {
           setRenaming(false);
           void s.rename(name);

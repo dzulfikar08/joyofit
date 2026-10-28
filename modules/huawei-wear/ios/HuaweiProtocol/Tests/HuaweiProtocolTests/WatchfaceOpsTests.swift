@@ -645,7 +645,7 @@ final class WatchfaceOpsTests: XCTestCase {
         XCTAssertTrue(result.message.hasPrefix("The watch received the face and then deleted it"), result.message)
         XCTAssertTrue(result.message.contains("code 100014"))
         XCTAssertTrue(result.message.contains("27/05 type 3"))
-        XCTAssertTrue(result.message.contains("Huawei-issued signature"))
+        XCTAssertTrue(result.message.contains("signature capability"))
         XCTAssertTrue(logs.contains("the watch reports 5551_2.1.0 deleted"))
         XCTAssertTrue(logs.messages.contains { $0.contains("activation status=100014") && $0.contains("removed by the watch=true") })
         // The announcement, then the activation the confirmation asks for.

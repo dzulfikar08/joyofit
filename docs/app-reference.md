@@ -585,7 +585,7 @@ JoyoFit reads and writes JoyoRogo's social backend with the shared JoyoRogo acco
   Renders of `RouteMapPreview` (card and detail size, light and dark): `docs/screenshots/social-route-map-light.png`, `social-route-map-dark.png`.
 - **Pro paywall on viewing, not sharing.** Anyone can share the detail. The author always sees their own; another viewer gets the full analysis (map, charts, splits, zones, best efforts and more) only on
   JoyoRogo Pro (`social.workoutDetail` answers `locked: true` otherwise, and the post shows a Pro card). The card's link follows the store rules of
-  `proOffer`: a web link outside Google Play, the JoyoRogo Play listing on Play, text only on iOS.
+  `proOffer`: a web link outside Google Play, the JoyoRogo Play listing on Play, the in-app paywall on iOS (docs/pro-ios.md).
 - **Strava.** Imported rows (`workouts.imported = 1`: Huawei export or a FIT file, whose origin the app cannot tell, possibly a Strava download) are never
   offered for sharing, like they stay out of the cloud upload. JoyoFit never reads Strava data, so a watch workout carries none.
 

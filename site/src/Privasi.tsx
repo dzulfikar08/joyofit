@@ -1,6 +1,6 @@
 import { ArrowLeft, Check } from "lucide-react";
 
-import { GITHUB_URL } from "./lib";
+import { GITHUB_URL, NON_AFFILIATION, NON_AFFILIATION_EN } from "./lib";
 
 const CONTACT = "dzulfikar@joyorogo.com";
 const UPDATED = "26 Oktober 2026";
@@ -559,7 +559,7 @@ function Indonesian() {
         <p className="text-muted-foreground">
           Data cloud disimpan sampai kamu menghapusnya, tanpa kedaluwarsa otomatis. Postingan dan komentar Social
           disimpan di JoyoRogo sampai kamu menghapusnya atau akunmu dihapus. Halaman ini juga alamat permintaan
-          penghapusan data untuk JoyoFit di Google Play dan App Store.
+          penghapusan data untuk JoyoFit di toko aplikasi.
         </p>
       </Block>
 
@@ -1059,7 +1059,7 @@ function English() {
         <p className="text-muted-foreground">
           Cloud data is kept until you delete it, with no automatic expiry. Social posts and comments are kept on
           JoyoRogo until you delete them or your account is deleted. This page is also the data deletion
-          request page for JoyoFit on Google Play and the App Store.
+          request page for JoyoFit in the app stores.
         </p>
       </Block>
 
@@ -1089,6 +1089,9 @@ export function PrivasiPage() {
         </h1>
         <p className="mt-3 text-muted-foreground">
           Bahasa Indonesia di bawah, <a href="#english" className="font-semibold underline underline-offset-4">English version</a> setelahnya.
+        </p>
+        <p className="mt-3 text-sm text-muted-foreground">
+          {NON_AFFILIATION} <span lang="en">{NON_AFFILIATION_EN}</span>
         </p>
         <div className="mt-8">
           <Indonesian />

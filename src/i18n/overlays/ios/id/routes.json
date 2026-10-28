@@ -1,0 +1,10 @@
+{
+  "guide": {
+    "steps": {
+      "s3": "Di layar sebelum mulai, ketuk ikon pengaturan (roda gigi) di sisi kanan. Di jam dengan sistem terbaru, geser layar itu ke atas lalu ketuk Lainnya."
+    }
+  },
+  "watchNav": {
+    "placeholder": "Aplikasi JoyoNavi belum bisa dipasang di jam (akun developer pembuat jam belum siap). HP sudah menghitung petunjuknya, tetapi jam belum akan menerimanya."
+  }
+}

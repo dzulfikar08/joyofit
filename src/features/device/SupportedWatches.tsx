@@ -6,6 +6,7 @@ import { AppText } from '@/components/AppText';
 import { Details } from '@/components/Details';
 import { Button } from '@/components/Button';
 import { ButtonRow } from '@/components/ButtonRow';
+import { isIos } from '@/components/IosUnavailable';
 import { Card } from '@/components/Screen';
 import { spacing, useColors } from '@/theme';
 
@@ -14,6 +15,7 @@ import { SUPPORTED_LIST_URL, WATCH_FAMILIES, WATCH_REQUEST_URL } from './watchFa
 /**
  * Which watches work, in short, with the two next steps for someone whose watch is missing or only experimental: the full list on
  * the website, and a request to get a model supported (a prefilled GitHub issue). Used by the setup guide and the Watch tab's intro.
+ * iOS lists no models (the app names no watch maker, App Store guideline 4.1(b)): the website's list is the one shown there.
  */
 export function SupportedWatches() {
   const { t } = useTranslation('nowatch');
@@ -21,24 +23,26 @@ export function SupportedWatches() {
   return (
     <Card>
       <AppText variant="heading">{t('supported.title')}</AppText>
-      <View style={styles.list}>
-        {WATCH_FAMILIES.map((family) => (
-          <View key={family.id} style={styles.row} accessible accessibilityLabel={`${family.name}. ${t(`supported.status.${family.support}`)}`}>
-            <Ionicons
-              name={family.support === 'tested' ? 'checkmark-circle' : family.support === 'experimental' ? 'flask-outline' : 'close-circle-outline'}
-              size={18}
-              color={family.support === 'tested' ? colors.link : colors.mutedForeground}
-              style={styles.icon}
-            />
-            <View style={styles.text}>
-              <AppText variant="bodyStrong">{family.name}</AppText>
-              <AppText variant="caption" muted>
-                {t(`supported.status.${family.support}`)}
-              </AppText>
+      {isIos ? null : (
+        <View style={styles.list}>
+          {WATCH_FAMILIES.map((family) => (
+            <View key={family.id} style={styles.row} accessible accessibilityLabel={`${family.name}. ${t(`supported.status.${family.support}`)}`}>
+              <Ionicons
+                name={family.support === 'tested' ? 'checkmark-circle' : family.support === 'experimental' ? 'flask-outline' : 'close-circle-outline'}
+                size={18}
+                color={family.support === 'tested' ? colors.link : colors.mutedForeground}
+                style={styles.icon}
+              />
+              <View style={styles.text}>
+                <AppText variant="bodyStrong">{family.name}</AppText>
+                <AppText variant="caption" muted>
+                  {t(`supported.status.${family.support}`)}
+                </AppText>
+              </View>
             </View>
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
+      )}
       <Details>
         <AppText variant="caption" muted>
           {t('supported.intro')}

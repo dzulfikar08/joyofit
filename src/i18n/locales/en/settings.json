@@ -190,6 +190,7 @@
       "nothing": "Nothing"
     },
     "title": "Cloud sync",
+    "manageSubscription": "Manage JoyoRogo Pro subscription",
     "notConfigured": "No cloud server URL in this build. Deploy server/, set EXPO_PUBLIC_JOYOFIT_CLOUD_URL, rebuild.",
     "uploading": "Uploading {{done}} of {{total}}",
     "refused_one": "{{n}} workout could not be uploaded. It is tried again tomorrow, or sooner after an app update.",
@@ -833,7 +834,7 @@
     "granted": "Granted",
     "notGranted": "Not granted",
     "openSettings": "Open Settings",
-    "allowLocation": "Allow location",
+    "locationWhy": "Weather for this phone uses your approximate location, rounded to about 1 km before it goes to Open-Meteo. You can also choose a city instead.",
     "city": "City",
     "cityName": "City name",
     "cityPlaceholder": "City, or City, Country",

@@ -127,6 +127,12 @@ export function JoyoAiChat() {
   const [hostedError, setHostedError] = useState<string | null>(null);
   // The server refused the hosted chat because the account is not Pro (the phone's last known answer said it was).
   const [paywall, setPaywall] = useState(false);
+  // A purchase or restore turned Pro on while the paywall notice was showing: it no longer applies.
+  const [seenAccess, setSeenAccess] = useState(coachAccess);
+  if (seenAccess !== coachAccess) {
+    setSeenAccess(coachAccess);
+    if (coachAccess === 'pro') setPaywall(false);
+  }
   const [toolsOff, setToolsOff] = useState(false);
   const [usage, setUsage] = useState(() => aiUsage.today(Math.floor(Date.now() / 1000)));
   const [focusTick, setFocusTick] = useState(0);

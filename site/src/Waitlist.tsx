@@ -268,10 +268,10 @@ export function StravaPage() {
         <div className="mt-4 grid gap-4 md:grid-cols-[1.1fr_1fr] md:items-start">
           <div className="rounded-[1.75rem] bg-card p-6 md:p-8">
             <h1 className="text-3xl font-extrabold tracking-tight text-balance md:text-4xl">
-              Sinkron jam Huawei ke Strava, langsung dari JoyoFit
+              Kirim olahraga dari jam ke Strava, langsung dari JoyoFit
             </h1>
             <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted-foreground">
-              Setelah tersambung, JoyoFit mengunggah olahraga yang kamu rekam di jam Huawei ke akun Strava-mu sendiri.
+              Setelah tersambung, JoyoFit mengunggah olahraga yang kamu rekam di jam ke akun Strava-mu sendiri.
               Gratis selama slot masih ada. Slot Strava terbatas, dan formulir di bawah adalah daftar tunggunya.
             </p>
             <div className="mt-5 rounded-xl bg-white p-3">
@@ -389,12 +389,12 @@ export function IphonePage() {
                 <Smartphone className="size-6" aria-hidden />
               </span>
               <h1 className="text-3xl font-extrabold tracking-tight text-balance md:text-4xl">
-                Huawei Watch di iPhone: JoyoFit beta publik TestFlight
+                JoyoFit untuk iPhone: beta publik TestFlight
               </h1>
             </div>
             <p className="mt-4 text-[0.9375rem] leading-relaxed text-muted-foreground">
-              Aplikasi iPhone-nya sudah bisa dicoba siapa saja lewat beta publik TestFlight, gratis. Versi App Store 1.0
-              sedang menunggu review Apple, jadi belum ada di App Store.
+              Aplikasi iPhone-nya sudah bisa dicoba siapa saja lewat beta publik TestFlight, gratis. Versi App Store
+              belum rilis, jadi belum ada di App Store.
             </p>
             <div className="mt-5">
               <ButtonLink

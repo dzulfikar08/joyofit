@@ -148,7 +148,7 @@ export function KeluargaPage() {
               Ada yang mengajakmu berbagi kabar
             </h1>
             <p className="mt-3 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-              Seseorang mengundangmu membagikan kabar lewat JoyoFit: beberapa angka harian dari jam Huawei-mu, supaya
+              Seseorang mengundangmu membagikan kabar lewat JoyoFit: beberapa angka harian dari jam-mu, supaya
               mereka tahu kamu baik-baik saja.
             </p>
           </div>

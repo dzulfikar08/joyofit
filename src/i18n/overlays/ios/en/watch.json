@@ -1,0 +1,59 @@
+{
+  "connectSteps": {
+    "ios": {
+      "s2": "Unbind it from the app you paired it with before first, or the watch will refuse this app."
+    }
+  },
+  "device": {
+    "hint": {
+      "busy": "Could not connect to the watch. If it is still connected to another phone or app (your watch's own app, or JoyoFit on another phone), disconnect it there first. Keep the watch awake and close to this phone, then tap Retry.",
+      "noWatchScan": "No watch found nearby. If it is still connected to another phone or app (your watch's own app, or JoyoFit on another phone), disconnect it there first. Make sure the watch is on and close to this phone, then scan again."
+    },
+    "silent": {
+      "step": {
+        "release": "Disconnect the watch from its own app and from any other phone, then close that app completely."
+      }
+    },
+    "bonded": {
+      "forgetMessageIos": "This deletes the watch's authentication key from this phone and removes the watch from your list. Health data already stored stays. JoyoFit cannot remove the watch's side: to use your watch's own app again, also reset or unbind the watch (watch Settings > System > Reset, or remove the phone in the watch's own Bluetooth settings), then pair it in that app. If the watch is listed in the iPhone's Settings > Bluetooth, tap the (i) icon and choose Forget This Device."
+    },
+    "list": {
+      "scanningHint": "Looking for nearby compatible watches or bands. Make sure your device is ready to connect."
+    },
+    "bind": {
+      "messageIos": "This watch is not paired with this iPhone yet. A watch keeps one phone pairing, so continuing replaces the pairing with your other phone or app (your watch's own app, or JoyoFit on another phone), which will have to pair again. You will then confirm on the watch.",
+      "lostIos": "JoyoFit was paired with this watch, but the watch no longer knows this iPhone: another app or phone paired it again while JoyoFit was not connected, for example the app you paired it with before. Stop that app or phone from connecting to the watch first, then continue and confirm on the watch."
+    },
+    "support": {
+      "intro": "JoyoFit is tested on one watch model; other compatible watches are experimental. See which watches are tested at fit.joyorogo.com/jam. If something does not work, connect once, then send a report. It lists what your watch answered on its last connect, without Bluetooth addresses or the serial number."
+    }
+  },
+  "faces": {
+    "unsignedTitle": "This watch needs a face signed by the watch maker",
+    "unsignedBody": "This watch only accepts watch faces signed by the watch maker. This file will likely be rejected after sending. Photo faces still work.",
+    "signatureRefused": "The watch rejected this face because it is not signed by the watch maker. Try another face from the JoyoFit gallery.",
+    "installAbout": "Make faces in the watch maker's watch-face designer and export them as .hwt files. Make them for your watch's screen size. A face made for another screen is refused before it is sent.\n\nWhether the watch accepts a face that the watch maker did not sign is not known. If it refuses, the exact status code it returned is shown here and in the log.",
+    "installAboutSized": "Make faces in the watch maker's watch-face designer and export them as .hwt files. This watch's screen is {{width}} x {{height}} px. A face made for another screen is refused before it is sent.\n\nWhether the watch accepts a face that the watch maker did not sign is not known. If it refuses, the exact status code it returned is shown here and in the log.",
+    "notHwtWarning": "\"{{name}}\" does not have a .hwt extension. Please select a valid watch face (.hwt) file."
+  },
+  "courses": {
+    "gateSet": "Watch maker's gate: set",
+    "gateNotSet": "Watch maker's gate: not set",
+    "unverified": "Unverified: the course format comes from static analysis of the watch's own app. The watch may refuse it.",
+    "gateHint": "The watch's own app needs 41 or 169 before it pushes a course. The watch decides whether it accepts one.",
+    "statusHint": "The watch's own app reads an upload status of 1 as accepted. Check the course on the watch."
+  },
+  "sensors": {
+    "notes": {
+      "huawei": "This watch cannot take an external strap. A strap is used by workouts recorded on the phone."
+    }
+  },
+  "agps": {
+    "details": "Your watch uses satellite data to find its GPS position quickly. The data is good for about 7 days. If your watch asks for the Broadcom kind, JoyoFit downloads it from Broadcom's public server, with no account, and gives it to the watch. Other kinds are prepared only by the watch maker's own app; JoyoFit never sends the watch anything it did not ask for.",
+    "detailsLab": "An experiment you turned on in Settings > About & advanced: your watch asks for the HW_AGNSS kind, and JoyoFit sends satellite data that JoyoFit's server builds from public broadcast data (IGS/BKG), not from the watch maker. It is good for about 4 hours. The watch does not check this data and no watch has been shown to accept it. Note how long the watch's GPS takes to find its position before and after. If the watch's GPS misbehaves, turn the experiment off; a factory reset recovers the watch.",
+    "detailsPgnss": "An experiment you turned on in Settings > About & advanced: your watch asks for the HW_PGNSS_PRED kind, and JoyoFit sends six files of predicted satellite orbits for 3 days that JoyoFit's server computes from public data, not from the watch maker. The watch does not check this data and no watch has been shown to accept it. Note how long the watch's GPS takes to find its position before and after. If the watch's GPS misbehaves, turn the experiment off; a factory reset recovers the watch.",
+    "status": {
+      "unsupported": "Your watch needs satellite data that only the watch maker's own app can prepare, and JoyoFit cannot provide it."
+    }
+  }
+}

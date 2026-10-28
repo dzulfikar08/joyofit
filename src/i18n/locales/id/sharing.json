@@ -171,8 +171,7 @@
       "waiting": "Menunggu posisi GPS ponsel"
     },
     "steps": {
-      "ask": "Kadensi, langkah, dan panjang langkah diambil dari penghitung langkah ponselmu (jam tidak mengirimnya). Izinkan agar tampil di sini.",
-      "allow": "Izinkan penghitung langkah",
+      "ask": "Kadensi, langkah, dan panjang langkah diambil dari penghitung langkah ponselmu (jam tidak mengirimnya). Untuk menampilkannya di sini, JoyoFit meminta akses ke penghitung langkah.",
       "denied": "Penghitung langkah belum diizinkan untuk JoyoFit. Nyalakan Aktivitas fisik (Android) atau Gerakan & Kebugaran (iPhone) di pengaturan ponsel; hitungan mulai saat kamu kembali.",
       "openSettings": "Buka pengaturan"
     },

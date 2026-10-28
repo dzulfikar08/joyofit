@@ -50,20 +50,20 @@ public struct FirstBindNeededError: Error, Equatable, CustomStringConvertible {
     }
 }
 
-/// The ERR_BIND_CONFIRMATION texts; `lost` is byte for byte Kotlin's `FirstBind.LOST_MESSAGE`. JS (`connectFailure.ts`) tells a lost
-/// binding by `marker`.
+/// The ERR_BIND_CONFIRMATION texts; `lost` is Kotlin's `FirstBind.LOST_MESSAGE` without the watch brand (the iOS app names none,
+/// App Store guideline 4.1(b)). JS (`connectFailure.ts`) tells a lost binding by `marker`, which both keep word for word.
 public enum FirstBindMessage {
     public static let marker = "no longer knows this phone's pairing"
     public static let lost =
         "This watch no longer knows this phone's pairing: another app or phone paired it again while JoyoFit was not connected " +
-        "(for example Huawei Health, which does that by itself while it is enabled). Pairing again replaces that pairing."
+        "(for example the watch's own app, which does that by itself while it is enabled). Pairing again replaces that pairing."
     public static let notBound =
         "This watch has to be paired with this phone first. Pairing replaces the watch's current phone pairing (another phone or app)."
 
     /// The background service's note for a stop before a first bind.
     public static func backgroundNote(lostBinding: Bool) -> String {
         lostBinding
-            ? "Paired again by another app or phone (for example Huawei Health). Stop it from connecting to the watch, then pair from the app."
+            ? "Paired again by another app or phone (for example the watch's own app). Stop it from connecting to the watch, then pair from the app."
             : "The watch does not know this phone. Connect from the app to bind it."
     }
 }

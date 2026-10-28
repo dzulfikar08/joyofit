@@ -2,20 +2,20 @@ import { t } from '@/i18n';
 import type { Platform } from '@/features/onboarding/flow';
 
 /**
- * How the setup guide may talk about JoyoRogo Pro on this build. The rules are the stores', not ours:
+ * How the app may sell JoyoRogo Pro on this build. The rules are the stores', not ours:
  *
  * - iOS: App Store Review Guideline 3.1.1 forbids buttons, links and other calls to action that lead to a way of paying other than
- *   in-app purchase, and JoyoFit sells nothing through StoreKit. So the guide only says Pro exists and that it is managed inside
- *   JoyoRogo: no price, no link, no purchase wording. https://developer.apple.com/app-store/review/guidelines/#in-app-purchase
+ *   in-app purchase, so JoyoFit sells Pro itself with StoreKit (its own subscriptions, `src/app/pro.tsx`) and never sends anyone to
+ *   another app or a web checkout. https://developer.apple.com/app-store/review/guidelines/#in-app-purchase
  * - Android from Google Play: the Payments policy (section 4) forbids leading users to another payment method through in-app messaging,
  *   buttons or links, and section 6 wants in-app prices to match Play's billing screen. The guide describes Pro, shows no price, and
  *   links to the JoyoRogo app's Play listing, which is an app install and not a checkout. https://support.google.com/googleplay/android-developer/answer/9858738
  * - Android sideload (APK from the website, self-builds): not under Play's policy, so the live price and a button to joyorogo.com/pro.
  */
-export type ProOffer = 'web' | 'store' | 'mention';
+export type ProOffer = 'iap' | 'web' | 'store';
 
 export function proOffer(platform: Platform, distribution: 'play' | 'sideload'): ProOffer {
-  if (platform === 'ios') return 'mention';
+  if (platform === 'ios') return 'iap';
   return distribution === 'play' ? 'store' : 'web';
 }
 

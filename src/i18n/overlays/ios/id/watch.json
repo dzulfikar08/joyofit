@@ -1,0 +1,59 @@
+{
+  "connectSteps": {
+    "ios": {
+      "s2": "Lepas pasangan jam dari aplikasi yang dulu kamu pakai untuk memasangkannya dulu, kalau tidak jam akan menolak aplikasi ini."
+    }
+  },
+  "device": {
+    "hint": {
+      "busy": "Tidak bisa terhubung ke jam. Kalau jam masih terhubung ke HP atau aplikasi lain (aplikasi resmi jammu, atau JoyoFit di HP lain), putuskan dulu di sana. Biarkan jam tetap menyala dan dekat dengan HP ini, lalu ketuk Coba lagi.",
+      "noWatchScan": "Tidak ada jam di sekitar. Kalau jam masih terhubung ke HP atau aplikasi lain (aplikasi resmi jammu, atau JoyoFit di HP lain), putuskan dulu di sana. Pastikan jam menyala dan dekat dengan HP ini, lalu cari lagi."
+    },
+    "silent": {
+      "step": {
+        "release": "Putuskan jam dari aplikasi resminya dan dari HP lain, lalu tutup aplikasinya sepenuhnya."
+      }
+    },
+    "bonded": {
+      "forgetMessageIos": "Ini menghapus kunci autentikasi jam ini dari HP dan jam dihapus dari daftar jam kamu. Data kesehatan yang sudah tersimpan tetap ada. JoyoFit tidak bisa menghapus pairing di sisi jam: agar aplikasi resmi jammu bisa dipakai lagi, reset atau lepas juga jamnya (Pengaturan jam > Sistem > Reset, atau hapus HP ini di pengaturan Bluetooth jam), lalu pairing di aplikasi itu. Jika jam tampil di Pengaturan > Bluetooth iPhone, ketuk ikon (i) lalu pilih Lupakan Perangkat Ini."
+    },
+    "list": {
+      "scanningHint": "Mencari jam atau band yang cocok di sekitar. Pastikan perangkatmu siap terhubung."
+    },
+    "bind": {
+      "messageIos": "Jam ini belum dipasangkan dengan iPhone ini. Jam hanya menyimpan satu pairing HP, jadi melanjutkan akan menggantikan pairing dengan HP atau aplikasi lainmu (aplikasi resmi jammu, atau JoyoFit di HP lain), yang nanti harus dipasangkan ulang. Setelah itu kamu konfirmasi di jam.",
+      "lostIos": "JoyoFit sudah dipasangkan dengan jam ini, tapi jam tidak lagi mengenali iPhone ini: ada aplikasi atau HP lain yang memasangkannya ulang saat JoyoFit tidak terhubung, misalnya aplikasi yang dulu kamu pakai untuk memasangkannya. Hentikan dulu aplikasi atau HP itu agar tidak tersambung ke jam, lalu lanjutkan dan konfirmasi di jam."
+    },
+    "support": {
+      "intro": "JoyoFit diuji di satu model jam; jam lain yang cocok masih eksperimental. Lihat jam yang sudah diuji di fit.joyorogo.com/jam. Kalau ada yang tidak jalan, hubungkan sekali, lalu kirim laporan. Isinya jawaban jam-mu saat terakhir terhubung, tanpa alamat Bluetooth atau nomor seri."
+    }
+  },
+  "faces": {
+    "unsignedTitle": "Jam ini butuh watch face yang ditandatangani pembuat jam",
+    "unsignedBody": "Jam ini hanya menerima watch face yang ditandatangani pembuat jam. File ini kemungkinan ditolak setelah dikirim. Photo face tetap bisa dipakai.",
+    "signatureRefused": "Jam menolak tampilan ini karena tidak ditandatangani pembuat jam. Coba tampilan lain dari galeri JoyoFit.",
+    "installAbout": "Buat tampilan jam di alat desain watch face dari pembuat jam dan ekspor sebagai file .hwt. Buat sesuai ukuran layar jam-mu. Tampilan untuk layar lain ditolak sebelum dikirim.\n\nBelum diketahui apakah jam menerima tampilan yang tidak ditandatangani pembuat jam. Kalau ditolak, kode status persis dari jam ditampilkan di sini dan di log.",
+    "installAboutSized": "Buat tampilan jam di alat desain watch face dari pembuat jam dan ekspor sebagai file .hwt. Layar jam ini {{width}} x {{height}} px. Tampilan untuk layar lain ditolak sebelum dikirim.\n\nBelum diketahui apakah jam menerima tampilan yang tidak ditandatangani pembuat jam. Kalau ditolak, kode status persis dari jam ditampilkan di sini dan di log.",
+    "notHwtWarning": "\"{{name}}\" tidak berekstensi .hwt. Pilih file watch face (.hwt) yang valid."
+  },
+  "courses": {
+    "gateSet": "Gerbang pembuat jam: sudah diatur",
+    "gateNotSet": "Gerbang pembuat jam: belum diatur",
+    "unverified": "Belum terverifikasi: format program berasal dari analisis statis aplikasi resmi jam. Jam mungkin menolaknya.",
+    "gateHint": "Aplikasi resmi jam butuh 41 atau 169 sebelum mengirim program. Jam yang memutuskan menerimanya atau tidak.",
+    "statusHint": "Aplikasi resmi jam menganggap status unggah 1 sebagai diterima. Periksa programnya di jam."
+  },
+  "sensors": {
+    "notes": {
+      "huawei": "Jam ini tidak bisa menerima strap dari luar. Strap dipakai oleh latihan yang direkam di HP."
+    }
+  },
+  "agps": {
+    "details": "Jam-mu memakai data satelit supaya GPS cepat menemukan posisi. Datanya berlaku sekitar 7 hari. Kalau jam-mu meminta jenis Broadcom, JoyoFit mengunduhnya dari server publik Broadcom tanpa akun, lalu memberikannya ke jam. Jenis lain hanya disiapkan aplikasi resmi pembuat jam; JoyoFit tidak pernah mengirim jam-mu sesuatu yang tidak diminta.",
+    "detailsLab": "Eksperimen yang kamu nyalakan di Pengaturan > Tentang & lanjutan: jam-mu meminta jenis HW_AGNSS, dan JoyoFit mengirim data satelit yang dibuat server JoyoFit dari data siaran publik (IGS/BKG), bukan dari pembuat jam. Datanya berlaku sekitar 4 jam. Jam tidak memeriksa data ini dan belum terbukti diterima jam mana pun. Catat berapa lama GPS jam menemukan posisi sebelum dan sesudahnya. Kalau GPS jam bermasalah, matikan eksperimennya; reset pabrik memulihkan jam.",
+    "detailsPgnss": "Eksperimen yang kamu nyalakan di Pengaturan > Tentang & lanjutan: jam-mu meminta jenis HW_PGNSS_PRED, dan JoyoFit mengirim enam berkas prediksi orbit satelit untuk 3 hari yang dihitung server JoyoFit dari data publik, bukan dari pembuat jam. Jam tidak memeriksa data ini dan belum terbukti diterima jam mana pun. Catat berapa lama GPS jam menemukan posisi sebelum dan sesudahnya. Kalau GPS jam bermasalah, matikan eksperimennya; reset pabrik memulihkan jam.",
+    "status": {
+      "unsupported": "Jam-mu butuh data satelit yang hanya bisa disiapkan aplikasi resmi pembuat jam, dan JoyoFit tidak bisa menyediakannya."
+    }
+  }
+}

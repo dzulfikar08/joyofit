@@ -11,6 +11,7 @@ import { Details } from '@/components/Details';
 import { Divider, Section } from '@/components/Screen';
 import { SwitchRow } from '@/components/SwitchRow';
 import { pushLog, useLogBuffer } from '@/state/logStore';
+import { shownName } from '@/features/device/shownName';
 import { spacing, useColors } from '@/theme';
 
 import type { DiscoveredDevice } from '../discovery';
@@ -115,7 +116,7 @@ export function RecordSection({ devices }: RecordSectionProps) {
                   style={styles.row}>
                   <Ionicons name={on ? 'checkbox' : 'square-outline'} size={22} color={on ? colors.primary : colors.mutedForeground} />
                   <View style={styles.text}>
-                    <AppText variant="bodyStrong">{device.name ?? t('picker.unnamed')}</AppText>
+                    <AppText variant="bodyStrong">{shownName(device.name) ?? t('picker.unnamed')}</AppText>
                     <AppText variant="caption" muted selectable>
                       {device.id}
                     </AppText>

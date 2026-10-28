@@ -4,6 +4,8 @@ import {
   GITHUB_URL,
   IOS_TESTFLIGHT_LIVE,
   IOS_TESTFLIGHT_URL,
+  NON_AFFILIATION,
+  NON_AFFILIATION_EN,
   STRAVA_PATH,
   TESTER_GROUP_URL,
   TESTER_OPTIN_URL,
@@ -319,14 +321,14 @@ function Install({ lang }: { lang: Lang }) {
       <p>
         {id ? (
           <>
-            JoyoFit hanya tersedia di Google Play dan App Store; tidak ada unduhan APK di situs ini. Kalau mau membangun
+            JoyoFit dipasang lewat tes tertutup Google Play di Android dan lewat TestFlight di iPhone (versi App Store belum rilis); tidak ada unduhan APK di situs ini. Kalau mau membangun
             sendiri, kode dan caranya ada di <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>{" "}
-            (bagian Build di README). Build sendiri punya dua fitur yang tidak ada di versi Play Store dan App Store: nama penelepon dari log
+            (bagian Build di README). Build sendiri punya dua fitur yang tidak ada di versi Play Store dan TestFlight: nama penelepon dari log
             panggilan dan SMS SOS.
           </>
         ) : (
           <>
-            JoyoFit is only on Google Play and the App Store; this site has no APK download. To build it yourself, the code and
+            JoyoFit installs through the Google Play closed test on Android and through TestFlight on iPhone (the App Store version is not out yet); this site has no APK download. To build it yourself, the code and
             instructions are on <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>{" "}
             (Build section of the README). A self-build has two features the store versions lack: caller names from the call
             log and SOS texts.
@@ -1075,11 +1077,14 @@ export function PanduanPage() {
           Kembali ke beranda
         </a>
         <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-balance md:text-[2.75rem] md:leading-[1.1]">
-          Pakai Huawei Watch Fit 4 Pro tanpa Huawei Health: panduan JoyoFit
+          Panduan pasang dan pakai JoyoFit
         </h1>
         <p className="mt-3 text-muted-foreground">
           Dari pasang aplikasi sampai jam tersambung dan data masuk. Bahasa Indonesia di bawah,{" "}
           <a href="#english" className="font-semibold underline underline-offset-4">English version</a> setelahnya.
+        </p>
+        <p className="mt-3 text-sm text-muted-foreground">
+          {NON_AFFILIATION} <span lang="en">{NON_AFFILIATION_EN}</span>
         </p>
         <div className="mt-8">
           <Guide lang="id" />

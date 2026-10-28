@@ -48,3 +48,9 @@ export const STRAVA_PATH = "/strava";
 export const IPHONE_PATH = "/iphone";
 /** JoyoFit Worker; `POST /v1/waitlist` takes the /strava and /iphone forms. */
 export const WAITLIST_API = "https://api.fit.joyorogo.com/v1/waitlist";
+
+/** Trademark notice: the footer and /jam, /panduan, /privasi show it. */
+export const NON_AFFILIATION =
+  "JoyoFit tidak dibuat, didukung, atau disponsori oleh Huawei maupun Honor. Huawei dan Honor adalah merek dagang pemiliknya masing-masing.";
+export const NON_AFFILIATION_EN =
+  "JoyoFit is not made, endorsed or sponsored by Huawei or Honor. Huawei and Honor are trademarks of their respective owners.";

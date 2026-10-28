@@ -53,7 +53,7 @@ function conditionLabel(t: TFunction<'settings'>, icon: string): string {
 }
 
 export function WeatherSection() {
-  const { t } = useTranslation('settings');
+  const { t } = useTranslation(['settings', 'common']);
   const [status, setStatus] = useState<WeatherStatus>(() => HuaweiWear.getWeatherStatus());
   const [city, setCity] = useState('');
   const [busy, setBusy] = useState(false);
@@ -174,13 +174,18 @@ export function WeatherSection() {
             <Pair label={t('weather.permission')} value={status.locationPermission ? t('weather.granted') : t('weather.notGranted')} />
           </PairGrid>
           {!status.locationPermission ? (
-            <Button
-              label={Platform.OS === 'ios' && needsSettings ? t('weather.openSettings') : t('weather.allowLocation')}
-              variant="secondary"
-              icon="location-outline"
-              onPress={allowLocation}
-              disabled={busy}
-            />
+            <>
+              <AppText variant="caption" muted>
+                {t('weather.locationWhy')}
+              </AppText>
+              <Button
+                label={Platform.OS === 'ios' && needsSettings ? t('weather.openSettings') : t('common:actions.next')}
+                variant="secondary"
+                icon="location-outline"
+                onPress={allowLocation}
+                disabled={busy}
+              />
+            </>
           ) : null}
         </>
       ) : (

@@ -2,6 +2,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 
 import { getWorkoutDevice, sourceName } from '@/features/device/watches';
+import { shownName } from '@/features/device/shownName';
 import { t } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 
@@ -28,5 +29,5 @@ export function useWorkoutSource(workoutId: number): string | null {
   }, [db, workoutId]);
 
   if (watches.length < 2) return null;
-  return sourceName(watches, device, t('workouts:detail.more.removedWatch'));
+  return shownName(sourceName(watches, device, t('workouts:detail.more.removedWatch')));
 }

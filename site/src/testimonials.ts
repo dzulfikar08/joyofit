@@ -9,11 +9,6 @@ export type Testimonial = {
 
 export const TESTIMONIALS: readonly Testimonial[] = [
   {
-    quote: "Nahh ini, buka huawei health serasa buka shopee sekarang",
-    handle: "putrahn",
-    url: "https://www.threads.com/@putrahn/post/DehQg_tCRrZ",
-  },
-  {
     quote: "mantapp ini yang saya perlu",
     handle: "manehteh_",
     url: "https://www.threads.com/@manehteh_/post/Deg41vyGEsc",

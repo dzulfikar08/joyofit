@@ -1,4 +1,5 @@
 {
+  "supportedLink": "Lihat jam yang cocok",
   "progress": {
     "stepOf": "Langkah {{index}} dari {{total}}",
     "label": "Kemajuan penyiapan"
@@ -143,7 +144,6 @@
     "addsTitle": "Yang ditambah Pro",
     "adds1": "Cadangan cloud data jam kamu (langkah, detak jantung, oksigen darah, tidur, dan latihan) ke akun JoyoRogo kamu sendiri. JoyoFit mengunggahnya sekarang; memulihkannya ke aplikasi belum tersedia.",
     "adds2": "Saran makan di JoyoRogo yang disusun dari skor JoyoFit hari ini. Tanpa Pro, catatan makan menampilkan petunjuk singkat.",
-    "mention": "JoyoRogo Pro tersedia di JoyoRogo.",
     "managed": "JoyoRogo Pro diatur di aplikasi JoyoRogo.",
     "active": "Cadangan cloud menyala untuk akun ini.",
     "locked": "Akun ini belum Pro, jadi tidak ada yang diunggah. Semua yang lain tetap jalan seperti biasa.",
@@ -181,7 +181,6 @@
     "backupOff": "Cadangan mati. Latihan tetap di HP ini. Kamu bisa menyalakannya lagi di Lainnya, Sinkron cloud.",
     "checking": "Memeriksa akun JoyoRogo kamu...",
     "free": "Cloud latihan adalah fitur JoyoRogo Pro. Akunmu belum Pro, jadi latihan tetap hanya di HP ini dan semuanya tetap jalan seperti biasa. Kalau nanti Pro, latihan yang sudah ada ikut diunggah.",
-    "managedIos": "JoyoRogo Pro diatur di dalam JoyoRogo.",
     "managedStore": "JoyoRogo Pro diatur di aplikasi JoyoRogo.",
     "openOnPlay": "Buka JoyoRogo di Google Play",
     "see": "Lihat JoyoRogo Pro",

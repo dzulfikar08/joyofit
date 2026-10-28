@@ -1,0 +1,20 @@
+{
+  "consent": {
+    "intro": "{{name}} ingin ikut memantau kabarmu dari jammu. Kamu yang menentukan apa yang dibagikan."
+  },
+  "invite": {
+    "shareWatcherAsk": "Aku ingin ikut melihat kabarmu dari jammu lewat JoyoFit. Kamu yang menentukan apa yang dibagikan.",
+    "shareMonitoredAsk": "Aku mengundangmu melihat kabarku dari jamku lewat JoyoFit.",
+    "previewWatcher": "{{name}} ingin ikut memantau kabarmu dari jammu.",
+    "previewMonitored": "{{name}} mengundangmu memantau kabarnya dari jamnya."
+  },
+  "home": {
+    "emptyDescription": "Undang orang tuamu. Kamu akan melihat kabar ringkas dari jam mereka, dan dapat pemberitahuan kalau ada yang tidak biasa. Mereka yang memutuskan apa yang dibagikan."
+  },
+  "me": {
+    "emptyDescription": "Kamu bisa mengundang seseorang untuk melihat kabar ringkas dari jammu. Kamu yang menentukan apa yang dibagikan, dan bisa berhenti kapan saja."
+  },
+  "fmt": {
+    "settingsIdle": "Pantau kabar orang tua dari jam mereka"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "detail": {
+    "dynamics": {
+      "explain": "Jam mengirim angka ini saat kamu berlari, dan JoyoFit merata-ratakannya per menit. Hanya tampil kalau jam kamu mengirimnya. Untuk latihan yang disinkronkan sebelum fitur ini ada, angkanya bisa diambil ulang dari jam selama jam masih menyimpannya. Keseimbangan: angka pertama adalah sisi kiri sesuai kiriman jam; belum kami cocokkan dengan aplikasi resmi jam."
+    }
+  },
+  "record": {
+    "setup": {
+      "gnssWhyBody": "Data bantuan GPS jam hanya bisa datang dari aplikasi resminya. JoyoFit mengirim lokasi dan waktu HP-mu untuk membantu titik GPS pertama. Jamnya tidak rusak."
+    }
+  }
+}

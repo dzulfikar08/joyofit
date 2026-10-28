@@ -9,6 +9,7 @@ import { FadeIn } from '@/components/motion';
 import { Card } from '@/components/Screen';
 import { supportLabel } from '@/features/device/modelSupport';
 import { watchListName } from '@/features/device/watchName';
+import { shownName } from '@/features/device/shownName';
 import { WatchGlyph } from '@/features/onboarding/pair/WatchGlyph';
 import type { CardAction, ScanCard } from '@/features/onboarding/pairing';
 import { spacing, useColors } from '@/theme';
@@ -35,7 +36,7 @@ export function WatchScanCard({ card, action, onConnect, onForget, delay }: Watc
   const colors = useColors();
   const [confirmingForget, setConfirmingForget] = useState(false);
   const { device, model, picked } = card;
-  const title = watchListName({ name: device.name, model }) || t('watch:device.bonded.unnamed');
+  const title = shownName(watchListName({ name: device.name, model })) || t('watch:device.bonded.unnamed');
   const label =
     action === 'linked'
       ? t('onboarding:pair.cardLinked')
@@ -55,7 +56,7 @@ export function WatchScanCard({ card, action, onConnect, onForget, delay }: Watc
               {title}
             </AppText>
             <AppText variant="caption" muted numberOfLines={1}>
-              {model ? supportLabel(device.support) : `${device.name} · ${supportLabel(device.support)}`}
+              {model ? supportLabel(device.support) : `${shownName(device.name)} · ${supportLabel(device.support)}`}
             </AppText>
             {picked ? (
               <AppText variant="label" color={colors.linkText}>

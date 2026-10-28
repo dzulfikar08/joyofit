@@ -7,20 +7,28 @@ import {
   campaignOf,
   dismissalExpired,
   DISMISS_MS,
-  JOYOROGO_APP_STORE_URL,
   JOYOROGO_APP_URL,
   openProUpgrade,
+  PRO_PAYWALL_ROUTE,
+  type ProUpgradeAction,
+  type ProUpgradeOpeners,
   proUpgradeAction,
   type Distribution,
   type ProMoment,
 } from './offer';
+
+/** The action of a build that links out; the iOS paywall has no link. */
+const linked = (action: ProUpgradeAction) => {
+  if (action.kind === 'paywall') throw new Error('the paywall has no link');
+  return action;
+};
 
 const MOMENTS: ProMoment[] = ['coach-chat', 'coach', 'coach-today', 'cloud', 'workout', 'koneksi', 'family', 'onboarding', 'onboarding-cloud'];
 
 describe('proUpgradeAction: store rules per platform and distribution', () => {
   test('Google Play: the Play listing only, no price, no web checkout', () => {
     for (const moment of MOMENTS) {
-      const action = proUpgradeAction('android', 'play', moment);
+      const action = linked(proUpgradeAction('android', 'play', moment));
       expect(action.kind).toBe('app-or-store');
       expect(action.showPrice).toBe(false);
       expect(action.primaryUrl.startsWith('market://details?id=com.joyodigitama.joyorogo&referrer=')).toBe(true);
@@ -30,21 +38,18 @@ describe('proUpgradeAction: store rules per platform and distribution', () => {
     }
   });
 
-  test('iOS: the App Store page only, no price, no web checkout, whatever the distribution constant says', () => {
+  test('iOS: the in-app paywall, no price here, no link to another app or a web checkout, whatever the distribution constant says', () => {
     for (const distribution of ['play', 'sideload'] as Distribution[]) {
-      const action = proUpgradeAction('ios', distribution, 'cloud');
-      expect(action.kind).toBe('app-or-store');
-      expect(action.showPrice).toBe(false);
-      expect(action.primaryUrl.startsWith(JOYOROGO_APP_STORE_URL)).toBe(true);
-      expect(action.primaryUrl).toContain('ct=joyofit-evergreen-pro-cloud');
-      expect(action.fallbackUrl).toBeNull();
-      expect(action.primaryUrl).not.toContain('joyorogo.com');
+      for (const moment of MOMENTS) {
+        const action = proUpgradeAction('ios', distribution, moment);
+        expect(action).toEqual({ kind: 'paywall', showPrice: false });
+      }
     }
   });
 
   test('sideloaded Android: the web page with utm tags and the live price', () => {
     for (const moment of MOMENTS) {
-      const action = proUpgradeAction('android', 'sideload', moment);
+      const action = linked(proUpgradeAction('android', 'sideload', moment));
       expect(action.kind).toBe('web');
       expect(action.showPrice).toBe(true);
       expect(action.primaryUrl).toBe(
@@ -54,13 +59,13 @@ describe('proUpgradeAction: store rules per platform and distribution', () => {
     }
   });
 
-  test('every platform tries the JoyoRogo app first, by its custom scheme', () => {
-    for (const platform of ['ios', 'android'] as Platform[]) {
-      for (const distribution of ['play', 'sideload'] as Distribution[]) {
-        expect(proUpgradeAction(platform, distribution, 'koneksi').appUrl).toBe(JOYOROGO_APP_URL);
-      }
+  test('Android tries the JoyoRogo app first, by its custom scheme; iOS has no such link at all', () => {
+    for (const distribution of ['play', 'sideload'] as Distribution[]) {
+      const action = linked(proUpgradeAction('android', distribution, 'koneksi'));
+      expect(action.appUrl).toBe(JOYOROGO_APP_URL);
     }
     expect(JOYOROGO_APP_URL).toBe('joyorogo://founder?from=joyofit');
+    expect(JSON.stringify(proUpgradeAction('ios', 'play', 'koneksi'))).not.toContain('joyorogo');
   });
 
   test('only a sideloaded build ever shows a price', () => {
@@ -74,45 +79,58 @@ describe('proUpgradeAction: store rules per platform and distribution', () => {
 describe('openProUpgrade', () => {
   const fakeOpen = (installed: (url: string) => boolean) => {
     const tried: string[] = [];
-    const open = async (url: string) => {
-      tried.push(url);
-      if (!installed(url)) throw new Error('Could not open URL');
+    let paywall = 0;
+    const openers: ProUpgradeOpeners = {
+      open: async (url: string) => {
+        tried.push(url);
+        if (!installed(url)) throw new Error('Could not open URL');
+      },
+      showPaywall: () => {
+        paywall += 1;
+      },
     };
-    return { tried, open };
+    return { tried, openers, paywalls: () => paywall };
   };
 
+  test('iOS: shows the paywall and opens no link', async () => {
+    const { tried, openers, paywalls } = fakeOpen(() => true);
+    expect(await openProUpgrade(proUpgradeAction('ios', 'play', 'cloud'), openers)).toBe(true);
+    expect(paywalls()).toBe(1);
+    expect(tried).toEqual([]);
+    expect(PRO_PAYWALL_ROUTE).toBe('/pro');
+  });
+
   test('JoyoRogo installed: opens its app and stops', async () => {
-    const { tried, open } = fakeOpen(() => true);
-    expect(await openProUpgrade(proUpgradeAction('android', 'play', 'cloud'), open)).toBe(true);
+    const { tried, openers, paywalls } = fakeOpen(() => true);
+    expect(await openProUpgrade(proUpgradeAction('android', 'play', 'cloud'), openers)).toBe(true);
     expect(tried).toEqual([JOYOROGO_APP_URL]);
+    expect(paywalls()).toBe(0);
   });
 
   test('Play without the app: the market link', async () => {
-    const action = proUpgradeAction('android', 'play', 'cloud');
-    const { tried, open } = fakeOpen((url) => url.startsWith('market://'));
-    expect(await openProUpgrade(action, open)).toBe(true);
+    const action = linked(proUpgradeAction('android', 'play', 'cloud'));
+    const { tried, openers } = fakeOpen((url) => url.startsWith('market://'));
+    expect(await openProUpgrade(action, openers)).toBe(true);
     expect(tried).toEqual([JOYOROGO_APP_URL, action.primaryUrl]);
   });
 
   test('Play without the app and without a market handler: the https listing', async () => {
-    const action = proUpgradeAction('android', 'play', 'cloud');
-    const { tried, open } = fakeOpen((url) => url.startsWith('https://'));
-    expect(await openProUpgrade(action, open)).toBe(true);
+    const action = linked(proUpgradeAction('android', 'play', 'cloud'));
+    const { tried, openers } = fakeOpen((url) => url.startsWith('https://'));
+    expect(await openProUpgrade(action, openers)).toBe(true);
     expect(tried).toEqual([JOYOROGO_APP_URL, action.primaryUrl, action.fallbackUrl as string]);
   });
 
-  test('sideload without the app: the web page; iOS without the app: the App Store page', async () => {
-    for (const [platform, distribution] of [['android', 'sideload'], ['ios', 'play']] as const) {
-      const action = proUpgradeAction(platform, distribution, 'koneksi');
-      const { tried, open } = fakeOpen((url) => url.startsWith('https://'));
-      expect(await openProUpgrade(action, open)).toBe(true);
-      expect(tried).toEqual([JOYOROGO_APP_URL, action.primaryUrl]);
-    }
+  test('sideload without the app: the web page', async () => {
+    const action = linked(proUpgradeAction('android', 'sideload', 'koneksi'));
+    const { tried, openers } = fakeOpen((url) => url.startsWith('https://'));
+    expect(await openProUpgrade(action, openers)).toBe(true);
+    expect(tried).toEqual([JOYOROGO_APP_URL, action.primaryUrl]);
   });
 
   test('nothing opens: false, never a throw', async () => {
-    const { open } = fakeOpen(() => false);
-    expect(await openProUpgrade(proUpgradeAction('android', 'play', 'cloud'), open)).toBe(false);
+    const { openers } = fakeOpen(() => false);
+    expect(await openProUpgrade(proUpgradeAction('android', 'play', 'cloud'), openers)).toBe(false);
   });
 });
 

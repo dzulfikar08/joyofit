@@ -11,19 +11,21 @@ export type FaqItem = { q: string; a: string; link?: FaqLink };
  */
 export const FAQ: readonly FaqItem[] = [
   {
-    q: "Apakah JoyoFit bisa menggantikan Huawei Health?",
-    a: "JoyoFit adalah aplikasi open source (AGPL-3.0) yang bicara langsung ke jam Huawei lewat Bluetooth dan menyimpan langkah, detak jantung, tidur, SpO2, dan olahraga di HP-mu, jadi Huawei Health tidak perlu terpasang. Yang sudah diuji: Huawei Watch Fit 4 Pro, Band 8, Band 11 Pro, dan Watch Fit 2; jam lain masih eksperimen.",
+    q: "Apa itu JoyoFit?",
+    a: "JoyoFit adalah aplikasi independen open source (AGPL-3.0) yang menyinkronkan jam pintar yang kompatibel ke HP lewat Bluetooth, tanpa akun tambahan. Langkah, detak jantung, tidur, SpO2, dan olahraga disimpan di HP-mu. Empat model sudah diuji dan jam lain masih eksperimen; daftarnya ada di halaman Jam yang didukung.",
+    link: { href: "/jam", label: "Lihat jam yang didukung" },
   },
   {
-    q: "Apakah saya perlu akun Huawei?",
-    a: "Tidak. JoyoFit bicara langsung ke jam lewat Bluetooth. Yang perlu kamu lakukan: lepaskan jam dari Huawei Health dulu, karena jam hanya bisa terpasang ke satu aplikasi dalam satu waktu.",
+    q: "Apakah saya perlu akun lain untuk jam?",
+    a: "Tidak. JoyoFit bicara langsung ke jam lewat Bluetooth, jadi tidak perlu akun dari pabrikan jam. Yang perlu kamu lakukan: lepaskan jam dari aplikasi bawaannya dulu, karena jam hanya bisa terpasang ke satu aplikasi dalam satu waktu. Langkahnya ada di panduan.",
+    link: { href: "/panduan", label: "Buka panduan" },
   },
   {
     q: "Jam apa saja yang didukung?",
     a:
       "Yang sudah diuji: Huawei Watch Fit 4 Pro, Band 8, Band 11 Pro, dan Watch Fit 2. Jam dan band Huawei dan Honor lain di daftar Gadgetbridge (Bluetooth Classic maupun Bluetooth LE) masih eksperimen: jalurnya ada, tapi belum pernah dicoba dengan JoyoFit. Honor Watch 5, 5 Pro, dan 6 belum bisa. Di Android, pemindai di aplikasi sekarang juga menemukan band yang tidak muncul di pengaturan Bluetooth (Band 8, 9, 10, dan Fit), dan memberi pesan yang jelas kalau jam sedang dipegang HP lain. Daftar lengkapnya ada di halaman Jam yang didukung, dan kamu bisa membantu jam-mu masuk daftar uji di halaman Dukung jam. Aplikasinya untuk Android 10 ke atas, dan untuk iPhone dengan iOS 16.4 ke atas." +
       (IOS_TESTFLIGHT_LIVE
-        ? " Versi iPhone ada sebagai beta publik lewat TestFlight, dan versi App Store 1.0 sedang menunggu review Apple. Baru diuji dengan Huawei Watch Fit 4 Pro."
+        ? " Versi iPhone ada sebagai beta publik lewat TestFlight; versi App Store belum rilis. Baru diuji dengan Huawei Watch Fit 4 Pro."
         : ""),
   },
   {
@@ -46,12 +48,12 @@ export const FAQ: readonly FaqItem[] = [
   },
   {
     q: "Bisa dipakai di iPhone?",
-    a: "Bisa, sebagai beta publik lewat TestFlight; versi App Store 1.0 sedang menunggu review Apple, jadi belum ada di App Store. Baru diuji dengan Huawei Watch Fit 4 Pro, dan beberapa fitur iPhone masih baru diuji di komputer.",
+    a: "Bisa, sebagai beta publik lewat TestFlight. Versi App Store belum rilis, jadi belum ada di App Store. Baru diuji dengan Watch Fit 4 Pro, dan beberapa fitur iPhone masih baru diuji di komputer.",
     link: { href: "/iphone", label: "Lihat cara pasang di iPhone", goal: { name: "iphone_waitlist_click", location: "faq" } },
   },
   {
     q: "Apa bedanya dengan Gadgetbridge?",
-    a: "Protokol jam Huawei di JoyoFit adalah port dari Gadgetbridge (AGPL-3.0), dan daftar jam yang bisa dicoba mengikuti daftar Gadgetbridge. JoyoFit adalah turunannya, bukan Gadgetbridge itu sendiri: aplikasinya menambahkan layar harian, olahraga langsung, ekspor ke Health Connect dan Strava, cloud opsional, dan versi iPhone.",
+    a: "Protokol jam di JoyoFit adalah port dari Gadgetbridge (AGPL-3.0), dan daftar jam yang bisa dicoba mengikuti daftar Gadgetbridge. JoyoFit adalah turunannya, bukan Gadgetbridge itu sendiri: aplikasinya menambahkan layar harian, olahraga langsung, ekspor ke Health Connect dan Strava, cloud opsional, dan versi iPhone.",
   },
   {
     q: "Sudah stabil dipakai?",
@@ -85,11 +87,11 @@ export const FAQ: readonly FaqItem[] = [
   },
   {
     q: "Jam bilang data GNSS kedaluwarsa saat mulai olahraga luar ruangan. Rusak?",
-    a: "Tidak, itu wajar. GPS tetap jalan, cuma butuh 30–60 detik di luar ruangan. Tunggu ikon GPS di jam sebelum mulai. Pesan itu dari firmware jam dan tidak bisa kami ubah: data bantuan GPS jam Huawei hanya bisa datang dari Huawei Health. JoyoFit mengirim lokasi dan waktu HP-mu untuk membantu titik GPS pertama. Jamnya tidak rusak.",
+    a: "Tidak, itu wajar. GPS tetap jalan, cuma butuh 30–60 detik di luar ruangan. Tunggu ikon GPS di jam sebelum mulai. Pesan itu dari firmware jam dan tidak bisa kami ubah: data bantuan GPS jam hanya bisa datang dari aplikasi bawaan jam. JoyoFit mengirim lokasi dan waktu HP-mu untuk membantu titik GPS pertama. Jamnya tidak rusak.",
   },
   {
     q: "Watch face apa yang bisa dipasang dari JoyoFit?",
-    a: "Photo face jalan: kamu memilih fotomu sendiri dan jam menggambar waktu serta datanya di atasnya. Face bawaan bisa dikustomisasi. Face buatan sendiri atau dari luar (berkas .hwt) yang tidak ditandatangani Huawei ditolak jam dan JoyoFit tidak bisa menandatanganinya, jadi pasang lewat Huawei Health dengan HUAWEI ID yang punya izin designer. Langkahnya ada di panduan, tapi belum dibuktikan pengguna di firmware terbaru.",
+    a: "Photo face jalan: kamu memilih fotomu sendiri dan jam menggambar waktu serta datanya di atasnya. Face bawaan bisa dikustomisasi. Face buatan sendiri atau dari luar (berkas .hwt) yang tidak ditandatangani pabrikan jam ditolak jam dan JoyoFit tidak bisa menandatanganinya, jadi pasang lewat aplikasi bawaan jam dengan akun developer yang punya izin designer. Langkahnya ada di panduan, tapi belum dibuktikan pengguna di firmware terbaru.",
     link: { href: "/panduan", label: "Buka panduan dan FAQ" },
   },
   {

@@ -243,6 +243,7 @@
     }
   },
   "faces": {
+    "builtInAuthor": "Built in",
     "active": "Active",
     "installResult": "{{name}}: {{message}}",
     "unsignedTitle": "This watch needs an official Huawei face",
