@@ -37,10 +37,16 @@ export function AttachSheet({ visible, onClose, onPickPhoto, onPickItem }: Attac
   const [kind, setKind] = useState<Kind>('workout');
   const [load, setLoad] = useState<Load>({ status: 'loading' });
 
+  // A new request (opened, or another kind) shows loading until its answer arrives.
+  const [seen, setSeen] = useState({ visible, kind });
+  if (seen.visible !== visible || seen.kind !== kind) {
+    setSeen({ visible, kind });
+    if (visible) setLoad({ status: 'loading' });
+  }
+
   useEffect(() => {
     if (!visible) return;
     let live = true;
-    setLoad({ status: 'loading' });
     rogo.social.commentAttachables(kind).then(
       (answer) => live && setLoad({ status: 'ready', items: answer.items }),
       (e: unknown) => live && setLoad({ status: 'error', message: errorMessage(e) }),

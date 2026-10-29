@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -23,7 +23,7 @@ const STRIP_PX = 1_600;
  */
 export function MarqueeTitle({ title, hint, onPress }: Props) {
   const reduced = useReducedMotion();
-  const x = useRef(new Animated.Value(0)).current;
+  const [x] = useState(() => new Animated.Value(0));
   const [box, setBox] = useState(0);
   const [full, setFull] = useState(0);
   const overflow = full - box;

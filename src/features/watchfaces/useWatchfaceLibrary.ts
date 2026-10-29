@@ -64,7 +64,9 @@ export function useWatchfaceLibrary() {
   }, []);
 
   useEffect(() => {
-    loadLibrary();
+    // Deferred so the synchronous load does not set state inside the effect body.
+    const id = setTimeout(loadLibrary, 0);
+    return () => clearTimeout(id);
   }, [loadLibrary]);
 
   const saveToLibrary = useCallback(

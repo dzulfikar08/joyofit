@@ -130,11 +130,10 @@ export function useSleepNightsPush(dataVersion: number): void {
   }, [userId, status]);
 
   // Nights are only read while the switch is on.
+  if (!enabled && nights.length > 0) setNights([]);
+
   useEffect(() => {
-    if (!enabled) {
-      setNights([]);
-      return;
-    }
+    if (!enabled) return;
     let cancelled = false;
     readRogoNights(db).then(
       (rows) => {

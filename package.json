@@ -78,5 +78,8 @@
     "react-native-device-info": "15.0.2"
   },
   "private": true,
-  "license": "AGPL-3.0-or-later"
+  "license": "AGPL-3.0-or-later",
+  "patchedDependencies": {
+    "expo-document-picker@57.0.3": "patches/expo-document-picker@57.0.3.patch"
+  }
 }

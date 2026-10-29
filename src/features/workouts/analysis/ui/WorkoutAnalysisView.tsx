@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef } from 'react';
+import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { RouteDetail } from '../route';
@@ -41,9 +41,11 @@ export interface WorkoutAnalysisViewProps {
  * scrub index, kept in a small store, ties the charts, the map marker and the splits together without re-rendering the cards.
  */
 function WorkoutAnalysisViewImpl({ analysis, palette, t, mapTheme, onScrubActive, extraStats, omitFuel = false, omitLoadExtras = false, route }: WorkoutAnalysisViewProps) {
-  const store = useRef(createScrubStore()).current;
+  const [store] = useState(createScrubStore);
   const onActiveRef = useRef(onScrubActive);
-  onActiveRef.current = onScrubActive;
+  useLayoutEffect(() => {
+    onActiveRef.current = onScrubActive;
+  });
   const setScrubActive = useCallback((active: boolean) => onActiveRef.current?.(active), []);
   const value = useMemo<AnalysisContextValue>(() => ({ palette, t, store, setScrubActive }), [palette, t, store, setScrubActive]);
 

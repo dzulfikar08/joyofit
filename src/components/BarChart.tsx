@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GestureResponderEvent, LayoutChangeEvent } from 'react-native';
 import { StyleSheet, View } from 'react-native';
@@ -41,7 +41,12 @@ export function useBarScrub(count: number, resetKey: unknown, left = 0, right = 
   const box = useRef({ x: 0, w: 0 });
   const gesture = useRef({ start: null as number | null, last: -1, moved: false });
 
-  useEffect(() => setSelected(null), [resetKey]);
+  // Reset the selection during render when the data changes (no extra effect pass).
+  const [seenKey, setSeenKey] = useState(resetKey);
+  if (!Object.is(seenKey, resetKey)) {
+    setSeenKey(resetKey);
+    setSelected(null);
+  }
 
   const measure = useCallback(() => {
     ref.current?.measureInWindow((x, _y, w) => {

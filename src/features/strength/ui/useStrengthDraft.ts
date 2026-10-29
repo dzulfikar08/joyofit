@@ -13,9 +13,13 @@ export function useTicker(active: boolean, intervalMs = 1000): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!active) return;
-    setNow(Date.now());
+    // Refresh at once on activation, after the first paint rather than in the effect body.
+    const first = setTimeout(() => setNow(Date.now()), 0);
     const id = setInterval(() => setNow(Date.now()), intervalMs);
-    return () => clearInterval(id);
+    return () => {
+      clearTimeout(first);
+      clearInterval(id);
+    };
   }, [active, intervalMs]);
   return now;
 }

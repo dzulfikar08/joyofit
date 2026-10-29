@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -161,7 +162,10 @@ export function CloudProvider({ children }: { children: ReactNode }) {
   const signedIn = session.data?.user != null;
   const user = session.data?.user;
   const userRef = useRef(user);
-  userRef.current = user;
+  // After commit, so render stays pure; every effect and handler that reads it runs later.
+  useLayoutEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   const [overview, setOverview] = useState<CloudOverview | null>(null);
   const [cloudWorkouts, setCloudWorkouts] = useState<CloudWorkoutStatus | null>(null);
@@ -210,9 +214,10 @@ export function CloudProvider({ children }: { children: ReactNode }) {
   }, [db, dataVersion]);
 
   useEffect(() => {
-    if (signedIn) void refreshStatus();
-    else setCloudWorkouts(null);
-  }, [signedIn, refreshStatus]);
+    if (signedIn) fetchCloudWorkoutStatus().then(setCloudWorkouts, () => {}); // offline: the last known figures stay
+  }, [signedIn]);
+  // Signing out forgets the last account's figures.
+  if (!signedIn && cloudWorkouts !== null) setCloudWorkouts(null);
 
   const markLocked = useCallback((value: boolean) => {
     lockedRef.current = value;
@@ -221,8 +226,9 @@ export function CloudProvider({ children }: { children: ReactNode }) {
 
   // Signing out clears the lock; the next account is asked afresh.
   useEffect(() => {
-    if (!signedIn) markLocked(false);
-  }, [signedIn, markLocked]);
+    if (!signedIn) lockedRef.current = false;
+  }, [signedIn]);
+  if (!signedIn && locked) setLocked(false);
 
   /** True (and the dialog shown, sync paused) when `accountId` is not the account this phone's data belongs to. */
   const reviewAccount = useCallback(
@@ -239,28 +245,37 @@ export function CloudProvider({ children }: { children: ReactNode }) {
 
   // Ask as soon as an account is known, even when no sync would run (automatic sync off, no cloud URL): the choice must not wait for one.
   const accountId = user?.id;
+  // A known account starts with a clean error; none known drops a pending account switch.
+  const [seenAccountId, setSeenAccountId] = useState(accountId);
+  if (seenAccountId !== accountId) {
+    setSeenAccountId(accountId);
+    if (accountId) setError(null);
+  }
+  if (!accountId && accountSwitch !== null) setAccountSwitch(null);
   useEffect(() => {
     if (!accountId) {
-      setAccountSwitch(null);
       if (!holdingSync.current) resumeSync();
       return;
     }
     let live = true;
-    setError(null);
     // A new session starts clean: an error stored before this sign-in (for instance "not signed in") says nothing about it.
     void setCloudState(db, { last_error: null })
       .then(() => refresh())
       .catch(() => {});
-    reviewAccount(accountId).then(
-      (blocked) => {
-        if (live && !blocked && !holdingSync.current) resumeSync();
+    accountSwitchOf(db, accountId).then(
+      (found) => {
+        if (found) {
+          pauseSync();
+          setAccountSwitch({ previousEmail: found.previousEmail });
+        }
+        if (live && !found && !holdingSync.current) resumeSync();
       },
       (e) => cloudLog(`account check failed: ${errorMessage(e)}`, 'error'),
     );
     return () => {
       live = false;
     };
-  }, [accountId, reviewAccount, db, refresh]);
+  }, [accountId, db, refresh]);
 
   /**
    * The first sync of an account on this phone also restores its recent steps and sleep (`restoreHealthWindow`), in the

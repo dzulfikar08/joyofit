@@ -31,11 +31,13 @@ interface Overview {
   info: RogoMcpInfo;
   connections: RogoMcpConnection[];
   activity: RogoMcpActivity[];
+  /** When the list was read, so the relative times are computed without a clock read in render. */
+  nowSec: number;
 }
 
 const load = async (): Promise<Overview> => {
   const [info, connections, activity] = await Promise.all([rogo.mcp.info(), rogo.mcp.list(), rogo.mcp.activity(ACTIVITY_LIMIT)]);
-  return { info, connections, activity };
+  return { info, connections, activity, nowSec: Math.floor(Date.now() / 1000) };
 };
 
 /** The AI apps (Claude, ChatGPT, any MCP app) connected to the JoyoRogo account: connector address, who can read what, disconnecting, and what they read lately. */
@@ -80,7 +82,7 @@ export function KoneksiScreen() {
     }
   };
 
-  const nowSec = Math.floor(Date.now() / 1000);
+  const nowSec = data?.nowSec ?? 0;
 
   return (
     <View style={styles.root}>

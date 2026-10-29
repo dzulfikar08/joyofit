@@ -1,4 +1,4 @@
-import * as DocumentPicker from 'expo-document-picker';
+import { getDocumentAsync } from '@/documentPicker';
 import { File } from 'expo-file-system';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
@@ -28,7 +28,7 @@ export async function importFitFromUri(db: Parameters<typeof importFit>[0], uri:
 
 /** The system file picker, any type: bike computers name files `.fit` but Android often reports them as octet-stream. */
 export async function pickFitFile(): Promise<{ uri: string; name: string } | null> {
-  const picked = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
+  const picked = await getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
   if (picked.canceled || picked.assets.length === 0) return null;
   const asset = picked.assets[0];
   return { uri: asset.uri, name: asset.name };

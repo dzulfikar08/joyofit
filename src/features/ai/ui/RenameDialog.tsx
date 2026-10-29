@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 
@@ -21,9 +21,12 @@ export function RenameDialog({ visible, title, onSave, onClose }: Props) {
   const { t } = useTranslation('ai');
   const { colors, radius } = useTheme();
   const [value, setValue] = useState(title);
-  useEffect(() => {
+  // Reset the draft each time the dialog opens or the title changes while open.
+  const [seen, setSeen] = useState({ visible, title });
+  if (seen.visible !== visible || seen.title !== title) {
+    setSeen({ visible, title });
     if (visible) setValue(title);
-  }, [visible, title]);
+  }
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.fill}>

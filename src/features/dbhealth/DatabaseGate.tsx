@@ -21,18 +21,22 @@ export function DatabaseGate({ children }: { children: ReactNode }) {
   const [phase, setPhase] = useState<Phase>('preparing');
   const [failure, setFailure] = useState<unknown>(null);
 
-  const prepare = useCallback(async () => {
-    setPhase('preparing');
-    try {
-      setPhase((await prepareDatabase(() => setPhase('repairing'))) ? 'ready' : 'failed');
-    } catch (e) {
-      setFailure(e);
-    }
+  const run = useCallback(() => {
+    prepareDatabase(() => setPhase('repairing')).then(
+      (ok) => setPhase(ok ? 'ready' : 'failed'),
+      (e: unknown) => setFailure(e),
+    );
   }, []);
 
+  // The first run starts from the initial 'preparing' phase; only a retry has to set it again.
+  const retry = useCallback(() => {
+    setPhase('preparing');
+    run();
+  }, [run]);
+
   useEffect(() => {
-    void prepare();
-  }, [prepare]);
+    run();
+  }, [run]);
 
   // From the first render on: a native writer already running in the background may hit the damage before the gate is open.
   useEffect(() => startNativeErrorWatch(), []);
@@ -40,7 +44,7 @@ export function DatabaseGate({ children }: { children: ReactNode }) {
   if (failure !== null) throw failure;
   if (phase === 'ready') return <>{children}</>;
   if (phase === 'preparing') return null;
-  return <RepairScreen failed={phase === 'failed'} onRetry={() => void prepare()} onContinue={() => setPhase('ready')} />;
+  return <RepairScreen failed={phase === 'failed'} onRetry={retry} onContinue={() => setPhase('ready')} />;
 }
 
 function RepairScreen({ failed, onRetry, onContinue }: { failed: boolean; onRetry: () => void; onContinue: () => void }) {

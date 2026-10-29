@@ -47,14 +47,16 @@ export function useScrubFrame(store: ScrubStore): number | null {
   const [value, setValue] = useState<number | null>(store.get());
   const frame = useRef<number | null>(null);
   useEffect(() => {
-    setValue(store.get());
-    const unsubscribe = store.subscribe(() => {
+    const schedule = () => {
       if (frame.current !== null) return;
       frame.current = requestAnimationFrame(() => {
         frame.current = null;
         setValue(store.get());
       });
-    });
+    };
+    const unsubscribe = store.subscribe(schedule);
+    // Catches a change between the render and the subscription.
+    schedule();
     return () => {
       unsubscribe();
       if (frame.current !== null) cancelAnimationFrame(frame.current);

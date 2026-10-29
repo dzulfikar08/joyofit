@@ -2,6 +2,7 @@ import Storage from 'expo-sqlite/kv-store';
 import { useMemo, useSyncExternalStore } from 'react';
 
 import { useLiveWorkout } from '@/state/LiveWorkoutProvider';
+import type { LiveWorkout } from '@/wear';
 
 import { deriveSession, type LiveSession, type SportKind } from './liveSession';
 
@@ -46,9 +47,14 @@ const subscribe = (listener: () => void) => {
 };
 const snapshot = () => picked;
 
+/** Read the clock outside render: the session is derived when the inputs change, not on every render. */
+function deriveNow(live: LiveWorkout, choice: SportKind | null): LiveSession {
+  return deriveSession(live, choice, Date.now(), lastPick);
+}
+
 /** The workout followed on the watch, in the shape the live screens read (`liveSession.ts`); null when none. */
 export function useLiveSession(): LiveSession | null {
   const live = useLiveWorkout();
   const choices = useSyncExternalStore(subscribe, snapshot);
-  return useMemo(() => (live ? deriveSession(live, choices.get(live.id) ?? null, Date.now(), lastPick) : null), [live, choices]);
+  return useMemo(() => (live ? deriveNow(live, choices.get(live.id) ?? null) : null), [live, choices]);
 }

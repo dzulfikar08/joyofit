@@ -41,7 +41,8 @@ export function useStrengthHr(workoutId: string | null): StrengthStrap {
   const { saved, loaded, hub } = useSensors();
   const recorder = useRecorder();
   const session = useSyncExternalStore(strengthHr.subscribe, strengthHr.getSnapshot);
-  const [prompt, setPrompt] = useState<StrapPrompt | null>(null);
+  // null: nothing decided yet (the explanation shows while it is due); 'closed': the person answered, show nothing.
+  const [prompt, setPrompt] = useState<StrapPrompt | 'closed' | null>(null);
   const strap = pickStrap(saved);
   const eligible = workoutId !== null && loaded && strap !== null && recorder.snapshot.phase === 'idle';
   const running = workoutId !== null && session.workoutId === workoutId && session.sensorId === strap?.id;
@@ -61,7 +62,6 @@ export function useStrengthHr(workoutId: string | null): StrengthStrap {
   useEffect(() => {
     if (!eligible || running || dismissed.has(workoutId)) return;
     if (linked) void start();
-    else setPrompt((current) => current ?? 'explain');
   }, [eligible, running, linked, workoutId, start]);
 
   // A session that belongs to another workout (the person replaced the one in progress) is over.
@@ -72,7 +72,7 @@ export function useStrengthHr(workoutId: string | null): StrengthStrap {
   const onContinue = useCallback(() => {
     void ensureSensorPermissions().then((answer) => {
       if (answer === 'granted') {
-        setPrompt(null);
+        setPrompt('closed');
         return start();
       }
       setPrompt(answer);
@@ -81,12 +81,15 @@ export function useStrengthHr(workoutId: string | null): StrengthStrap {
 
   const onDismiss = useCallback(() => {
     if (workoutId !== null) dismissed.add(workoutId);
-    setPrompt(null);
+    setPrompt('closed');
   }, [workoutId]);
+
+  const explain = eligible && !running && !linked && !dismissed.has(workoutId);
+  const shown = prompt === 'closed' ? null : (prompt ?? (explain ? 'explain' : null));
 
   return {
     name: strap ? sensorLabel(strap) : null,
-    prompt: eligible && !running ? prompt : null,
+    prompt: eligible && !running ? shown : null,
     bluetoothOff: running && (session.error === 'ERR_BLUETOOTH_OFF' || session.error === 'ERR_BLUETOOTH_UNAVAILABLE'),
     onContinue,
     onDismiss,

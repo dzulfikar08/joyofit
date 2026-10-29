@@ -13,6 +13,7 @@ import { useStrengthHistory } from '@/features/strength/history';
 import { BottomSheet } from '@/features/strength/ui/Sheet';
 import { fmtDay, fmtInt, fmtNumber, useLocale } from '@/i18n';
 import { spacing, useColors, useTheme } from '@/theme';
+import { useNow } from '@/hooks/useNow';
 
 const WEEKS = 8;
 const LEVELS: readonly HeatLevel[] = [0, 1, 2, 3, 4];
@@ -30,8 +31,9 @@ export default function StrengthMusclesScreen() {
   const locale = useLocale();
   const { ready, workouts, catalog } = useStrengthHistory();
   const [picked, setPicked] = useState<Picked | null>(null);
+  const now = useNow(60_000);
 
-  const weeks = useMemo(() => weeklyMuscleLoad(workouts, catalog.muscles, Date.now(), WEEKS), [workouts, catalog]);
+  const weeks = useMemo(() => weeklyMuscleLoad(workouts, catalog.muscles, now, WEEKS), [workouts, catalog, now]);
   const current = weeks[weeks.length - 1]!;
   const thisWeek = useMemo(
     () => MUSCLE_GROUPS.map((group) => ({ group, sets: current.sets.get(group) ?? 0 })).sort((a, b) => b.sets - a.sets),

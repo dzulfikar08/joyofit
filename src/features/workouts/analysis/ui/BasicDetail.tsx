@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import type { AnalysisSeries, LatLon } from '../types';
@@ -56,7 +56,7 @@ function HrChart({ hr }: { hr: { intervalSec: number; bpm: number[] } }) {
 }
 
 function BasicDetailImpl({ hr, route, palette, t, mapTheme }: BasicDetailProps) {
-  const store = useRef(createScrubStore()).current;
+  const [store] = useState(createScrubStore);
   const value = useMemo<AnalysisContextValue>(() => ({ palette, t, store, setScrubActive: noop }), [palette, t, store]);
   const segments = useMemo<LatLon[][]>(() => (route && route.length >= 2 ? [route] : []), [route]);
   const hasHr = hr !== null && hr.bpm.length >= 2;

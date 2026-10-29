@@ -1,7 +1,6 @@
 import { isRecord, type Json } from '../json';
 import { PROVIDERS } from '../providers';
-import type { ProviderId } from '../types';
-import type { Adapter, CallOptions, ModelInfo, ModelReply, ModelRequest, NeutralMessage, ProviderConnection, StreamDelta, ToolCall, Usage } from '../types';
+import type { ProviderId , Adapter, CallOptions, ModelInfo, ModelReply, ModelRequest, NeutralMessage, ProviderConnection, StreamDelta, ToolCall, Usage } from '../types';
 import { AiError } from '../types';
 import { CALL_TIMEOUT_MS, LIST_TIMEOUT_MS, postJson, postStream } from './http';
 import { createThinkSplitter, splitThink } from './sse';

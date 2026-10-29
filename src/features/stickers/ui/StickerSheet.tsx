@@ -221,12 +221,14 @@ export function StickerSheet({
   }, [visible]);
 
   // A new subject (another workout) starts from the card that fits its sport; a filter that no longer has the chosen group moves on.
-  useEffect(() => {
+  const [seenSubjectId, setSeenSubjectId] = useState(subject.id);
+  if (seenSubjectId !== subject.id) {
+    setSeenSubjectId(subject.id);
     setGroupKey(null);
     setFilter('all');
     setPhoto(null);
     setFeedback(null);
-  }, [subject.id]);
+  }
 
   const group = visibleGroups.find((g) => g.key === groupKey) ?? initialGroup(visibleGroups, subject) ?? groups[0] ?? null;
   const template = group ? pickVariant(group, canvas) : null;

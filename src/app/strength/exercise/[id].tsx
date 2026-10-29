@@ -31,6 +31,7 @@ import { useWeightUnit } from '@/features/strength/useWeightUnit';
 import { secondsText, setText, unitNumber, unitText, unitVolumeText, volumeText, weightText } from '@/features/strength/ui/liftFormat';
 import { fmtDate, fmtInt, useLocale } from '@/i18n';
 import { spacing, tintColors, useColors, useTheme } from '@/theme';
+import { useNow } from '@/hooks/useNow';
 
 const SESSION_STEP = 8;
 const REP_ROWS = 8;
@@ -54,6 +55,7 @@ export default function StrengthExerciseScreen() {
   const [rangePick, setRangePick] = useState<ChartRange | null>(null);
   const [showAllReps, setShowAllReps] = useState(false);
   const [sessionLimit, setSessionLimit] = useState(SESSION_STEP);
+  const now = useNow(60_000);
 
   const exercise = catalog.get(id);
   const name = catalog.name(id, locale) ?? t('exercise.removed');
@@ -64,9 +66,8 @@ export default function StrengthExerciseScreen() {
   // Opens on the shortest range with a line to look at; the person's own choice wins once made.
   const range = useMemo<ChartRange>(() => {
     if (rangePick) return rangePick;
-    const now = Date.now();
     return CHART_RANGES.find((r) => inRange(series, r, now).length >= 2) ?? 'all';
-  }, [rangePick, series]);
+  }, [rangePick, series, now]);
 
   const records = useMemo(() => exerciseRecords(workouts, id), [workouts, id]);
   const reps = useMemo(() => repRecords(workouts, id), [workouts, id]);
@@ -75,13 +76,13 @@ export default function StrengthExerciseScreen() {
   // The series are kg (volume: kg x reps). The chart takes them in the chosen unit so its axis ticks land on round pounds too.
   const data = useMemo<ChartDatum[]>(
     () =>
-      inRange(series, range, Date.now()).map((p) => ({
+      inRange(series, range, now).map((p) => ({
         at: p.at,
         value: metric !== null && WEIGHT_METRICS.includes(metric) ? kgToUnit(p.value, unit) : p.value,
         detail: metric === 'bestSet' && p.best ? (setText(p.best) ?? undefined) : undefined,
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [series, range, metric, locale, unit],
+    [series, range, metric, locale, unit, now],
   );
 
   const openWorkout = (workoutId: string) => router.push({ pathname: '/strength/summary/[id]', params: { id: workoutId } });

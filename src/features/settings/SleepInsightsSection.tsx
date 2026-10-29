@@ -26,23 +26,32 @@ export function SleepInsightsSection() {
   const [load, setLoad] = useState<Load>(status ? 'ready' : 'loading');
   const [busy, setBusy] = useState(false);
 
-  const refresh = useCallback(async () => {
-    setLoad('loading');
+  const readStatus = useCallback(async (): Promise<Load> => {
     try {
       const s = await rogo.sleepInsightsStatus();
-      if (s === null) setLoad('unsupported');
-      else {
-        publishSleepInsightsStatus(s);
-        setLoad('ready');
-      }
+      if (s === null) return 'unsupported';
+      publishSleepInsightsStatus(s);
+      return 'ready';
     } catch {
-      setLoad('offline');
+      return 'offline';
     }
   }, []);
 
+  const refresh = useCallback(async () => {
+    setLoad('loading');
+    setLoad(await readStatus());
+  }, [readStatus]);
+
+  // Signing in starts a fresh read, shown as loading.
+  const [wasSignedIn, setWasSignedIn] = useState(false);
+  if (cloud.signedIn !== wasSignedIn) {
+    setWasSignedIn(cloud.signedIn);
+    if (cloud.signedIn) setLoad('loading');
+  }
+
   useEffect(() => {
-    if (cloud.signedIn) void refresh();
-  }, [cloud.signedIn, refresh]);
+    if (cloud.signedIn) void readStatus().then(setLoad);
+  }, [cloud.signedIn, readStatus]);
 
   const change = useCallback(
     async (enabled: boolean, version: number) => {

@@ -52,10 +52,11 @@ export function NumberField({ kind, value, hint, label, done, flash, onChange, s
   const lastFlash = useRef(flash);
 
   // The value changed from outside (a tap on "previous", a tick that filled the row, a stopwatch): show it.
-  useEffect(() => {
+  const [synced, setSynced] = useState({ value, kind, unit });
+  if (synced.value !== value || synced.kind !== kind || synced.unit !== unit) {
+    setSynced({ value, kind, unit });
     if (parse(kind, text) !== value) setText(textOf(kind, value));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only an outside change of `value` (or of the unit) matters
-  }, [value, kind, unit]);
+  }
 
   useEffect(() => {
     if (flash === lastFlash.current) return;

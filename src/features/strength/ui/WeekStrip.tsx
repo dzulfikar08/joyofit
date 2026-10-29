@@ -8,6 +8,7 @@ import { Metric } from '@/components/Metric';
 import { Card } from '@/components/Screen';
 import { consistency, weekStreak, weekTotals } from '@/features/strength/historyModel';
 import type { StrengthWorkout } from '@/features/strength/types';
+import { useNow } from '@/hooks/useNow';
 import { fmtInt } from '@/i18n';
 import { spacing } from '@/theme';
 
@@ -19,14 +20,16 @@ const CONSISTENCY_WEEKS = 8;
 export function WeekStrip({ workouts }: { workouts: readonly StrengthWorkout[] }) {
   const { t } = useTranslation('lifts');
   useWeightUnit();
-  const stats = useMemo(() => {
-    const now = Date.now();
-    return {
+  // A minute is fine enough for the week to roll over while the screen is open.
+  const now = useNow(60_000);
+  const stats = useMemo(
+    () => ({
       week: weekTotals(workouts, now),
       streak: weekStreak(workouts, now),
       steady: consistency(workouts, now, CONSISTENCY_WEEKS),
-    };
-  }, [workouts]);
+    }),
+    [workouts, now],
+  );
   const { week, streak, steady } = stats;
   return (
     <Card>

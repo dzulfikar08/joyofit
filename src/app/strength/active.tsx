@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppState, Keyboard, KeyboardAvoidingView, ScrollView, StyleSheet, TextInput, Vibration, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -180,19 +180,21 @@ export default function ActiveWorkoutScreen() {
 
   // Refs the stable `actions` object reads, so the cards do not redraw for every state change.
   const settingsRef = useRef(settings);
-  settingsRef.current = settings;
   const prefsRef = useRef(prefs);
-  prefsRef.current = prefs;
   const timedPrefsRef = useRef(timedPrefs);
-  timedPrefsRef.current = timedPrefs;
   const setTimerRef = useRef(setTimer);
-  setTimerRef.current = setTimer;
   const previousRef = useRef(previous);
-  previousRef.current = previous;
   const catalogRef = useRef(catalog);
-  catalogRef.current = catalog;
   const permissionRef = useRef(permission);
-  permissionRef.current = permission;
+  useLayoutEffect(() => {
+    settingsRef.current = settings;
+    prefsRef.current = prefs;
+    timedPrefsRef.current = timedPrefs;
+    setTimerRef.current = setTimer;
+    previousRef.current = previous;
+    catalogRef.current = catalog;
+    permissionRef.current = permission;
+  }, [settings, prefs, timedPrefs, setTimer, previous, catalog, permission]);
   const flashCount = useRef(0);
   const started = useRef(false);
   const requested = useRef(new Set<string>());
@@ -202,6 +204,29 @@ export default function ActiveWorkoutScreen() {
   const reloadCatalog = useCallback(async () => {
     setCatalog(buildCatalog(await listCustomExercises(db)));
   }, [db]);
+
+  async function createDraft(
+    input: { routineId?: string; planKey?: string; plannedJson?: string; repeatId?: string; name?: string },
+    now: number,
+  ): Promise<StrengthDraft> {
+    let draftOut: StrengthDraft | null = null;
+    if (input.repeatId) {
+      const source = await getStrengthWorkout(db, input.repeatId);
+      if (source) draftOut = draftFromWorkout(source, now, true);
+    } else if (input.routineId) {
+      const routine = input.routineId.startsWith('builtin:') ? getStarterRoutine(input.routineId, locale) : await getRoutine(db, input.routineId);
+      if (routine) draftOut = draftFromRoutine(routine, now);
+    } else if (input.plannedJson) {
+      try {
+        const planned = JSON.parse(input.plannedJson) as PlannedInput[];
+        if (Array.isArray(planned) && planned.length > 0) draftOut = draftFromPlan(input.planKey ?? '', planned, now, input.name ?? '');
+      } catch {
+        draftOut = null;
+      }
+    }
+    const base = draftOut ?? emptyDraft(now);
+    return { ...base, name: input.name ?? base.name, planKey: input.planKey ?? base.planKey };
+  }
 
   // -------------------------------------------------------------------------------------------------------------------
   // Start: load what is needed, then the draft in progress, the one a caller asks for, or the finished workout to edit
@@ -273,29 +298,6 @@ export default function ActiveWorkoutScreen() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per mount
   }, []);
-
-  async function createDraft(
-    input: { routineId?: string; planKey?: string; plannedJson?: string; repeatId?: string; name?: string },
-    now: number,
-  ): Promise<StrengthDraft> {
-    let draftOut: StrengthDraft | null = null;
-    if (input.repeatId) {
-      const source = await getStrengthWorkout(db, input.repeatId);
-      if (source) draftOut = draftFromWorkout(source, now, true);
-    } else if (input.routineId) {
-      const routine = input.routineId.startsWith('builtin:') ? getStarterRoutine(input.routineId, locale) : await getRoutine(db, input.routineId);
-      if (routine) draftOut = draftFromRoutine(routine, now);
-    } else if (input.plannedJson) {
-      try {
-        const planned = JSON.parse(input.plannedJson) as PlannedInput[];
-        if (Array.isArray(planned) && planned.length > 0) draftOut = draftFromPlan(input.planKey ?? '', planned, now, input.name ?? '');
-      } catch {
-        draftOut = null;
-      }
-    }
-    const base = draftOut ?? emptyDraft(now);
-    return { ...base, name: input.name ?? base.name, planKey: input.planKey ?? base.planKey };
-  }
 
   // Settings and rest preferences may change in the settings screen opened from the menu.
   useFocusEffect(
@@ -375,7 +377,7 @@ export default function ActiveWorkoutScreen() {
   // Measure (Repetisi / Waktu) and the stopwatch of a timed set
   // -------------------------------------------------------------------------------------------------------------------
   /** Whether an entry is measured in seconds now: its own choice, else the library's flag. */
-  const timedOf = useCallback((entry: StrengthExercise) => resolveTimed(entry, catalogRef.current.get(entry.exerciseId)?.timed ?? null), []);
+  const timedOf = useCallback((entry: StrengthExercise) => resolveTimed(entry, catalog.get(entry.exerciseId)?.timed ?? null), [catalog]);
 
   const applyMeasure = useCallback(
     (key: string, timed: boolean) => {

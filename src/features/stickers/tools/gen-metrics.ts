@@ -40,7 +40,7 @@ await page.setContent("<html><body></body></html>");
 
 const faces = specs.map((s, i) => ({ name: `F${i}`, b64: readFileSync(s.file).toString("base64") }));
 const raw: any[] = await page.evaluate(
-  async ({ faces, START, END, EXTRA }: { faces: Array<{ name: string; b64: string }>; START: number; END: number; EXTRA: number[] }) => {
+  async ({ faces, START, END, EXTRA }: { faces: { name: string; b64: string }[]; START: number; END: number; EXTRA: number[] }) => {
     const out: any[] = [];
     for (const f of faces) {
       const ff = new FontFace(f.name, `url(data:font/ttf;base64,${f.b64})`);

@@ -1,4 +1,4 @@
-import * as DocumentPicker from 'expo-document-picker';
+import { getDocumentAsync } from '@/documentPicker';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -148,7 +148,7 @@ export function useWatchfaceImport({
 
   const handleImportToMyWatch = useCallback(async () => {
     try {
-      const picked = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
+      const picked = await getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
       if (picked.canceled || picked.assets.length === 0) return;
       const asset = picked.assets[0];
       await importPackage({ uri: asset.uri, name: asset.name, size: asset.size });

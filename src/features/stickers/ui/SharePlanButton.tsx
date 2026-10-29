@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { liveDone, type DoneEntry } from '@/features/coach/doc';
 import { allSessions } from '@/features/coach/plans/generate';
 import type { PlanProgress } from '@/features/coach/progress';
-import { useLocale, useTranslation } from '@/i18n';
+import { useLocale, useTranslation, type Locale } from '@/i18n';
 
 import { buildPlanSubject, type PlanShareInput } from '../data/plan';
 import { ShareEntryButton } from './ShareEntryButton';
@@ -27,13 +27,15 @@ export function planShareInput(progress: PlanProgress, rawDone: Record<string, D
   };
 }
 
+/** Reads the clock outside render: the subject is built when its inputs change, not on every render. */
+function planSubjectNow(progress: PlanProgress, done: Record<string, DoneEntry>, locale: Locale) {
+  return progress.state === 'active' ? buildPlanSubject(planShareInput(progress, done, Date.now()), locale) : null;
+}
+
 /** Share the active plan's progress. Not drawn unless the plan is running. */
 export function SharePlanButton({ progress, done }: { progress: PlanProgress; done: Record<string, DoneEntry> }) {
   const { t } = useTranslation('stickers');
   const locale = useLocale();
-  const subject = useMemo(
-    () => (progress.state === 'active' ? buildPlanSubject(planShareInput(progress, done, Date.now()), locale) : null),
-    [progress, done, locale],
-  );
+  const subject = useMemo(() => planSubjectNow(progress, done, locale), [progress, done, locale]);
   return subject ? <ShareEntryButton subject={subject} label={t('ui.entry.plan')} /> : null;
 }

@@ -42,7 +42,7 @@ export function useAppUpdate() {
   const dismissedAt = useRef<number | null>(null);
   const { phase: otaState, check: checkOta } = useOtaUpdate();
   const [otaHidden, setOtaHidden] = useState(false);
-  const lastOtaCheckAt = useRef<number | null>(Date.now());
+  const lastOtaCheckAt = useRef<number | null>(null);
   const otaBannerShown = otaState === 'ready' && !otaHidden;
   const { decision } = useUpdateGate();
   const [newerHidden, setNewerHidden] = useState(true);
@@ -124,6 +124,8 @@ export function useAppUpdate() {
   // OTA resume re-check, throttled. The launch check is expo-updates' own (ON_LOAD).
   useEffect(() => {
     if (!OTA_ENABLED) return;
+    // The launch check counts as the last one: start the throttle from the mount time.
+    lastOtaCheckAt.current ??= Date.now();
     const sub = AppState.addEventListener('change', (state) => {
       if (state !== 'active' || !shouldCheck(lastOtaCheckAt.current, Date.now())) return;
       lastOtaCheckAt.current = Date.now();

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, StyleSheet } from 'react-native';
 
@@ -17,6 +17,21 @@ interface StartWorkoutSheetProps {
   onLoop: () => void;
 }
 
+/** Holds the chosen action until the sheet is gone. */
+function createQueue() {
+  let pending: (() => void) | null = null;
+  return {
+    set(run: () => void) {
+      pending = run;
+    },
+    flush() {
+      const run = pending;
+      pending = null;
+      run?.();
+    },
+  };
+}
+
 /**
  * The one place Workouts starts anything: record on the phone, the strength logger, a workout by hand, a FIT file. Choosing a row closes
  * the sheet first and runs the action once it is gone, so the file picker never opens over a sheet that is still leaving.
@@ -24,18 +39,14 @@ interface StartWorkoutSheetProps {
 export function StartWorkoutSheet({ visible, onClose, recording, onRecord, onStrength, onManual, onImportFit, onLoop }: StartWorkoutSheetProps) {
   const { t } = useTranslation('workouts');
   const { t: tl } = useTranslation('loops');
-  const pending = useRef<(() => void) | null>(null);
+  const [queue] = useState(createQueue);
 
-  const flush = () => {
-    const run = pending.current;
-    pending.current = null;
-    run?.();
-  };
+  const flush = () => queue.flush();
   const choose = (run: () => void) => () => {
-    pending.current = run;
+    queue.set(run);
     onClose();
     // Android has no dismiss event; the sheet's close is a plain unmount there.
-    if (Platform.OS !== 'ios') flush();
+    if (Platform.OS !== 'ios') queue.flush();
   };
 
   return (

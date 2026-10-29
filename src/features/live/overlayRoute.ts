@@ -71,12 +71,12 @@ export function useOverlayRoute(): OverlayRoute {
     };
   }, [version]);
 
+  // Nothing selected: drop the loaded route now, so picking the same one again reloads it.
+  if (id === null && loaded !== null) setLoaded(null);
+
   useEffect(() => {
     let live = true;
-    if (id === null) {
-      setLoaded(null);
-      return;
-    }
+    if (id === null) return;
     void loadRoute(id).then((found) => {
       if (!live) return;
       // A route that no longer exists (deleted, damaged) is dropped from the choice instead of staying invisible.

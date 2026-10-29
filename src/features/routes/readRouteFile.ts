@@ -1,4 +1,4 @@
-import * as DocumentPicker from 'expo-document-picker';
+import { getDocumentAsync } from '@/documentPicker';
 import { File } from 'expo-file-system';
 
 import { errorMessage } from '@/format';
@@ -26,7 +26,7 @@ export async function readRouteFromUri(uri: string): Promise<ReadRouteResult> {
 
 /** The system file picker, any type: Android often reports a `.gpx` as octet-stream, so the type is not filtered. Null when cancelled. */
 export async function pickRouteFile(): Promise<{ uri: string; name: string } | null> {
-  const picked = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
+  const picked = await getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
   if (picked.canceled || picked.assets.length === 0) return null;
   const asset = picked.assets[0];
   return { uri: asset.uri, name: asset.name };

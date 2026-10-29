@@ -1,0 +1,33 @@
+diff --git a/android/src/main/java/expo/modules/documentpicker/DocumentPickerModule.kt b/android/src/main/java/expo/modules/documentpicker/DocumentPickerModule.kt
+index 6c2bff0523842cff4051ee00a9ad11d969fb68e3..e7878f3e84f1dcd0a7c5a5b060785bdb8bb134ee 100644
+--- a/android/src/main/java/expo/modules/documentpicker/DocumentPickerModule.kt
++++ b/android/src/main/java/expo/modules/documentpicker/DocumentPickerModule.kt
+@@ -29,8 +29,12 @@ class DocumentPickerModule : Module() {
+     Name("ExpoDocumentPicker")
+ 
+     AsyncFunction("getDocumentAsync") { options: DocumentPickerOptions, promise: Promise ->
+-      if (pendingPromise != null) {
+-        throw PickingInProgressException()
++      // A new call comes from the app's own screen, so no picker is showing: a pick still pending lost its result
++      // (the activity went away while picking, and a foreground service kept the process and this module alive).
++      // Settle it as cancelled instead of refusing every pick until the process dies.
++      pendingPromise?.let { stale ->
++        pendingPromise = null
++        stale.resolve(DocumentPickerResult(canceled = true))
+       }
+ 
+       if (options.type.isEmpty()) {
+@@ -49,7 +53,12 @@ class DocumentPickerModule : Module() {
+           options.type[0]
+         }
+       }
+-      appContext.throwingActivity.startActivityForResult(intent, OPEN_DOCUMENT_CODE)
++      try {
++        appContext.throwingActivity.startActivityForResult(intent, OPEN_DOCUMENT_CODE)
++      } catch (e: Throwable) {
++        pendingPromise = null
++        throw e
++      }
+     }
+ 
+     OnActivityResult { _, (requestCode, resultCode, intent) ->

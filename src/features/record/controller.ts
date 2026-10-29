@@ -13,8 +13,7 @@
  */
 import type { LocationEvent, StepCounterPermission, StepsEvent, ValueEvent, WorkoutAction, WorkoutSessionOptions, WorkoutSessionState } from '../../../modules/ble-sensors/src/BleSensors.types';
 import type { ManualSport } from '../workouts/manual';
-import type { SavedSensor } from '../sensors/store';
-import type { WorkoutSensor } from '../sensors/store';
+import type { SavedSensor , WorkoutSensor } from '../sensors/store';
 import { cscModeOf, hexToBytes, parseCsc, type SensorKind } from '../sensors/gatt';
 import type { LinkInfo } from '../sensors/hub';
 import { appendJournal, clearJournal, loadJournal, saveJournalState } from './journal';

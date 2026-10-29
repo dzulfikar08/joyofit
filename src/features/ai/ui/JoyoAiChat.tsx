@@ -99,12 +99,6 @@ export function JoyoAiChat() {
   const { toast, show } = useToast();
   const scroll = useChatScroll();
   const follow = scroll.follow;
-  // Back near the newest message during an answer: draw what has arrived meanwhile.
-  useEffect(() => {
-    scroll.onBack(() => {
-      if (sendingRef.current) setLive(liveRef.current);
-    });
-  }, [scroll.onBack]);
   const inputRef = useRef<TextInput>(null);
 
   const seed = parseSeed(params);
@@ -122,7 +116,7 @@ export function JoyoAiChat() {
   const sendingRef = useRef(false);
   const [live, setLive] = useState<LiveState | null>(null);
   const liveRef = useRef<LiveState>(initialLive());
-  const liveId = useRef('live');
+  const [liveId, setLiveId] = useState('live');
   const [aiError, setAiError] = useState<AiErrorView | null>(null);
   const [hostedError, setHostedError] = useState<string | null>(null);
   // The server refused the hosted chat because the account is not Pro (the phone's last known answer said it was).
@@ -268,7 +262,7 @@ export function JoyoAiChat() {
     liveRef.current = initialLive();
     // The finished answer takes the id of the live one, so the list keeps the same cell when the live text becomes the message.
     const replyId = aiChats.newMessageId();
-    liveId.current = replyId;
+    setLiveId(replyId);
     setLive(liveRef.current);
     const commit = createCoalescer(
       () => {
@@ -356,6 +350,13 @@ export function JoyoAiChat() {
       }
     }
   };
+
+  // Back near the newest message during an answer: draw what has arrived meanwhile.
+  useEffect(() => {
+    scroll.onBack(() => {
+      if (sendingRef.current) setLive(liveRef.current);
+    });
+  }, [scroll.onBack]);
 
   /** Sends a question: a new one at the end, or (when editing) in place of an earlier one, dropping everything after it. */
   const submit = (raw: string) => {
@@ -501,8 +502,8 @@ export function JoyoAiChat() {
   const hosted = own === null;
   const data = useMemo<Row[]>(() => {
     if (!listReady) return [];
-    return sending && live ? [{ kind: 'live', key: liveId.current, live, hosted }, ...rows] : rows;
-  }, [listReady, sending, live, hosted, rows]);
+    return sending && live ? [{ kind: 'live', key: liveId, live, hosted }, ...rows] : rows;
+  }, [listReady, sending, live, liveId, hosted, rows]);
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<Row>) =>

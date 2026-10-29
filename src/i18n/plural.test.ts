@@ -11,6 +11,8 @@ beforeAll(async () => {
   // @ts-expect-error simulate Hermes
   delete Intl.PluralRules;
   expect(Intl.PluralRules).toBeUndefined();
+  // The ?hermes query makes bun load the polyfill again; import/no-unresolved cannot resolve a query string.
+  // eslint-disable-next-line import/no-unresolved
   await import('intl-pluralrules/polyfill.js?hermes');
 });
 

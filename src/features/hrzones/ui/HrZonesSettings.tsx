@@ -149,9 +149,11 @@ export function HrZonesSettings() {
 
   const zones = useMemo(() => resolveHrZones(draft, age), [draft, age]);
   const runsLoaded = recentRuns !== null;
+  // The clock is read once on mount: the lookback only needs to be right to within a screen visit.
+  const [nowSec] = useState(() => Math.floor(Date.now() / 1000));
   const hardestRun = useMemo(
-    () => (recentRuns ? lthrFromHardestRun(recentRuns, zones.maxHr, Math.floor(Date.now() / 1000)) : null),
-    [recentRuns, zones.maxHr],
+    () => (recentRuns ? lthrFromHardestRun(recentRuns, zones.maxHr, nowSec) : null),
+    [recentRuns, zones.maxHr, nowSec],
   );
   const measured = useLthrSources();
   const dirty = !sameSettings(draft, stored);

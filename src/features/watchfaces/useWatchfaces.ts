@@ -1,5 +1,6 @@
 import { useEventListener } from 'expo';
 import * as DocumentPicker from 'expo-document-picker';
+import { getDocumentAsync } from '@/documentPicker';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -85,7 +86,7 @@ export function useWatchfaces() {
   const install = useCallback(async (signature?: string, fileName?: string) => {
     let picked: DocumentPicker.DocumentPickerResult;
     try {
-      picked = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
+      picked = await getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
     } catch (e) {
       setError(errorMessage(e));
       return;

@@ -3,7 +3,7 @@
  * it above the chart; screen readers get an adjustable control that steps through the points. Handles 0, 1 and many points.
  * Geometry is `chartScale.ts`.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View, type AccessibilityActionEvent, type GestureResponderEvent } from 'react-native';
 import Svg, { Circle, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
 
@@ -52,7 +52,12 @@ function ChartBase({ kind, data, color, formatValue, formatTick, formatDate, for
   const [picked, setPicked] = useState<number | null>(null);
   const tick = formatTick ?? formatValue;
 
-  useEffect(() => setPicked(null), [data]);
+  // A new series clears the picked point.
+  const [seenData, setSeenData] = useState(data);
+  if (seenData !== data) {
+    setSeenData(data);
+    setPicked(null);
+  }
 
   const geometry = useMemo(() => {
     const points = data.map((d) => ({ at: d.at, value: d.value }));

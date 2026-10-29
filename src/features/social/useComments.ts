@@ -84,9 +84,11 @@ export function useComments(postId: string | null, enabled: boolean, onChanged: 
   const [problem, setProblem] = useState<string | null>(null);
   const [sent, flashSent] = useFlash(1600);
 
-  useEffect(() => {
+  const [seenData, setSeenData] = useState<typeof data | undefined>(undefined);
+  if (data !== seenData) {
+    setSeenData(data);
     if (data) setState((current) => refreshPage(current, data));
-  }, [data]);
+  }
 
   const canSend = !sending && (draft.trim().length > 0 || pending !== null);
 

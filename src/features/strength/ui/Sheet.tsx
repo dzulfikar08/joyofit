@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -117,9 +117,11 @@ interface TextPromptProps {
 /** A sheet with one text field and a confirm button. */
 export function TextPrompt({ visible, title, label, initial = '', placeholder, confirmLabel, multiline, numeric, allowEmpty, onConfirm, onClose }: TextPromptProps) {
   const [text, setText] = useState(initial);
-  useEffect(() => {
+  const [seen, setSeen] = useState({ visible, initial });
+  if (seen.visible !== visible || seen.initial !== initial) {
+    setSeen({ visible, initial });
     if (visible) setText(initial);
-  }, [visible, initial]);
+  }
   const ready = allowEmpty || text.trim().length > 0;
   const submit = () => {
     if (!ready) return;

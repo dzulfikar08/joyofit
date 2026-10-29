@@ -258,13 +258,18 @@ export function TileMap({
     return fitBounds(bounds, w, h, FIT_PADDING);
   }, [bounds]);
 
-  // Default view: fit the route whenever the route or the box changes.
-  useEffect(() => {
-    const v = fit();
-    if (!v) return;
+  // Default view: fit the route whenever the route or the box changes. The view is adjusted during render; the
+  // transform reset and animation cancel touch refs, so they run in the layout effect below.
+  const [fitted, setFitted] = useState({ fitKey, width, height });
+  if (fitted.fitKey !== fitKey || fitted.width !== width || fitted.height !== height) {
+    setFitted({ fitKey, width, height });
+    if (bounds && width !== 0) setView(fitBounds(bounds, width, height, FIT_PADDING));
+  }
+
+  useLayoutEffect(() => {
+    if (!fit()) return;
     cancelAnimation();
     applyTransform(IDENTITY);
-    setView(v);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fitKey, width, height]);
 
@@ -278,12 +283,11 @@ export function TileMap({
   const marginX = width * MARGIN_FRACTION;
   const marginY = height * MARGIN_FRACTION;
 
-  // Tiles for the committed view.
+  // Tiles for the committed view; with no route or no box yet there is nothing to show.
+  if ((!hasRoute || width === 0) && shown.length > 0) setShown([]);
+
   useEffect(() => {
-    if (!hasRoute || width === 0) {
-      setShown((prev) => (prev.length === 0 ? prev : []));
-      return;
-    }
+    if (!hasRoute || width === 0) return;
     const ctrl = new AbortController();
     const cover = tileCover(view, width, height, marginX, marginY);
     const needed = new Set(cover.map(placeKey));
@@ -298,6 +302,8 @@ export function TileMap({
       if (r) hits.push({ key: t.key, z: t.z, x: t.x, y: t.y, ux: t.ux, r });
       else missing.push(t);
     }
+    // The cached tiles must land in the same commit as the view they belong to; a render-phase read would duplicate the cover work.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync read of an external tile cache
     setShown((prev) => (missing.length === 0 ? prune(mergeShown(prev, hits)) : mergeShown(prev, hits)));
     if (missing.length === 0) return () => ctrl.abort();
 

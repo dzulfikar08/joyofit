@@ -36,9 +36,10 @@ const LOOKBACK_DAYS = 30;
 const PROBLEM_ORDER: readonly TrialProblem[] = [...BLOCKING, ...WARNING_PROBLEMS];
 
 /** Where the effort most likely started inside the workout: the guide's time when the workout holds it, else the hardest 30 minutes. */
-function baseStart(points: readonly WorkoutPointRow[], guide: Guide | null, nowMs: number): { start: number; from: 'guide' | 'auto' } | null {
+function baseStart(points: readonly WorkoutPointRow[], guide: Guide | null): { start: number; from: 'guide' | 'auto' } | null {
   if (guide) {
-    const { effortStart, effortEnd } = guideState(guide, nowMs);
+    // The effort window depends only on when the guide started, not on the clock.
+    const { effortStart, effortEnd } = guideState(guide, guide.startedAt);
     const first = points[0]?.ts;
     const last = points[points.length - 1]?.ts;
     if (first !== undefined && last !== undefined && first <= effortStart + 30 && last >= effortEnd - 60) return { start: effortStart, from: 'guide' };
@@ -92,17 +93,23 @@ export function LactateTestScreen() {
   );
 
   // When the guide ran, the run that holds its effort is the likely one.
-  useEffect(() => {
-    if (pickedId !== null || !guide || !runs) return;
-    const { effortStart, effortEnd } = guideState(guide, Date.now());
-    const match = runs.find((r) => r.start <= effortStart + 30 && r.end >= effortEnd - 60);
-    if (match) setPickedId(match.id);
-  }, [runs, guide, pickedId]);
+  const guideMatchId = useMemo(() => {
+    if (!guide || !runs) return null;
+    const { effortStart, effortEnd } = guideState(guide, guide.startedAt);
+    return runs.find((r) => r.start <= effortStart + 30 && r.end >= effortEnd - 60)?.id ?? null;
+  }, [runs, guide]);
+  if (pickedId === null && guideMatchId !== null) setPickedId(guideMatchId);
 
-  useEffect(() => {
+  // A new pick starts from a clean slate while its points load.
+  const [loadedFor, setLoadedFor] = useState<number | null>(null);
+  if (loadedFor !== pickedId) {
+    setLoadedFor(pickedId);
     setPoints(null);
     setShiftMin(0);
     setStored(false);
+  }
+
+  useEffect(() => {
     if (pickedId === null) return;
     let cancelled = false;
     listWorkoutPoints(db, pickedId).then(
@@ -118,7 +125,7 @@ export function LactateTestScreen() {
     };
   }, [db, pickedId]);
 
-  const base = useMemo(() => (points ? baseStart(points, guide, Date.now()) : null), [points, guide]);
+  const base = useMemo(() => (points ? baseStart(points, guide) : null), [points, guide]);
   const trial = useMemo(() => (points && base ? analyseTrial(points, base.start + shiftMin * 60, zones.maxHr) : null), [points, base, shiftMin, zones.maxHr]);
   const picked = runs?.find((r) => r.id === pickedId) ?? null;
 
@@ -138,7 +145,7 @@ export function LactateTestScreen() {
     show(t('lactate.result.saved'));
   };
 
-  const useForZones = async () => {
+  const applyToZones = async () => {
     if (!trial || trial.lthr === null) return;
     const outcome = await saveHrZoneSettings({ ...getHrZoneSettings(), method: 'lthr', lthr: trial.lthr, limits: null });
     show(outcome === 'failed' ? t('lactate.result.zonesFailed') : t('lactate.result.zonesDone', { lthr: fmtInt(trial.lthr) }));
@@ -260,7 +267,7 @@ export function LactateTestScreen() {
 
             <ButtonRow>
               <Button label={t('lactate.result.save')} variant="primary" icon="checkmark" disabled={!trial.usable || stored} onPress={save} />
-              <Button label={t('lactate.result.useZones')} variant="secondary" icon="pulse" disabled={!trial.usable} onPress={() => void useForZones()} />
+              <Button label={t('lactate.result.useZones')} variant="secondary" icon="pulse" disabled={!trial.usable} onPress={() => void applyToZones()} />
             </ButtonRow>
           </View>
         ) : null}

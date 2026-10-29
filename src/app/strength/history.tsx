@@ -33,6 +33,7 @@ import { IconAction } from '@/features/courses/IconAction';
 import { fmtDate, fmtDay, fmtInt, useLocale } from '@/i18n';
 import { spacing, useColors } from '@/theme';
 import { OPEN_IN_STACK } from '@/components/navigation';
+import { useNow } from '@/hooks/useNow';
 
 type HistoryView = 'list' | 'calendar';
 
@@ -167,7 +168,7 @@ function CalendarPanel({ month, days, selected, prs, onMonth, onSelect, onOpenSt
   const { t } = useTranslation('lifts');
   const colors = useColors();
   const locale = useLocale();
-  const current = monthOf(Date.now());
+  const current = monthOf(useNow(60_000));
   const monthStart = new Date(month.year, month.month, 1);
   const title = useMemo(
     () => fmtDate(monthStart, 'month'),

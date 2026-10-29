@@ -65,14 +65,22 @@ export function ExercisePicker({ visible, onClose, onPick, selected = [], multi 
     return () => clearTimeout(id);
   }, [query]);
 
+  // Each time the sheet opens it starts from a clean search.
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
+    if (visible) {
+      setQuery('');
+      setDebounced('');
+      setMuscle(null);
+      setEquipment(null);
+      setCustomOnly(false);
+      setPicked([]);
+    }
+  }
+
   useEffect(() => {
     if (!visible) return;
-    setQuery('');
-    setDebounced('');
-    setMuscle(null);
-    setEquipment(null);
-    setCustomOnly(false);
-    setPicked([]);
     let cancelled = false;
     listStrengthWorkouts(db, 80).then(
       (workouts) => {
@@ -324,14 +332,18 @@ function ExerciseForm({ target, onClose, onSaved, onDeleted }: ExerciseFormProps
   const [busy, setBusy] = useState(false);
   const existing = target !== null && target !== 'new' ? target : null;
 
-  useEffect(() => {
-    if (target === null) return;
-    setName(existing?.name.id ?? '');
-    setPrimary(existing ? [...existing.primary] : []);
-    setEquipment(existing?.equipment ?? 'dumbbell');
-    setTimed(existing?.timed ?? false);
-    setConfirmDelete(false);
-  }, [target, existing]);
+  // Opening for another target (or the first one) fills the form from it.
+  const [seenTarget, setSeenTarget] = useState<typeof target | undefined>(undefined);
+  if (seenTarget !== target) {
+    setSeenTarget(target);
+    if (target !== null) {
+      setName(existing?.name.id ?? '');
+      setPrimary(existing ? [...existing.primary] : []);
+      setEquipment(existing?.equipment ?? 'dumbbell');
+      setTimed(existing?.timed ?? false);
+      setConfirmDelete(false);
+    }
+  }
 
   const valid = name.trim().length > 0 && primary.length > 0;
 

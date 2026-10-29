@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
@@ -25,9 +25,12 @@ export function RoutineNameDialog({ visible, title, placeholder, confirmLabel, i
   const { t } = useTranslation('common');
   const { colors, radius } = useTheme();
   const [text, setText] = useState(initial);
-  useEffect(() => {
+  // Opening, or a new starting name, puts the starting name in the field.
+  const [seen, setSeen] = useState({ visible, initial });
+  if (seen.visible !== visible || seen.initial !== initial) {
+    setSeen({ visible, initial });
     if (visible) setText(initial);
-  }, [visible, initial]);
+  }
   const name = text.trim();
   const confirm = () => {
     if (name.length > 0) onConfirm(name);

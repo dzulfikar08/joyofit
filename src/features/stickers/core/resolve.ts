@@ -216,7 +216,7 @@ function paintBackground(state: State, bg: Background, w: number, h: number): { 
         const strong = withAlpha(c, bg.scrim.opacity);
         const clear = withAlpha(c, 0);
         const from = bg.scrim.from;
-        const gradientRect = (y0: number, y1: number, stops: Array<{ at: number; color: string }>) =>
+        const gradientRect = (y0: number, y1: number, stops: { at: number; color: string }[]) =>
           nodes.push({ k: "rect", x: 0, y: y0, w, h: y1 - y0, fill: linearOver(180, 0, y0, w, y1 - y0, stops) });
         if (bg.scrim.side === "full") nodes.push({ k: "rect", x: 0, y: 0, w, h, fill: strong });
         if (bg.scrim.side === "bottom" || bg.scrim.side === "both") {
@@ -698,7 +698,7 @@ function layoutStack(
   const crossAvail = row ? innerH : innerW;
   const fillMain = (c: Layer) => (row ? c.box.w : c.box.h) === "fill";
 
-  const placed: Array<{ layer: Layer; p: Placed | null }> = layer.children.map((c) => ({ layer: c, p: null }));
+  const placed: { layer: Layer; p: Placed | null }[] = layer.children.map((c) => ({ layer: c, p: null }));
   const visibleLayers = placed.filter((e) => visible(state, e.layer));
   // Pass 1: everything that does not fill the main axis.
   for (const e of visibleLayers) {

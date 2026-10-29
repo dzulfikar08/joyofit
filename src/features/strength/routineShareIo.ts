@@ -3,6 +3,7 @@
  * What goes into the text, the file and the plan is the pure `routineShare.ts`.
  */
 import * as DocumentPicker from 'expo-document-picker';
+import { getDocumentAsync } from '@/documentPicker';
 import { File, Paths } from 'expo-file-system';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { Share } from 'react-native';
@@ -49,7 +50,7 @@ export type PickedRoutines = { ok: true; name: string; result: ParseResult } | {
 
 /** The system file picker (any type: other apps often report a `.json` as octet-stream), read and parsed. Nothing is saved. */
 export async function pickRoutineFile(): Promise<PickedRoutines> {
-  const picked = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
+  const picked = await getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
   if (picked.canceled || picked.assets.length === 0) return { ok: false, reason: 'cancelled' };
   const asset = picked.assets[0] as DocumentPicker.DocumentPickerAsset;
   try {

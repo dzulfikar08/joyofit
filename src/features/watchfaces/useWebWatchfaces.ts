@@ -26,7 +26,10 @@ export function useWebWatchfaces(enabled: boolean) {
   }, []);
 
   useEffect(() => {
-    if (enabled && configured && signedIn) void reload();
+    if (!enabled || !configured || !signedIn) return;
+    // Deferred so the loading state is not set synchronously inside the effect body.
+    const id = setTimeout(() => void reload(), 0);
+    return () => clearTimeout(id);
   }, [enabled, configured, signedIn, reload]);
 
   /** Downloads the face; resolves null (with `downloadError` set) when it failed. */

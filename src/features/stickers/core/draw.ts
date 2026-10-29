@@ -24,7 +24,7 @@ export type DrawCtx = {
 export const r2 = (n: number) => Math.round(n * 100) / 100;
 
 export function gradientStops(
-  stops: Array<{ at: number; color: string }>,
+  stops: { at: number; color: string }[],
   tokens: Tokens,
   opacity = 1,
 ): Stop[] {
@@ -202,7 +202,7 @@ export function drawChart(layer: ChartLayer, w: number, h: number, d: DrawCtx): 
   return drawLine(layer, values, base, color, w, h);
 }
 
-function highlightIndex(highlight: ChartLayer["highlight"], values: Array<number | null>): number | undefined {
+function highlightIndex(highlight: ChartLayer["highlight"], values: (number | null)[]): number | undefined {
   if (highlight === undefined) return undefined;
   if (typeof highlight === "number") return highlight < values.length ? highlight : undefined;
   if (highlight === "last") return values.length - 1;
@@ -217,7 +217,7 @@ function highlightIndex(highlight: ChartLayer["highlight"], values: Array<number
 
 function drawBars(
   layer: ChartLayer,
-  values: Array<number | null>,
+  values: (number | null)[],
   labels: string[] | undefined,
   colors: string[] | undefined,
   baseline: number | undefined,
@@ -299,7 +299,7 @@ function drawBars(
 
 function drawLine(
   layer: ChartLayer,
-  values: Array<number | null>,
+  values: (number | null)[],
   baseline: number | undefined,
   color: string,
   w: number,

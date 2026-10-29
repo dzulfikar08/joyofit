@@ -1,5 +1,5 @@
 import { useEventListener } from 'expo';
-import * as DocumentPicker from 'expo-document-picker';
+import { getDocumentAsync } from '@/documentPicker';
 import { File } from 'expo-file-system';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -127,7 +127,7 @@ export function useHuaweiImport() {
   const pick = useCallback(async () => {
     setError(null);
     try {
-      const picked = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: false, multiple: false });
+      const picked = await getDocumentAsync({ type: '*/*', copyToCacheDirectory: false, multiple: false });
       if (picked.canceled || picked.assets.length === 0) return;
       const asset = picked.assets[0];
       setFile({ uri: asset.uri, name: asset.name, size: asset.size ?? null });
@@ -230,7 +230,7 @@ export function useHuaweiImport() {
     setWebError(null);
     try {
       // Any type: providers often lose the mime type of a `.gz`. Copied into the cache so the file is read by path; tens of MB at most.
-      const picked = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
+      const picked = await getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
       if (picked.canceled || picked.assets.length === 0) return;
       const asset = picked.assets[0];
       setWebFile({ uri: asset.uri, name: asset.name, size: asset.size ?? null });

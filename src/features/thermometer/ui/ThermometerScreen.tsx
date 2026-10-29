@@ -13,6 +13,7 @@ import type { Granted } from '@/features/sensors/permissions';
 import type { GattFailure } from '../gattRead';
 import { sensorLabel } from '@/features/sensors/store';
 import { batteryLabel } from '@/features/sensors/ui/format';
+import { useNow } from '@/hooks/useNow';
 import { spacing } from '@/theme';
 
 import { NightSection } from './NightSection';
@@ -48,6 +49,7 @@ export function ThermometerScreen() {
           : null;
   const problem = nightProblem ?? searchProblem;
 
+  const nowMs = useNow(30_000);
   const { sensor, last, link } = thermometer;
   const problemNow = readFailed ?? thermometer.problem;
   const readNow = async () => {
@@ -80,7 +82,7 @@ export function ThermometerScreen() {
                 <ReadingFigures last={last} />
                 <AppText variant="caption" muted numberOfLines={1}>
                   {t(battery ? 'card.lastAtBattery' : 'card.lastAt', {
-                    ago: fmtAgo(Math.floor(last.ts / 1000), Math.floor(Date.now() / 1000)),
+                    ago: fmtAgo(Math.floor(last.ts / 1000), Math.floor(Math.max(nowMs, last.ts) / 1000)),
                     battery,
                   })}
                 </AppText>

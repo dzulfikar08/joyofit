@@ -36,7 +36,7 @@ export type Env = {
   issues: Issue[];
 };
 
-type Placeholder = { path: string; optional: boolean; filters: Array<{ name: string; args: string[] }> };
+type Placeholder = { path: string; optional: boolean; filters: { name: string; args: string[] }[] };
 type Part = string | Placeholder;
 
 const cache = new Map<string, Part[]>();
@@ -290,7 +290,7 @@ export function resolveNum(ref: NumRef | undefined, env: Pick<Env, "get">): numb
   return Number.isFinite(value) ? value : undefined;
 }
 
-export function resolveNumberList(path: string, env: Pick<Env, "get">): Array<number | null> | undefined {
+export function resolveNumberList(path: string, env: Pick<Env, "get">): (number | null)[] | undefined {
   const raw = env.get(path);
   if (!Array.isArray(raw)) return undefined;
   return raw.map((v) => {

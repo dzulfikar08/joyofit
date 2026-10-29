@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
@@ -41,11 +41,12 @@ function NumberCell({ value, max, decimals, label, placeholder, keyboard, unit, 
   const shown = (v: number | null) => (v === null ? '' : fmtNumber(unit ? inputWeight(v, unit) : v, decimals));
   const read = (text: string) => (unit ? parseWeightAmount(text, unit) : parseAmount(text, max, decimals));
   const [text, setText] = useState(shown(value));
-  useEffect(() => {
-    setText((current) => (read(current) === value ? current : shown(value)));
-    // `shown` only depends on the language; a language switch while typing is not worth a redraw of the text.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, max, decimals, unit]);
+  // Only a change of the value or its unit re-reads the text; a language switch while typing is not worth a redraw of it.
+  const [seen, setSeen] = useState({ value, max, decimals, unit });
+  if (seen.value !== value || seen.max !== max || seen.decimals !== decimals || seen.unit !== unit) {
+    setSeen({ value, max, decimals, unit });
+    if (read(text) !== value) setText(shown(value));
+  }
   return (
     <View style={styles.cell}>
       <Input
@@ -69,9 +70,11 @@ function NumberCell({ value, max, decimals, label, placeholder, keyboard, unit, 
 function DurationCell({ value, label, onChange }: { value: number | null; label: string; onChange: (value: number | null) => void }) {
   const [text, setText] = useState(digitsFromSeconds(value));
   const [focused, setFocused] = useState(false);
-  useEffect(() => {
-    setText((current) => (secondsFromDigits(current) === value ? current : digitsFromSeconds(value)));
-  }, [value]);
+  const [seenValue, setSeenValue] = useState(value);
+  if (seenValue !== value) {
+    setSeenValue(value);
+    if (secondsFromDigits(text) !== value) setText(digitsFromSeconds(value));
+  }
   return (
     <View style={styles.cell}>
       <Input

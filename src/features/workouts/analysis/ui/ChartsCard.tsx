@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { PanResponder, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import type { AnalysisSeries, WorkoutAnalysis } from '../types';
@@ -41,50 +41,66 @@ interface GestureTarget {
   width: number;
 }
 
+/** The latest gesture target, kept outside of render so handlers can read it. */
+function createLive(initial: GestureTarget) {
+  let current = initial;
+  return {
+    get: () => current,
+    set: (next: GestureTarget) => {
+      current = next;
+    },
+  };
+}
+
+/** The gesture handlers; they read the latest target through `getTarget`, so a re-render never rebuilds them mid-touch. */
+function createScrubHandlers(store: ScrubStore, setActive: (active: boolean) => void, getTarget: () => GestureTarget) {
+  let startX = 0;
+  let previous: number | null = null;
+  let engaged = false;
+  const apply = (x: number) => {
+    const { series, width } = getTarget();
+    if (width <= 0) return;
+    store.set(indexFromX(series, x, PAD_X, width - PAD_X * 2));
+  };
+  const finish = () => {
+    if (engaged) setActive(false);
+    engaged = false;
+  };
+  return PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onPanResponderTerminationRequest: () => !engaged,
+    onShouldBlockNativeResponder: () => engaged,
+    onPanResponderGrant: (evt) => {
+      previous = store.get();
+      engaged = false;
+      startX = evt.nativeEvent.locationX;
+      apply(startX);
+    },
+    onPanResponderMove: (_evt, g) => {
+      if (!engaged && Math.abs(g.dx) > ENGAGE_DX && Math.abs(g.dx) > Math.abs(g.dy)) {
+        engaged = true;
+        setActive(true);
+      }
+      apply(startX + g.dx);
+    },
+    onPanResponderRelease: finish,
+    onPanResponderTerminate: () => {
+      if (!engaged) store.set(previous);
+      finish();
+    },
+  }).panHandlers;
+}
+
 /**
  * Touch or drag sets the shared scrub index. The finger only owns the gesture (and the host locks its scroll view) once it
  * has moved sideways; a vertical swipe is released to the surrounding scroll view and restores the previous marker.
  */
 export function useScrubGesture(store: ScrubStore, setActive: (active: boolean) => void, target: GestureTarget) {
-  const targetRef = useRef(target);
-  targetRef.current = target;
-  return useMemo(() => {
-    let startX = 0;
-    let previous: number | null = null;
-    let engaged = false;
-    const apply = (x: number) => {
-      const { series, width } = targetRef.current;
-      if (width <= 0) return;
-      store.set(indexFromX(series, x, PAD_X, width - PAD_X * 2));
-    };
-    const finish = () => {
-      if (engaged) setActive(false);
-      engaged = false;
-    };
-    return PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderTerminationRequest: () => !engaged,
-      onShouldBlockNativeResponder: () => engaged,
-      onPanResponderGrant: (evt) => {
-        previous = store.get();
-        engaged = false;
-        startX = evt.nativeEvent.locationX;
-        apply(startX);
-      },
-      onPanResponderMove: (_evt, g) => {
-        if (!engaged && Math.abs(g.dx) > ENGAGE_DX && Math.abs(g.dx) > Math.abs(g.dy)) {
-          engaged = true;
-          setActive(true);
-        }
-        apply(startX + g.dx);
-      },
-      onPanResponderRelease: finish,
-      onPanResponderTerminate: () => {
-        if (!engaged) store.set(previous);
-        finish();
-      },
-    }).panHandlers;
-  }, [store, setActive]);
+  const [live] = useState(() => createLive(target));
+  useLayoutEffect(() => {
+    live.set(target);
+  });
+  return useMemo(() => createScrubHandlers(store, setActive, live.get), [store, setActive, live]);
 }
 
 export function ClearButton() {

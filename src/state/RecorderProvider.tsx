@@ -1,5 +1,5 @@
 import { useSQLiteContext } from 'expo-sqlite';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useSyncExternalStore, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useSyncExternalStore, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 
 import { BleSensors, type WorkoutControls } from '@/ble';
@@ -85,7 +85,10 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
   const { saved } = useSensors();
   const { dataChanged } = useWatch();
   const savedRef = useRef(saved);
-  savedRef.current = saved;
+  // Read lazily by the controller, never during render.
+  useLayoutEffect(() => {
+    savedRef.current = saved;
+  }, [saved]);
 
   const controller = useMemo(
     () =>

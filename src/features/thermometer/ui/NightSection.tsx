@@ -56,8 +56,20 @@ export function NightSection({ ids, link, onProblem }: NightSectionProps) {
   }, [native]);
 
   useEffect(() => {
-    void reload();
-  }, [reload]);
+    if (!native) return;
+    let cancelled = false;
+    native.roomCaptureState().then(
+      (s) => {
+        if (!cancelled) setState(s);
+      },
+      () => {
+        if (!cancelled) setState(null);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [native]);
 
   const start = async () => {
     if (!native) return;

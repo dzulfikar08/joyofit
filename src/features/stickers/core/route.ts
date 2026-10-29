@@ -144,7 +144,7 @@ export function simplify(points: XY[], epsilon: number): XY[] {
   const keep = new Uint8Array(points.length);
   keep[0] = 1;
   keep[points.length - 1] = 1;
-  const stack: Array<[number, number]> = [[0, points.length - 1]];
+  const stack: [number, number][] = [[0, points.length - 1]];
   while (stack.length) {
     const [lo, hi] = stack.pop()!;
     let worst = 0;

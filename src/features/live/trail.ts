@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { haversineM } from '@/features/routes/routeModel';
 
@@ -26,9 +26,11 @@ export function useTrail(position: TrailPoint | null): readonly TrailPoint[] {
   const [trail, setTrail] = useState<readonly TrailPoint[]>([]);
   const lat = position?.lat;
   const lon = position?.lon;
-  useEffect(() => {
-    if (lat === undefined || lon === undefined) return;
-    setTrail((old) => appendTrail(old, { lat, lon }));
-  }, [lat, lon]);
+  // Append when the position changes, during render, rather than from an effect.
+  const [seen, setSeen] = useState<{ lat?: number; lon?: number }>({});
+  if (seen.lat !== lat || seen.lon !== lon) {
+    setSeen({ lat, lon });
+    if (lat !== undefined && lon !== undefined) setTrail((old) => appendTrail(old, { lat, lon }));
+  }
   return trail;
 }

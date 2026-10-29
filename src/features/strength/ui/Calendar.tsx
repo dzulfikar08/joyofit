@@ -10,6 +10,7 @@ import { AppText } from '@/components/AppText';
 import { PressableScale } from '@/components/PressableScale';
 import { localDay } from '@/features/strength/calc';
 import { dayCounts, monthGrid, type DayItem, type MonthRef } from '@/features/strength/historyModel';
+import { useNow } from '@/hooks/useNow';
 import { fmtDay, fmtInt, useLocale } from '@/i18n';
 import { spacing, useTheme } from '@/theme';
 
@@ -36,7 +37,8 @@ export function Calendar({ month, days, selected, onSelect }: CalendarProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [locale],
   );
-  const today = localDay(Date.now());
+  // A minute is fine enough for the day to roll over while the screen is open.
+  const today = localDay(useNow(60_000));
 
   return (
     <View style={styles.grid}>

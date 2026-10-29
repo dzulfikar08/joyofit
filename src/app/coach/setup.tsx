@@ -65,11 +65,11 @@ function SetupForm() {
   const choice: PlanChoice = { kind: strength ? 'strength' : 'run', goal, level: runWalk ? 'beginner' : level, daysPerWeek: days, setting: strength ? setting : null, weekdays };
   const ready = weekdays.length === days;
 
-  const start = async () => {
+  const start = async (now: number) => {
     setSaving(true);
     setError(null);
     try {
-      await startPlan(db, buildPlan(choice, Date.now()));
+      await startPlan(db, buildPlan(choice, now));
       if (cloud.signedIn) void cloud.syncNow().catch(() => {});
       router.replace('/coach');
     } catch (e) {
@@ -131,7 +131,7 @@ function SetupForm() {
       </AppText>
       <Details>{t('disclaimer')}</Details>
       {error ? <Notice tone="danger">{error}</Notice> : null}
-      <Button label={saving ? t('setup.starting') : t('setup.start')} variant="primary" icon="play" onPress={() => void start()} disabled={!ready} loading={saving} />
+      <Button label={saving ? t('setup.starting') : t('setup.start')} variant="primary" icon="play" onPress={() => void start(Date.now())} disabled={!ready} loading={saving} />
     </>
   );
 }

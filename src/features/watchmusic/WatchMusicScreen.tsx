@@ -1,5 +1,6 @@
 import { useEventListener } from 'expo';
 import * as DocumentPicker from 'expo-document-picker';
+import { getDocumentAsync } from '@/documentPicker';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Platform, StyleSheet, View } from 'react-native';
@@ -118,7 +119,7 @@ export function WatchMusicScreen() {
     setNotice(null);
     let picked: DocumentPicker.DocumentPickerResult;
     try {
-      picked = await DocumentPicker.getDocumentAsync({ type: PICK_TYPES, copyToCacheDirectory: true, multiple: true });
+      picked = await getDocumentAsync({ type: PICK_TYPES, copyToCacheDirectory: true, multiple: true });
     } catch (e) {
       setNotice({ danger: true, text: errorMessage(e) });
       return;

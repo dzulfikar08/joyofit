@@ -97,7 +97,7 @@ export function formatPercent(fraction: number, locale: Locale, digits = 0): str
 export function formatCompact(value: number, locale: Locale): string {
   if (!Number.isFinite(value)) return "";
   const abs = Math.abs(value);
-  const steps: Array<[number, string, string]> =
+  const steps: [number, string, string][] =
     locale === "id"
       ? [
           [1e12, " T", "t"],

@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
@@ -119,7 +119,9 @@ export default function RoutineEditor() {
   // Leaving with unsaved changes asks first: the navigation action is held until the person decides.
   const dirty = status === 'ready' && editSnapshot(edit) !== initial;
   const dirtyRef = useRef(false);
-  dirtyRef.current = dirty;
+  useLayoutEffect(() => {
+    dirtyRef.current = dirty;
+  }, [dirty]);
   const skipGuard = useRef(false);
   const heldLeave = useRef<(() => void) | null>(null);
   useEffect(
