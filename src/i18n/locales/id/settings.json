@@ -478,6 +478,37 @@
       "password": "Kata sandi itu tidak bisa membuka ZIP. Pakai yang kamu atur saat meminta data dari Huawei.",
       "format": "File ini bukan ekspor Huawei Health. Pilih ZIP dari email Huawei, yang berisi data Health kamu.",
       "busy": "Impor sedang berjalan."
+    },
+    "web": {
+      "title": "File impor dari web",
+      "intro": "Ubah ekspormu di browser, lalu buka hasilnya di sini. Ponsel ini yang menulis datanya; tidak ada yang dibaca di server.",
+      "pageHint": "Untuk ekspor besar, ubah dulu di web: app.fit.joyorogo.com, Unggah, Huawei Health. ZIP dan kata sandinya tetap di browser kamu.",
+      "choose": "Pilih file impor",
+      "chooseAnother": "Pilih file impor lain",
+      "apply": "Impor file ini",
+      "accountTitle": "Diunggah dari web",
+      "accountHint": "File yang kamu unggah dari web (JoyoRogo Pro). File dihapus dari server setelah ponsel ini menerapkannya; kalau gagal, file tetap ada supaya bisa dicoba lagi.",
+      "signedOut": "Masuk ke JoyoRogo untuk melihat file yang kamu unggah dari web.",
+      "loading": "Mencari file yang diunggah",
+      "empty": "Belum ada yang diunggah.",
+      "listError": "Daftar tidak bisa dimuat: {{message}}",
+      "refresh": "Muat ulang",
+      "unnamed": "File impor",
+      "download": "Unduh dan impor",
+      "downloading": "Mengunduh file",
+      "checking": "Memeriksa file: {{percent}}%",
+      "writing": "Menulis ke ponsel ini: {{percent}}%",
+      "removed": "Sudah diterapkan dan dihapus dari server.",
+      "removeFailed": "Sudah diterapkan, tapi tidak bisa dihapus dari server: {{message}}. Menerapkannya lagi tidak menambah apa pun.",
+      "errors": {
+        "format": "Ini bukan file impor JoyoFit. Ubah ekspormu di web dulu lalu buka file yang dihasilkan.",
+        "version": "File impor ini dibuat oleh halaman web yang lebih baru daripada yang dipahami aplikasi ini. Perbarui JoyoFit lalu coba lagi.",
+        "truncated": "File belum lengkap, kemungkinan unduhan atau kirimannya terputus. Tidak ada yang diimpor. Unduh atau kirim lagi.",
+        "line": "Ada bagian file yang rusak. Tidak ada yang diimpor. Ubah ekspor itu lagi dan pakai file yang baru.",
+        "corrupt": "File rusak atau terpotong. Tidak ada yang diimpor. Unduh atau kirim lagi.",
+        "gone": "File itu sudah tidak ada di server.",
+        "signIn": "Masuk ke JoyoRogo dulu."
+      }
     }
   },
   "notifApps": {

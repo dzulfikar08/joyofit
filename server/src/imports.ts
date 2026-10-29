@@ -4,7 +4,7 @@ import { requireFounder } from "./access";
 import type { AppContext } from "./env";
 import { DEFAULT_MAX_IMPORT_BYTES, IMPORT_LIST_LIMIT } from "./limits";
 
-/** Raw uploads of the Huawei export. The file is stored untouched in R2; a later importer parses it. Mounted under `/v1`, behind `requireUser`. */
+/** Raw uploads (the Huawei export's browser-made import file, docs/huawei-web-import.md in the app repo). Stored untouched in R2, never parsed here; the phone downloads it and deletes it. Mounted under `/v1`, behind `requireUser`. */
 export const imports = new Hono<AppContext>();
 
 export function cleanFilename(raw: string | undefined): string | null {
@@ -85,4 +85,37 @@ imports.get("/", async (c) => {
     .bind(c.get("user").id, IMPORT_LIST_LIMIT)
     .all<ImportRow>();
   return c.json({ imports: results.map(toJson) });
+});
+
+/**
+ * The stored file, streamed from R2, for the phone to apply. Signed in only (no Pro gate: data is never locked in).
+ * `404` for a missing id, another user's row, or an upload that did not finish.
+ */
+imports.get("/:id/file", async (c) => {
+  const user = c.get("user");
+  const row = await c.env.DB.prepare(
+    `SELECT id, status, filename, content_type, size, created_at, r2_key FROM imports WHERE id = ?1 AND user_id = ?2 AND status = 'uploaded'`,
+  )
+    .bind(c.req.param("id"), user.id)
+    .first<ImportRow & { r2_key: string }>();
+  const object = row ? await c.env.IMPORTS.get(row.r2_key) : null;
+  if (!row || !object) return c.json({ error: "not_found" }, 404);
+  return new Response(object.body, {
+    headers: {
+      "Content-Type": row.content_type ?? "application/octet-stream",
+      "Content-Length": String(object.size),
+      "Cache-Control": "private, no-store",
+    },
+  });
+});
+
+/** Removes the caller's R2 object and row (the phone calls it once it has applied the file); `404` when the id is not the caller's. */
+imports.delete("/:id", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const row = await c.env.DB.prepare("SELECT r2_key FROM imports WHERE id = ?1 AND user_id = ?2").bind(id, user.id).first<{ r2_key: string }>();
+  if (!row) return c.json({ error: "not_found" }, 404);
+  await c.env.IMPORTS.delete(row.r2_key);
+  await c.env.DB.prepare("DELETE FROM imports WHERE id = ?1 AND user_id = ?2").bind(id, user.id).run();
+  return c.json({ deleted: true });
 });
