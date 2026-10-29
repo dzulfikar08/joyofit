@@ -2,7 +2,7 @@
 app: joyofit
 feature: Impor ZIP Huawei lewat web (Unggah → Huawei Health)
 shipped: 2026-10-29
-available: code
+available: test-build
 tier: mixed
 post: todo
 atur: JRG-467
