@@ -413,6 +413,41 @@ class HuaweiExportParsersTest {
     assertEquals(120, workout.maxHr)
   }
 
+  /** A real-layout record as raw text: [summary] is the summaryData text with its quotes escaped, as in the file, [detail] the track. */
+  private fun brokenRealMotion(summary: String, detail: String) =
+    """{"appType":1,"startTime":$t0,"endTime":${t0 + 700_000},"subType":4,"timeZone":"+0700","type":30001,""" +
+      """"summaryData":"$summary","detailData":"$detail"}"""
+
+  @Test
+  fun aBrokenRealRecordStillGetsItsSportAndTotals() {
+    val raw = brokenRealMotion(
+      summary = """{\"avgHeartRate\":101,\"maxHeartRate\":120,\"totalCalories\":285000,\"totalDistance\":2500,\"totalSteps\":3243,\"totalTime\":600000,\"sportType\":258}""",
+      detail = """tp=lbs;k=0;lat=-6.2;lon=106.8;alt=0.0;t=${t0 / 1000}.0;\n"stray";\n""",
+    )
+    assertNull(HuaweiExportJson.parseObject(raw))
+    val workout = HuaweiMotionPathParser.build(HuaweiMotionPathParser.fromBrokenText(raw)!!)!!
+    assertEquals(1, workout.sportType) // subType 4, not the summary's 258
+    assertEquals("Running", workout.sportName)
+    assertEquals(2500, workout.distance)
+    assertEquals(285, workout.calories)
+    assertEquals(3243, workout.steps)
+    assertEquals(101, workout.avgHr) // no heart rate in the track: the summary's
+    assertEquals(1, workout.points.count { it.lat != null })
+  }
+
+  @Test
+  fun aBrokenSummaryIsStillReadKeyByKey() {
+    val raw = brokenRealMotion(
+      summary = """{\"totalDistance\":2500,\"totalCalories\":285000,\"note\":"x"}""",
+      detail = """tp=lbs;k=0;lat=-6.2;lon=106.8;alt=0.0;t=${t0 / 1000}.0;\n""",
+    )
+    assertNull(HuaweiExportJson.parseObject(raw))
+    val workout = HuaweiMotionPathParser.build(HuaweiMotionPathParser.fromBrokenText(raw)!!)!!
+    assertEquals(1, workout.sportType)
+    assertEquals(2500, workout.distance)
+    assertEquals(285, workout.calories)
+  }
+
   @Test
   fun huaweiSportIdsMapToTheWatchsTable() {
     assertEquals(1, HuaweiExportSports.joyofitType(4))

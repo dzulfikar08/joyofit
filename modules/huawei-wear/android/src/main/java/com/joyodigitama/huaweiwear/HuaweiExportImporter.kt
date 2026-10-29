@@ -6,6 +6,7 @@ import java.io.InputStream
 import java.io.InputStreamReader
 import android.util.Log
 import java.time.Instant
+import java.util.BitSet
 import kotlin.math.roundToInt
 import org.json.JSONObject
 
@@ -239,9 +240,9 @@ internal class HuaweiExportImporter(
   private val summary = HuaweiImportSummary()
   private val minutes = HashMap<Long, ImportedMinute>()
   private val sleep = ArrayList<ImportedSleep>()
-  private val heartRateMinutes = HashSet<Long>()
-  private val restingMinutes = HashSet<Long>()
-  private val spo2Minutes = HashSet<Long>()
+  private val heartRateMinutes = MinuteSet()
+  private val restingMinutes = MinuteSet()
+  private val spo2Minutes = MinuteSet()
   private val weighInMinutes = HashSet<Long>()
   private val queue = ArrayList<QueuedImport>()
   private val waterKeys = HashSet<String>()
@@ -583,5 +584,30 @@ internal class HuaweiExportImporter(
     /** One glass in JoyoRogo's water log, ml. */
     const val WATER_GLASS_ML = 250
     private const val TAG = "HuaweiImport"
+  }
+}
+
+/**
+ * The minutes (unix seconds of a whole minute) a kind of reading was counted for, one bit per minute since 2000, the earliest
+ * time the parsers accept: under 2 MB per set until 2026. A `HashSet<Long>` took about 50 bytes a minute; on the JVM, six years
+ * of synthetic per-minute heart rate (3.15 M minutes, 614 MB of JSON) ran a 256 MB heap out of memory with it and finish in
+ * 128 MB without a full GC with this.
+ */
+private class MinuteSet {
+  private val bits = BitSet()
+  private val outside = HashSet<Long>()
+
+  /** True when [minuteSec] was not in the set yet. */
+  fun add(minuteSec: Long): Boolean {
+    val index = minuteSec / 60 - FIRST_MINUTE
+    if (index !in 0..Int.MAX_VALUE.toLong()) return outside.add(minuteSec)
+    if (bits.get(index.toInt())) return false
+    bits.set(index.toInt())
+    return true
+  }
+
+  private companion object {
+    /** 2000-01-01 in minutes since the epoch. */
+    const val FIRST_MINUTE = 946_684_800L / 60
   }
 }

@@ -152,6 +152,32 @@ class HuaweiImportStoreSqlTest {
   }
 
   @Test
+  fun aWorkoutImportedWithoutItsSportIsNamedOnceAndKeepsItsTrack() {
+    val start = 1_750_000_020L
+    for ((i, name) in listOf("Workout (Huawei type unknown)", "Workout (Huawei type 283)").withIndex()) {
+      val at = start + i * 100_000L
+      db.execSQL(
+        """INSERT INTO workouts (workout_number, start, end, sport_type, sport_name, duration, distance, calories, steps, summary_json, complete, imported)
+           VALUES (0, ?, ?, 255, ?, 600, 0, 0, 0, '{}', 1, 1)""",
+        arrayOf<Any>(at, at + 600, name),
+      )
+      db.execSQL("INSERT INTO workout_points (workout_id, ts, lat, lon) SELECT id, ?, -6.2, 106.8 FROM workouts WHERE start = ?", arrayOf<Any>(at, at))
+    }
+    fun workout(at: Long, type: Int, name: String) = ImportedWorkout(
+      at, at + 600, type, name, 600, 2500, 285, 3243, 100, 120, "{}",
+      listOf(WorkoutPoint(at, -6.2, 106.8, null, null), WorkoutPoint(at + 5, null, null, null, 88)),
+    )
+    val first = store.writeWorkout(workout(start, 1, "Running"))
+    assertEquals(true, first.updated)
+    assertEquals(0, first.points)
+    assertEquals(false, store.writeWorkout(workout(start, 1, "Running")).updated)
+    assertEquals(1, count("SELECT COUNT(*) FROM workouts WHERE start = $start AND sport_type = 1 AND sport_name = 'Running' AND distance = 2500 AND calories = 285"))
+    // A workout whose sport id was read but is not one JoyoFit names stays as it is.
+    assertEquals(false, store.writeWorkout(workout(start + 100_000, 255, "Workout (Huawei type 283)")).updated)
+    assertEquals(2, count("SELECT COUNT(*) FROM workout_points"))
+  }
+
+  @Test
   fun sleepStagesOverlappingWatchSleepAreSkippedAndASecondRunAddsNothing() {
     db.execSQL("INSERT INTO sleep_segments (start, end, type, stage, imported) VALUES (1750000000, 1750003600, 7, 'deep', 0)")
     val rows = listOf(

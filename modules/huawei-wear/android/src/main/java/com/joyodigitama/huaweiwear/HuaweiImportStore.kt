@@ -214,10 +214,12 @@ internal class SqliteHuaweiImportStore(private val openDb: () -> WearDatabase) :
       val existing = findWorkout(db, workout.start)
       if (existing != null) {
         // An earlier import of an export read by an older version stored the workout without its track and totals: fill it in.
-        // A watch-synced workout, or one that already has points, is never touched.
-        val upgrade = existing.imported && existing.points == 0 &&
+        // One read off a broken record before that fallback knew `subType` and `summaryData` has its track but no sport,
+        // distance or calories: name it and fill the totals, keeping the track. A watch-synced workout is never touched.
+        val fillTrack = existing.points == 0 &&
           (workout.points.isNotEmpty() || existing.calories != workout.calories || existing.distance != workout.distance)
-        if (!upgrade) {
+        val fillSport = existing.sportName == HuaweiExportSports.name(null) && workout.sportName != existing.sportName
+        if (!existing.imported || !(fillTrack || fillSport)) {
           db.setTransactionSuccessful()
           return WorkoutWrite(added = false, points = 0)
         }
@@ -241,9 +243,10 @@ internal class SqliteHuaweiImportStore(private val openDb: () -> WearDatabase) :
         } finally {
           update.close()
         }
-        insertPoints(db, existing.id, workout.points)
+        val pointsAdded = if (existing.points == 0) workout.points.size else 0
+        if (pointsAdded > 0) insertPoints(db, existing.id, workout.points)
         db.setTransactionSuccessful()
-        return WorkoutWrite(added = false, points = workout.points.size, updated = true)
+        return WorkoutWrite(added = false, points = pointsAdded, updated = true)
       }
       val insert = db.compileStatement(
         """INSERT OR IGNORE INTO workouts
@@ -360,14 +363,14 @@ internal class SqliteHuaweiImportStore(private val openDb: () -> WearDatabase) :
     return added
   }
 
-  private class ExistingWorkout(val id: Long, val imported: Boolean, val points: Int, val calories: Int, val distance: Int)
+  private class ExistingWorkout(val id: Long, val imported: Boolean, val points: Int, val calories: Int, val distance: Int, val sportName: String?)
 
   private fun findWorkout(db: WearDatabase, start: Long): ExistingWorkout? =
     db.rawQuery(
-      """SELECT id, imported, (SELECT COUNT(*) FROM workout_points WHERE workout_id = workouts.id), calories, distance
+      """SELECT id, imported, (SELECT COUNT(*) FROM workout_points WHERE workout_id = workouts.id), calories, distance, sport_name
          FROM workouts WHERE start BETWEEN ? AND ? LIMIT 1""",
       arrayOf((start - WORKOUT_MATCH_SEC).toString(), (start + WORKOUT_MATCH_SEC).toString()),
-    ).use { if (it.moveToFirst()) ExistingWorkout(it.getLong(0), it.getInt(1) == 1, it.getInt(2), it.getInt(3), it.getInt(4)) else null }
+    ).use { if (it.moveToFirst()) ExistingWorkout(it.getLong(0), it.getInt(1) == 1, it.getInt(2), it.getInt(3), it.getInt(4), it.getString(5)) else null }
 
   private fun insertPoints(db: WearDatabase, workoutId: Long, points: List<WorkoutPoint>) {
     val point = db.compileStatement(

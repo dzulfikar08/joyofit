@@ -6,7 +6,9 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.math.sqrt
+import org.json.JSONException
 import org.json.JSONObject
+import org.json.JSONTokener
 
 /**
  * How a Huawei sport id of the export (`subType` of a record, the `Sport type` sheet of the field description) becomes a
@@ -138,24 +140,59 @@ internal object HuaweiMotionPathParser {
     )
   }
 
-  /** Regex fallback for a record that is not valid JSON; null when not even a start time can be found. */
+  /**
+   * Regex fallback for a record that is not valid JSON; null when not even a start time can be found. Reads both layouts
+   * like [fromJson]: the sport from `subType` (else `sportType`), the totals from the `summaryData` text before the top
+   * level. Inside the raw record the summary's quotes are escaped (`\"totalDistance\":2500`), so a summary that does not
+   * parse is still read key by key.
+   */
   fun fromBrokenText(text: String): RawMotionPath? {
+    // Top-level keys only: the escaped `\"sportType\"` inside summaryData is another numbering (258 on a run).
     fun scalar(name: String): Double? =
       Regex("\"$name\"\\s*:\\s*\"?(-?[0-9][0-9.Ee+-]*)").find(text)?.groupValues?.get(1)?.toDoubleOrNull()?.takeIf { it.isFinite() }
+    fun anywhere(name: String): Double? =
+      Regex("\\\\?\"$name\\\\?\"\\s*:\\s*\\\\?\"?(-?[0-9][0-9.Ee+-]*)").find(text)?.groupValues?.get(1)?.toDoubleOrNull()?.takeIf { it.isFinite() }
+    val summary = summaryData(text)
+    fun total(vararg names: String): Double? {
+      for (name in names) {
+        HuaweiExportJson.number(summary?.opt(name))?.let { return it }
+        anywhere(name)?.let { return it }
+      }
+      return null
+    }
     val startMs = HuaweiExportJson.epochMs(scalar("startTime"))
     val attribute = text.replace("\\n", "\n")
     if (startMs == null && !attribute.contains("tp=lbs")) return null
     return RawMotionPath(
       startMs = startMs,
       endMs = HuaweiExportJson.epochMs(scalar("endTime")),
-      sportType = scalar("sportType")?.roundToInt(),
-      totalSteps = scalar("totalSteps"),
-      totalDistance = scalar("totalDistance"),
-      totalCalories = scalar("totalCalories"),
-      totalTime = scalar("totalTime"),
+      sportType = (scalar("subType") ?: scalar("sportType"))?.roundToInt(),
+      totalSteps = total("totalSteps", "steps"),
+      totalDistance = total("totalDistance", "distance"),
+      totalCalories = total("totalCalories", "calorie", "calories"),
+      totalTime = total("totalTime", "duration"),
       timeZone = Regex("\"timeZone\"\\s*:\\s*\"([^\"]*)\"").find(text)?.groupValues?.get(1),
       attribute = attribute,
+      summary = summary,
     )
+  }
+
+  /** The `summaryData` string of a raw record, parsed; null when it is missing or not readable. Scanned, not matched, so a long one cannot exhaust a regex. */
+  private fun summaryData(text: String): JSONObject? {
+    val key = text.indexOf("\"summaryData\"")
+    if (key < 0) return null
+    var at = key + "\"summaryData\"".length
+    while (at < text.length && (text[at].isWhitespace() || text[at] == ':')) at++
+    if (at >= text.length || text[at] != '"') return null
+    var end = at + 1
+    while (end < text.length && text[end] != '"') end += if (text[end] == '\\') 2 else 1
+    if (end >= text.length) return null
+    val literal = try {
+      JSONTokener(text.substring(at, end + 1)).nextValue() as? String
+    } catch (e: JSONException) {
+      null
+    }
+    return HuaweiExportJson.embeddedObject(literal)
   }
 
   fun parseTrack(attribute: String): MotionTrack {
