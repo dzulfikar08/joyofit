@@ -42,6 +42,9 @@
     "errors": {
       "password": "That password did not open the ZIP. Use the one you set when you requested your data from the watch maker.",
       "format": "This file is not a data export from your watch's own app. Pick the ZIP from the watch maker's email, the one with your Health data."
+    },
+    "web": {
+      "pageHint": "For a big export, convert it on the web first: app.fit.joyorogo.com, Unggah, the tab for your watch's own app. The ZIP and its password stay in your browser."
     }
   },
   "notifApps": {

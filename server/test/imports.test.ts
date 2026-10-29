@@ -68,3 +68,55 @@ describe("POST /v1/imports", () => {
     expect(list.imports.map((i) => i.filename)).toEqual(["a.zip"]);
   });
 });
+
+describe("GET /v1/imports/:id/file and DELETE /v1/imports/:id", () => {
+  const upload = async (cookie: string, body: Uint8Array, contentType: string) => {
+    const response = await call("/v1/imports?filename=joyofit-import.ndjson.gz", {
+      method: "POST",
+      body,
+      headers: { "content-type": contentType, "content-length": String(body.byteLength) },
+      cookie,
+    });
+    return ((await response.json()) as ImportJson).id;
+  };
+
+  it("streams the caller's file with its content type and length", async () => {
+    const { cookie } = signUp("alice");
+    const payload = new Uint8Array(3000).map((_, i) => (i * 7) % 251);
+    const id = await upload(cookie, payload, "application/x-joyofit-import+gzip");
+    const response = await call(`/v1/imports/${id}/file`, { cookie });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("application/x-joyofit-import+gzip");
+    expect(response.headers.get("content-length")).toBe("3000");
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(payload);
+  });
+
+  it("answers 404 for a missing id and for another user's import, for both routes", async () => {
+    const alice = signUp("alice");
+    const bob = signUp("bob");
+    const id = await upload(alice.cookie, new Uint8Array(8), "application/x-joyofit-import+gzip");
+    expect((await call("/v1/imports/nope/file", { cookie: alice.cookie })).status).toBe(404);
+    expect((await call(`/v1/imports/${id}/file`, { cookie: bob.cookie })).status).toBe(404);
+    expect((await call(`/v1/imports/${id}`, { method: "DELETE", cookie: bob.cookie })).status).toBe(404);
+    expect((await call("/v1/imports/nope", { method: "DELETE", cookie: alice.cookie })).status).toBe(404);
+    // Bob's attempts left Alice's file alone.
+    expect((await call(`/v1/imports/${id}/file`, { cookie: alice.cookie })).status).toBe(200);
+  });
+
+  it("deletes the R2 object and the row", async () => {
+    const { user, cookie } = signUp("alice");
+    const id = await upload(cookie, new Uint8Array(8), "application/x-joyofit-import+gzip");
+    const response = await call(`/v1/imports/${id}`, { method: "DELETE", cookie });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ deleted: true });
+    expect(await env.IMPORTS.get(`imports/${user.id}/${id}`)).toBeNull();
+    expect(await env.DB.prepare("SELECT id FROM imports WHERE id = ?1").bind(id).first()).toBeNull();
+    expect((await call(`/v1/imports/${id}/file`, { cookie })).status).toBe(404);
+    expect((await call(`/v1/imports/${id}`, { method: "DELETE", cookie })).status).toBe(404);
+  });
+
+  it("needs a session", async () => {
+    expect((await call("/v1/imports/x/file")).status).toBe(401);
+    expect((await call("/v1/imports/x", { method: "DELETE" })).status).toBe(401);
+  });
+});

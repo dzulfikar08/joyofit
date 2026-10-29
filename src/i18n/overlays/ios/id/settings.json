@@ -42,6 +42,9 @@
     "errors": {
       "password": "Kata sandi itu tidak bisa membuka ZIP. Pakai yang kamu atur saat meminta data dari pembuat jam.",
       "format": "File ini bukan ekspor data dari aplikasi resmi jam. Pilih ZIP dari email pembuat jam, yang berisi data Health kamu."
+    },
+    "web": {
+      "pageHint": "Untuk ekspor besar, ubah dulu di web: app.fit.joyorogo.com, Unggah, tab untuk aplikasi resmi jammu. ZIP dan kata sandinya tetap di browser kamu."
     }
   },
   "notifApps": {

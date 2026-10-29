@@ -495,6 +495,37 @@
       "password": "That password did not open the ZIP. Use the one you set when you requested your data from Huawei.",
       "format": "This file is not a Huawei Health export. Pick the ZIP from the Huawei email, the one with your Health data.",
       "busy": "An import is already running."
+    },
+    "web": {
+      "title": "Import file from the web",
+      "intro": "Convert the export in your browser, then open the result here. This phone writes the data; nothing is read on a server.",
+      "pageHint": "For a big export, convert it on the web first: app.fit.joyorogo.com, Unggah, Huawei Health. The ZIP and its password stay in your browser.",
+      "choose": "Choose an import file",
+      "chooseAnother": "Choose another import file",
+      "apply": "Import this file",
+      "accountTitle": "Uploaded from the web",
+      "accountHint": "A file you uploaded from the web (JoyoRogo Pro). It is removed from the server once this phone has applied it; if applying fails it stays, so you can try again.",
+      "signedOut": "Sign in to JoyoRogo to see files you uploaded from the web.",
+      "loading": "Looking for uploaded files",
+      "empty": "Nothing uploaded yet.",
+      "listError": "Could not load the list: {{message}}",
+      "refresh": "Refresh",
+      "unnamed": "Import file",
+      "download": "Download and import",
+      "downloading": "Downloading the file",
+      "checking": "Checking the file: {{percent}}%",
+      "writing": "Writing to this phone: {{percent}}%",
+      "removed": "Applied, and removed from the server.",
+      "removeFailed": "Applied, but it could not be removed from the server: {{message}}. Applying it again adds nothing.",
+      "errors": {
+        "format": "This is not a JoyoFit import file. Convert your export on the web first and open the file it makes.",
+        "version": "This import file was made by a newer version of the web page than this app understands. Update JoyoFit and try again.",
+        "truncated": "The file is incomplete, probably a cut-off download or transfer. Nothing was imported. Download or send it again.",
+        "line": "The file has a damaged part. Nothing was imported. Convert the export again and use the new file.",
+        "corrupt": "The file is damaged or cut off. Nothing was imported. Download or send it again.",
+        "gone": "That file is no longer on the server.",
+        "signIn": "Sign in to JoyoRogo first."
+      }
     }
   },
   "notifApps": {

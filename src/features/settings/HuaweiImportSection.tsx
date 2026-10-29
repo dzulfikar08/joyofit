@@ -13,7 +13,9 @@ import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { useHuaweiImport } from '@/features/settings/useHuaweiImport';
 import { formatCount, formatDate } from '@/format';
+import { fmtDecimal } from '@/i18n';
 import { radius, spacing, useColors } from '@/theme';
+import type { CloudImport } from '@/cloud/webImports';
 import type { RogoSendState } from '@/features/settings/useHuaweiImport';
 import type { HuaweiImportSummary } from '@/wear';
 
@@ -27,7 +29,7 @@ const HEALTH_APP = isIos ? 'Apple Health' : 'Health Connect';
  */
 export function HuaweiImportSection() {
   const { t } = useTranslation(['settings', 'common']);
-  const { file, password, setPassword, running, progress, summary, error, pick, select, start, cancel, rogoSend, sendToRogo, profileFilled } = useHuaweiImport();
+  const { file, password, setPassword, running, progress, summary, error, pick, select, start, cancel, rogoSend, sendToRogo, profileFilled, web } = useHuaweiImport();
   const { uri } = useLocalSearchParams<{ uri?: string }>();
   const handled = useRef<string | null>(null);
   // A ZIP opened with or shared to JoyoFit arrives here from `+native-intent` with its address in `uri`.
@@ -63,6 +65,8 @@ export function HuaweiImportSection() {
         </View>
         </Details>
       </Section>
+
+      <WebImportSection web={web} running={running} onCancel={cancel} />
 
       <Section title={t('huaweiImport.importTitle')} icon="document" tint="heart">
         <Button
@@ -108,6 +112,117 @@ export function HuaweiImportSection() {
       {summary ? <Summary summary={summary} profileFilled={profileFilled} /> : null}
       <RogoSendSection state={rogoSend} summary={summary} onSend={() => void sendToRogo()} />
     </>
+  );
+}
+
+type WebImport = ReturnType<typeof useHuaweiImport>['web'];
+
+/**
+ * The import file made in the browser (`docs/huawei-web-import.md`): opened from a file on the phone, or downloaded from the account
+ * when the web app uploaded it (JoyoRogo Pro). Applied by JS only; an account file is deleted from the server once it is written.
+ */
+function WebImportSection({ web, running, onCancel }: { web: WebImport; running: boolean; onCancel: () => void }) {
+  const { t } = useTranslation(['settings', 'common']);
+  const { working, progress } = web;
+  return (
+    <Section title={t('huaweiImport.web.title')} icon="cloud-download" tint="heart">
+      <AppText variant="caption" muted>
+        {t('huaweiImport.web.intro')}
+      </AppText>
+      <AppText variant="caption" muted>
+        {t('huaweiImport.web.pageHint')}
+      </AppText>
+      <Button
+        label={web.file ? t('huaweiImport.web.chooseAnother') : t('huaweiImport.web.choose')}
+        variant="secondary"
+        icon="folder-open"
+        onPress={() => void web.pickFile()}
+        disabled={running}
+      />
+      {web.file ? (
+        <>
+          <KeyValue icon="document" label={t('huaweiImport.file')} value={web.file.name} />
+          <Button label={t('huaweiImport.web.apply')} variant="primary" icon="cloud-download" onPress={() => void web.startFile()} disabled={running} />
+        </>
+      ) : null}
+      <AppText variant="label">{t('huaweiImport.web.accountTitle')}</AppText>
+      <AppText variant="caption" muted>
+        {t('huaweiImport.web.accountHint')}
+      </AppText>
+      <WebList list={web.list} running={running} onImport={(item) => void web.startImport(item)} onRefresh={() => void web.refreshList()} />
+      {web.error ? <Notice tone="danger">{web.error}</Notice> : null}
+      {web.note?.kind === 'removed' ? <Notice icon="information-circle">{t('huaweiImport.web.removed')}</Notice> : null}
+      {web.note?.kind === 'kept' ? <Notice tone="danger">{t('huaweiImport.web.removeFailed', { message: web.note.message })}</Notice> : null}
+      {running && working ? (
+        working.downloading ? (
+          <AppText variant="caption" muted>
+            {t('huaweiImport.web.downloading')}
+          </AppText>
+        ) : (
+          <>
+            <ProgressBar fraction={progress?.fraction ?? 0} />
+            <AppText variant="caption" muted>
+              {progress?.phase === 'writing'
+                ? t('huaweiImport.web.writing', { percent: Math.round(progress.fraction * 100) })
+                : t('huaweiImport.web.checking', { percent: Math.round((progress?.fraction ?? 0) * 100) })}
+            </AppText>
+            {progress?.phase === 'writing' ? <Counts summary={progress.summary} /> : null}
+            <Button label={t('common:actions.cancel')} variant="secondary" icon="close" onPress={onCancel} />
+          </>
+        )
+      ) : null}
+      <Notice icon="information-circle">{t('huaweiImport.keepOpen')}</Notice>
+    </Section>
+  );
+}
+
+function WebList({ list, running, onImport, onRefresh }: { list: WebImport['list']; running: boolean; onImport: (item: CloudImport) => void; onRefresh: () => void }) {
+  const { t } = useTranslation(['settings', 'common']);
+  if (list.status === 'signedOut') {
+    return (
+      <AppText variant="caption" muted>
+        {t('huaweiImport.web.signedOut')}
+      </AppText>
+    );
+  }
+  if (list.status === 'loading') {
+    return (
+      <AppText variant="caption" muted>
+        {t('huaweiImport.web.loading')}
+      </AppText>
+    );
+  }
+  if (list.status === 'error') {
+    return (
+      <>
+        <Notice tone="danger">{t('huaweiImport.web.listError', { message: list.message })}</Notice>
+        <Button label={t('huaweiImport.web.refresh')} variant="secondary" icon="refresh" onPress={onRefresh} />
+      </>
+    );
+  }
+  if (list.items.length === 0) {
+    return (
+      <>
+        <AppText variant="caption" muted>
+          {t('huaweiImport.web.empty')}
+        </AppText>
+        <Button label={t('huaweiImport.web.refresh')} variant="secondary" icon="refresh" onPress={onRefresh} disabled={running} />
+      </>
+    );
+  }
+  return (
+    <View style={styles.steps}>
+      {list.items.map((item) => (
+        <View key={item.id} style={styles.steps}>
+          <KeyValue
+            icon="document"
+            label={item.filename ?? t('huaweiImport.web.unnamed')}
+            value={[item.size === null ? null : t('common:units.mb', { value: fmtDecimal(item.size / 1_000_000, 1) }), formatDate(item.createdAt / 1000)].filter(Boolean).join(' · ')}
+          />
+          <Button label={t('huaweiImport.web.download')} variant="secondary" icon="cloud-download" onPress={() => onImport(item)} disabled={running} />
+        </View>
+      ))}
+    </View>
   );
 }
 

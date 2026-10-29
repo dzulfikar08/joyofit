@@ -264,6 +264,27 @@ JoyoFit after switching. It reads Huawei's own **Privacy Centre export**, on the
    only), tap **Import**. **Keep JoyoFit open until it finishes** (minutes for a large export; the screen is held on during the
    import and the screen says so). The ZIP is opened in place, never copied, and every file is streamed.
 
+**From the web (for big exports).** A large export is slow to read on a phone, so the same screen has a second path, **Import file from the web**:
+the JoyoFit web app (`app.fit.joyorogo.com` → *Unggah* → *Huawei Health*) decrypts and reads the ZIP in the browser and makes a small *import file*
+(gzip NDJSON, `joyofit-import-<YYYYMMDD-HHmm>.ndjson.gz`; format, order and server routes in [huawei-web-import.md](huawei-web-import.md)). The
+phone applies it with JS only (`src/features/huaweiimport/importFile*.ts`, so fixes ship over the air) using the SQL of `SqliteHuaweiImportStore`
+(`importStoreSql.ts`), so the same rules hold (watch data wins, `imported = 1`, a second run adds nothing). Two ways in:
+
+- **A file**: **Choose an import file** (any type: providers often lose the `.gz` type), then **Import this file**.
+- **The account** (signed in to JoyoRogo; the upload itself is a Pro benefit, listing, download and delete are not): the screen lists the
+  account's `uploaded` imports of type `application/x-joyofit-import+gzip` (`GET /v1/imports`), **Download and import** fetches one
+  (`GET /v1/imports/:id/file` into the cache), applies it and deletes it from the server (`DELETE /v1/imports/:id`). A refused, failed or
+  cancelled apply leaves it on the server for another try.
+
+The file is checked before anything is written (header format and version, the gzip stream and its size, every line, the last line is `end`):
+a wrong or cut-off file is refused with a message and writes nothing. Then the batches go in file order, one transaction each, with progress
+by compressed bytes read and a Cancel between batches. The result is the same summary screen as the native import (the file's reading
+counts plus what writing did), the profile is filled the same way and the weigh-ins, meals and water go to JoyoRogo the same way. The
+screen is the same on iOS (no brand names there: the iOS overlay words the page hint).
+
+Under `bun test` the applier takes a path: `applyImportFileAtPath(openImportDb().db, '/tmp/file.ndjson.gz')` from `src/features/huaweiimport/testDb.ts`
+returns the summary and `openImportDb().all(sql)` reads the rows back (`importFile.test.ts` ports `HuaweiImportStoreSqlTest`).
+
 The ZIP is AES-256 encrypted with that password (WinZip AES, all members); `HuaweiExportZip.kt` reads it with zip4j.
 Inside, as the Privacy Centre writes them (checked on a real export, 181 files, Nov 2020 to Oct 2026; folder names are matched
 case-insensitively, the typo `SportsHealth data & desciption` is Huawei's):
@@ -381,6 +402,19 @@ not `attribute` / `sportType`), with no distance, calories, route or heart rate.
 current version fills those workouts in (`workoutsUpdated`) and the per-minute calories of the minutes the first import stored
 with 0. `HuaweiRealExportHarnessTest` (set `HUAWEI_EXPORT_DIR` to an extracted export) runs the importer over a real export on
 the shipped schema, twice; it is skipped without that variable and nothing of an export is in the repository.
+
+A motion-path record that is not valid JSON is read off its raw text (`HuaweiMotionPathParser.fromBrokenText`). Until the end of
+Oct 2026 that fallback knew only the community layout: on a real-layout record it missed `subType` and the escaped `summaryData`, so
+the workout came in as "Workout (Huawei type unknown)" with its track but no distance or calories (a 150 MB export showed whole
+months of them). It reads both now. Importing the same file again names those workouts and fills their totals
+(`workoutsUpdated`): an imported row still named "Workout (Huawei type unknown)" is rewritten when the new read finds a sport id;
+its track is kept, not inserted twice.
+
+**Large exports.** The importer holds only a flush batch of rows, plus one bit per minute since 2000 for each of heart rate,
+resting heart rate and SpO2 (`MinuteSet`, to count distinct readings over the whole run). Until the end of Oct 2026 those
+counters were `HashSet<Long>`, about 50 bytes a minute: on the JVM, six years of synthetic per-minute heart rate (614 MB of JSON)
+ran a 256 MB heap, the order of an Android app's limit, out of memory. It now finishes in 128 MB, in about 2.5 minutes on a
+desktop; most of that time is `org.json` building each day's record.
 
 ## Workout analysis (Workouts → a workout)
 
