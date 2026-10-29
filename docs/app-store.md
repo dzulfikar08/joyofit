@@ -82,7 +82,7 @@ Open source (AGPL-3.0): https://github.com/dzulfikar08/joyofit
 ```
 JoyoFit is an independent, open-source app that syncs a compatible smartwatch with the iPhone over Bluetooth (compatible models: https://fit.joyorogo.com/jam). It is not made, endorsed or sponsored by any watch maker.
 
-DEMO VIDEO (physical iPhone, build 1.1 (BUILD), with a compatible watch filmed by a second camera during pairing): https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-BUILD.mp4 . It shows pairing and the confirmation on the watch, the first sync, the Location and Apple Health permission requests, the synced data, and the BACKGROUND AUDIO part: a workout recorded on the phone with the metronome set to Sound, then the Home Screen and the locked screen while the click goes on.
+DEMO VIDEO (physical iPhone, build 1.1 202610281818): https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-202610281818.mp4 . 0:00: the In-App Purchase screen (both plans, Restore, terms, Terms of Use, Privacy Policy) and Pro active after a Sandbox purchase. From 1:39, BACKGROUND AUDIO: a run with the metronome on Sound, then the Home Screen (1:54) and Spotify (2:12) while the click goes on. iOS stops Screen Recording when the phone locks.
 
 NO DEMO ACCOUNT NEEDED. Watch sync and every screen in the video work without an account. Signing in with a JoyoRogo account (Sign in with Apple works) only adds the optional cloud backup, Strava upload and the JoyoRogo Pro features (Coach and Joyo AI, cloud backup, family sharing beyond the free tier, AI connectors).
 
@@ -99,13 +99,8 @@ PERMISSIONS and why:
 - Background modes: bluetooth-central (reconnect and sync the remembered watch; keep a paired strap during a phone workout), location (only while a phone workout with GPS runs, blue indicator shown), audio (the cadence metronome of a workout recorded on the phone: with the metronome on Sound or Both, the click goes on with the screen locked or another app in front, mixed with the user's music; never records audio; shown in the BACKGROUND AUDIO part of the demo video. Path: Workouts, Record workout, Run, Continue on the location screen, Start, then Metronome on and Sound).
 - Encryption: the Bluetooth link to the watch uses AES and HMAC; ITSAppUsesNonExemptEncryption is false.
 
-DATA FROM THE WATCH: over Bluetooth Low Energy the watch sends steps, distance, calories, heart rate (continuous and resting), SpO2, sleep with stages, stress, workouts with GPS routes and per-second heart rate, and battery level. The app stores it on the phone and shows it on the Today, Workouts and sleep screens (daily totals, charts, readiness and strain scores computed on the phone). If the user turns it on, it writes the same data to Apple Health. The app sends the watch settings, alarms, weather, goals and the user's profile (height, weight, age) so the watch can compute calories. No health data leaves the phone unless the user opts into the cloud backup or Strava upload.
-
 FAMILY SHARING (optional, off until used): a user can share a few daily numbers from their own watch (steps, resting heart rate, sleep, optional SpO2, watch battery) with a family member they invite. A consent screen has a switch per category; sharing can be paused or stopped at any time, and stopping deletes the shared history. It is not real-time and not an emergency or medical tool.
 
-The app follows the phone's language (English or Indonesian).
-
-Contact: Dzulfikar Ats Tsauri, +6285156160345, dzulfikar@joyorogo.com. Privacy policy: https://fit.joyorogo.com/privasi
 ```
 
 ## App Privacy (published)
@@ -297,7 +292,7 @@ Kept: the metronome (docs/live-run.md, "Metronome") clicks with every step beat 
 | 4 | Open another app (Music or Safari) for about 10 s: the click goes on |
 | 5 | Lock the screen for about 10 s: the click goes on; unlock, back to JoyoFit, Metronome off, finish and discard |
 
-Play the saved file before uploading and check the click is audible in it. Put it in the same video as a new pairing demo on the new build (the 2026-10-26 video shows the old branded screens), as the BACKGROUND AUDIO part, at `https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-<build>.mp4` (R2 bucket `joyofit-maps`, `review/`, a new name, see "Hosting" above).
+Recorded 2026-10-29 (two screen recordings on the owner's iPhone, joined and cut: the failed pairing attempt removed; 2:47, H.264 720p, 7.7 MB): `https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-202610281818.mp4` (R2 bucket `joyofit-maps`, `review/`; answers 200 and 206). The background part starts at 1:39; the clicks are audible on the Home Screen (11 beats in 4 s at 170 bpm). iOS stops Screen Recording when the phone locks.
 
 ### 4. Business model (2.1(b)) and In-App Purchase
 
@@ -312,13 +307,13 @@ Owner decision 2026-10-29: JoyoFit sells JoyoRogo Pro itself with In-App Purchas
 ```
 Hello,
 
-Thank you for the review. Build 1.1 (<build>) addresses the four issues.
+Thank you for the review. Build 1.1 (202610281818) addresses the four issues, and adds In-App Purchase for JoyoRogo Pro.
 
 1. Guideline 4.1(b): we have no relationship with Huawei or Honor and cannot provide an authorization from them. We have therefore removed every reference to these brands from the app and from its metadata. The app now refers to "your watch" and "your watch's own app", it shows watch names without the maker's name, and the list of compatible models is replaced by a link to our website. The description and the review notes no longer mention either brand. The app uses no third-party logo, product image or trade dress; its name, icon and design are our own.
 
 2. Guideline 5.1.1(iv): the buttons shown before a permission request now say "Next" (weather location in Settings, the step counter of a live workout) or "Continue" (workout recording, loop routes). Each of these screens says why the permission is used, and the weather screen offers choosing a city instead. After a refusal the app offers a button to the Settings app instead of asking again.
 
-3. Guideline 2.5.4: the app has a feature that needs persistent background audio, the cadence metronome of a workout recorded on the phone. Set to Sound, it plays a click on every step beat, mixed with the user's music, and runners use it with the phone locked in a pocket or with a music app in front. The screen recording at https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-<build>.mp4 (physical iPhone, build 1.1 <build>, the BACKGROUND AUDIO part) shows the metronome started in a run, then the Home Screen, another app and the locked screen while the click goes on. The same link is in the App Review Information notes. To reach it: Workouts, Record workout, Run, Continue, Start, then Metronome on and Sound.
+3. Guideline 2.5.4: the app has a feature that needs persistent background audio, the cadence metronome of a workout recorded on the phone. Set to Sound, it plays a click on every step beat, mixed with the user's music, and runners use it with the phone in a pocket or with a music app in front. The screen recording at https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-202610281818.mp4 (physical iPhone, build 1.1 202610281818) shows, from 1:39, the metronome started in a run on Sound, then the Home Screen and another app (Spotify) while the click goes on. The same link is in the App Review Information notes. To reach it: Workouts, Record workout, Run, Continue, Start, then Metronome on and Sound.
 
 4. Guideline 2.1(b), our business model:
 
@@ -338,8 +333,8 @@ Dzulfikar Ats Tsauri
 
 ### Owner checklist
 
-1. Done 2026-10-29: JoyoRogo server deployed (PR #28); App Store Connect subscriptions created. Merge this change, run Release iOS (`release-ios.yml`, Mac) with the TestFlight upload, and note the build number (it replaces `<build>` and `BUILD` in the reply and the notes).
-2. App Store Connect, App Information, App Store Server Notifications: Production and Sandbox URL `https://api.joyorogo.com/api/billing/apple/notifications`, Version 2.
-3. On a physical iPhone with that build: sign in, open the Pro screen and take a screenshot of it (the review screenshot of both subscriptions); buy a plan in the Sandbox (TestFlight) and check Pro unlocks Coach; then record the video (pairing demo, then the BACKGROUND AUDIO shots above), check the click is audible in the file, upload it to `review/` in `joyofit-maps`, and check the link answers 200.
-4. App Store Connect: upload the Pro screenshot as the Review Screenshot of both subscriptions (or hand it over to be uploaded through the API); on version 1.1 attach the new build, select both subscriptions under "In-App Purchases and Subscriptions" (the first subscriptions must go with an app version), paste the Description (id, en) and App Review notes sections of this file.
-5. Post the reply above in the Resolution Center, then Update Review and resubmit. Record the dates here.
+1. Done 2026-10-29: JoyoRogo server deployed (PR #28); App Store Connect subscriptions created and READY_TO_SUBMIT (review screenshot uploaded); build 1.1 (202610281818) on TestFlight and attached to version 1.1; descriptions replaced; notification URLs set; Sandbox purchase credited to the owner's account; video uploaded.
+2. Done 2026-10-29: review screenshot (the Pro screen with both plans, taken on the owner's account set to `tier='free'` for a few minutes, then restored) uploaded to both subscriptions; review notes set (trimmed to Apple's 4000-character limit); reply posted on submission `bf3d4eb5` (message 9).
+3. Age rating (Apple's new required question): `socialMedia` yes, `socialMediaAgeRestricted` no, and `userGeneratedContent` corrected to yes (the Social tab: posts, comments, kudos, profiles, with report and block); App Store age rating still computed 4+.
+4. Submitted 2026-10-29 02:52 UTC as a new submission `0c30c20d-7650-44b1-bb85-c6b4dc867a20` (WAITING_FOR_REVIEW): version 1.1 (202610281818), both subscriptions and the group "JoyoRogo Pro" (a first subscription must go with its group and an app version). To do that the version was removed from the rejected `bf3d4eb5` (now COMPLETE), whose thread keeps the reply.
+5. Left: wait for App Review; after approval, set `available:` in `docs/marketing/releases/2026-10-29-pro-iap-ios.md` and JRG-466.
