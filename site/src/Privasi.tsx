@@ -506,7 +506,7 @@ function Indonesian() {
       <Block title="Statistik situs">
         <p>
           Situs fit.joyorogo.com (bukan aplikasinya) memakai RevKlik, layanan statistik web, untuk menghitung
-          pengunjung dan klik pada tombol seperti Gabung tester. RevKlik mencatat halaman yang dibuka, tautan yang
+          pengunjung dan klik pada tombol seperti Pasang di Google Play. RevKlik mencatat halaman yang dibuka, tautan yang
           diklik, seberapa jauh halaman digulir, asal kunjungan, jenis perangkat, browser, bahasa, ukuran layar
           dan zona waktu, serta pengenal acak yang disimpan di browser-mu. Isinya tidak dipakai untuk iklan dan
           tidak dijual. Kamu bisa mematikannya dengan pemblokir pelacak atau dengan menghapus data situs di
@@ -1020,7 +1020,7 @@ function English() {
       <Block title="Site analytics">
         <p>
           The site fit.joyorogo.com (not the app) uses RevKlik, a web analytics service, to count visitors and
-          clicks on buttons such as Join testers. RevKlik records the pages opened, links clicked, how far a
+          clicks on buttons such as Install on Google Play. RevKlik records the pages opened, links clicked, how far a
           page is scrolled, where the visit came from, device type, browser, language, screen size and time
           zone, plus a random identifier stored in your browser. It is not used for advertising and is not
           sold. A tracker blocker, or clearing the site&apos;s data in your browser, turns it off.

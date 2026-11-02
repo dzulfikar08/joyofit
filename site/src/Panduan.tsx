@@ -289,7 +289,7 @@ function Install({ lang }: { lang: Lang }) {
         items={
           id
             ? [
-                "Buka halaman JoyoFit di Google Play dengan akun Google yang kamu pakai di HP, lalu ketuk Install.",
+                "Buka halaman JoyoFit di Google Play, lalu ketuk Install.",
                 "Pasang JoyoFit dari Play Store. Akun tidak wajib: data jam tersimpan di HP. Akun JoyoRogo hanya dibutuhkan untuk cloud, Strava, dan Social.",
               ]
             : [

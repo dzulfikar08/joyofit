@@ -1622,9 +1622,9 @@ const UNBIND_STEP =
   "Lepas jam dari aplikasi bawaannya dulu (Unbind; di jam Huawei lewat Huawei Health), lalu pasangkan di tab Watch. Jam hanya bisa terikat ke satu HP dalam satu waktu, jadi memasangkannya di sini menggantikan pairing yang lama.";
 
 const ANDROID_STEPS = [
-  "Buka JoyoFit di Google Play dengan akun Google yang kamu pakai di HP, lalu ketuk Install.",
+  "Buka JoyoFit di Google Play, lalu ketuk Install.",
   "Buka aplikasinya dan pasangkan jam di tab Watch.",
-  "Data jam tetap tersimpan di HP. Data jam tetap tersimpan di HP; masuk dengan akun JoyoRogo hanya perlu kalau kamu mau cloud.",
+  "Data jam tetap tersimpan di HP; masuk dengan akun JoyoRogo hanya perlu kalau kamu mau cloud.",
   UNBIND_STEP,
 ] as const;
 
