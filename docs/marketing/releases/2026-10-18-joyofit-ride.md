@@ -16,4 +16,4 @@ atur: JRG-294
 
 **Bukti visual:** site/public/shots/ride-hud dan ride-routes, atau rekam layar sesi mode demo.
 
-**Jangan klaim:** Daya adalah perkiraan virtual. Papan peringkat hanya hasil terverifikasi sensor HP, pesepeda lain adalah bot. Jangan menulis Zwift. Perlu JoyoFit di HP untuk sensor, mode demo tanpa HP. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Daya adalah perkiraan virtual. Papan peringkat hanya hasil terverifikasi sensor HP, pesepeda lain adalah bot. Jangan menulis Zwift. Perlu JoyoFit di HP untuk sensor, mode demo tanpa HP. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

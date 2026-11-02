@@ -16,4 +16,4 @@ atur: JRG-356
 
 **Bukti visual:** Screenshot Today dan layar Lainnya setelah update OTA sampai ke HP uji (bilah tab dengan tombol tengah naik, Lainnya dengan status jam di atas).
 
-**Jangan klaim:** Hanya mengubah navigasi, tidak ada fitur latihan baru. Belum ada tekan-lama untuk mulai olahraga terakhir. Jangan tulis 'tersedia di Play Store/App Store'.
+**Jangan klaim:** Hanya mengubah navigasi, tidak ada fitur latihan baru. Belum ada tekan-lama untuk mulai olahraga terakhir. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

@@ -16,4 +16,4 @@ atur: JRG-361
 
 **Bukti visual:** Screenshot Hari ini di Sogan (terang dan gelap), Sakura, Hutan, dan Neon setelah update OTA sampai ke HP uji. `docs/screenshots/themes-preview.png` belum memuat tema baru dan hanya render data tema, bukan screenshot aplikasi.
 
-**Jangan klaim:** Hanya mengubah tampilan. Hiasan hanya di halaman Hari ini dan hanya di empat tema; tidak bergerak. Tema baru dan font Quicksand dan DM Serif Display baru ada setelah update OTA dipublikasikan. Jangan tulis 'tersedia di Play Store/App Store'.
+**Jangan klaim:** Hanya mengubah tampilan. Hiasan hanya di halaman Hari ini dan hanya di empat tema; tidak bergerak. Tema baru dan font Quicksand dan DM Serif Display baru ada setelah update OTA dipublikasikan. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

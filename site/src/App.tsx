@@ -65,8 +65,7 @@ import {
   SELF_HOST_PATH,
   STRAVA_PATH,
   STUDIO_URL,
-  TESTER_GROUP_URL,
-  TESTER_OPTIN_URL,
+  PLAY_STORE_URL,
   TIMBANGAN_PATH,
   TRAKTEER_URL,
   WATCH_REPORTS_URL,
@@ -398,18 +397,17 @@ function Hero() {
         <PlatformButtons location="hero" className="hero-rise mt-8 [--i:1]" />
         <div className="hero-rise mt-4 grid max-w-lg gap-3 text-sm leading-relaxed text-muted-foreground sm:grid-cols-2 [--i:2]">
           <p className={cn(platform === "ios" && "order-1")}>
-            <span className="font-bold text-foreground">Android:</span> tes tertutup Google Play. Gabung grup dulu, lalu
-            ketuk{" "}
+            <span className="font-bold text-foreground">Android:</span> tersedia di{" "}
             <a
-              href={TESTER_OPTIN_URL}
+              href={PLAY_STORE_URL}
               target="_blank"
               rel="noopener"
               className="font-semibold text-foreground underline underline-offset-4"
-              {...goal("tester_optin_click", "hero")}
+              {...goal("play_store_click", "hero")}
             >
-              Become a tester
-            </a>{" "}
-            setelah Google menyetujui akses tesnya. Android 10 ke atas.
+              Google Play
+            </a>
+            . Gratis, Android 10 ke atas.
           </p>
           {IOS_TESTFLIGHT_LIVE && (
             <p className={cn(platform === "ios" && "-order-1")}>
@@ -1624,9 +1622,9 @@ const UNBIND_STEP =
   "Lepas jam dari aplikasi bawaannya dulu (Unbind; di jam Huawei lewat Huawei Health), lalu pasangkan di tab Watch. Jam hanya bisa terikat ke satu HP dalam satu waktu, jadi memasangkannya di sini menggantikan pairing yang lama.";
 
 const ANDROID_STEPS = [
-  "Gabung grup Google joyofit-testers dengan akun Google yang kamu pakai di Play Store. Grup inilah yang memberi akses ke tes tertutup.",
-  "Setelah Google mengaktifkan aksesnya, buka halaman tes di Play dan ketuk Become a tester. Kalau halaman belum bisa dibuka, tunggu sebentar lalu coba lagi.",
-  "Pasang JoyoFit dari Play Store. Data jam tetap tersimpan di HP; masuk dengan akun JoyoRogo hanya perlu kalau kamu mau cloud.",
+  "Buka JoyoFit di Google Play dengan akun Google yang kamu pakai di HP, lalu ketuk Install.",
+  "Buka aplikasinya dan pasangkan jam di tab Watch.",
+  "Data jam tetap tersimpan di HP. Data jam tetap tersimpan di HP; masuk dengan akun JoyoRogo hanya perlu kalau kamu mau cloud.",
   UNBIND_STEP,
 ] as const;
 
@@ -1717,28 +1715,18 @@ function Install() {
       >
         <div className="grid gap-8 md:grid-cols-[1fr_1.1fr] md:items-start">
           <div>
-            <h3 className="text-2xl font-extrabold tracking-tight text-tidur-ink md:text-3xl">JoyoFit di Android (tes tertutup)</h3>
+            <h3 className="text-2xl font-extrabold tracking-tight text-tidur-ink md:text-3xl">JoyoFit di Android</h3>
             <p className="mt-3 max-w-md text-[0.9375rem] leading-relaxed text-tidur-ink/85">
-              JoyoFit lewat Google Play masih tes tertutup. Gratis, butuh Android 10 ke atas, dan kamu bisa membantu
-              menemukan yang rusak sebelum dirilis untuk semua orang.{" "}
+              JoyoFit sudah tersedia di Google Play. Gratis dan butuh Android 10 ke atas.{" "}
               <a className="font-semibold underline underline-offset-4" href={PANDUAN_PATH}>
                 Baca panduan pasang dan pakai
               </a>
               .
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <ButtonLink href={TESTER_GROUP_URL} target="_blank" rel="noopener" {...goal("tester_group_click", "cara")}>
+              <ButtonLink href={PLAY_STORE_URL} target="_blank" rel="noopener" {...goal("play_store_click", "cara")}>
                 <AndroidMark />
-                1. Gabung grup Google
-              </ButtonLink>
-              <ButtonLink
-                variant="outline"
-                href={TESTER_OPTIN_URL}
-                target="_blank"
-                rel="noopener"
-                {...goal("tester_optin_click", "cara")}
-              >
-                2. Become a tester di Play
+                Pasang di Google Play
               </ButtonLink>
             </div>
           </div>
@@ -1810,10 +1798,10 @@ function PlatformButtons({ location, className, buttonClassName }: { location: s
       <ButtonLink
         size="lg"
         className={cn(platform === "ios" && "order-last", buttonClassName)}
-        href={TESTER_GROUP_URL}
+        href={PLAY_STORE_URL}
         target="_blank"
         rel="noopener"
-        {...goal("tester_group_click", location)}
+        {...goal("play_store_click", location)}
       >
         <AndroidMark />
         JoyoFit untuk Android

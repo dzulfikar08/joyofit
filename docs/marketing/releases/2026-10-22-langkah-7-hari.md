@@ -16,4 +16,4 @@ atur: JRG-374
 
 **Bukti visual:** Screenshot kartu Langkah dan layar Langkah tampilan Minggu serta Bulan (data uji).
 
-**Jangan klaim:** Garis target memakai target hari ini untuk semua hari karena riwayat target tidak disimpan. Rata-rata hanya dari hari yang ada langkah tersimpan. Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen. Tidak berafiliasi dengan Huawei. Jangan tulis 'tersedia di Play Store/App Store'.
+**Jangan klaim:** Garis target memakai target hari ini untuk semua hari karena riwayat target tidak disimpan. Rata-rata hanya dari hari yang ada langkah tersimpan. Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen. Tidak berafiliasi dengan Huawei. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

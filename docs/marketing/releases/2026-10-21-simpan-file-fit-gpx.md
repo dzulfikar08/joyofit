@@ -16,4 +16,4 @@ atur: JRG-358
 
 **Bukti visual:** Rekam layar detail latihan, ketuk "Simpan file .fit", pilih folder, lalu halaman upload Strava di browser dengan Situs desktop (data demo).
 
-**Jangan klaim:** Ini upload manual lewat situs Strava, bukan integrasi resmi dan bukan fitur Strava; jangan pakai logo Strava atau Garmin. Hanya jam Watch Fit 4 Pro yang teruji. Android 11 ke atas tidak mengizinkan memilih folder Unduhan itu sendiri, jadi orang membuat atau memilih folder di dalamnya (belum dicoba di perangkat). Belum tersedia untuk pengguna sampai update OTA dipublikasikan. Jangan tulis 'tersedia di Play Store/App Store'.
+**Jangan klaim:** Ini upload manual lewat situs Strava, bukan integrasi resmi dan bukan fitur Strava; jangan pakai logo Strava atau Garmin. Hanya jam Watch Fit 4 Pro yang teruji. Android 11 ke atas tidak mengizinkan memilih folder Unduhan itu sendiri, jadi orang membuat atau memilih folder di dalamnya (belum dicoba di perangkat). Belum tersedia untuk pengguna sampai update OTA dipublikasikan. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

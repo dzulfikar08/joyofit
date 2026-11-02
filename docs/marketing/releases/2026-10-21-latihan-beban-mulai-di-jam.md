@@ -16,4 +16,4 @@ atur: JRG-360
 
 **Bukti visual:** Rekam layar: jam memulai Latihan kekuatan, logger JoyoFit terbuka dengan chip detak jantung jam.
 
-**Jangan klaim:** Jam Huawei tidak bisa dimulai, dijeda, atau dihentikan dari JoyoFit (diuji di Watch Fit 4 Pro, ditolak dengan kode 123002); jangan tulis "mulai dari HP". Watch Fit 4 Pro tidak mengirim jenis olahraga, jadi di jam itu logger dibuka lewat tombol "Catat sebagai latihan beban", bukan otomatis. Tidak menghitung repetisi. Jangan tulis 'tersedia di Play Store/App Store'.
+**Jangan klaim:** Jam Huawei tidak bisa dimulai, dijeda, atau dihentikan dari JoyoFit (diuji di Watch Fit 4 Pro, ditolak dengan kode 123002); jangan tulis "mulai dari HP". Watch Fit 4 Pro tidak mengirim jenis olahraga, jadi di jam itu logger dibuka lewat tombol "Catat sebagai latihan beban", bukan otomatis. Tidak menghitung repetisi. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

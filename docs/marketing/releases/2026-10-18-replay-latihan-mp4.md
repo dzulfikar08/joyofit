@@ -16,4 +16,4 @@ atur: JRG-286
 
 **Bukti visual:** Contoh MP4 hasil ekspor satu lari 5-10 km. Cara ambil: detail latihan, Putar ulang, Ekspor.
 
-**Jangan klaim:** Hanya latihan dengan rute GPS. Rute awal dan akhir dipangkas demi privasi. Perlu peta yang memuat tile saat membuat. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Hanya latihan dengan rute GPS. Rute awal dan akhir dipangkas demi privasi. Perlu peta yang memuat tile saat membuat. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

@@ -11,6 +11,8 @@ Source of truth for the policies cited here:
 - Source code (AGPL-3.0-or-later): <https://github.com/dzulfikar08/joyofit>
 - Privacy policy (live): <https://fit.joyorogo.com/privasi> (Indonesian, English section below it). Data deletion section: <https://fit.joyorogo.com/privasi#hapus>
 
+> **Status (checked in Play Console 2026-11-02):** JoyoFit is **live in production** on Google Play: release 1474865 (1.0), 178 countries/regions, last published 2026-10-31, managed publishing off. The developer account is an **Organization** account, so the 12-tester/14-day rule in section 4 never applied. Closed testing (`alpha`) holds the newer release 1483205. iOS is not on the App Store yet (TestFlight only). Sections 1 and 4 are kept as reference for the original setup.
+
 ## 0. What the Play build is
 
 | | Sideload APK | Play AAB |
@@ -87,7 +89,7 @@ Removed from both builds because no JoyoFit feature uses them (`app.json` `andro
 The rule above is Play's own (link at the top). In Indonesia you also need to complete Android developer verification; since 30 Sep 2026 it is enforced
 for installs from participating stores including Google Play, and your Play Console account covers it.
 
-Recommendation: personal account, run the 14-day test with friends, family and the people who already use the sideload build.
+Outcome: JoyoFit uses an Organization account, so no 14-day test was required. (For a personal account the advice would be: run the 14-day test with friends, family and sideload users.)
 
 ## 2. Create the app
 
@@ -115,6 +117,8 @@ Release notes, Indonesian: `<id-ID>Rilis uji pertama JoyoFit: sinkron langkah, d
 English: `<en-US>First test release of JoyoFit: syncs steps, heart rate, sleep, SpO2 and workouts from a Huawei/Honor watch to your phone.</en-US>`
 
 ## 4. Closed testing with a Google Group (12 testers x 14 days)
+
+Not applicable to JoyoFit: the account is an Organization account and the app is already in production. Kept for personal accounts and for running a closed track.
 
 1. Create a Google Group at <https://groups.google.com> named `joyofit-testers` (address `joyofit-testers@googlegroups.com`). Settings: *Who can join the group*: **Anyone can ask**, or invite only; *Who can view conversations*: **Group members** is fine. Add your 12+ testers as members (they must be real Google accounts; ask for 15 to 20, because the count is of testers who stay opted in).
 2. Play Console, Closed testing track, **Testers** tab, **Create email list** (or *Google Groups*), add `joyofit-testers@googlegroups.com`, save. Set a feedback email or URL there.

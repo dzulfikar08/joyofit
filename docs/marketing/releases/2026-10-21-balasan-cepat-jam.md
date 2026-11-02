@@ -16,4 +16,4 @@ atur:
 
 **Bukti visual:** Layar Balasan cepat dan layar balasan di jam uji setelah build toko.
 
-**Jangan klaim:** Belum diuji di jam mana pun; formatnya dari Gadgetbridge. Butuh build baru dari toko (bagian native), jadi bukan OTA saja. Hanya Android. Jangan sebut jam tertentu didukung sebelum diuji. Jangan tulis 'tersedia di Play Store/App Store'.
+**Jangan klaim:** Belum diuji di jam mana pun; formatnya dari Gadgetbridge. Butuh build baru dari toko (bagian native), jadi bukan OTA saja. Hanya Android. Jangan sebut jam tertentu didukung sebelum diuji. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

@@ -16,4 +16,4 @@ atur: JRG-278
 
 **Bukti visual:** site/public/shots strength-routines dan strength-exercises, atau rekam layar satu sesi dari mulai sampai ringkasan rekor.
 
-**Jangan klaim:** Salinan cloud hanya Pro. Penulisan log lama di JoyoRogo dikunci 2026-11-01, jangan sebut tanggal lain. Gambar gerakan wger berlisensi CC BY-SA, cantumkan kredit. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Salinan cloud hanya Pro. Penulisan log lama di JoyoRogo dikunci 2026-11-01, jangan sebut tanggal lain. Gambar gerakan wger berlisensi CC BY-SA, cantumkan kredit. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

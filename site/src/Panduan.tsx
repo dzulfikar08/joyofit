@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, ChevronDown, Users } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown } from "lucide-react";
 
 import {
   GITHUB_URL,
@@ -7,8 +7,7 @@ import {
   NON_AFFILIATION,
   NON_AFFILIATION_EN,
   STRAVA_PATH,
-  TESTER_GROUP_URL,
-  TESTER_OPTIN_URL,
+  PLAY_STORE_URL,
   WATCH_REPORT_FORM_URL,
   goal,
 } from "./lib";
@@ -280,40 +279,28 @@ function Install({ lang }: { lang: Lang }) {
   const id = lang === "id";
   return (
     <>
-      <Sub>{id ? "A. Lewat Google Play (tes tertutup)" : "A. Through Google Play (closed test)"}</Sub>
+      <Sub>{id ? "A. Lewat Google Play" : "A. Through Google Play"}</Sub>
       <p>
         {id
-          ? "JoyoFit di Google Play masih tes tertutup. Gratis, dan butuh Android 10 ke atas."
-          : "JoyoFit on Google Play is still a closed test. Free, and it needs Android 10 or newer."}
+          ? "JoyoFit sudah tersedia di Google Play. Gratis, dan butuh Android 10 ke atas."
+          : "JoyoFit is available on Google Play. Free, and it needs Android 10 or newer."}
       </p>
       <Steps
         items={
           id
             ? [
-                "Gabung grup Google joyofit-testers dengan akun Google yang sama dengan di Play Store. Hanya anggota grup yang bisa ikut tes.",
-                "Buka halaman tes di Play dan ketuk Become a tester. Kalau halamannya belum terbuka, aksesmu belum aktif: tunggu beberapa menit lalu coba lagi.",
+                "Buka halaman JoyoFit di Google Play dengan akun Google yang kamu pakai di HP, lalu ketuk Install.",
                 "Pasang JoyoFit dari Play Store. Akun tidak wajib: data jam tersimpan di HP. Akun JoyoRogo hanya dibutuhkan untuk cloud, Strava, dan Social.",
               ]
             : [
-                "Join the joyofit-testers Google group with the same Google account you use on the Play Store. Only group members can join the test.",
-                "Open the test page on Play and tap Become a tester. If the page does not open yet, your access is not active: wait a few minutes and try again.",
+                "Open the JoyoFit page on Google Play with the Google account you use on your phone, then tap Install.",
                 "Install JoyoFit from the Play Store. No account needed: watch data stays on the phone. A JoyoRogo account is only for the cloud, Strava and Social.",
               ]
         }
       />
       <div className="flex flex-wrap gap-3 pt-1">
-        <ButtonLink href={TESTER_GROUP_URL} target="_blank" rel="noopener" {...goal("tester_group_click", "panduan")}>
-          <Users aria-hidden />
-          {id ? "1. Gabung grup Google" : "1. Join the Google group"}
-        </ButtonLink>
-        <ButtonLink
-          variant="outline"
-          href={TESTER_OPTIN_URL}
-          target="_blank"
-          rel="noopener"
-          {...goal("tester_optin_click", "panduan")}
-        >
-          {id ? "2. Become a tester di Play" : "2. Become a tester on Play"}
+        <ButtonLink href={PLAY_STORE_URL} target="_blank" rel="noopener" {...goal("play_store_click", "panduan")}>
+          {id ? "Pasang di Google Play" : "Install on Google Play"}
         </ButtonLink>
       </div>
 
@@ -321,14 +308,14 @@ function Install({ lang }: { lang: Lang }) {
       <p>
         {id ? (
           <>
-            JoyoFit dipasang lewat tes tertutup Google Play di Android dan lewat TestFlight di iPhone (versi App Store belum rilis); tidak ada unduhan APK di situs ini. Kalau mau membangun
+            JoyoFit dipasang lewat Google Play di Android dan lewat TestFlight di iPhone (versi App Store belum rilis); tidak ada unduhan APK di situs ini. Kalau mau membangun
             sendiri, kode dan caranya ada di <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>{" "}
             (bagian Build di README). Build sendiri punya dua fitur yang tidak ada di versi Play Store dan TestFlight: nama penelepon dari log
             panggilan dan SMS SOS.
           </>
         ) : (
           <>
-            JoyoFit installs through the Google Play closed test on Android and through TestFlight on iPhone (the App Store version is not out yet); this site has no APK download. To build it yourself, the code and
+            JoyoFit installs through Google Play on Android and through TestFlight on iPhone (the App Store version is not out yet); this site has no APK download. To build it yourself, the code and
             instructions are on <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>{" "}
             (Build section of the README). A self-build has two features the store versions lack: caller names from the call
             log and SOS texts.

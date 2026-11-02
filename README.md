@@ -180,7 +180,7 @@ Pull requests are welcome, especially watch reports and translations.
 
 JoyoFit is free and open source. If it is useful, you can support it on [Trakteer](https://trakteer.id/dzulfikar_ats_tsauri). Support helps development and buying or borrowing watches to test; it does not buy features or priority.
 
-Android closed test: join the [Google Group](https://groups.google.com/g/joyofit-testers), then open the [test page](https://play.google.com/apps/testing/com.joyodigitama.joyofit) and tap **Become a tester** once Google enables access. iPhone: public TestFlight beta, linked from the website.
+Android: install from [Google Play](https://play.google.com/store/apps/details?id=com.joyodigitama.joyofit) (production). The newer build is in closed testing: join the [Google Group](https://groups.google.com/g/joyofit-testers) to get it. iPhone: public TestFlight beta, linked from the website.
 
 ## Licence
 

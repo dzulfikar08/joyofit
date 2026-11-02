@@ -16,4 +16,4 @@ atur: todo
 
 **Bukti visual:** Screenshot Hari ini, Tidur dan daftar tema di Titik (terang dan gelap) setelah update OTA sampai ke HP uji. `docs/screenshots/titik-preview.png` adalah render HTML dari data tema, bukan screenshot aplikasi.
 
-**Jangan klaim:** Hanya mengubah tampilan. Jangan sebut merek ponsel lain atau tulis bahwa ini tiruan tampilan merek tertentu; jangan pakai nama atau logo merek lain. Grafik batang dan beberapa kartu (riwayat latihan kekuatan, kartu progres) tetap tanpa garis tepi atau tetap garis tipis penuh. Font Doto dan tema baru ada setelah update OTA dipublikasikan. Jangan tulis 'tersedia di Play Store/App Store'.
+**Jangan klaim:** Hanya mengubah tampilan. Jangan sebut merek ponsel lain atau tulis bahwa ini tiruan tampilan merek tertentu; jangan pakai nama atau logo merek lain. Grafik batang dan beberapa kartu (riwayat latihan kekuatan, kartu progres) tetap tanpa garis tepi atau tetap garis tipis penuh. Font Doto dan tema baru ada setelah update OTA dipublikasikan. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

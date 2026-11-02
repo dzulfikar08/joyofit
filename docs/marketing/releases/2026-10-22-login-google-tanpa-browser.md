@@ -15,4 +15,4 @@ post: todo
 
 **Bukti visual:** Rekaman layar: ketuk Google di "Masuk dengan JoyoRogo", pemilih akun muncul, status berubah jadi tersambung. Jangan tampilkan akun asli.
 
-**Jangan klaim:** Hanya Android dan hanya setelah pembaruan lewat toko aplikasi (bukan OTA); iPhone tetap lewat Apple. Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen. Tidak berafiliasi dengan Huawei. Jangan tulis 'tersedia di Play Store/App Store'.
+**Jangan klaim:** Hanya Android dan hanya setelah pembaruan lewat toko aplikasi (bukan OTA); iPhone tetap lewat Apple. Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen. Tidak berafiliasi dengan Huawei. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

@@ -16,4 +16,4 @@ atur: JRG-282
 
 **Bukti visual:** site/public/shots/studio-face dan rekam layar editor di app.fit.joyorogo.com/studio.
 
-**Jangan klaim:** Studio untuk Watch Fit 4 dan Fit 4 Pro (408x480). Proyek cloud hanya Pro. Wajah tanpa tanda tangan dihapus firmware 6.x. Sebut kontributor David4rr bila memuji PR #3. Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen, jangan sebut semua jam Huawei didukung. Tidak berafiliasi dengan Huawei atau Honor. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Studio untuk Watch Fit 4 dan Fit 4 Pro (408x480). Proyek cloud hanya Pro. Wajah tanpa tanda tangan dihapus firmware 6.x. Sebut kontributor David4rr bila memuji PR #3. Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen, jangan sebut semua jam Huawei didukung. Tidak berafiliasi dengan Huawei atau Honor. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

@@ -16,4 +16,4 @@ atur: JRG-281
 
 **Bukti visual:** Screenshot daftar Gear dengan pengingat pensiun.
 
-**Jangan klaim:** Salinan cloud hanya Pro. Tautan ke Strava butuh persetujuan ulang izin. Pengingat pensiun adalah patokan umum, bukan rekomendasi medis. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Salinan cloud hanya Pro. Tautan ke Strava butuh persetujuan ulang izin. Pengingat pensiun adalah patokan umum, bukan rekomendasi medis. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

@@ -16,4 +16,4 @@ atur: JRG-373
 
 **Bukti visual:** Screenshot kartu di tengah minggu (beberapa pil bercentang, chip sisa menit) dan keadaan tanpa detak jantung, dari data uji.
 
-**Jangan klaim:** 150 menit adalah pedoman populasi (WHO 2020, ACSM 2018), bukan target pribadi; kartu menyebutnya begitu. Menit dihitung dari zona HR yang kamu atur di JoyoFit, bukan angka dari jam. Bukan saran medis. Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen. Tidak berafiliasi dengan Huawei. Jangan tulis 'tersedia di Play Store/App Store'.
+**Jangan klaim:** 150 menit adalah pedoman populasi (WHO 2020, ACSM 2018), bukan target pribadi; kartu menyebutnya begitu. Menit dihitung dari zona HR yang kamu atur di JoyoFit, bukan angka dari jam. Bukan saran medis. Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen. Tidak berafiliasi dengan Huawei. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

@@ -16,4 +16,4 @@ atur: JRG-359
 
 **Bukti visual:** Layar izin Health Connect dengan "rute latihan", lalu sebuah latihan berGPS di aplikasi lain yang membaca Health Connect (hanya aplikasi yang boleh membaca rute dari aplikasi lain).
 
-**Jangan klaim:** Hanya Android dengan build toko berikutnya (perubahan native, bukan OTA). Belum dicoba di perangkat. Rute lama dipangkas ke sekitar 2000 titik. Tidak ada rute ke Apple Health (menyusul). Hanya Watch Fit 4 Pro yang teruji. Jangan tulis 'tersedia di Play Store/App Store'.
+**Jangan klaim:** Hanya Android dengan build toko berikutnya (perubahan native, bukan OTA). Belum dicoba di perangkat. Rute lama dipangkas ke sekitar 2000 titik. Tidak ada rute ke Apple Health (menyusul). Hanya Watch Fit 4 Pro yang teruji. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

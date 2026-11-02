@@ -16,4 +16,4 @@ atur: JRG-406
 
 **Bukti visual:** Rekam layar: Band 11 menekan GO, layar Live JoyoFit menampilkan Lari dengan peta dan 6 kotak data.
 
-**Jangan klaim:** Metronom berupa getar, belum bunyi. Mulai lari dari HP supaya band ikut mulai belum teruji di band mana pun (Watch Fit 4 Pro menolaknya); jangan tulis "mulai dari HP, jam ikut jalan". Jarak/pace dari GPS HP, perbaikan timer, dan detak jantung band di latar belakang butuh versi aplikasi berikutnya dari toko. Jangan tulis 'tersedia di Play Store/App Store'.
+**Jangan klaim:** Metronom berupa getar, belum bunyi. Mulai lari dari HP supaya band ikut mulai belum teruji di band mana pun (Watch Fit 4 Pro menolaknya); jangan tulis "mulai dari HP, jam ikut jalan". Jarak/pace dari GPS HP, perbaikan timer, dan detak jantung band di latar belakang butuh versi aplikasi berikutnya dari toko. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

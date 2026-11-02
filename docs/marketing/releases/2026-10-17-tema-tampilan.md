@@ -16,4 +16,4 @@ atur: JRG-299
 
 **Bukti visual:** Tiga screenshot Today di tiga tema.
 
-**Jangan klaim:** Hanya mengubah tampilan. Situs memakai warna Classic. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Hanya mengubah tampilan. Situs memakai warna Classic. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

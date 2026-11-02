@@ -16,4 +16,4 @@ atur: JRG-291
 
 **Bukti visual:** Rekam layar menimbang, angka muncul di JoyoFit lalu di Berat JoyoRogo. Butuh timbangan yang didukung.
 
-**Jangan klaim:** Hanya build Android tes (belum di TestFlight). Tidak semua timbangan murah terhubung. Komposisi tubuh dari timbangan, bukan klinis, tanpa diagnosa lemak. Timbangan HAN RIVER HRTZC01 sudah dicoba lewat protokol Tuya khusus (lihat 2026-10-20-timbangan-tuya-berat-saja.md), berat saja dan perlu local key. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Hanya build Android tes (belum di TestFlight). Tidak semua timbangan murah terhubung. Komposisi tubuh dari timbangan, bukan klinis, tanpa diagnosa lemak. Timbangan HAN RIVER HRTZC01 sudah dicoba lewat protokol Tuya khusus (lihat 2026-10-20-timbangan-tuya-berat-saja.md), berat saja dan perlu local key. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.
