@@ -60,6 +60,17 @@ function fixtureHref(uri: string): string {
   return `data:image/jpeg;base64,${readFileSync(join(import.meta.dir, 'assets', `${match[1]}.jpg`)).toString('base64')}`;
 }
 
+/**
+ * A transparent overlay laid over a fixture photo: the SVG with the picture drawn first, cropped to fill the canvas like the
+ * photo backgrounds. For the contact sheets, which show how an overlay reads on a dusk and a bright day photo; the PNGs the app
+ * exports stay transparent.
+ */
+export function overOnPhoto(svg: string, photo: string): string {
+  const [, width, height] = /^<svg [^>]*width="(\d+)" height="(\d+)"/.exec(svg) ?? [];
+  const image = `<image x="0" y="0" width="${width}" height="${height}" href="${fixtureHref(`fixture:photo-${photo}`)}" preserveAspectRatio="xMidYMid slice"/>`;
+  return svg.replace(/^(<svg [^>]*>)/, `$1${image}`);
+}
+
 /** Renders a parsed template to a Scene and an SVG string. */
 export function renderTemplate(template: Template, data: JsonObject, c: RenderCase): Rendered {
   const scene = sceneFor(template, data, { ...c, date: c.date ?? fixtureDate(data), fonts: GOLDEN_FONTS });

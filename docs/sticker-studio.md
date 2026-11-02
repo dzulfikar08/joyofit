@@ -398,7 +398,7 @@ catalog.ts       TEMPLATES: every built-in parsed once; offer.ts picks and group
 ui/              ScenePainter (react-native-svg), StickerSheet, share buttons per screen
 share/           capture, copy, save, Instagram Stories, Photos permission flow
 studio/          localStore.ts: user templates in the app kv-store (no UI)
-testing/         fixtures, render (Scene -> SVG -> PNG via sharp), golden test, __goldens__/
+testing/         fixtures, render (Scene -> SVG -> PNG via sharp), golden tests, __goldens__/
 ```
 
 ### Binding namespaces (JoyoFit)
@@ -461,14 +461,14 @@ every family before, `run.bold` first) and `audit-after.png` (the family's openi
   === 'pro'`, the same gate as Coach); free accounts always carry it.
 - Photos: `photoSize.ts` + `photo.ts` downscale the pick to 2048 px (JPEG 0.9) before it is drawn.
 
-### Catalog (119 templates, 17 kinds)
+### Catalog (129 templates, 17 kinds)
 
 Ids are `<kind>.<name>.<canvas>`; a style with both `story` and `square` is one picker entry. Transparent stickers are `free`
 canvases.
 
 | kind | templates |
 |---|---|
-| `run` (20) | `bold`, `poster`, `minimal`, `photo`, `glass`, `classic` (story + square each); `route.sticker`, `stats.sticker`, `receipt.sticker` (transparent); `map.story`; `splits` and `zones` (story + square) |
+| `run` (30) | `bold`, `poster`, `minimal`, `photo`, `glass`, `classic` (story + square each); `tape`, `column`, `track`, `lanes`, `swoosh` (transparent overlays, story + square each, `templates/run-overlay.ts`); `route.sticker`, `stats.sticker`, `receipt.sticker` (transparent); `map.story`; `splits` and `zones` (story + square) |
 | `strength` (12) | `bold`, `poster`, `minimal`, `muscle`, `photo` (story + square each); `receipt.sticker`, `stats.sticker` (transparent) |
 | `walk`, `ride`, `swim`, `gym`, `cardio`, `flow`, `court` (6 each) | `bold` and `minimal` (story + square), `poster.story`, `stats.sticker` (transparent); `templates/sport.ts`, one spec per family |
 | `sleep` (6) | `ring` and `stages` (story + square), `poster.story`, `stats.sticker` |
@@ -483,6 +483,22 @@ canvases.
 Styles: bold (volt on black, volt card by day), poster (paper, oversized type), minimal (ink, hairlines), photo and glass (the
 person's own photo, needs one; `run.classic` is the pre-engine share card, `templates/run-classic.ts`), receipt (thermal paper, IBM Plex Mono, transparent), map (route focus, `map` background with
 a drawn fallback until a map image is supplied), ring (progress rings), badge (medal).
+
+The run overlays (`run.tape`, `run.column`, `run.track`, `run.lanes`, `run.swoosh`, `templates/run-overlay.ts`) are transparent
+Story and Square canvases meant to be laid over the person's own picture (Instagram's sticker layer, or any photo editor); each
+draws only type and a few shapes, with one `$accent` (the sticker accent, the amber of the app's Classic hero; the light palette
+swaps in the darker amber) and everything else `$fg`. They read the `run.*` namespace through the sport family like every `run` card
+(km, metres for a swim, a pace per km, a pace per 100 m or a speed), and with no distance the duration is the hero and calories and
+average heart rate take the secondary slots, so a gym session or a yoga class still draws a full card. `tape` is the duration across
+the top, an optional route line and two tilted accent tapes (pace or speed, distance; labels and units in capitals); `column` stacks
+label-over-value down the right edge (distance, duration, pace or speed, heart rate, cadence in spm, or rpm on a bike; calories
+when there is no distance) with a short accent rail on each number, the route small bottom left and the wordmark standing up the left
+edge; `track` is five lanes of an athletics oval around the hero with duration and pace at the corners, the innermost lane and the
+finish line in the accent; `lanes` is lane lines turning a bend from the right edge under a big number top left; `swoosh` is a thick
+accent ribbon behind the number (ink on accent) with the route outline. The engine has no user-chosen accent (`StickerOptions` is
+shared with JoyoRogo and has none), so the accent is fixed per palette; a picker would need a host-side theme override in
+`sceneFor` or a core option. Run goldens: `testing/__goldens__/run.<name>.<canvas>__<mode>.png` (the run), and
+`testing/__goldens__/overlays/` (ride, swim, hike, gym and stretch, dark, both canvases; `testing/overlayGolden.test.ts`).
 
 `run.classic` follows the family rules of every `run` card (km, metres for a swim); the grid keeps the old card's order: time, the family's pace or speed, heart rate, calories, climb, and a number the workout lacks is left out.
 Its type is 0.85 of the old nominal sizes, measured from a screenshot of the old card, and its date follows the app locale
@@ -506,7 +522,7 @@ Its type is 0.85 of the old nominal sizes, measured from a screenshot of the old
   system fonts. Deviation from section 11: JoyoFit uses sharp/librsvg instead of headless Chromium, and has no `emit-canvas`
   agreement check (no web target).
 - Threads goldens are per fixture slide (`testing/threadsGolden.test.ts`, `__goldens__/threads/`), not per template; the generic golden test skips kind `threads`.
-- Contact sheets: `TMPDIR=... bun scripts/stickers-sheet.ts [--mode dark|light|both] [--locale id|en] [--only <id-prefix>] [--out DIR]`
+- Contact sheets: `TMPDIR=... bun scripts/stickers-sheet.ts [--mode dark|light|both] [--locale id|en] [--only <id-prefix>[,<id-prefix>...]] [--fixtures key,key,...] [--on dusk|day] [--out DIR]`
   writes every render plus `contact-sheet-{dark,light}.png` and a sheet per kind (photo templates on a dusk and a bright day
   photo). Default out dir `/run/media/dzul/ioswork/stickers/fit`. The sport family sheets (`--only <family>.`, dark and light, id)
   are kept in `docs/screenshots/share-per-sport/`.

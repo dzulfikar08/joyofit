@@ -6,6 +6,7 @@ import { READY_TEMPLATES } from './ready';
 import { RUN_TEMPLATES } from './run';
 import { RUN_CLASSIC_TEMPLATES } from './run-classic';
 import { RUN_EXTRA_TEMPLATES } from './run-extra';
+import { RUN_OVERLAY_TEMPLATES } from './run-overlay';
 import { SLEEP_TEMPLATES } from './sleep';
 import { SPORT_TEMPLATES } from './sport';
 import { STRENGTH_TEMPLATES } from './strength';
@@ -18,6 +19,7 @@ export const TEMPLATE_INPUTS: TemplateInput[] = [
   ...RUN_TEMPLATES,
   ...RUN_CLASSIC_TEMPLATES,
   ...RUN_EXTRA_TEMPLATES,
+  ...RUN_OVERLAY_TEMPLATES,
   ...SPORT_TEMPLATES,
   ...STRENGTH_TEMPLATES,
   ...SLEEP_TEMPLATES,

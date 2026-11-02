@@ -40,6 +40,25 @@ describe('run.classic', () => {
     }
   });
 
+  test('the labels follow the card language: Indonesian words on an Indonesian card, English on an English one', async () => {
+    const RUN: JsonObject = { sport: 'Lari', kind: 'run', category: 'run', startedAt: STARTED, movingSec: 1992, distanceM: 5240, paceSecKm: 380, hrAvg: 154, kcal: 402, elevGainM: 38 };
+    try {
+      for (const canvas of ['story', 'square'] as const) {
+        // The card language is the one passed to the render, not the language the app is in at that moment.
+        await applyLocale('en');
+        const id = texts(RUN, canvas, 'id');
+        for (const word of ['Jarak', 'Waktu', 'Pace rata-rata', 'Detak rata-rata', 'Kalori', 'Elevasi']) expect(id).toContain(word);
+        for (const word of ['Distance', 'Time', 'Avg pace', 'Avg HR', 'Calories', 'Elevation']) expect(id).not.toContain(word);
+        await applyLocale('id');
+        const en = texts(RUN, canvas, 'en');
+        for (const word of ['Distance', 'Time', 'Avg pace', 'Avg HR', 'Calories', 'Elevation']) expect(en).toContain(word);
+        for (const word of ['Jarak', 'Waktu', 'Pace rata-rata', 'Detak rata-rata', 'Kalori', 'Elevasi']) expect(en).not.toContain(word);
+      }
+    } finally {
+      await applyLocale('id');
+    }
+  });
+
   test('pace follows the sport family: per km for a run, per 100 m for a swim, km/h for a ride', async () => {
     await applyLocale('en');
     try {
