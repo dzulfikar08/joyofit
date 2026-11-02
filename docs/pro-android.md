@@ -124,26 +124,19 @@ iOS, and a sideloaded APK read `billing.supported === false`; the paywall then s
 
 `/api/config` `googlePlayBilling` (JoyoRogo) stays the switch that says Play billing is on; the JoyoFit paywall follows it.
 
-### Play Console steps for the owner
+### Play Console setup (done 2026-11-02, in Play Console by hand)
 
 The service account `joyorogo-play-billing@joyorogo.iam.gserviceaccount.com` (key `~/.config/joyorogo/play-billing-sa.json`) can read subscriptions and open edits
-for `com.joyodigitama.joyofit`, but `monetization.subscriptions.create` answered `403 The caller does not have permission` for both products (and a no-op
-`PATCH` on JoyoRogo's own `pro` is refused too), so it has no monetization write right. Either grant it that right in Play Console (Users and permissions, the
-service account, app permissions for JoyoFit: the subscription-management permissions [INFERENCE on the exact wording]) and re-run the creation, or do this by hand:
+for `com.joyodigitama.joyofit`, but `monetization.subscriptions.create` answers `403 The caller does not have permission`, and an edit commit to the production
+track or the store listing answers 403 too: it uploads bundles and reads tracks, nothing more. Changes to products, production and the listing go through Play Console.
 
-1. Play Console, JoyoFit, **Monetize with Play, Products, Subscriptions, Create subscription**. A merchant account and a published build that includes the Billing
-   Library are needed first (the same conditions as JoyoRogo's `docs/play-billing.md` 1.1 and 1.2): publish the new AAB to the closed/internal track once, then the
-   Products page unlocks [INFERENCE: it is the same gate JoyoRogo's runbook describes].
-2. Product id `com.joyodigitama.joyofit.pro.monthly`, name `JoyoRogo Pro`, benefits as JoyoRogo's `pro` (100 scan AI per hari, ...). Base plan `monthly`: auto-renewing,
-   billing period monthly, grace 7 days, account hold default, **Rp29.000**, then set the other regions to JoyoRogo's prices (table above, rest from JoyoRogo's `pro`). Activate it.
-3. Product id `com.joyodigitama.joyofit.pro.yearly`, same name. Base plan `yearly`: yearly, grace 14 days, **Rp199.000**, other regions from JoyoRogo's yearly plan. Activate it.
-4. No promotional offers yet (the paywall ignores offers with extra pricing phases).
-5. **Real-time developer notifications** for the JoyoFit app: Monetize with Play, Monetization setup, topic `projects/<project-id>/topics/play-rtdn` (the topic JoyoRogo
-   uses), subscriptions and voided purchases, then Send test message (JoyoRogo answers 204).
-6. **Users and permissions**: the service account must see the JoyoFit app with the same three permissions as for JoyoRogo (view app information, view financial data, manage
-   orders and subscriptions) so `purchases.subscriptionsv2.get` and the acknowledge work under this package. [INFERENCE: if the permission is account-level this is already
-   true: `GET subscriptionsv2/tokens/<bad>` under the JoyoFit package answered 400 `Invalid Value`, the same as under JoyoRogo's.]
-7. **License testers** (Settings, License testing) is account-level, so the testers JoyoRogo already has cover JoyoFit.
+- `com.joyodigitama.joyofit.pro.monthly` ("JoyoRogo Pro Bulanan"), base plan `monthly`, auto-renewing, grace 7 days, **active**: IDR 29,000, USD 9.99 (other regions
+  converted by Play from USD 9.99, e.g. MYR 43.99, JPY 1,740).
+- `com.joyodigitama.joyofit.pro.yearly` ("JoyoRogo Pro Tahunan"), base plan `yearly`, grace 14 days, **active**: IDR 199,000, USD 59.99 (MYR 264.99, JPY 10,400).
+- No promotional offers (the paywall ignores offers with extra pricing phases).
+- Real-time developer notifications: topic `projects/joyorogo/topics/play-rtdn`, subscriptions and voided purchases; the test message reached JoyoRogo
+  (`POST /api/billing/google/rtdn 204`).
+- License testing is account-level: the owner's Google account is a tester and gets "Test card, always approves".
 
 ## Testing on a phone
 
@@ -158,8 +151,9 @@ Play Billing only works in a build installed by Play (an internal or closed trac
 7. Release build specifics: R8 minification and resource shrinking are on in release builds (`app.json`, `expo-build-properties`); JoyoRogo ships the same library with
    R8 on and no extra keep rules, so none were added here [INFERENCE: not run here].
 
-## Not verified here
+## Verified on a device (2026-11-02)
 
-Play Billing cannot run on Linux or in Expo Go, and no Gradle or Android build was run for this change (typecheck, lint and the unit tests ran). The paths above that need a
-device and the Play Console are untested until the first Play build with the library: the purchase sheet, `fetchProducts` for the new product ids, the acknowledge
-by JoyoRogo's server under the JoyoFit package, R8 with `expo-iap`, restore on a second device, and the Pub/Sub notification for a JoyoFit renewal.
+Build 1492160 (R8 on) from the internal track on the owner's Xiaomi, owner account set to free for the test and restored afterwards: both plans load with Play's
+prices (Rp 199.000 / Rp 29.000), monthly bought with the test card, the paywall said "Pro is on", JoyoRogo stored `google_purchase` (package
+`com.joyodigitama.joyofit`, base plan `monthly`, `is_test` 1, state active) and credited `founder_until` (full month: the owner is in `GOOGLE_PLAY_TEST_EMAILS`).
+Cancelled in Play afterwards; the row went to `expired`. Not exercised: pending payments, kill-before-answer replay, restore on a second phone, a renewal RTDN.
