@@ -3,7 +3,6 @@
     "title": "Upgrade ke Pro",
     "cta": "Upgrade ke Pro",
     "later": "Nanti",
-    "managed": "Pro diaktifkan di aplikasi JoyoRogo, dengan akun yang sama.",
     "openFailed": "Tautannya tidak bisa dibuka. Cari JoyoRogo di toko aplikasi.",
     "moment": {
       "coach-chat": "Joyo AI dengan mesin JoyoRogo menjawab soal latihan dan tidurmu dari data jam kamu. Mesin ini bagian dari JoyoRogo Pro; kunci API sendiri tetap gratis.",
@@ -51,18 +50,21 @@
     "activated": "Pro menyala. Layar-layarmu sedang terbuka.",
     "sandbox": {
       "title": "Pembelian uji coba",
-      "body": "Ini lingkungan uji coba Apple: tidak ada yang ditagih dan Pro berlaku 24 jam."
+      "body": "Ini pembelian uji coba dari lingkungan uji coba toko: tidak ada yang ditagih dan Pro berlaku 24 jam."
     },
-    "pending": "Pembelian menunggu persetujuan (misalnya Ask to Buy). Pro menyala setelah disetujui.",
+    "pending": "Pembelian menunggu persetujuan atau pembayaran (misalnya Ask to Buy, atau pembayaran yang belum selesai). Pro menyala setelah berhasil.",
     "restored": "Pembelian dipulihkan. Pro menyala.",
     "restoredNone": "Tidak ditemukan langganan aktif di Apple ID ini.",
     "restoredOtherAccount": "Langganan di Apple ID ini terhubung ke akun JoyoRogo lain, jadi tidak bisa membuka Pro di akun ini.",
+    "restoredNonePlay": "Tidak ditemukan langganan JoyoFit yang aktif di akun Google ini.",
+    "restoredOtherAccountPlay": "Langganan di akun Google ini terhubung ke akun JoyoRogo lain, jadi tidak bisa membuka Pro di akun ini.",
     "oldVersion": "Versi JoyoFit ini belum bisa menerima pembelian. Perbarui JoyoFit ke versi terbaru.",
     "unavailable": "Berlangganan belum tersedia sekarang. Coba lagi nanti.",
     "offline": "Tidak bisa memeriksa apakah langganan tersedia. Periksa koneksimu.",
     "retry": "Coba lagi",
     "productsMissing": "Langganan tidak bisa dimuat. Coba lagi nanti.",
     "disclosure": "Pembayaran ditagihkan ke akun Apple ID kamu saat kamu mengonfirmasi pembelian. Langganan diperpanjang otomatis dengan harga dan periode yang sama, kecuali kamu membatalkannya paling lambat 24 jam sebelum periode berjalan berakhir. Akunmu ditagih untuk perpanjangan dalam 24 jam sebelum periode berakhir. Kelola atau batalkan kapan saja di Pengaturan > Apple ID > Langganan.",
+    "disclosurePlay": "Pembayaran ditagihkan ke akun Google Play kamu saat kamu mengonfirmasi pembelian. Langganan diperpanjang otomatis dengan harga dan periode yang sama sampai kamu membatalkannya. Batalkan kapan saja di Google Play > Pembayaran & langganan > Langganan; batalkan sebelum periode berjalan berakhir agar tidak ditagih lagi.",
     "terms": "Ketentuan Penggunaan",
     "privacy": "Kebijakan Privasi"
   },
@@ -73,6 +75,7 @@
     "processing": "JoyoRogo masih memproses pembelian. Pro menyala sebentar lagi; kalau belum, ketuk Pulihkan pembelian.",
     "unavailable": "Pro belum bisa dinyalakan sekarang. Kalau kamu sudah ditagih, Pro menyala sendiri saat kamu membuka JoyoFit berikutnya.",
     "unreachable": "JoyoRogo tidak terjangkau. Kalau kamu sudah ditagih, Pro menyala sendiri saat kamu membuka JoyoFit dengan koneksi.",
+    "alreadyOwned": "Akun Google ini sudah punya langganan JoyoFit. Ketuk Pulihkan pembelian agar Pro menyala di akun JoyoRogo kamu.",
     "failed": "Pembelian tidak berhasil. Coba lagi."
   }
 }

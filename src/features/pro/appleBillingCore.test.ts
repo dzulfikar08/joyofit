@@ -2,14 +2,8 @@ import { describe, expect, test } from 'bun:test';
 
 import { applyLocale } from '@/i18n';
 
-import {
-  AppleBillingError,
-  appleAccountToken,
-  fetchAppleBilling,
-  postSignedTransaction,
-  PRO_PRODUCT_IDS,
-  yearlySavingPercent,
-} from './appleBillingCore';
+import { appleAccountToken, postSignedTransaction } from './appleBillingCore';
+import { BillingError } from './billingCore';
 
 describe('appleAccountToken', () => {
   // Vectors computed with `appleAccountToken` of JoyoRogo's packages/api/src/lib/apple.ts (the server that checks the token).
@@ -21,15 +15,6 @@ describe('appleAccountToken', () => {
 
   test('is a version 5, RFC 4122 variant UUID that StoreKit accepts', () => {
     expect(appleAccountToken('anyone')).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
-  });
-});
-
-describe('product ids', () => {
-  test('are JoyoFit own subscriptions', () => {
-    expect(PRO_PRODUCT_IDS).toEqual({
-      monthly: 'com.joyodigitama.joyofit.pro.monthly',
-      yearly: 'com.joyodigitama.joyofit.pro.yearly',
-    });
   });
 });
 
@@ -69,9 +54,9 @@ describe('postSignedTransaction', () => {
     ];
     for (const [status, reason, definitive] of cases) {
       const error = await post(answer(status)).catch((e: unknown) => e);
-      expect(error).toBeInstanceOf(AppleBillingError);
-      expect((error as AppleBillingError).reason).toBe(reason as AppleBillingError['reason']);
-      expect((error as AppleBillingError).definitive).toBe(definitive);
+      expect(error).toBeInstanceOf(BillingError);
+      expect((error as BillingError).reason).toBe(reason as BillingError['reason']);
+      expect((error as BillingError).definitive).toBe(definitive);
     }
   });
 
@@ -81,12 +66,12 @@ describe('postSignedTransaction', () => {
       called = true;
       return new Response('{}');
     }) as unknown as typeof fetch;
-    expect(((await post(spy, '').catch((e: unknown) => e)) as AppleBillingError).reason).toBe('signIn');
+    expect(((await post(spy, '').catch((e: unknown) => e)) as BillingError).reason).toBe('signIn');
     expect(called).toBe(false);
     const offline = (async () => {
       throw new TypeError('Network request failed');
     }) as unknown as typeof fetch;
-    const error = (await post(offline).catch((e: unknown) => e)) as AppleBillingError;
+    const error = (await post(offline).catch((e: unknown) => e)) as BillingError;
     expect(error.reason).toBe('unreachable');
     expect(error.definitive).toBe(false);
   });
@@ -95,44 +80,11 @@ describe('postSignedTransaction', () => {
     for (const locale of ['id', 'en'] as const) {
       await applyLocale(locale);
       for (const status of [400, 401, 403, 404, 409, 500]) {
-        const error = (await post(answer(status)).catch((e: unknown) => e)) as AppleBillingError;
+        const error = (await post(answer(status)).catch((e: unknown) => e)) as BillingError;
         expect(error.message.length).toBeGreaterThan(20);
         expect(error.message.startsWith('pro:')).toBe(false);
       }
     }
     await applyLocale('id');
-  });
-});
-
-describe('fetchAppleBilling', () => {
-  test('reads appleBilling of /api/config; anything unreadable is null, not off', async () => {
-    let requested = '';
-    const config = (body: unknown, status = 200) =>
-      (async (url: string) => {
-        requested = url;
-        return new Response(JSON.stringify(body), { status });
-      }) as unknown as typeof fetch;
-    expect(await fetchAppleBilling('https://api.example.com', config({ appleBilling: true }))).toBe(true);
-    expect(requested).toBe('https://api.example.com/api/config');
-    expect(await fetchAppleBilling('https://api.example.com', config({ appleBilling: false }))).toBe(false);
-    expect(await fetchAppleBilling('https://api.example.com', config({}))).toBeNull();
-    expect(await fetchAppleBilling('https://api.example.com', config({}, 500))).toBeNull();
-    const offline = (async () => {
-      throw new TypeError('Network request failed');
-    }) as unknown as typeof fetch;
-    expect(await fetchAppleBilling('https://api.example.com', offline)).toBeNull();
-  });
-});
-
-describe('yearlySavingPercent', () => {
-  test('compares a year with twelve months', () => {
-    expect(yearlySavingPercent('29000', '199000')).toBe(43);
-    expect(yearlySavingPercent('9.99', '59.99')).toBe(50);
-  });
-  test('no saving or unreadable prices is null', () => {
-    expect(yearlySavingPercent('10', '120')).toBeNull();
-    expect(yearlySavingPercent('10', '130')).toBeNull();
-    expect(yearlySavingPercent('x', '120')).toBeNull();
-    expect(yearlySavingPercent('0', '120')).toBeNull();
   });
 });

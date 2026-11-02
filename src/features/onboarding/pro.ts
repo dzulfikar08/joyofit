@@ -7,16 +7,16 @@ import type { Platform } from '@/features/onboarding/flow';
  * - iOS: App Store Review Guideline 3.1.1 forbids buttons, links and other calls to action that lead to a way of paying other than
  *   in-app purchase, so JoyoFit sells Pro itself with StoreKit (its own subscriptions, `src/app/pro.tsx`) and never sends anyone to
  *   another app or a web checkout. https://developer.apple.com/app-store/review/guidelines/#in-app-purchase
- * - Android from Google Play: the Payments policy (section 4) forbids leading users to another payment method through in-app messaging,
- *   buttons or links, and section 6 wants in-app prices to match Play's billing screen. The guide describes Pro, shows no price, and
- *   links to the JoyoRogo app's Play listing, which is an app install and not a checkout. https://support.google.com/googleplay/android-developer/answer/9858738
- * - Android sideload (APK from the website, self-builds): not under Play's policy, so the live price and a button to joyorogo.com/pro.
+ * - Android from Google Play: the Payments policy forbids leading users to another payment method through in-app messaging, buttons
+ *   or links, and wants in-app prices to match Play's billing screen. JoyoFit therefore sells Pro itself with Google Play Billing (its
+ *   own subscriptions, the same paywall) and links to no other way of paying. https://support.google.com/googleplay/android-developer/answer/9858738
+ * - Android sideload (APK from the website, self-builds): not under Play's policy and Play cannot bill it, so the live price and a
+ *   button to joyorogo.com/pro.
  */
-export type ProOffer = 'iap' | 'web' | 'store';
+export type ProOffer = 'iap' | 'web';
 
 export function proOffer(platform: Platform, distribution: 'play' | 'sideload'): ProOffer {
-  if (platform === 'ios') return 'iap';
-  return distribution === 'play' ? 'store' : 'web';
+  return platform === 'ios' || distribution === 'play' ? 'iap' : 'web';
 }
 
 /** What JoyoRogo's live config says about Pro. Every field is optional: a missing one is left out of the text, never guessed. */

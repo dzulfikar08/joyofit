@@ -12,22 +12,17 @@ import { IconChip } from '@/components/IconChip';
 import { isIos } from '@/components/IosUnavailable';
 import { Card, Screen } from '@/components/Screen';
 import { Notice } from '@/components/States';
+import { proOffer } from '@/features/onboarding/pro';
 import { SignInButtons } from '@/features/settings/SignInButtons';
 import { useCloud } from '@/state/CloudProvider';
 import { spacing } from '@/theme';
+import { HuaweiWear } from '@/wear';
 
-import { appleBillingSupported, buyPro, loadProducts, manageSubscriptions, restorePurchases, type StoreProducts } from './appleBilling';
-import {
-  AppleBillingError,
-  APPLE_TERMS_URL,
-  fetchAppleBilling,
-  PRIVACY_URL,
-  yearlySavingPercent,
-  type ProPlan,
-} from './appleBillingCore';
+import { billing } from './billing';
+import { BillingError, fetchBillingSwitch, PRIVACY_URL, yearlySavingPercent, type ProPlan, type StoreProducts } from './billingCore';
 import { PlanOption } from './PlanOption';
 
-/** Whether JoyoRogo's `/api/config` says Apple billing is on: `loading` until it answers, `unknown` when it could not be read. */
+/** Whether JoyoRogo's `/api/config` says billing for this store is on: `loading` until it answers, `unknown` when it could not be read. */
 type BillingSwitch = 'loading' | 'on' | 'off' | 'unknown';
 
 interface Message {
@@ -36,14 +31,14 @@ interface Message {
 }
 
 /**
- * The JoyoRogo Pro paywall on iOS (the only place JoyoFit sells it). Pro is one entitlement on the JoyoRogo account, shared with the
- * JoyoRogo app and website; JoyoFit sells it with its own StoreKit subscriptions (docs/pro-ios.md). States: signed out (sign in
- * first), already Pro (active, manage subscription), Apple billing switched off on JoyoRogo or no StoreKit module in this binary (a
- * neutral notice, never a link out), and the plans with Buy and Restore. Android has no paywall: it keeps the JoyoRogo app, store
- * listing or web page, so the route redirects away there.
+ * The JoyoRogo Pro paywall, the only place JoyoFit sells Pro: on iOS with StoreKit (docs/pro-ios.md) and in the Google Play build with
+ * Play Billing (docs/pro-android.md). Pro is one entitlement on the JoyoRogo account, shared with the JoyoRogo app and website;
+ * JoyoFit sells it with its own subscriptions. States: signed out (sign in first), already Pro (active, manage subscription),
+ * billing switched off on JoyoRogo or no store module in this binary (a neutral notice, never a link out), and the plans with Buy and
+ * Restore. A sideloaded APK cannot be billed by Play and keeps the web page, so the route redirects away there.
  */
 export function ProPaywallScreen() {
-  if (!isIos) return <Redirect href="/" />;
+  if (proOffer(isIos ? 'ios' : 'android', HuaweiWear.distribution) !== 'iap') return <Redirect href="/" />;
   return <Paywall />;
 }
 
@@ -51,40 +46,52 @@ function Paywall() {
   const { t } = useTranslation('pro');
   const cloud = useCloud();
   const pro = cloud.pro === true;
-  const [billing, setBilling] = useState<BillingSwitch>('loading');
+  const [enabled, setEnabled] = useState<BillingSwitch>('loading');
   const [products, setProducts] = useState<StoreProducts | null>(null);
   const [plan, setPlan] = useState<ProPlan>('yearly');
   const [busy, setBusy] = useState<'buy' | 'restore' | null>(null);
   const [message, setMessage] = useState<Message | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [manageable, setManageable] = useState(false);
 
-  const canSell = appleBillingSupported && cloud.signedIn && !pro;
+  /** Copy that names the store (Apple ID, Google account) has a `Play` variant. */
+  const suffix = isIos ? '' : 'Play';
+  const canSell = billing.supported && cloud.signedIn && !pro;
 
   useEffect(() => {
     if (!canSell) return;
     let live = true;
-    void fetchAppleBilling(JOYOROGO_URL).then((on) => live && setBilling(on === null ? 'unknown' : on ? 'on' : 'off'));
+    void fetchBillingSwitch(JOYOROGO_URL, billing.configFlag).then((on) => live && setEnabled(on === null ? 'unknown' : on ? 'on' : 'off'));
     return () => {
       live = false;
     };
   }, [canSell, attempt]);
 
   useEffect(() => {
-    if (billing !== 'on') return;
+    if (enabled !== 'on') return;
     let live = true;
-    void loadProducts().then((next) => live && setProducts(next));
+    void billing.loadProducts().then((next) => live && setProducts(next));
     return () => {
       live = false;
     };
-  }, [billing, attempt]);
+  }, [enabled, attempt]);
+
+  useEffect(() => {
+    if (!pro || !billing.supported) return;
+    let live = true;
+    void billing.canManage().then((can) => live && setManageable(can));
+    return () => {
+      live = false;
+    };
+  }, [pro]);
 
   const retry = useCallback(() => {
-    setBilling('loading');
+    setEnabled('loading');
     setAttempt((n) => n + 1);
   }, []);
 
   const failed = useCallback(
-    (error: unknown) => setMessage({ tone: 'danger', text: error instanceof AppleBillingError ? error.message : t('error.failed') }),
+    (error: unknown) => setMessage({ tone: 'danger', text: error instanceof BillingError ? error.message : t('error.failed') }),
     [t],
   );
 
@@ -92,7 +99,7 @@ function Paywall() {
     setBusy('buy');
     setMessage(null);
     try {
-      const outcome = await buyPro(plan);
+      const outcome = await billing.buyPro(plan);
       if (outcome === 'pending') setMessage({ tone: 'info', text: t('paywall.pending') });
       if (outcome === 'bought' || outcome === 'trial') {
         setMessage({ tone: 'info', text: t('paywall.activated') });
@@ -110,19 +117,19 @@ function Paywall() {
     setBusy('restore');
     setMessage(null);
     try {
-      const { accepted, rejected } = await restorePurchases();
+      const { accepted, rejected } = await billing.restorePurchases();
       if (accepted > 0) {
         setMessage({ tone: 'info', text: t('paywall.restored') });
         void cloud.refreshPro();
       } else {
-        setMessage({ tone: rejected > 0 ? 'danger' : 'info', text: rejected > 0 ? t('paywall.restoredOtherAccount') : t('paywall.restoredNone') });
+        setMessage({ tone: rejected > 0 ? 'danger' : 'info', text: rejected > 0 ? t(`paywall.restoredOtherAccount${suffix}`) : t(`paywall.restoredNone${suffix}`) });
       }
     } catch (error) {
       failed(error);
     } finally {
       setBusy(null);
     }
-  }, [cloud, t, failed]);
+  }, [cloud, t, failed, suffix]);
 
   const chosen = products?.[plan] ?? null;
   const saving = products?.monthly && products.yearly ? yearlySavingPercent(products.monthly.price, products.yearly.price) : null;
@@ -160,9 +167,9 @@ function Paywall() {
 
       {message ? <Notice tone={message.tone} icon={message.tone === 'info' ? 'checkmark-circle' : undefined}>{message.text}</Notice> : null}
 
-      {!appleBillingSupported && !pro ? <Notice icon="information-circle">{t('paywall.oldVersion')}</Notice> : null}
+      {!billing.supported && !pro ? <Notice icon="information-circle">{t('paywall.oldVersion')}</Notice> : null}
 
-      {appleBillingSupported && !cloud.sessionPending && !cloud.signedIn ? (
+      {billing.supported && !cloud.sessionPending && !cloud.signedIn ? (
         <Card>
           <AppText variant="heading">{t('paywall.signIn.title')}</AppText>
           <AppText variant="caption" muted>
@@ -183,24 +190,24 @@ function Paywall() {
           <AppText variant="caption" muted>
             {t('paywall.active.body')}
           </AppText>
-          {appleBillingSupported ? (
+          {billing.supported ? (
             <>
-              <Button label={t('paywall.manage')} variant="secondary" icon="card-outline" onPress={() => void manageSubscriptions()} />
+              {manageable ? <Button label={t('paywall.manage')} variant="secondary" icon="card-outline" onPress={() => void billing.manageSubscriptions()} /> : null}
               <Button label={t('paywall.restore')} variant="ghost" onPress={() => void restore()} loading={busy === 'restore'} disabled={busy !== null} />
             </>
           ) : null}
         </Card>
       ) : null}
 
-      {canSell && billing === 'loading' ? <ActivityIndicator accessibilityLabel={t('paywall.title')} /> : null}
-      {canSell && billing === 'unknown' ? (
+      {canSell && enabled === 'loading' ? <ActivityIndicator accessibilityLabel={t('paywall.title')} /> : null}
+      {canSell && enabled === 'unknown' ? (
         <Notice icon="cloud-offline-outline" action={{ label: t('paywall.retry'), onPress: retry }}>
           {t('paywall.offline')}
         </Notice>
       ) : null}
-      {canSell && billing === 'off' ? <Notice icon="information-circle">{t('paywall.unavailable')}</Notice> : null}
+      {canSell && enabled === 'off' ? <Notice icon="information-circle">{t('paywall.unavailable')}</Notice> : null}
 
-      {canSell && billing === 'on' ? (
+      {canSell && enabled === 'on' ? (
         <>
           <AppText variant="heading">{t('paywall.plansTitle')}</AppText>
           {products && !products.monthly && !products.yearly ? (
@@ -230,13 +237,13 @@ function Paywall() {
           <Button label={t('paywall.buy')} variant="primary" icon="card-outline" onPress={() => void buy()} loading={busy === 'buy'} disabled={chosen === null || busy !== null} />
           <Button label={t('paywall.restore')} variant="secondary" onPress={() => void restore()} loading={busy === 'restore'} disabled={busy !== null} />
           <AppText variant="caption" muted>
-            {t('paywall.disclosure')}
+            {t(`paywall.disclosure${suffix}`)}
           </AppText>
         </>
       ) : null}
 
       <View style={styles.links}>
-        <Button label={t('paywall.terms')} variant="ghost" onPress={() => void Linking.openURL(APPLE_TERMS_URL)} style={styles.grow} />
+        <Button label={t('paywall.terms')} variant="ghost" onPress={() => void Linking.openURL(billing.termsUrl)} style={styles.grow} />
         <Button label={t('paywall.privacy')} variant="ghost" onPress={() => void Linking.openURL(PRIVACY_URL)} style={styles.grow} />
       </View>
     </Screen>

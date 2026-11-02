@@ -21,8 +21,8 @@ describe('store rules for the Pro step', () => {
     expect(proOffer('ios', 'play')).toBe('iap');
   });
 
-  test('a Google Play build describes Pro and points at the store listing only', () => {
-    expect(proOffer('android', 'play')).toBe('store');
+  test('a Google Play build sells Pro with Google Play Billing, in the same in-app paywall', () => {
+    expect(proOffer('android', 'play')).toBe('iap');
   });
 
   test('a sideloaded Android build may show the price and the web page', () => {

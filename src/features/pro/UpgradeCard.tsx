@@ -25,9 +25,10 @@ interface UpgradeCardProps {
 }
 
 /**
- * The one JoyoRogo Pro offer inside JoyoFit, placed where Pro would have helped (see `ProMoment`). On iOS the button opens the
- * in-app paywall (StoreKit). Elsewhere it opens the JoyoRogo app when it is installed, else its Play listing or, in a sideloaded build,
- * the web page with the live price. What a build may show is decided in `proUpgradeAction`: no price and no web checkout on Play.
+ * The one JoyoRogo Pro offer inside JoyoFit, placed where Pro would have helped (see `ProMoment`). On iOS and in the Play build the
+ * button opens the in-app paywall (StoreKit, Google Play Billing). In a sideloaded build it opens the JoyoRogo app when it is
+ * installed, else the web page with the live price. What a build may show is decided in `proUpgradeAction`: no price outside the
+ * store's own text and no web checkout on iOS or Play.
  */
 export function UpgradeCard({ moment, dismissible = false, onOpened }: UpgradeCardProps) {
   const { t } = useTranslation('pro');
@@ -50,11 +51,6 @@ export function UpgradeCard({ moment, dismissible = false, onOpened }: UpgradeCa
         {t(`upgrade.moment.${moment}`)}
       </AppText>
       {price ? <AppText variant="bodyStrong">{price}</AppText> : null}
-      {action.kind === 'app-or-store' ? (
-        <AppText variant="caption" muted>
-          {t('upgrade.managed')}
-        </AppText>
-      ) : null}
       {failed ? (
         <AppText variant="caption" muted>
           {t('upgrade.openFailed')}
