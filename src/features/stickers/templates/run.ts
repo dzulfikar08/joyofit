@@ -134,7 +134,7 @@ function hero(k: Kit, w: Dim, look: HeroLook): LayerJson {
 }
 
 /** A full-bleed layer (scrim, wash) wrapped in a stack group: absolute layers outside the safe area would trip the lint. */
-const bleed = (k: Kit, x: number, y: number, w: number, h: number, child: LayerJson): LayerJson => k.group({ x, y, w, h }, [child], { dir: 'column' });
+export const bleed = (k: Kit, x: number, y: number, w: number, h: number, child: LayerJson): LayerJson => k.group({ x, y, w, h }, [child], { dir: 'column' });
 
 const sportText = (k: Kit, o: { size: number; color: string; weight?: number; ls?: number; upper?: boolean; minSize?: number; shadow?: boolean }) =>
   k.text({ w: 'fill' }, '{run.sport}', { size: o.size, weight: o.weight ?? 800, upper: o.upper ?? true, ls: o.ls ?? 3, color: o.color, minSize: o.minSize ?? 26, shadow: o.shadow });
@@ -379,7 +379,7 @@ function runMinimal(canvas: Canvas) {
 // ----------------------------------------------------------------------------------------------------------------- photo
 
 /** Without a photo (it failed to load) the card is a dark wash with a glow; by day a milky one. */
-const PHOTO_FALLBACK = {
+export const PHOTO_FALLBACK = {
   kind: 'gradient',
   angle: 180,
   stops: [
