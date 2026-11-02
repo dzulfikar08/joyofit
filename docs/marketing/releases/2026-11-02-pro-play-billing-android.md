@@ -2,7 +2,7 @@
 app: joyofit
 feature: JoyoRogo Pro bisa dibeli di JoyoFit (Android, Google Play)
 shipped: 2026-11-02
-available: code
+available: test-build
 tier: pro
 post: todo
 atur: JRG-474
