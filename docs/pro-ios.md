@@ -2,8 +2,9 @@
 
 App Review guideline 3.1.1 (3.1.3(b) for multiplatform services): JoyoFit unlocks Pro that people bought elsewhere, so the iOS app has to sell it too
 and must not send an iOS user to another app or a website to buy. JoyoFit therefore has its **own** auto-renewable subscriptions that grant exactly
-JoyoRogo Pro, the entitlement JoyoRogo's own In-App Purchase grants (`founder_until` on the JoyoRogo account). Android is unchanged
-(`src/features/pro/offer.ts`: JoyoRogo app, Play listing or, in a sideloaded build, the web page).
+JoyoRogo Pro, the entitlement JoyoRogo's own In-App Purchase grants (`founder_until` on the JoyoRogo account). Android sells the same Pro with Google
+Play Billing in the Play build, in the same paywall: see [pro-android.md](pro-android.md). A sideloaded APK keeps the web page
+(`src/features/pro/offer.ts`).
 
 ## Products
 
@@ -22,12 +23,13 @@ prices shown in the app are StoreKit's `displayPrice`, never written in the app,
 | Piece | File |
 | --- | --- |
 | StoreKit 2 native module (`AppleIap`, copied from JoyoRogo's `apps/native/modules/apple-iap`, autolinked from `modules/`) | `modules/apple-iap/` |
-| Account token, JWS post and error mapping (pure, unit tested) | `src/features/pro/appleBillingCore.ts` |
-| Buy, restore, replay, manage (StoreKit + session) | `src/features/pro/appleBilling.ts` |
-| Paywall screen, route `/pro` (iOS only; Android redirects to `/`) | `src/features/pro/ProPaywallScreen.tsx`, `src/app/pro.tsx` |
-| Launch replay | `src/features/pro/AppleBillingSync.tsx`, mounted in `src/app/_layout.tsx` |
+| Account token, JWS post (pure, unit tested) | `src/features/pro/appleBillingCore.ts` |
+| Shared product ids, `BillingError` mapping, `/api/config` switch, saving percent (pure, unit tested) | `src/features/pro/billingCore.ts` |
+| Buy, restore, replay, manage (StoreKit + session) | `src/features/pro/appleBilling.ts`, picked per platform in `src/features/pro/billing.ts` |
+| Paywall screen, route `/pro` (iOS and the Play build; a sideloaded APK redirects to `/`) | `src/features/pro/ProPaywallScreen.tsx`, `src/app/pro.tsx` |
+| Launch replay | `src/features/pro/BillingSync.tsx`, mounted in `src/app/_layout.tsx` |
 | Unlock without a restart | `CloudProvider.refreshPro()` (`src/state/CloudProvider.tsx`) |
-| iOS entry points | `UpgradeCard`, onboarding `ProStep` and `CloudStep` (all through `openUpgrade`), Settings > Akun on a Pro account ("Kelola langganan JoyoRogo Pro") |
+| Entry points | `UpgradeCard`, onboarding `ProStep` and `CloudStep` (all through `openUpgrade`), Settings > Akun on a Pro account ("Kelola langganan JoyoRogo Pro") |
 
 The module has no `Transaction.updates` listener, like JoyoRogo's: a renewal reaches JoyoRogo through App Store Server Notifications and through the
 launch replay below.
@@ -60,7 +62,7 @@ launch replay below.
 
 | State | What shows |
 | --- | --- |
-| Android | Redirect to `/` (no paywall; the existing JoyoRogo app, Play or web path) |
+| Sideloaded Android APK | Redirect to `/` (no paywall; the web page, see `proOffer`). The Play build shows the paywall, see [pro-android.md](pro-android.md) |
 | iOS binary without the `AppleIap` module (built before this) | Neutral "update JoyoFit" notice, no purchase, no link out |
 | Signed out | Why a JoyoRogo account is needed, the sign-in buttons |
 | Pro already active | "JoyoRogo Pro is active", **Manage subscription** (`showManageSubscriptions`, Apple's subscription page if the sheet cannot open), Restore |

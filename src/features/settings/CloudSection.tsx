@@ -10,6 +10,7 @@ import { Button } from '@/components/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Details } from '@/components/Details';
 import { isIos } from '@/components/IosUnavailable';
+import { proOffer } from '@/features/onboarding/pro';
 import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
@@ -27,8 +28,12 @@ import { UpgradeCard } from '@/features/pro/UpgradeCard';
 import { useCloud } from '@/state/CloudProvider';
 import { useTheme } from '@/theme';
 import type { TFunction } from '@/i18n';
+import { HuaweiWear } from '@/wear';
 
 type T = TFunction<'settings'>;
+
+/** The paywall (with the subscription's management) exists where JoyoFit sells Pro itself: iOS and the Play build. */
+const HAS_IN_APP_STORE = proOffer(isIos ? 'ios' : 'android', HuaweiWear.distribution) === 'iap';
 
 const workoutsText = (t: T, count: number) => t('cloud.workouts', { count, n: formatCount(count) });
 
@@ -96,7 +101,7 @@ export function CloudSection() {
         {cloud.pro === true ? <Notice icon="cloud-done-outline">{t('cloud.proSyncs')}</Notice> : null}
         {cloud.pro === true ? (
           <>
-            {isIos ? <Button label={t('cloud.manageSubscription')} variant="secondary" icon="card-outline" onPress={() => router.navigate(PRO_PAYWALL_ROUTE)} /> : null}
+            {HAS_IN_APP_STORE ? <Button label={t('cloud.manageSubscription')} variant="secondary" icon="card-outline" onPress={() => router.navigate(PRO_PAYWALL_ROUTE)} /> : null}
             <Notice icon="chatbubble-ellipses-outline">{t('cloud.support.body')}</Notice>
             <Button
               label={t('cloud.support.open', { handle: PRO_SUPPORT.handle })}

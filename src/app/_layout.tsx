@@ -28,7 +28,7 @@ import { BikeRideProvider } from '@/features/bikecomputer/BikeRideProvider';
 import { lockPortrait } from '@/features/bikecomputer/ui/orientation';
 import { flushSupportReports } from '@/features/device/aturReports';
 import { LiveExtrasFeed } from '@/features/live/liveExtras';
-import { AppleBillingSync } from '@/features/pro/AppleBillingSync';
+import { BillingSync } from '@/features/pro/BillingSync';
 import { LivePill } from '@/features/record/ui/LivePill';
 import { useHydrateWeightUnit } from '@/features/strength/useWeightUnit';
 import { RoomCaptureRunner } from '@/features/thermometer/RoomCaptureRunner';
@@ -202,8 +202,8 @@ function RootNavigator() {
                   {/* The bedroom thermometer's readings (foreground scan, overnight file); idle without a paired thermometer. */}
                   <RoomCaptureRunner />
                   <WeightUnitSync />
-                  {/* iOS: hands JoyoRogo the StoreKit purchases it has not credited yet (once per start and account). */}
-                  <AppleBillingSync />
+                  {/* iOS (StoreKit) and the Play build (Play Billing): hands JoyoRogo the purchases it has not credited yet (once per start and account). */}
+                  <BillingSync />
                   {/* A watch-started workout's average and highest heart rate, and the phone's step counter while it runs on foot. */}
                   <LiveExtrasFeed />
                   <TabBarInsetProvider>

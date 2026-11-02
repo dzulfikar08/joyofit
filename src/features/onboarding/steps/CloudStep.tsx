@@ -97,14 +97,6 @@ export function CloudStep() {
             {t('cloud.free')}
           </Notice>
           {OFFER === 'iap' ? <Button label={t('cloud.see')} variant="secondary" icon="arrow-forward" onPress={() => void openUpgrade(action)} /> : null}
-          {OFFER === 'store' ? (
-            <>
-              <AppText variant="caption" muted>
-                {t('cloud.managedStore')}
-              </AppText>
-              <Button label={t('cloud.openOnPlay')} variant="secondary" icon="logo-google-playstore" onPress={() => void openUpgrade(action)} />
-            </>
-          ) : null}
           {OFFER === 'web' ? (
             <Button label={t('cloud.see')} variant="secondary" icon="open-outline" onPress={() => void openUpgrade(action)} />
           ) : null}
