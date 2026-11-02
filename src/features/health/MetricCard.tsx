@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -14,6 +15,7 @@ import { spacing, tintColors, useColors } from '@/theme';
 /** One metric: latest value with its age, the 7-day line, or the raw key/value pairs when the layout is unknown. */
 export function MetricCard({ metric, nowSec }: { metric: HealthMetricData; nowSec: number }) {
   const { t } = useTranslation('health');
+  const router = useRouter();
   const colors = useColors();
   const { type, status, latest, week } = metric;
   const meta = metaOrFallback(type);
@@ -21,12 +23,14 @@ export function MetricCard({ metric, nowSec }: { metric: HealthMetricData; nowSe
   const tint = tintColors(colors, meta.tint);
   const measuredAt = latest ? Math.max(latest.ts, latest.last_ts) : null;
   const value = latest?.value ?? null;
+  const dayRoute = latest !== null ? meta.dayRoute : undefined;
 
   return (
     <Section
       title={title}
       icon={meta.icon}
       tint={meta.tint}
+      onPress={dayRoute ? () => router.push(dayRoute) : undefined}
       trailing={
         measuredAt !== null ? (
           <AppText variant="caption" muted>

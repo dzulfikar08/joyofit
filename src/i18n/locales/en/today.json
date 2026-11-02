@@ -99,6 +99,10 @@
   },
   "readiness": {
     "title": "Readiness",
+    "hrvDayTitle": "HRV all day",
+    "hrvDaySubtitle": "Readings through the day, the night and one-minute measurements",
+    "stressDayTitle": "Stress all day",
+    "stressDaySubtitle": "Level through the day and time in each band",
     "screenTitle": "Readiness",
     "headline": {
       "primed": "Primed",
@@ -365,6 +369,51 @@
     "zonesNote": "The line colour follows your heart-rate zones (max HR {{max}} bpm; change it in Settings > HR zones). A gap in the chart means the watch recorded nothing.",
     "loadError": "Could not read heart rate: {{error}}",
     "chartLabel": "Heart rate chart, {{day}}"
+  },
+  "metricDay": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "prevDay": "Previous day",
+    "nextDay": "Next day",
+    "min": "Lowest",
+    "avg": "Average",
+    "max": "Highest",
+    "latest": "Latest",
+    "hint": "Touch and drag the chart to see the time and value",
+    "readoutAvg": "average",
+    "readoutMax": "highest",
+    "readoutNone": "No reading"
+  },
+  "hrvDay": {
+    "title": "HRV all day",
+    "unit": "ms",
+    "chartLabel": "HRV chart, {{day}}",
+    "loadError": "Could not read HRV: {{error}}",
+    "emptyToday": "No HRV stored yet today. Sync to fetch it from the watch, or measure it now.",
+    "emptyPast": "No HRV stored for this date.",
+    "nightTitle": "Night",
+    "nightDetail_one": "Average RMSSD of {{count}} reading, {{from}} to {{to}}",
+    "nightDetail_other": "Average RMSSD of {{count}} readings, {{from}} to {{to}}",
+    "spotTitle": "One-minute measurements",
+    "measure": "Measure HRV now",
+    "note": "HRV here is RMSSD in milliseconds. The line joins readings only across one missed reading; a longer gap means nothing was recorded."
+  },
+  "stressDay": {
+    "title": "Stress all day",
+    "unit": "of 100",
+    "chartLabel": "Stress chart, {{day}}",
+    "loadError": "Could not read stress: {{error}}",
+    "emptyToday": "No stress level stored yet today. Sync to fetch it from the watch.",
+    "emptyPast": "No stress level stored for this date.",
+    "bandsTitle": "Time in each band",
+    "band": {
+      "relaxed": "Relaxed",
+      "normal": "Normal",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "bandRange": "{{from}} to {{to}}",
+    "bandsNote": "Time counts each stretch the watch gave a reading for. A gap in the chart means nothing was recorded. The level is a wellness estimate, not a medical measurement."
   },
   "cards": {
     "entry": "Arrange Home cards",

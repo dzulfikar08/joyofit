@@ -10,6 +10,7 @@ import {
   chartGeometry,
   formatAxisTick,
   formatYTick,
+  yPosition,
   hrGradientStops,
   readoutAt,
   type ChartGeometry,
@@ -36,6 +37,10 @@ export function metricColor(palette: AnalysisPalette, metric: ChartMetric): stri
       return palette.cadence;
     case 'power':
       return palette.power;
+    case 'hrv':
+      return palette.hrv;
+    case 'stress':
+      return palette.stress;
   }
 }
 
@@ -50,6 +55,8 @@ interface PanelProps {
   hrBounds?: readonly number[] | null;
   /** Text of an x tick (axis units); the default is elapsed time or distance. A whole-day chart labels the clock time. */
   xLabel?: (value: number) => string;
+  /** Real values (one per sample, null where there is none) drawn as dots over the line: a sparse metric whose line bridges short gaps still shows what was actually read. */
+  markers?: readonly (number | null)[] | null;
 }
 
 interface CrosshairProps {
@@ -76,7 +83,7 @@ const Crosshair = memo(function Crosshair({ geo, width, height, color, dot }: Cr
 });
 
 /** One metric over the shared axis. Static between re-layouts; the crosshair is a separate overlay. */
-export const ChartPanel = memo(function ChartPanel({ series, metric, width, height, compact = false, hrBounds, xLabel }: PanelProps) {
+export const ChartPanel = memo(function ChartPanel({ series, metric, width, height, compact = false, hrBounds, xLabel, markers }: PanelProps) {
   const { palette } = useAnalysisContext();
   const gradientId = `hrz${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const geo = useMemo(
@@ -110,6 +117,13 @@ export const ChartPanel = memo(function ChartPanel({ series, metric, width, heig
         <Line x1={plot.left} x2={plot.left + plot.width} y1={bottom} y2={bottom} stroke={palette.grid} strokeWidth={1} />
         <Path d={geo.area} fill={color} fillOpacity={metric === 'alt' ? 0.35 : 0.16} />
         <Path d={geo.line} fill="none" stroke={stops ? `url(#${gradientId})` : color} strokeWidth={compact ? 1.5 : 2} strokeLinejoin="round" strokeLinecap="round" />
+        {markers
+          ? markers.map((v, i) =>
+              v === null || geo.xs[i] === undefined ? null : (
+                <Circle key={`m${i}`} cx={geo.xs[i]} cy={yPosition(v, geo.domain, plot.top, plot.height)} r={2.5} fill={color} />
+              ),
+            )
+          : null}
         {geo.yTicks.map((tick) => (
           <SvgText key={`yl${tick.value}`} x={plot.left + 2} y={tick.y - 3} fontSize={10} fill={palette.textMuted} fontFamily={fontFamily}>
             {formatYTick(metric, tick.value)}

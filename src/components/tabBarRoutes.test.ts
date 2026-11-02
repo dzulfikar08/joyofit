@@ -18,7 +18,7 @@ describe('isTabRoot', () => {
     expect(isTabRoot(MORE_ROUTE, 'appearance')).toBe(false);
   });
   it('hides it on the hidden tabs, even on their own index', () => {
-    for (const tab of ['watch', 'routes', 'family', 'coach', 'strength', 'sleep', 'heart', 'hrv', 'home-cards', 'ride']) {
+    for (const tab of ['watch', 'routes', 'family', 'coach', 'strength', 'sleep', 'heart', 'hrv', 'hrv-day', 'stress', 'home-cards', 'ride']) {
       expect(isTabRoot(tab, undefined)).toBe(false);
       expect(isTabRoot(tab, 'index')).toBe(false);
     }

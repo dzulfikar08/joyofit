@@ -18,7 +18,11 @@ import { fmtDate, fmtDecimal, fmtNumber, t } from '@/i18n';
 import { isFootKind } from '../sport';
 import { stepLengthAt, stepLengthSeries } from '../stride';
 
-export type ChartMetric = 'pace' | 'speed' | 'hr' | 'alt' | 'cad' | 'stride' | 'power';
+/** The metrics of a workout chart: the tabs of the workout analysis. */
+export type WorkoutMetric = 'pace' | 'speed' | 'hr' | 'alt' | 'cad' | 'stride' | 'power';
+/** Sparse day metrics the whole-day screens chart: all-day HRV (ms) and stress level (1 to 100). */
+export type DayMetric = 'hrv' | 'stress';
+export type ChartMetric = WorkoutMetric | DayMetric;
 
 export const clamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
 
@@ -58,6 +62,10 @@ export function metricValues(series: AnalysisSeries, metric: ChartMetric): (numb
       return stepLengthSeries(series, series.n);
     case 'power':
       return series.power;
+    case 'hrv':
+      return series.hrv ?? null;
+    case 'stress':
+      return series.stress ?? null;
   }
 }
 
@@ -71,9 +79,9 @@ function hasValues(values: readonly (number | null)[] | null, min = 2): boolean 
 }
 
 /** The tabs a series can show, in display order. Pace is for runs and walks, speed for rides. */
-export function availableMetrics(series: AnalysisSeries, kind: SportKind): ChartMetric[] {
+export function availableMetrics(series: AnalysisSeries, kind: SportKind): WorkoutMetric[] {
   if (series.n < 2) return [];
-  const out: ChartMetric[] = [];
+  const out: WorkoutMetric[] = [];
   if (hasValues(series.pace)) {
     if (kind === 'run' || kind === 'walk') out.push('pace');
     else if (kind === 'ride') out.push('speed');
@@ -109,6 +117,9 @@ const DOMAIN_RULES: Record<ChartMetric, DomainRule> = {
   cad: { lo: 0.02, hi: 0.98, pad: 0.08, minSpan: 20, floorZero: true },
   stride: { lo: 0.02, hi: 0.98, pad: 0.08, minSpan: 0.2, floorZero: true },
   power: { lo: 0.02, hi: 0.98, pad: 0.08, minSpan: 40, floorZero: true },
+  hrv: { lo: 0, hi: 1, pad: 0.12, minSpan: 20, floorZero: true },
+  // Whole range of the day (no clipping: a peak is the point), and a span of at least 40 so a calm day stays flat instead of stretched.
+  stress: { lo: 0, hi: 1, pad: 0.1, minSpan: 40, floorZero: true },
 };
 
 /** Value range of a chart: percentile-clipped (pace p5 to p95), padded, never below zero for non-elevation metrics. */

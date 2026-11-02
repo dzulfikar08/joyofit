@@ -43,6 +43,9 @@ export interface AnalysisSeries {
   stride?: (number | null)[] | null;
   /** Watts. */
   power: (number | null)[] | null;
+  /** Whole-day screens only: all-day HRV (RMSSD, ms) and stress level (1 to 100); null entries are gaps. Workouts leave both out. */
+  hrv?: (number | null)[] | null;
+  stress?: (number | null)[] | null;
   /** Position per sample; null outside the GPS recording. Omitted by the author for a private route. */
   track: (LatLon | null)[] | null;
 }

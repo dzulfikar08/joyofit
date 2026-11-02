@@ -3,7 +3,7 @@ import { memo, useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { PanResponder, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import type { AnalysisSeries, WorkoutAnalysis } from '../types';
-import { availableMetrics, indexFromX, type ChartMetric } from './chartMath';
+import { availableMetrics, indexFromX, type WorkoutMetric } from './chartMath';
 import { ChartPanel, PAD_X, Readout, metricColor } from './ChartPanel';
 import { useAnalysisContext } from './context';
 import { Card, MIN_HIT, Txt } from './primitives';
@@ -15,7 +15,7 @@ const STRIP_HEIGHT = 52;
 /** Horizontal travel before a touch counts as a scrub that owns the gesture. */
 const ENGAGE_DX = 6;
 
-const TAB_LABEL: Record<ChartMetric, AnalysisTextKey> = {
+const TAB_LABEL: Record<WorkoutMetric, AnalysisTextKey> = {
   pace: 'metric.pace',
   speed: 'metric.speed',
   hr: 'metric.hr',
@@ -25,7 +25,7 @@ const TAB_LABEL: Record<ChartMetric, AnalysisTextKey> = {
   power: 'metric.power',
 };
 
-const TAB_ICON: Record<ChartMetric, keyof typeof Ionicons.glyphMap> = {
+const TAB_ICON: Record<WorkoutMetric, keyof typeof Ionicons.glyphMap> = {
   pace: 'speedometer',
   speed: 'speedometer',
   hr: 'heart',
@@ -125,7 +125,7 @@ function ChartsCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
   const series = analysis.series;
   const kind = analysis.sport.kind;
   const metrics = useMemo(() => (series ? availableMetrics(series, kind) : []), [series, kind]);
-  const [chosen, setChosen] = useState<ChartMetric | null>(null);
+  const [chosen, setChosen] = useState<WorkoutMetric | null>(null);
   const [width, setWidth] = useState(0);
   const metric = chosen && metrics.includes(chosen) ? chosen : (metrics[0] ?? null);
 

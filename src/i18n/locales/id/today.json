@@ -95,6 +95,10 @@
   },
   "readiness": {
     "title": "Kesiapan",
+    "hrvDayTitle": "HRV seharian",
+    "hrvDaySubtitle": "Bacaan sepanjang hari, malam, dan pengukuran satu menit",
+    "stressDayTitle": "Stres seharian",
+    "stressDaySubtitle": "Tingkat sepanjang hari dan waktu di tiap rentang",
     "screenTitle": "Kesiapan",
     "headline": {
       "primed": "Prima",
@@ -348,6 +352,50 @@
     "zonesNote": "Warna garis di grafik mengikuti zona detak jantungmu (HR maks {{max}} bpm; bisa diubah di Pengaturan > Zona HR). Celah di grafik berarti jam tidak mencatat.",
     "loadError": "Gagal membaca detak jantung: {{error}}",
     "chartLabel": "Grafik detak jantung {{day}}"
+  },
+  "metricDay": {
+    "today": "Hari ini",
+    "yesterday": "Kemarin",
+    "prevDay": "Hari sebelumnya",
+    "nextDay": "Hari berikutnya",
+    "min": "Terendah",
+    "avg": "Rata-rata",
+    "max": "Tertinggi",
+    "latest": "Terakhir",
+    "hint": "Sentuh dan geser grafik untuk melihat jam dan nilainya",
+    "readoutAvg": "rata-rata",
+    "readoutMax": "tertinggi",
+    "readoutNone": "Tidak ada bacaan"
+  },
+  "hrvDay": {
+    "title": "HRV seharian",
+    "unit": "ms",
+    "chartLabel": "Grafik HRV {{day}}",
+    "loadError": "Gagal membaca HRV: {{error}}",
+    "emptyToday": "Belum ada HRV tersimpan hari ini. Sinkron untuk mengambil dari jam, atau ukur sekarang.",
+    "emptyPast": "Tidak ada HRV tersimpan pada tanggal ini.",
+    "nightTitle": "Malam",
+    "nightDetail_other": "Rata-rata RMSSD dari {{count}} bacaan, {{from}} sampai {{to}}",
+    "spotTitle": "Pengukuran satu menit",
+    "measure": "Ukur HRV sekarang",
+    "note": "HRV di sini adalah RMSSD dalam milidetik. Garis hanya menyambung bacaan yang terlewat satu kali; celah lebih panjang berarti tidak ada yang tercatat."
+  },
+  "stressDay": {
+    "title": "Stres seharian",
+    "unit": "dari 100",
+    "chartLabel": "Grafik stres {{day}}",
+    "loadError": "Gagal membaca stres: {{error}}",
+    "emptyToday": "Belum ada tingkat stres tersimpan hari ini. Sinkron untuk mengambil dari jam.",
+    "emptyPast": "Tidak ada tingkat stres tersimpan pada tanggal ini.",
+    "bandsTitle": "Waktu di tiap rentang",
+    "band": {
+      "relaxed": "Santai",
+      "normal": "Normal",
+      "medium": "Sedang",
+      "high": "Tinggi"
+    },
+    "bandRange": "{{from}} sampai {{to}}",
+    "bandsNote": "Waktu dihitung dari tiap rentang yang ada bacaan dari jam. Celah di grafik berarti tidak ada yang tercatat. Tingkat ini perkiraan kebugaran, bukan alat ukur medis."
   },
   "cards": {
     "entry": "Atur kartu Beranda",

@@ -25,6 +25,8 @@ export function analysisPalette(colors: Colors, isDark: boolean, fonts: { regula
     elevation: colors.sleep,
     cadence: colors.steps,
     power: colors.warning,
+    hrv: colors.heart,
+    stress: colors.sleep,
     negative: colors.destructive,
     mapRoute: colors.workouts,
     mapRouteCasing: colors.card,

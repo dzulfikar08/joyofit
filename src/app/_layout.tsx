@@ -275,6 +275,8 @@ function RootNavigator() {
                     <Tabs.Screen name="health" options={{ href: null }} />
                     <Tabs.Screen name="hrv" options={{ href: null }} />
                     <Tabs.Screen name="heart" options={{ href: null }} />
+                    <Tabs.Screen name="hrv-day" options={{ href: null }} />
+                    <Tabs.Screen name="stress" options={{ href: null }} />
                     <Tabs.Screen name="home-cards" options={{ href: null }} />
                     <Tabs.Screen name="sleep" options={{ href: null }} />
                     <Tabs.Screen name="readiness" options={{ href: null }} />

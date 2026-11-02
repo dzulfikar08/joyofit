@@ -30,6 +30,9 @@ export interface AnalysisPalette {
   elevation: string;
   cadence: string;
   power: string;
+  /** Whole-day charts: all-day HRV and stress level. */
+  hrv: string;
+  stress: string;
   /** Good news: fastest split, faster than before. */
   positive: string;
   negative: string;
@@ -59,6 +62,8 @@ export function defaultPalette(isDark: boolean): AnalysisPalette {
       elevation: '#B7A57F',
       cadence: '#B58CFF',
       power: '#FFB03B',
+      hrv: '#FF6B6F',
+      stress: '#9C8CFF',
       positive: '#4CD98A',
       negative: '#FF6B62',
       zones: ['#7DA9D6', '#4FC3A1', '#F0C14B', '#F59A4A', '#F0584C'],
@@ -82,6 +87,8 @@ export function defaultPalette(isDark: boolean): AnalysisPalette {
     elevation: '#7C6F57',
     cadence: '#7A4DC9',
     power: '#D97706',
+    hrv: '#E0363F',
+    stress: '#6B4FD1',
     positive: '#17874D',
     negative: '#C93A32',
     zones: ['#6F9BC9', '#3AA586', '#D9A81F', '#E37B26', '#D63D31'],

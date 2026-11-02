@@ -12,6 +12,8 @@ export interface MetricMeta {
   /** Short line under the value: what the number is. */
   hint?: string;
   format: (value: number) => string;
+  /** Screen with the whole day of this metric; the card opens it. */
+  dayRoute?: '/hrv-day' | '/stress';
 }
 
 const oneDecimal = (v: number) => fmtDecimal(v, 1);
@@ -20,8 +22,8 @@ const whole = (v: number) => fmtInt(v);
 /** Known metrics, built on demand so the text follows the language; key order is the display order. The raw ones (value = null) only need a title. */
 const META: Record<string, (() => MetricMeta) | undefined> = {
   skin_temperature: () => ({ label: t('health:metrics.skin_temperature.label'), icon: 'thermometer', tint: 'workouts', unit: '\u00B0C', format: oneDecimal }), // i18n-ok: unit symbol
-  hrv: () => ({ label: t('health:metrics.hrv.label'), icon: 'pulse', tint: 'heart', unit: 'ms', hint: t('health:metrics.hrv.hint'), format: whole }), // i18n-ok: unit symbol
-  emotion: () => ({ label: t('health:metrics.emotion.label'), icon: 'happy', tint: 'sleep', unit: '', hint: t('health:metrics.emotion.hint'), format: whole }),
+  hrv: () => ({ label: t('health:metrics.hrv.label'), icon: 'pulse', tint: 'heart', unit: 'ms', hint: t('health:metrics.hrv.hint'), format: whole, dayRoute: '/hrv-day' }), // i18n-ok: unit symbol
+  emotion: () => ({ label: t('health:metrics.emotion.label'), icon: 'happy', tint: 'sleep', unit: '', hint: t('health:metrics.emotion.hint'), format: whole, dayRoute: '/stress' }),
   sleep_apnea: () => ({
     label: t('health:metrics.sleep_apnea.label'),
     icon: 'moon',

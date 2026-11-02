@@ -42,12 +42,28 @@ export function ReadinessScreen() {
             <StrainSection days={scores.strain} dayStart={data.dayStart} maxHr={scores.maxHr} />
           </FadeIn>
           <NavRow
+            icon="pulse"
+            tint="heart"
+            title={t('readiness.hrvDayTitle')}
+            subtitle={t('readiness.hrvDaySubtitle')}
+            onPress={() => router.push('/hrv-day')}
+            style={groupedRowStyle(theme, 0, 3)}
+          />
+          <NavRow
+            icon="happy"
+            tint="sleep"
+            title={t('readiness.stressDayTitle')}
+            subtitle={t('readiness.stressDaySubtitle')}
+            onPress={() => router.push('/stress')}
+            style={groupedRowStyle(theme, 1, 3)}
+          />
+          <NavRow
             icon="stats-chart"
             tint="link"
             title={t('readiness.trendsTitle')}
             subtitle={t('readiness.trendsSubtitle')}
             onPress={() => router.push('/trends')}
-            style={groupedRowStyle(theme, 0, 1)}
+            style={groupedRowStyle(theme, 2, 3)}
           />
           <JoyoRogoCard />
         </>
