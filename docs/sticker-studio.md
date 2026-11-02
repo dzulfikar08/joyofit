@@ -461,14 +461,14 @@ every family before, `run.bold` first) and `audit-after.png` (the family's openi
   === 'pro'`, the same gate as Coach); free accounts always carry it.
 - Photos: `photoSize.ts` + `photo.ts` downscale the pick to 2048 px (JPEG 0.9) before it is drawn.
 
-### Catalog (117 templates, 17 kinds)
+### Catalog (119 templates, 17 kinds)
 
 Ids are `<kind>.<name>.<canvas>`; a style with both `story` and `square` is one picker entry. Transparent stickers are `free`
 canvases.
 
 | kind | templates |
 |---|---|
-| `run` (18) | `bold`, `poster`, `minimal`, `photo`, `glass` (story + square each); `route.sticker`, `stats.sticker`, `receipt.sticker` (transparent); `map.story`; `splits` and `zones` (story + square) |
+| `run` (20) | `bold`, `poster`, `minimal`, `photo`, `glass`, `classic` (story + square each); `route.sticker`, `stats.sticker`, `receipt.sticker` (transparent); `map.story`; `splits` and `zones` (story + square) |
 | `strength` (12) | `bold`, `poster`, `minimal`, `muscle`, `photo` (story + square each); `receipt.sticker`, `stats.sticker` (transparent) |
 | `walk`, `ride`, `swim`, `gym`, `cardio`, `flow`, `court` (6 each) | `bold` and `minimal` (story + square), `poster.story`, `stats.sticker` (transparent); `templates/sport.ts`, one spec per family |
 | `sleep` (6) | `ring` and `stages` (story + square), `poster.story`, `stats.sticker` |
@@ -481,8 +481,12 @@ canvases.
 | `threads` (17) | the Threads carousel, one template per slide on a 1080 x 1350 `portrait` canvas (`threads.<slide>.portrait`): `summary`, `lift`, `splits(2,3)`, `charts`, `sensors`, `zones`, `power`, `powerzones`, `climbs`, `lifts(2,3)`, `muscle`, `context`, `contextlift`. Never offered by the sticker sheet; `ThreadsSheet` offers them. See docs/share-threads.md |
 
 Styles: bold (volt on black, volt card by day), poster (paper, oversized type), minimal (ink, hairlines), photo and glass (the
-person's own photo, needs one), receipt (thermal paper, IBM Plex Mono, transparent), map (route focus, `map` background with
+person's own photo, needs one; `run.classic` is the pre-engine share card, `templates/run-classic.ts`), receipt (thermal paper, IBM Plex Mono, transparent), map (route focus, `map` background with
 a drawn fallback until a map image is supplied), ring (progress rings), badge (medal).
+
+`run.classic` follows the family rules of every `run` card (km, metres for a swim); the grid keeps the old card's order: time, the family's pace or speed, heart rate, calories, climb, and a number the workout lacks is left out.
+Its type is 0.85 of the old nominal sizes, measured from a screenshot of the old card, and its date follows the app locale
+(`date:medium`, so `17 Oct 2026` in English where the old card printed `Oct 17, 2026`: the core has no year-last filter).
 
 ### Tests and goldens
 
