@@ -1,12 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { ActivityIndicator, FlatList, Linking, Modal, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { ActivityIndicator, FlatList, Linking, Modal, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { ChipRow } from '@/components/ChipRow';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PopIn, useFlash } from '@/components/motion';
 import { PressableScale } from '@/components/PressableScale';
@@ -25,7 +24,7 @@ import type { Scene } from '../core/scene';
 import { sceneFor, type Mode } from '../engine';
 import { FIT_FONTS } from '../fonts';
 import { ensureStickerFonts } from '../fontLoader';
-import { availableFilters, filterGroups, hasCanvasChoice, initialGroup, offerGroups, pickVariant, type OfferFilter, type TemplateGroup } from '../offer';
+import { hasCanvasChoice, initialGroup, offerGroups, pickVariant, sectionGroups, type OfferSection, type TemplateGroup } from '../offer';
 import { pickStickerPhoto, type PhotoSource } from '../photo';
 import {
   PhotosDeniedError,
@@ -38,6 +37,7 @@ import {
   type PhotosPrompt,
 } from '../share/shareImage';
 import { canSaveToLibrary } from '../share/shareTargets';
+import { LruCache, hashText, thumbKey } from '../thumbCache';
 import type { StickerSubject } from '../subject';
 import { EXPORT_CARD_WIDTH, ScenePainter } from './ScenePainter';
 import { templateTitle } from './templateTitle';
@@ -45,7 +45,26 @@ import { useStickerPro } from './useStickerPro';
 
 /** Android 11 (API 30) is the first release where saving to Pictures needs no storage permission. */
 const SAVE_AVAILABLE = canSaveToLibrary(Platform.OS === 'ios' ? 'ios' : 'android', Platform.OS === 'android' ? Number(Platform.Version) : 0);
-const THUMB_WIDTH = 92;
+const GRID_COLUMNS = 3;
+const GRID_GAP = spacing.sm;
+/** Cell frame height as a multiple of its width: tall enough for a Story card, a square or a sticker sits centered inside. */
+const CELL_ASPECT = 1.6;
+/** Thumbnail Scenes already built, by `thumbKey`: a cell that scrolls out and back, or a sheet re-render, rebuilds nothing. */
+const sceneCache = new LruCache<Scene>(150);
+
+/** One row of the picker list: a section title, or up to three cells. */
+type GridRow = { key: string; kind: 'title'; section: OfferSection } | { key: string; kind: 'cells'; groups: TemplateGroup[] };
+
+function gridRows(groups: readonly TemplateGroup[]): GridRow[] {
+  return sectionGroups(groups).flatMap(({ section, groups: inSection }) => {
+    const rows: GridRow[] = [{ key: `t-${section}`, kind: 'title', section }];
+    for (let i = 0; i < inSection.length; i += GRID_COLUMNS) {
+      const cells = inSection.slice(i, i + GRID_COLUMNS);
+      rows.push({ key: `c-${cells[0]!.key}`, kind: 'cells', groups: cells });
+    }
+    return rows;
+  });
+}
 
 type Target = 'instagram' | 'copy' | 'save' | 'more';
 type CanvasPref = 'story' | 'square';
@@ -121,48 +140,63 @@ interface ThumbProps {
   group: TemplateGroup;
   canvas: CanvasPref;
   subject: StickerSubject;
+  dataHash: string;
   mode: Mode;
   options: StickerData['options'];
+  photo: ImageRef | null;
+  width: number;
   selected: boolean;
   label: string;
   onPress: () => void;
 }
 
-/** A picker entry: the real Scene of the style at thumbnail size, so what you tap is what you get. */
-function Thumb({ group, canvas, subject, mode, options, selected, label, onPress }: ThumbProps) {
+/**
+ * A grid cell: the real Scene of the style, with the person's workout data and chosen photo, painted once at thumbnail size.
+ * The list only mounts cells near the screen and the Scene comes from `sceneCache`, so scrolling never rebuilds them.
+ */
+const Thumb = memo(function Thumb({ group, canvas, subject, dataHash, mode, options, photo, width, selected, label, onPress }: ThumbProps) {
   const { colors, radius } = useTheme();
   const locale = useLocale();
   const template = pickVariant(group, canvas);
-  const scene = useMemo(() => sceneFor(template, subject.data, { locale, mode, options, date: subject.date }), [template, subject.data, subject.date, locale, mode, options]);
-  const height = (THUMB_WIDTH * scene.height) / scene.width;
+  const scene = useMemo(
+    () =>
+      sceneCache.getOrCreate(thumbKey({ templateId: template.id, dataHash, date: subject.date, photoUri: photo?.uri ?? null, locale, mode, options }), () =>
+        sceneFor(template, subject.data, { locale, mode, options, date: subject.date, assets: photo ? { photo } : undefined }),
+      ),
+    [template, subject.data, subject.date, dataHash, photo, locale, mode, options],
+  );
+  const frameHeight = width * CELL_ASPECT;
+  const paintWidth = Math.min(width, (frameHeight * scene.width) / scene.height);
+  const paintHeight = (paintWidth * scene.height) / scene.width;
   return (
-    <PressableScale
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={styles.thumb}>
+    <PressableScale accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected }} onPress={onPress} style={{ width }}>
       <View
         style={{
-          width: THUMB_WIDTH + 6,
-          height: height + 6,
+          width,
+          height: frameHeight,
           borderRadius: radius.tile + 3,
           borderWidth: 3,
           borderColor: selected ? colors.primary : 'transparent',
           alignItems: 'center',
           justifyContent: 'center',
+          backgroundColor: colors.muted,
         }}>
-        <View style={{ width: THUMB_WIDTH, height, borderRadius: radius.tile, overflow: 'hidden', backgroundColor: colors.muted }}>
+        <View style={{ width: paintWidth, height: paintHeight, borderRadius: radius.tile, overflow: 'hidden' }}>
           {scene.transparent ? <Checker mode={mode} /> : null}
-          <ScenePainter scene={scene} fonts={FIT_FONTS} width={THUMB_WIDTH} />
+          <ScenePainter scene={scene} fonts={FIT_FONTS} width={paintWidth} />
         </View>
+        {selected ? (
+          <View style={[styles.check, { backgroundColor: colors.primary }]}>
+            <Ionicons name="checkmark" size={14} color={colors.primaryForeground} />
+          </View>
+        ) : null}
       </View>
       <AppText variant="caption" numberOfLines={1} muted={!selected} style={styles.thumbLabel}>
         {label}
       </AppText>
     </PressableScale>
   );
-}
+});
 
 /**
  * The sticker composer: a picker of every template that fits the subject (card, transparent sticker, photo card, badge), the
@@ -195,9 +229,10 @@ export function StickerSheet({
   const cardRef = useRef<View>(null);
 
   const groups = useMemo(() => offerGroups(subject), [subject]);
-  const filters = useMemo(() => availableFilters(groups), [groups]);
-  const [filter, setFilter] = useState<OfferFilter>('all');
-  const visibleGroups = useMemo(() => filterGroups(groups, filter), [groups, filter]);
+  const rows = useMemo(() => gridRows(groups), [groups]);
+  const dataHash = useMemo(() => hashText(JSON.stringify(subject.data)), [subject.data]);
+  const listRef = useRef<FlatList<GridRow>>(null);
+  const cellWidth = (screen.width - spacing.lg * 2 - GRID_GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
   const [groupKey, setGroupKey] = useState<string | null>(null);
   const [canvas, setCanvas] = useState<CanvasPref>('story');
   const [modePick, setModePick] = useState<Mode | null>(null);
@@ -225,12 +260,11 @@ export function StickerSheet({
   if (seenSubjectId !== subject.id) {
     setSeenSubjectId(subject.id);
     setGroupKey(null);
-    setFilter('all');
     setPhoto(null);
     setFeedback(null);
   }
 
-  const group = visibleGroups.find((g) => g.key === groupKey) ?? initialGroup(visibleGroups, subject) ?? groups[0] ?? null;
+  const group = groups.find((g) => g.key === groupKey) ?? initialGroup(groups, subject);
   const template = group ? pickVariant(group, canvas) : null;
   const mode: Mode = modePick ?? scheme;
   const hasRoute = !isMissing(lookupPath(subject.data, 'run.route'));
@@ -239,10 +273,7 @@ export function StickerSheet({
     () => ({ watermark: pro ? watermark : true, hideNumbers: false, showName: false, privacy: { routeTrimMeters: routePrivacy ? 200 : 0 } }),
     [pro, watermark, routePrivacy],
   );
-  const scene = useMemo(
-    () => (template ? sceneFor(template, subject.data, { locale, mode, options, date: subject.date, assets: photo ? { photo } : undefined }) : null),
-    [template, subject.data, subject.date, locale, mode, options, photo],
-  );
+  const scene = template ? sceneFor(template, subject.data, { locale, mode, options, date: subject.date, assets: photo ? { photo } : undefined }) : null;
 
   const needsPhoto = group?.needsPhoto === true;
   const imagesReady = scene !== null && settled?.scene === scene && !settled.failed;
@@ -255,6 +286,11 @@ export function StickerSheet({
   const frameWidth = scene ? Math.min(screen.width - spacing.lg * 2, (maxFrameHeight * EXPORT_CARD_WIDTH) / fullHeight) : 0;
   const scale = frameWidth / EXPORT_CARD_WIDTH;
   const frameHeight = fullHeight * scale;
+
+  const pickGroup = (key: string) => {
+    setGroupKey(key);
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+  };
 
   const addPhoto = async (source: PhotoSource) => {
     if (busy) return;
@@ -350,123 +386,135 @@ export function StickerSheet({
           </PressableScale>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {filters.length > 0 ? (
-            <ChipRow
-              inset={spacing.lg}
-              items={filters.map((value) => ({ key: value, label: t(`stickers:ui.filter.${value}`), selected: filter === value, onPress: () => setFilter(value) }))}
-            />
-          ) : null}
-
-          <View style={styles.stripWrap}>
-            <FlatList
-              horizontal
-              data={visibleGroups}
-              keyExtractor={(item) => item.key}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.strip}
-              initialNumToRender={6}
-              windowSize={5}
-              extraData={`${mode}${locale}${canvas}${group?.key ?? ''}`}
-              renderItem={({ item }) => (
-                <Thumb
-                  group={item}
-                  canvas={canvas}
-                  subject={subject}
-                  mode={mode}
-                  options={options}
-                  selected={item.key === group?.key}
-                  label={templateTitle(item, locale)}
-                  onPress={() => setGroupKey(item.key)}
-                />
-              )}
-            />
-          </View>
-
-          <View style={[styles.stage, { backgroundColor: colors.muted, borderRadius: radius.card }]}>
-            {scene ? (
-              <View style={{ width: frameWidth, height: frameHeight, borderRadius: radius.input, overflow: 'hidden' }}>
-                {scene.transparent ? <Checker mode={mode} /> : null}
-                <View
-                  pointerEvents="none"
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: EXPORT_CARD_WIDTH,
-                    height: fullHeight,
-                    transform: [{ scale }],
-                    transformOrigin: 'top left',
-                  }}>
-                  <View ref={cardRef} collapsable={false}>
-                    <ScenePainter scene={scene} fonts={FIT_FONTS} onImagesSettled={(failed) => setSettled({ scene, failed: failed.length > 0 })} />
+        <FlatList
+          ref={listRef}
+          data={rows}
+          keyExtractor={(row) => row.key}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          initialNumToRender={6}
+          maxToRenderPerBatch={4}
+          windowSize={5}
+          removeClippedSubviews
+          extraData={`${mode}${locale}${canvas}${group?.key ?? ''}${photo?.uri ?? ''}`}
+          ListHeaderComponent={
+            <View style={styles.headerBlock}>
+            <View style={[styles.stage, { backgroundColor: colors.muted, borderRadius: radius.card }]}>
+              {scene ? (
+                <View style={{ width: frameWidth, height: frameHeight, borderRadius: radius.input, overflow: 'hidden' }}>
+                  {scene.transparent ? <Checker mode={mode} /> : null}
+                  <View
+                    pointerEvents="none"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: EXPORT_CARD_WIDTH,
+                      height: fullHeight,
+                      transform: [{ scale }],
+                      transformOrigin: 'top left',
+                    }}>
+                    <View ref={cardRef} collapsable={false}>
+                      <ScenePainter scene={scene} fonts={FIT_FONTS} onImagesSettled={(failed) => setSettled({ scene, failed: failed.length > 0 })} />
+                    </View>
                   </View>
                 </View>
-              </View>
-            ) : null}
-          </View>
+              ) : null}
+            </View>
 
-          <AppText variant="caption" muted style={styles.centered}>
-            {hint}
-          </AppText>
+            <AppText variant="caption" muted style={styles.centered}>
+              {hint}
+            </AppText>
 
-          <View style={styles.controls}>
-            {group && hasCanvasChoice(group) ? (
+            <View style={styles.controls}>
+              {group && hasCanvasChoice(group) ? (
+                <Segmented
+                  options={[
+                    { value: 'story', label: t('stickers:ui.canvas.story') },
+                    { value: 'square', label: t('stickers:ui.canvas.square') },
+                  ]}
+                  value={canvas}
+                  onChange={setCanvas}
+                />
+              ) : null}
               <Segmented
                 options={[
-                  { value: 'story', label: t('stickers:ui.canvas.story') },
-                  { value: 'square', label: t('stickers:ui.canvas.square') },
+                  { value: 'dark', label: t('stickers:ui.mode.dark') },
+                  { value: 'light', label: t('stickers:ui.mode.light') },
                 ]}
-                value={canvas}
-                onChange={setCanvas}
+                value={mode}
+                onChange={setModePick}
               />
-            ) : null}
-            <Segmented
-              options={[
-                { value: 'dark', label: t('stickers:ui.mode.dark') },
-                { value: 'light', label: t('stickers:ui.mode.light') },
-              ]}
-              value={mode}
-              onChange={setModePick}
-            />
-          </View>
-
-          {needsPhoto ? (
-            <View style={styles.row}>
-              <Button
-                label={photo ? t('stickers:ui.photo.change') : t('stickers:ui.photo.choose')}
-                icon="images-outline"
-                loading={busy === 'photo'}
-                onPress={() => void addPhoto('library')}
-                style={styles.flex}
-              />
-              <Button label={t('stickers:ui.photo.take')} icon="camera-outline" disabled={busy !== null} onPress={() => void addPhoto('camera')} style={styles.flex} />
             </View>
-          ) : null}
-          {needsPhoto && photo === null ? (
-            <AppText variant="caption" muted style={styles.centered}>
-              {t('stickers:ui.photo.needed')}
-            </AppText>
-          ) : null}
-          {photoFailed ? <Notice tone="danger">{t('stickers:ui.photo.failed')}</Notice> : null}
 
-          {hasRoute ? (
-            <SwitchRow label={t('stickers:ui.routePrivacy.label')} hint={t('stickers:ui.routePrivacy.hint')} value={routePrivacy} onValueChange={setRoutePrivacy} />
-          ) : null}
-          <SwitchRow
-            label={t('stickers:ui.watermark.label')}
-            hint={pro ? t('stickers:ui.watermark.hintPro') : t('stickers:ui.watermark.hintFree')}
-            value={pro ? watermark : true}
-            onValueChange={setWatermark}
-            disabled={!pro}
-          />
+            {needsPhoto ? (
+              <View style={styles.row}>
+                <Button
+                  label={photo ? t('stickers:ui.photo.change') : t('stickers:ui.photo.choose')}
+                  icon="images-outline"
+                  loading={busy === 'photo'}
+                  onPress={() => void addPhoto('library')}
+                  style={styles.flex}
+                />
+                <Button label={t('stickers:ui.photo.take')} icon="camera-outline" disabled={busy !== null} onPress={() => void addPhoto('camera')} style={styles.flex} />
+              </View>
+            ) : null}
+            {needsPhoto && photo === null ? (
+              <AppText variant="caption" muted style={styles.centered}>
+                {t('stickers:ui.photo.needed')}
+              </AppText>
+            ) : null}
+            {photoFailed ? <Notice tone="danger">{t('stickers:ui.photo.failed')}</Notice> : null}
 
-          {feedback ? (
-            <Notice tone={feedback.tone} action={feedback.action}>
-              {feedback.text}
-            </Notice>
-          ) : null}
-        </ScrollView>
+            </View>
+          }
+          renderItem={({ item }) =>
+            item.kind === 'title' ? (
+              <AppText variant="label" accessibilityRole="header" style={styles.sectionTitle}>
+                {t(`stickers:ui.section.${item.section}`)}
+              </AppText>
+            ) : (
+              <View style={styles.gridRow}>
+                {item.groups.map((g) => (
+                  <Thumb
+                    key={g.key}
+                    group={g}
+                    canvas={canvas}
+                    subject={subject}
+                    dataHash={dataHash}
+                    mode={mode}
+                    options={options}
+                    photo={photo}
+                    width={cellWidth}
+                    selected={g.key === group?.key}
+                    label={templateTitle(g, locale)}
+                    onPress={() => pickGroup(g.key)}
+                  />
+                ))}
+              </View>
+            )
+          }
+          ListFooterComponent={
+            <View style={styles.footerBlock}>
+            {hasRoute ? (
+              <SwitchRow label={t('stickers:ui.routePrivacy.label')} hint={t('stickers:ui.routePrivacy.hint')} value={routePrivacy} onValueChange={setRoutePrivacy} />
+            ) : null}
+            <SwitchRow
+              label={t('stickers:ui.watermark.label')}
+              hint={pro ? t('stickers:ui.watermark.hintPro') : t('stickers:ui.watermark.hintFree')}
+              value={pro ? watermark : true}
+              onValueChange={setWatermark}
+              disabled={!pro}
+            />
+
+            {feedback ? (
+              <Notice tone={feedback.tone} action={feedback.action}>
+                {feedback.text}
+              </Notice>
+            ) : null}
+            </View>
+          }
+        />
 
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.md), borderTopColor: colors.hairline }]}>
           {installed ? (
@@ -503,11 +551,13 @@ const styles = StyleSheet.create({
   header: { minHeight: HIT, flexDirection: 'row', alignItems: 'center', paddingLeft: spacing.lg, paddingRight: spacing.sm },
   headerTitle: { flex: 1 },
   close: { width: HIT, height: HIT, alignItems: 'center', justifyContent: 'center' },
-  content: { padding: spacing.lg, gap: spacing.md },
-  stripWrap: { marginHorizontal: -spacing.lg },
-  strip: { paddingHorizontal: spacing.lg, gap: spacing.sm },
-  thumb: { alignItems: 'center', gap: spacing.xs, width: THUMB_WIDTH + 12 },
-  thumbLabel: { textAlign: 'center', maxWidth: THUMB_WIDTH + 12 },
+  content: { padding: spacing.lg },
+  headerBlock: { gap: spacing.md },
+  footerBlock: { gap: spacing.md, marginTop: spacing.md },
+  sectionTitle: { marginTop: spacing.lg, marginBottom: spacing.sm },
+  gridRow: { flexDirection: 'row', gap: GRID_GAP, marginBottom: spacing.sm },
+  thumbLabel: { textAlign: 'center', marginTop: spacing.xs },
+  check: { position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   stage: { paddingVertical: spacing.md, alignItems: 'center' },
   centered: { textAlign: 'center' },
   controls: { gap: spacing.sm },

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { parseTemplate } from './core/parse';
 import type { Template } from './core/schema';
-import { availableFilters, canvasOf, filterGroups, hasCanvasChoice, initialGroup, offerGroups, pickVariant } from './offer';
+import { canvasOf, hasCanvasChoice, initialGroup, offerGroups, pickVariant, sectionGroups, sectionOf, type TemplateGroup } from './offer';
 import type { StickerSubject } from './subject';
 import { kit, template } from './templates/dsl';
 
@@ -102,20 +102,23 @@ describe('initialGroup', () => {
   });
 });
 
-describe('filters', () => {
+describe('sections', () => {
   const groups = offerGroups(subject(['run', 'badge'], { run: { route: [[0, 0], [1, 1]] } }), TEMPLATES);
 
-  test('card, sticker, photo and badge pick the right groups', () => {
-    expect(filterGroups(groups, 'card').map((g) => g.key)).toEqual(['run.bold']);
-    expect(filterGroups(groups, 'sticker').map((g) => g.key)).toEqual(['run.route', 'badge.medal']);
-    expect(filterGroups(groups, 'photo').map((g) => g.key)).toEqual(['run.photo']);
-    expect(filterGroups(groups, 'badge').map((g) => g.key)).toEqual(['badge.medal']);
-    expect(filterGroups(groups, 'all')).toHaveLength(4);
+  test('groups land in one section each, in display order, empty sections left out', () => {
+    expect(sectionGroups(groups).map((s) => [s.section, s.groups.map((g) => g.key)])).toEqual([
+      ['photo', ['run.photo']],
+      ['overlay', ['run.route']],
+      ['card', ['run.bold']],
+      ['badge', ['badge.medal']],
+    ]);
+    expect(sectionGroups(groups).flatMap((s) => s.groups)).toHaveLength(groups.length);
+    expect(sectionGroups([])).toEqual([]);
   });
 
-  test('filters with nothing behind them are not shown; a single kind of template shows no filters', () => {
-    expect(availableFilters(groups)).toEqual(['all', 'card', 'sticker', 'photo', 'badge']);
-    const sleepOnly = offerGroups(subject(['sleep'], {}), TEMPLATES);
-    expect(availableFilters(sleepOnly)).toEqual([]);
+  test("the person's own templates (u- ids) get their own section whatever they draw", () => {
+    const own: TemplateGroup = { ...groups[0]!, key: 'run.mine', variants: { story: { ...TEMPLATES[0]!, id: 'u-abcd1234' } } };
+    expect(sectionOf(own)).toBe('yours');
+    expect(sectionGroups([own, ...groups]).at(-1)?.section).toBe('yours');
   });
 });

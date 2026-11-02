@@ -46,12 +46,12 @@
     "watt": "W"
   },
   "ui": {
-    "filter": {
-      "all": "All",
+    "section": {
+      "photo": "Photo cards",
+      "overlay": "Overlays",
       "card": "Cards",
-      "sticker": "Stickers",
-      "photo": "Photo",
-      "badge": "Badges"
+      "badge": "Badges",
+      "yours": "Your templates"
     },
     "canvas": {
       "story": "Story 9:16",

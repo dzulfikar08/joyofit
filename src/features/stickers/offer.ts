@@ -83,26 +83,26 @@ export function hasCanvasChoice(group: TemplateGroup): boolean {
   return group.variants.story !== undefined && group.variants.square !== undefined;
 }
 
-export type OfferFilter = 'all' | 'card' | 'sticker' | 'photo' | 'badge';
+/** The picker sections, in display order. */
+export type OfferSection = 'photo' | 'overlay' | 'card' | 'badge' | 'yours';
 
-export function filterGroups(groups: readonly TemplateGroup[], filter: OfferFilter): TemplateGroup[] {
-  switch (filter) {
-    case 'all':
-      return [...groups];
-    case 'card':
-      return groups.filter((g) => !g.transparent && !g.needsPhoto && g.kind !== 'badge');
-    case 'sticker':
-      return groups.filter((g) => g.transparent);
-    case 'photo':
-      return groups.filter((g) => g.needsPhoto);
-    case 'badge':
-      return groups.filter((g) => g.kind === 'badge');
-  }
+export const OFFER_SECTIONS: readonly OfferSection[] = ['photo', 'overlay', 'card', 'badge', 'yours'];
+
+/** The section a group sits in: the person's own templates (`u-` ids) first, then by what it draws. */
+export function sectionOf(group: TemplateGroup): OfferSection {
+  if (Object.values(group.variants).some((t) => t.id.startsWith('u-'))) return 'yours';
+  if (group.needsPhoto) return 'photo';
+  if (group.kind === 'badge') return 'badge';
+  if (group.transparent) return 'overlay';
+  return 'card';
 }
 
-/** The filters worth showing: one with nothing behind it is left out. */
-export function availableFilters(groups: readonly TemplateGroup[]): OfferFilter[] {
-  const all: OfferFilter[] = ['card', 'sticker', 'photo', 'badge'];
-  const shown = all.filter((filter) => filterGroups(groups, filter).length > 0);
-  return shown.length > 1 ? ['all', ...shown] : [];
+export interface OfferSectionGroups {
+  section: OfferSection;
+  groups: TemplateGroup[];
+}
+
+/** Groups split into non-empty sections in display order; every group lands in exactly one, so a new catalog entry shows up by itself. */
+export function sectionGroups(groups: readonly TemplateGroup[]): OfferSectionGroups[] {
+  return OFFER_SECTIONS.map((section) => ({ section, groups: groups.filter((g) => sectionOf(g) === section) })).filter((s) => s.groups.length > 0);
 }
