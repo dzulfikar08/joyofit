@@ -8,10 +8,12 @@
  */
 
 /**
- * Default order. The daily report comes first (recovery and strain, activity, heart rate, steps, sleep, energy), the
- * secondary cards after it. Ids are stored: never rename one once released.
+ * Default order. The one-line insight and the steps and heart rate tiles open the day, then the daily report (recovery and
+ * strain, activity, heart rate, steps, sleep, energy), the secondary cards after it. Ids are stored: never rename one once released.
  */
 export const HOME_CARD_IDS = [
+  'insight',
+  'glance',
   'scores',
   'activity',
   'heart',

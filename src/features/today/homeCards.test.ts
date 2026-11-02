@@ -16,7 +16,7 @@ describe('default order', () => {
   it('lists every card once, the daily report before the secondary cards', () => {
     expect(new Set(HOME_CARD_IDS).size).toBe(HOME_CARD_IDS.length);
     const at = (id: (typeof HOME_CARD_IDS)[number]) => HOME_CARD_IDS.indexOf(id);
-    for (const report of ['scores', 'activity', 'heart', 'steps', 'sleep', 'energy'] as const) {
+    for (const report of ['insight', 'glance', 'scores', 'activity', 'heart', 'steps', 'sleep', 'energy'] as const) {
       for (const secondary of ['fitness', 'coach', 'family', 'loop'] as const) expect(at(report)).toBeLessThan(at(secondary));
     }
   });
@@ -79,7 +79,7 @@ describe('hiding', () => {
 describe('moving', () => {
   it('swaps a card with its neighbour', () => {
     const next = moveHomeCard(DEFAULT_HOME_CARDS, 'heart', -1);
-    expect(next.order.slice(0, 3)).toEqual(['scores', 'heart', 'activity']);
+    expect(next.order.slice(2, 5)).toEqual(['scores', 'heart', 'activity']);
     expect(moveHomeCard(next, 'heart', 1)).toEqual(DEFAULT_HOME_CARDS);
   });
 
@@ -91,7 +91,7 @@ describe('moving', () => {
   it('moves in the full list, so a hidden card between two shown ones keeps the order the settings list shows', () => {
     const hidden = setHomeCardHidden(DEFAULT_HOME_CARDS, 'activity', true);
     const next = moveHomeCard(hidden, 'heart', -1);
-    expect(next.order.slice(0, 3)).toEqual(['scores', 'heart', 'activity']);
+    expect(next.order.slice(2, 5)).toEqual(['scores', 'heart', 'activity']);
     expect(next.hidden).toEqual(['activity']);
   });
 

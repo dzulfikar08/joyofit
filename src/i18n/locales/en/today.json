@@ -376,6 +376,8 @@
     "position": "{{card}}, position {{n}} of {{total}}",
     "reset": "Restore the original order",
     "names": {
+      "insight": "Today's insight",
+      "glance": "Steps and heart rate tiles",
       "scores": "Recovery, strain and sleep",
       "activity": "Calories and distance",
       "heart": "Heart rate",
@@ -389,6 +391,39 @@
       "loop": "New loop from home",
       "health": "Health metrics"
     }
+  },
+  "insight": {
+    "a11y": "Today's insight, {{n}} of {{total}}",
+    "dotA11y": "Insight {{n}} of {{total}}",
+    "eyebrow": {
+      "steps": "Steps",
+      "readiness": "Readiness: {{headline}}",
+      "readinessRecovery": "Readiness: {{headline}}, recovery {{percent}}%",
+      "sleep": "Sleep",
+      "coach": "Coach suggestion"
+    },
+    "text": {
+      "stepsReached": "You reached today's step goal: {{steps}} steps. Nice work.",
+      "stepsClose_one": "Just {{left}} more step to today's goal.",
+      "stepsClose_other": "Just {{left}} more steps to today's goal.",
+      "sleepGood": "You slept enough last night: {{detail}}.",
+      "sleepClose": "You almost slept enough last night: {{detail}}.",
+      "sleepShort": "You slept short last night: {{detail}}. Try an earlier night tonight.",
+      "coach": "{{headline}}. {{body}}",
+      "coachShort": "{{headline}}."
+    },
+    "action": {
+      "steps": "See steps",
+      "readiness": "See readiness",
+      "sleep": "See sleep",
+      "coach": "Open Coach"
+    }
+  },
+  "glance": {
+    "goal": "Goal {{goal}}",
+    "stepsA11y": "Steps today: {{steps}} of a {{goal}} goal. Open steps.",
+    "heartA11y": "Heart rate today, latest {{bpm}} bpm at {{time}}, between {{min}} and {{max}} bpm. Open heart rate.",
+    "heartNone": "No heart rate yet today"
   },
   "week": {
     "bar_one": "{{steps}} step",

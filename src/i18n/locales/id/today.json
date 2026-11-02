@@ -359,6 +359,8 @@
     "position": "{{card}}, urutan {{n}} dari {{total}}",
     "reset": "Kembalikan urutan awal",
     "names": {
+      "insight": "Ringkasan hari ini",
+      "glance": "Petak langkah dan detak jantung",
       "scores": "Pemulihan, strain, dan tidur",
       "activity": "Kalori dan jarak",
       "heart": "Detak jantung",
@@ -372,6 +374,38 @@
       "loop": "Loop baru dari rumah",
       "health": "Metrik kesehatan"
     }
+  },
+  "insight": {
+    "a11y": "Ringkasan hari ini, {{n}} dari {{total}}",
+    "dotA11y": "Ringkasan {{n}} dari {{total}}",
+    "eyebrow": {
+      "steps": "Langkah",
+      "readiness": "Kesiapan: {{headline}}",
+      "readinessRecovery": "Kesiapan: {{headline}}, pemulihan {{percent}}%",
+      "sleep": "Tidur",
+      "coach": "Saran Coach"
+    },
+    "text": {
+      "stepsReached": "Target langkahmu hari ini tercapai: {{steps}} langkah. Kerja bagus.",
+      "stepsClose_other": "Tinggal {{left}} langkah lagi menuju targetmu hari ini.",
+      "sleepGood": "Tidurmu cukup semalam: {{detail}}.",
+      "sleepClose": "Tidurmu hampir cukup semalam: {{detail}}.",
+      "sleepShort": "Tidurmu kurang semalam: {{detail}}. Coba tidur lebih awal malam ini.",
+      "coach": "{{headline}}. {{body}}",
+      "coachShort": "{{headline}}."
+    },
+    "action": {
+      "steps": "Lihat langkah",
+      "readiness": "Lihat kesiapan",
+      "sleep": "Lihat tidur",
+      "coach": "Buka Coach"
+    }
+  },
+  "glance": {
+    "goal": "Target {{goal}}",
+    "stepsA11y": "Langkah hari ini: {{steps}} dari target {{goal}}. Buka langkah.",
+    "heartA11y": "Detak jantung hari ini, terakhir {{bpm}} bpm pukul {{time}}, antara {{min}} dan {{max}} bpm. Buka detak jantung.",
+    "heartNone": "Belum ada detak jantung hari ini"
   },
   "week": {
     "bar_other": "{{steps}} langkah",
