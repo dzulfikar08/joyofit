@@ -41,6 +41,8 @@ import { IntensityWeekCard } from '@/features/fitness/IntensityWeekCard';
 import { CoachTodayCard } from '@/features/coach/ui/CoachTodayCard';
 import { LoopShortcut } from '@/features/loops/ui/LoopShortcut';
 import { FamilyCard } from '@/features/today/FamilyCard';
+import { GlanceTiles } from '@/features/today/GlanceTiles';
+import { InsightCard } from '@/features/today/InsightCard';
 import { ScoresCard } from '@/features/today/ScoresCard';
 import { visibleHomeCards, type HomeCardId } from '@/features/today/homeCards';
 import { useHomeCards } from '@/features/today/homeCardsStore';
@@ -131,6 +133,17 @@ function WatchToday() {
 
   const homeCards = useHomeCards().prefs;
   const cards: Record<HomeCardId, ReactNode> = {
+    insight: (
+      <InsightCard
+        loading={loading}
+        steps={view ? view.totals.steps : null}
+        goal={goal}
+        readiness={view ? view.scores.readiness : null}
+        dataVersion={dataVersion}
+        availability={nightHrv}
+      />
+    ),
+    glance: <GlanceTiles loading={loading} steps={view?.totals.steps ?? 0} goal={goal} samples={data?.samples ?? []} />,
     scores: view ? <ScoresCard readiness={view.scores.readiness} today={view.scores.today} onPress={() => router.push('/readiness')} /> : null,
     activity: loading ? (
       <View style={styles.tiles}>

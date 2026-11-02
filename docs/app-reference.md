@@ -540,6 +540,20 @@ is assumed, no DST handling). BMR source, first that works:
 **Active only, on purpose:** the `activeKcal` sent to JoyoRogo (JoyoRogo adds its own BMR, so sending the total would count it twice), the Joyo AI
 digest and tools, Health Connect, Strava, workout energy and the Kebugaran energy model. No other screen shows a day's calories next to Today.
 
+## Today: insight card and steps / heart rate tiles
+
+Two cards open the arrangeable list on Today, under the watch card (ids `insight` and `glance` in `src/features/today/homeCards.ts`; shown, hidden and moved in
+"Atur kartu Beranda" like the others, and added at the end of an order someone already customised, shown, like any card a release adds).
+
+- **Insight** (`InsightCard.tsx`). One sentence, from numbers the app already has, and one button to the screen behind it. `pickInsights` (`insights.ts`, pure, tested) decides
+  which ones exist and their order: the step goal reached (or half way and past: "N steps left"), readiness (the existing `headlineHint` words), last night's sleep (the
+  readiness sleep signal's own text: enough, almost, short), and for Pro accounts today's Coach suggestion (`headlineText` and `bodyText` of `coach/format.ts`). A kind whose data is
+  missing is left out; with none the card draws nothing. More than one pages sideways with dots. The panel is a soft link-to-sleep gradient with a tint glow in two corners,
+  all from the theme's own colors (light and dark each get theirs; text is `foreground`, at 5.8:1 or better on every palette); an outlined theme (Titik) draws a plain outlined card instead.
+  No claim about other people is ever made.
+- **Tiles** (`GlanceTiles.tsx`). Steps (the number, the goal, a bar; same total as the watch card) and heart rate (a line through today's stored readings, averaged down to 48 points
+  by `heartTrail` in `glance.ts`, with the latest reading in a bubble and its time under it). Each opens its screen (`/steps`, `/heart`).
+
 ## Fitness metrics (Today cards, Today → Kebugaran; screens in Indonesian)
 
 Code in `src/features/fitness/`; every formula is a pure function with a unit test next to it. The watch's own value is shown first and labelled "dari jam"; when
