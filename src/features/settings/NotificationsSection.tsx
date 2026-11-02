@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, PermissionsAndroid, Platform } from 'react-native';
+import { PermissionsAndroid, Platform } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Details } from '@/components/Details';
@@ -13,6 +13,7 @@ import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { NotificationsSectionIos } from '@/features/settings/NotificationsSectionIos';
 import { errorMessage } from '@/format';
 import { HuaweiWear } from '@/wear';
+import { appAlert } from '@/components/AppAlert';
 
 /** Android 13 (API 33) introduced the runtime POST_NOTIFICATIONS permission. */
 const RUNTIME_NOTIFICATION_API = 33;
@@ -61,7 +62,7 @@ function NotificationsSectionAndroid() {
         variant="secondary"
         icon="open-outline"
         onPress={() =>
-          Alert.alert(t('notifications.readTitle'), t('notifications.disclosure'), [
+          appAlert(t('notifications.readTitle'), t('notifications.disclosure'), [
             { text: t('common:actions.cancel'), style: 'cancel' },
             { text: t('common:actions.next'), onPress: () => void run(() => HuaweiWear.openNotificationAccess()) },
           ])

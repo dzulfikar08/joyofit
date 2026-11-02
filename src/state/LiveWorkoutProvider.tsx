@@ -3,7 +3,7 @@ import { useRootNavigationState, useRouter } from 'expo-router';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import Storage from 'expo-sqlite/kv-store';
 import { useSQLiteContext } from 'expo-sqlite';
-import { Alert, AppState, PermissionsAndroid, Platform } from 'react-native';
+import { AppState, PermissionsAndroid, Platform } from 'react-native';
 
 import { t } from '@/i18n';
 import { rememberedWatch } from '@/features/device/rememberedWatch';
@@ -12,6 +12,7 @@ import { isStrengthSport } from '@/features/strength/watchLive';
 import { useWatch } from '@/state/WatchProvider';
 import { HuaweiWear, type LiveWorkout } from '@/wear';
 import { OPEN_IN_STACK } from '@/components/navigation';
+import { appAlert } from '@/components/AppAlert';
 
 /** Set once the location explanation was shown, so the dialog does not come back on every launch. */
 const GPS_EXPLAINED_KEY = 'joyofit.gpsExplained';
@@ -63,7 +64,7 @@ export function LiveWorkoutProvider({ children }: { children: ReactNode }) {
       if (await PermissionsAndroid.check(fine)) return;
       if ((await Storage.getItem(GPS_EXPLAINED_KEY)) === '1') return;
       await Storage.setItem(GPS_EXPLAINED_KEY, '1');
-      Alert.alert(t('common:gps.title'), t('common:gps.body'), [
+      appAlert(t('common:gps.title'), t('common:gps.body'), [
         { text: t('common:gps.notNow'), style: 'cancel' },
         { text: t('common:gps.continue'), onPress: () => void PermissionsAndroid.request(fine) },
       ]);

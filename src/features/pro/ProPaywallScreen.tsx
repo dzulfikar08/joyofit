@@ -2,7 +2,7 @@ import * as Linking from 'expo-linking';
 import { Redirect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { JOYOROGO_URL } from '@/cloud/config';
 import { AppText } from '@/components/AppText';
@@ -21,6 +21,7 @@ import { HuaweiWear } from '@/wear';
 import { billing } from './billing';
 import { BillingError, fetchBillingSwitch, PRIVACY_URL, yearlySavingPercent, type ProPlan, type StoreProducts } from './billingCore';
 import { PlanOption } from './PlanOption';
+import { appAlert } from '@/components/AppAlert';
 
 /** Whether JoyoRogo's `/api/config` says billing for this store is on: `loading` until it answers, `unknown` when it could not be read. */
 type BillingSwitch = 'loading' | 'on' | 'off' | 'unknown';
@@ -104,7 +105,7 @@ function Paywall() {
       if (outcome === 'bought' || outcome === 'trial') {
         setMessage({ tone: 'info', text: t('paywall.activated') });
         void cloud.refreshPro();
-        if (outcome === 'trial') Alert.alert(t('paywall.sandbox.title'), t('paywall.sandbox.body'));
+        if (outcome === 'trial') appAlert(t('paywall.sandbox.title'), t('paywall.sandbox.body'));
       }
     } catch (error) {
       failed(error);

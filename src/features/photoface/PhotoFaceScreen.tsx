@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Alert, Image, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -12,6 +12,7 @@ import { usePhotoFace } from '@/features/photoface/usePhotoFace';
 import { fmtInt } from '@/i18n';
 import { radius, spacing, tintColors, useColors, useTheme } from '@/theme';
 import type { PhotoFacePhoto } from '@/wear';
+import { appAlert } from '@/components/AppAlert';
 
 /** One photo of the face: the local copy when this phone uploaded it, otherwise a labelled stand-in. */
 function PhotoTile({
@@ -72,7 +73,7 @@ export function PhotoFaceScreen() {
   // Deleting re-applies the photo face (it becomes the watch's face) unless that empties a face that is not on the screen.
   const confirmDelete = (photo: PhotoFacePhoto) => {
     const switches = face !== null && !face.face.active && face.photos.length > 1;
-    Alert.alert(
+    appAlert(
       t('watch:photo.deleteTitle'),
       t(switches ? 'watch:photo.deleteMessageSwitch' : 'watch:photo.deleteMessage', { n: photo.index }),
       [

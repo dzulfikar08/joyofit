@@ -11,6 +11,7 @@ import { Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppState, StyleSheet, Text, View, type ColorValue, type StyleProp, type ViewStyle } from 'react-native';
 
+import { AppAlertHost } from '@/components/AppAlert';
 import { FloatingTabBar } from '@/components/FloatingTabBar';
 import { isTabRoot } from '@/components/tabBarRoutes';
 import { TabBarInsetProvider, useReportTabBarInset } from '@/components/tabBarInset';
@@ -204,6 +205,8 @@ function RootNavigator() {
                   <WeightUnitSync />
                   {/* iOS (StoreKit) and the Play build (Play Billing): hands JoyoRogo the purchases it has not credited yet (once per start and account). */}
                   <BillingSync />
+                  {/* Styled dialogs raised with appAlert() from anywhere (providers, callbacks): never the system Alert. */}
+                  <AppAlertHost />
                   {/* A watch-started workout's average and highest heart rate, and the phone's step counter while it runs on foot. */}
                   <LiveExtrasFeed />
                   <TabBarInsetProvider>

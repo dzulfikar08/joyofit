@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -11,6 +10,7 @@ import { rogo } from '@/cloud/rogo';
 import { publishSleepInsightsStatus, useSleepInsightsStatus } from '@/features/sleep/sleepInsightsStatus';
 import { errorMessage, formatCount } from '@/format';
 import { useCloud } from '@/state/CloudProvider';
+import { appAlert } from '@/components/AppAlert';
 
 type Load = 'loading' | 'ready' | 'unsupported' | 'offline';
 
@@ -59,7 +59,7 @@ export function SleepInsightsSection() {
       try {
         publishSleepInsightsStatus(await rogo.setSleepInsightsConsent(enabled, version));
       } catch (e) {
-        Alert.alert(t('joyorogo.sleep.errorTitle'), errorMessage(e));
+        appAlert(t('joyorogo.sleep.errorTitle'), errorMessage(e));
       } finally {
         setBusy(false);
       }
@@ -70,12 +70,12 @@ export function SleepInsightsSection() {
   const onToggle = (next: boolean) => {
     if (!status) return;
     if (next) {
-      Alert.alert(t('joyorogo.sleep.consent.title'), t('joyorogo.sleep.consent.body'), [
+      appAlert(t('joyorogo.sleep.consent.title'), t('joyorogo.sleep.consent.body'), [
         { text: t('joyorogo.sleep.consent.cancel'), style: 'cancel' },
         { text: t('joyorogo.sleep.consent.confirm'), onPress: () => void change(true, status.currentVersion) },
       ]);
     } else {
-      Alert.alert(t('joyorogo.sleep.disable.title'), t('joyorogo.sleep.disable.body'), [
+      appAlert(t('joyorogo.sleep.disable.title'), t('joyorogo.sleep.disable.body'), [
         { text: t('joyorogo.sleep.disable.cancel'), style: 'cancel' },
         { text: t('joyorogo.sleep.disable.confirm'), style: 'destructive', onPress: () => void change(false, status.currentVersion) },
       ]);

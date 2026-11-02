@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -34,6 +34,7 @@ import { fmtInt } from '@/i18n';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing } from '@/theme';
 import { HuaweiWear, type RunningCoursePushResult } from '@/wear';
+import { appAlert } from '@/components/AppAlert';
 
 type Outcome = { kind: 'sent'; result: RunningCoursePushResult } | { kind: 'failed'; message: string } | null;
 
@@ -76,7 +77,7 @@ export function CourseEditorScreen() {
 
   const confirmReplace = (title: string, apply: () => void) => {
     if (draft.blocks.length === 0) return apply();
-    Alert.alert(title, t('watch:courses.replaceMessage'), [
+    appAlert(title, t('watch:courses.replaceMessage'), [
       { text: t('common:actions.cancel'), style: 'cancel' },
       { text: t('watch:courses.replace'), style: 'destructive', onPress: apply },
     ]);

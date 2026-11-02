@@ -3,7 +3,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { getDocumentAsync } from '@/documentPicker';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -20,6 +20,7 @@ import { failureOf, failureText, rejectText } from './errorText';
 import { checkSongs, type PickedSong, type SongCheck } from './musicFiles';
 import { byteFraction, bytesMb, formatList, freeMb, slotFraction, songCount } from './storage';
 import { currentItem, IDLE_QUEUE, queueReducer, type QueueAction, type QueueItem, type QueueState } from './uploadQueue';
+import { appAlert } from '@/components/AppAlert';
 
 function read(): WatchMusicStatus | null {
   if (!hasNative('getWatchMusic')) return null;
@@ -178,7 +179,7 @@ export function WatchMusicScreen() {
   };
 
   const confirmRemove = (song: WatchSong, title: string) =>
-    Alert.alert(t('watchMusic.deleteTitle'), t('watchMusic.deleteBody', { title }), [
+    appAlert(t('watchMusic.deleteTitle'), t('watchMusic.deleteBody', { title }), [
       { text: t('common:actions.cancel'), style: 'cancel' },
       { text: t('common:actions.delete'), style: 'destructive', onPress: () => void remove(song, title) },
     ]);
