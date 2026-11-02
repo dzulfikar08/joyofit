@@ -16,4 +16,4 @@ atur: JRG-277
 
 **Bukti visual:** Screenshot layar Kebugaran dan kartu di Today dengan data jam nyata.
 
-**Jangan klaim:** Semua angka perkiraan dan bukan alat medis, tanpa diagnosa. Jangan menyebut WHOOP atau membandingkan akurasi. Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen, jangan sebut semua jam Huawei didukung. Tidak berafiliasi dengan Huawei atau Honor. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Semua angka perkiraan dan bukan alat medis, tanpa diagnosa. Jangan menyebut WHOOP atau membandingkan akurasi. Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen, jangan sebut semua jam Huawei didukung. Tidak berafiliasi dengan Huawei atau Honor. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

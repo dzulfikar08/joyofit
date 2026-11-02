@@ -23,4 +23,4 @@ rute sendiri, dengan data terbuka OpenStreetMap.
 
 **Jangan klaim:** Eksperimen, mati secara bawaan, belum ada di build mana pun (PR draft). Aplikasi jam JoyoNavi belum bisa dipasang (akun pengembang
 Huawei belum siap) dan belum diuji di jam mana pun; jangan tulis jam apa pun didukung. Rute dan nama jalan dari OpenStreetMap/OSRM (© kontributor
-OpenStreetMap), bukan peta Huawei/Petal. Jangan tulis 'tersedia di Play Store/App Store' atau 'di AppGallery'. Tidak berafiliasi dengan Huawei.
+OpenStreetMap), bukan peta Huawei/Petal. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight. Jangan tulis 'di AppGallery'. Tidak berafiliasi dengan Huawei.

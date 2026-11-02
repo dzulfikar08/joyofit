@@ -16,4 +16,4 @@ atur: JRG-293
 
 **Bukti visual:** Setelah rilis: layar pairing termometer dan bagian suhu di Wawasan tidur JoyoRogo.
 
-**Jangan klaim:** Belum rilis, jangan diposting. Opt-in, bukan klaim meningkatkan kualitas tidur. Hanya sensor LYWSD03MMC. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Belum rilis, jangan diposting. Opt-in, bukan klaim meningkatkan kualitas tidur. Hanya sensor LYWSD03MMC. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

@@ -16,4 +16,4 @@ atur: JRG-287
 
 **Bukti visual:** docs/screenshots bike computer dan cycling ride detail (repo watch-fit).
 
-**Jangan klaim:** Situs publik masih menulis "Segera hadir" untuk bagian ini: jangan posting sebelum situs diperbarui. Data daya butuh sensor daya. Hanya di build tes. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Situs publik masih menulis "Segera hadir" untuk bagian ini: jangan posting sebelum situs diperbarui. Data daya butuh sensor daya. Hanya di build tes. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

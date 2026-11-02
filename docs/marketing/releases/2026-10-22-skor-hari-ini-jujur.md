@@ -16,4 +16,4 @@ atur: JRG-372
 
 **Bukti visual:** Screenshot kartu skor Hari ini pada akun baru dengan jam yang baru 1-2 malam dipakai (data uji, bukan data pengguna).
 
-**Jangan klaim:** Hitungan malam mengikuti baseline JoyoFit sendiri (4 malam HRV sebelumnya), bukan aturan merek lain. Skor pemulihan dan strain adalah perkiraan, bukan saran medis. Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen. Tidak berafiliasi dengan Huawei. Jangan tulis 'tersedia di Play Store/App Store'.
+**Jangan klaim:** Hitungan malam mengikuti baseline JoyoFit sendiri (4 malam HRV sebelumnya), bukan aturan merek lain. Skor pemulihan dan strain adalah perkiraan, bukan saran medis. Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen. Tidak berafiliasi dengan Huawei. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

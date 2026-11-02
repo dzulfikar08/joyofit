@@ -16,4 +16,4 @@ atur: JRG-346
 
 **Bukti visual:** Screenshot Today dan Latihan di dua-tiga tema (misalnya Classic, Sport, Lembut) setelah update OTA sampai ke HP uji, dengan satu layar yang menampilkan pil "Merekam" di atas bilah.
 
-**Jangan klaim:** Hanya mengubah tampilan. Belum tersedia untuk pengguna sampai update OTA dipublikasikan. Jangan tulis 'tersedia di Play Store/App Store'.
+**Jangan klaim:** Hanya mengubah tampilan. Belum tersedia untuk pengguna sampai update OTA dipublikasikan. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

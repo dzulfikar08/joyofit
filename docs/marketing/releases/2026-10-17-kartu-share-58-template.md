@@ -16,4 +16,4 @@ atur: JRG-284
 
 **Bukti visual:** Contact sheet template (docs/sticker-studio.md) atau rekam layar satu latihan: share, ganti template, Instagram Story.
 
-**Jangan klaim:** Sticker Studio (buat template sendiri) belum rilis. Jangan taruh logo Strava atau Instagram di stiker. Awal kartu share dibuat 17 Okt, 58 template menyusul 18 Okt. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Sticker Studio (buat template sendiri) belum rilis. Jangan taruh logo Strava atau Instagram di stiker. Awal kartu share dibuat 17 Okt, 58 template menyusul 18 Okt. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

@@ -16,4 +16,4 @@ atur: JRG-301
 
 **Bukti visual:** Video jam yang bergetar saat telepon WhatsApp masuk.
 
-**Jangan klaim:** Kemungkinan hanya Android karena memakai notifikasi panggilan: cek di HP sebelum posting. Jangan janjikan nama penelepon tampil di jam (itu permintaan terpisah, belum rilis). Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen, jangan sebut semua jam Huawei didukung. Tidak berafiliasi dengan Huawei atau Honor. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Kemungkinan hanya Android karena memakai notifikasi panggilan: cek di HP sebelum posting. Jangan janjikan nama penelepon tampil di jam (itu permintaan terpisah, belum rilis). Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen, jangan sebut semua jam Huawei didukung. Tidak berafiliasi dengan Huawei atau Honor. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

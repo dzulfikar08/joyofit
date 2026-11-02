@@ -16,4 +16,4 @@ atur: JRG-288
 
 **Bukti visual:** Rekam layar mulai rekam dari HP, notifikasi layar kunci, ringkasan latihan.
 
-**Jangan klaim:** Situs publik menulis "Segera hadir": tahan sampai situs diperbarui. Sensor yang teruji terbatas, jangan sebut semua merek. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Situs publik menulis "Segera hadir": tahan sampai situs diperbarui. Sensor yang teruji terbatas, jangan sebut semua merek. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

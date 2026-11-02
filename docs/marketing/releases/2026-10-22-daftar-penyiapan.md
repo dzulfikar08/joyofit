@@ -16,4 +16,4 @@ atur: JRG-375
 
 **Bukti visual:** Screenshot daftar dengan 2 dari 5 selesai, dari akun uji.
 
-**Jangan klaim:** Baris hanya prasyarat nyata, bukan promosi; baris tidak muncul kalau tidak berlaku di ponsel itu (misalnya tanpa Health Connect). Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen. Tidak berafiliasi dengan Huawei. Jangan tulis 'tersedia di Play Store/App Store'.
+**Jangan klaim:** Baris hanya prasyarat nyata, bukan promosi; baris tidak muncul kalau tidak berlaku di ponsel itu (misalnya tanpa Health Connect). Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen. Tidak berafiliasi dengan Huawei. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

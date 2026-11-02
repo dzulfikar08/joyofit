@@ -16,4 +16,4 @@ atur: JRG-289
 
 **Bukti visual:** Screenshot daftar Jam kamu di tab Watch.
 
-**Jangan klaim:** Situs publik menulis "Segera hadir": tahan dulu. Satu jam aktif sekali waktu. Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen, jangan sebut semua jam Huawei didukung. Tidak berafiliasi dengan Huawei atau Honor. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Situs publik menulis "Segera hadir": tahan dulu. Satu jam aktif sekali waktu. Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen, jangan sebut semua jam Huawei didukung. Tidak berafiliasi dengan Huawei atau Honor. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

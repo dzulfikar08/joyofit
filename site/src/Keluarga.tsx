@@ -1,7 +1,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { ArrowLeft, Check, Copy, HeartHandshake } from "lucide-react";
 
-import { IOS_TESTFLIGHT_LIVE, IOS_TESTFLIGHT_URL, KELUARGA_PATH, PRIVASI_PATH, TESTER_GROUP_URL } from "./lib";
+import { IOS_TESTFLIGHT_LIVE, IOS_TESTFLIGHT_URL, KELUARGA_PATH, PRIVASI_PATH, PLAY_STORE_URL } from "./lib";
 import { usePlatform } from "./platform";
 import { AndroidMark, AppleMark, ButtonLink } from "./ui";
 
@@ -68,7 +68,7 @@ function CopyButton({ code }: { code: string }) {
 
 function InviteCard({ code }: { code: string }) {
   const platform = usePlatform();
-  const storeUrl = platform === "ios" ? IOS_TESTFLIGHT_URL : TESTER_GROUP_URL;
+  const storeUrl = platform === "ios" ? IOS_TESTFLIGHT_URL : PLAY_STORE_URL;
   return (
     <div className="mt-8 rounded-[1.75rem] bg-makan-soft p-6 text-center md:p-8">
       <p className="text-sm font-bold text-makan-ink">Kode undangan</p>
@@ -81,7 +81,7 @@ function InviteCard({ code }: { code: string }) {
       <div className="mt-6 flex flex-wrap justify-center gap-3">
         {platform === "other" ? (
           <>
-            <ButtonLink href={TESTER_GROUP_URL} target="_blank" rel="noopener">
+            <ButtonLink href={PLAY_STORE_URL} target="_blank" rel="noopener">
               <AndroidMark />
               JoyoFit untuk Android
             </ButtonLink>

@@ -16,4 +16,4 @@ atur: JRG-292
 
 **Bukti visual:** Rekam layar: Rute > Loop baru dari rumah, geser target, pilih satu loop.
 
-**Jangan klaim:** Hanya build Android tes. Butuh internet untuk menyusun rute. Rute tidak dijamin aman atau sepi, jangan klaim kebaruan jalan pasti. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Hanya build Android tes. Butuh internet untuk menyusun rute. Rute tidak dijamin aman atau sepi, jangan klaim kebaruan jalan pasti. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

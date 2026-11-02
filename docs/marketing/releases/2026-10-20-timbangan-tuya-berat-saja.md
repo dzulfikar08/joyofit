@@ -16,4 +16,4 @@ atur: JRG-333
 
 **Bukti visual:** Rekam layar Pengaturan > Timbangan: pilih timbangan Tuya, isi kunci, naik timbangan, angka muncul lalu masuk Berat JoyoRogo. Butuh timbangan Tuya dan local key-nya.
 
-**Jangan klaim:** Baru dicoba di satu timbangan (HAN RIVER HRTZC01, milik kami). Timbangan Tuya lain belum diuji. Hanya berat: tanpa lemak tubuh atau impedansi. Local key butuh akun pengembang Tuya, bukan untuk semua orang. Belum rilis, jangan diposting sebagai tersedia. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight. Tidak berafiliasi dengan Tuya atau HAN RIVER.
+**Jangan klaim:** Baru dicoba di satu timbangan (HAN RIVER HRTZC01, milik kami). Timbangan Tuya lain belum diuji. Hanya berat: tanpa lemak tubuh atau impedansi. Local key butuh akun pengembang Tuya, bukan untuk semua orang. Belum rilis, jangan diposting sebagai tersedia. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight. Tidak berafiliasi dengan Tuya atau HAN RIVER.

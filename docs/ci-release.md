@@ -51,7 +51,7 @@ The job waits for the owner's approval (environment `release`): Actions run page
 
 Results are workflow artifacts (30 days): `joyofit-android-<run>` (AAB and/or sideload APK, checksums in the run summary) and `joyofit-ios-<run>` (IPA). Nothing is uploaded to a store unless you choose it:
 
-- **Play**: `play_track` = `internal`, `alpha` (the API name of the closed-testing track the app is on today) or `beta`. `play_status` = `draft` (default, finish the rollout in Play Console) or `completed`. Production is deliberately not offered.
+- **Play**: `play_track` = `internal`, `alpha` (the API name of the closed-testing track, which holds the newer build; the app itself is in production since 2026-10-31, release 1474865) or `beta`. `play_status` = `draft` (default, finish the rollout in Play Console) or `completed`. Production is deliberately not offered.
 - **TestFlight**: tick `upload_testflight`. The IPA goes to App Store Connect (altool); add it to an internal testing group in App Store Connect.
 
 

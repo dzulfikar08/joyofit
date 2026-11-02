@@ -4,8 +4,8 @@ import type { AppContext } from "./env";
 
 /** Where each platform sends people to update when no `<platform>_store_url` row says otherwise (docs/force-update.md). */
 export const DEFAULT_STORE_URLS = {
-  // JoyoFit is in Play closed testing: the opt-in page works for testers and for people who still have to opt in.
-  android: "https://play.google.com/apps/testing/com.joyodigitama.joyofit",
+  // JoyoFit is in Play production (checked 2026-11-02): the store listing.
+  android: "https://play.google.com/store/apps/details?id=com.joyodigitama.joyofit",
   ios: "https://testflight.apple.com/join/GXzrQ8GJ",
 } as const;
 

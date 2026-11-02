@@ -16,4 +16,4 @@ atur: JRG-283
 
 **Bukti visual:** Rekam layar impor satu GPX, lihat di peta, ketuk Kirim ke jam.
 
-**Jangan klaim:** Tidak ada peta di jam, hanya panduan rute. Hanya jam yang teruji (Fit 4 Pro). Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen, jangan sebut semua jam Huawei didukung. Tidak berafiliasi dengan Huawei atau Honor. Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Tidak ada peta di jam, hanya panduan rute. Hanya jam yang teruji (Fit 4 Pro). Hanya Huawei Watch Fit 4 Pro yang teruji; jam lain eksperimen, jangan sebut semua jam Huawei didukung. Tidak berafiliasi dengan Huawei atau Honor. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

@@ -16,4 +16,4 @@ atur: JRG-345
 
 **Bukti visual:** Ambil screenshot Today di tiap tema setelah update OTA sampai ke HP uji. `docs/screenshots/themes-preview.png` adalah render dari data tema (palet, sudut, font, panel jam, bilah tab), bukan screenshot aplikasi; jangan dipakai sebagai screenshot.
 
-**Jangan klaim:** Hanya mengubah tampilan. Classic, Sport, dan Ocean sudah ada di build uji (lihat entri 2026-10-17); delapan tema baru dan font-nya baru ada setelah update OTA dipublikasikan. Panel jam bergradasi hanya di Senja. Bilah navigasi sistem Android (tombol 3 tombol) belum mengikuti tema di build ini. Jangan tulis 'tersedia di Play Store/App Store'.
+**Jangan klaim:** Hanya mengubah tampilan. Classic, Sport, dan Ocean sudah ada di build uji (lihat entri 2026-10-17); delapan tema baru dan font-nya baru ada setelah update OTA dipublikasikan. Panel jam bergradasi hanya di Senja. Bilah navigasi sistem Android (tombol 3 tombol) belum mengikuti tema di build ini. Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.

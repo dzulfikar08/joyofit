@@ -16,4 +16,4 @@ atur: JRG-331
 
 **Bukti visual:** Setelah rilis: tab Latihan dengan chip Lari terpilih dan kartu progres (tema terang dan gelap), data latihan lari asli atau demo.
 
-**Jangan klaim:** Belum rilis, jangan diposting. Tanjakan memakai angka dari ringkasan latihan; latihan tanpa data tanjakan dihitung 0. Jangan sebut Strava sebagai fitur setara, hanya "mirip gaya ringkasan mingguan". Jangan tulis 'tersedia di Play Store/App Store': Android masih tes tertutup di Google Play, iPhone lewat TestFlight.
+**Jangan klaim:** Belum rilis, jangan diposting. Tanjakan memakai angka dari ringkasan latihan; latihan tanpa data tanjakan dihitung 0. Jangan sebut Strava sebagai fitur setara, hanya "mirip gaya ringkasan mingguan". Android sudah tersedia di Google Play (boleh tulis tersedia di Play Store); jangan tulis tersedia di App Store, iPhone masih lewat TestFlight.
