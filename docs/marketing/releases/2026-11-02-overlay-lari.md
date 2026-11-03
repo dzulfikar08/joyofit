@@ -2,7 +2,7 @@
 app: joyofit
 feature: Overlay angka latihan (Pita, Kolom, Lintasan, Jalur, Lengkung)
 shipped: 2026-11-02
-available: code
+available: store
 tier: free
 post: todo
 atur: JRG-478
@@ -16,4 +16,4 @@ atur: JRG-478
 
 **Bukti visual:** lembar kontak di `docs/screenshots/share-overlays/` (overlays-story-dark-dusk.png, overlays-story-light-day.png, overlays-square-dark-dusk.png, overlays-square-light-day.png: lima olahraga di foto contoh). Dari aplikasi: detail latihan, tombol bagikan, pilih salah satu overlay di daftar stiker. Render ulang: `bun scripts/stickers-sheet.ts --only run.tape.story,run.column.story,run.track.story,run.lanes.story,run.swoosh.story --fixtures run.full,ride.outdoor,swim.pool,walk.hike,gym.watch --on dusk --mode dark`.
 
-**Jangan klaim:** hasil ekspornya PNG transparan (tanpa foto di dalamnya); warna aksen belum bisa dipilih; angka mengikuti yang dimiliki jam, yang tidak ada tidak ditampilkan; pace, kalori, dan detak jantung adalah perkiraan, bukan alat medis; rute memotong 200 m awal dan akhir secara default; belum ada di build mana pun sampai dirilis lewat OTA; tidak ada logo Huawei, Honor, Strava, atau Health.
+**Jangan klaim:** hasil ekspornya PNG transparan (tanpa foto di dalamnya); warna aksen belum bisa dipilih; angka mengikuti yang dimiliki jam, yang tidak ada tidak ditampilkan; pace, kalori, dan detak jantung adalah perkiraan, bukan alat medis; rute memotong 200 m awal dan akhir secara default; di Android sudah lewat Google Play (update otomatis 3 Nov 2026); di iPhone baru TestFlight, belum di App Store; tidak ada logo Huawei, Honor, Strava, atau Health.

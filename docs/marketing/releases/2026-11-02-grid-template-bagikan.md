@@ -2,7 +2,7 @@
 app: joyofit
 feature: Grid template bagikan
 shipped: 2026-11-02
-available: code
+available: store
 tier: free
 post: todo
 atur: JRG-476
@@ -16,4 +16,4 @@ atur: JRG-476
 
 **Bukti visual:** buka lembar bagikan di detail latihan mana pun, pilih foto, gulir grid template.
 
-**Jangan klaim:** belum ada di build mana pun sampai dirilis lewat OTA; bagian "Templat kamu" baru muncul kalau ada template buatan sendiri; jumlah template mengikuti jenis latihan.
+**Jangan klaim:** di Android sudah lewat Google Play (update otomatis 3 Nov 2026); di iPhone baru TestFlight, belum di App Store; bagian "Templat kamu" baru muncul kalau ada template buatan sendiri; jumlah template mengikuti jenis latihan.

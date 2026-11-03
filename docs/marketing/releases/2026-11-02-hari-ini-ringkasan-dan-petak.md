@@ -2,7 +2,7 @@
 app: joyofit
 feature: Hari Ini baru: ringkasan satu kalimat, petak langkah dan detak jantung
 shipped: 2026-11-02
-available: code
+available: store
 tier: mixed
 post: todo
 atur: JRG-477
@@ -16,4 +16,4 @@ atur: JRG-477
 
 **Bukti visual:** `docs/screenshots/today-insight-id.png` dan `today-insight-en.png` (render rancangan dengan warna tema asli dan data contoh, bukan tangkapan layar perangkat). Tangkapan layar asli: tab Hari Ini dengan jam yang sudah sinkron; kartu ringkasan dan petak ada tepat di bawah kartu jam.
 
-**Jangan klaim:** kalimat hanya dari data milikmu sendiri, tidak ada angka perbandingan dengan pengguna lain; kesiapan dan tidur adalah perkiraan, bukan alat medis; saran Coach hanya untuk akun Pro; kartu kosong (tanpa kalimat) kalau datanya belum ada; belum ada di build mana pun sampai dirilis lewat OTA; tidak menampilkan logo Huawei, Honor, Strava, Samsung, atau Health.
+**Jangan klaim:** kalimat hanya dari data milikmu sendiri, tidak ada angka perbandingan dengan pengguna lain; kesiapan dan tidur adalah perkiraan, bukan alat medis; saran Coach hanya untuk akun Pro; kartu kosong (tanpa kalimat) kalau datanya belum ada; di Android sudah lewat Google Play (update otomatis 3 Nov 2026); di iPhone baru TestFlight, belum di App Store; tidak menampilkan logo Huawei, Honor, Strava, Samsung, atau Health.

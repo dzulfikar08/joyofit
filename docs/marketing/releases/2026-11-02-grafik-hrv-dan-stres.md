@@ -2,7 +2,7 @@
 app: joyofit
 feature: Grafik HRV dan stres seharian
 shipped: 2026-11-02
-available: test-build
+available: store
 tier: free
 post: todo
 atur: JRG-479
@@ -16,4 +16,4 @@ atur: JRG-479
 
 **Bukti visual:** belum ada. Dari aplikasi: Hari ini, Kesiapan, lalu HRV seharian atau Stres seharian; atau Kesehatan, ketuk kartu HRV atau Stres. Butuh jam yang sudah tersinkron dengan data HRV dan stres (Watch Fit 4 Pro).
 
-**Jangan klaim:** angka HRV (RMSSD) dan tingkat stres adalah perkiraan kebugaran, bukan alat medis; hanya Watch Fit 4 Pro yang teruji, jam lain "eksperimen"; data bergantung pada seberapa sering jam mencatat, celah di grafik berarti tidak ada catatan; belum ada di build mana pun sampai dirilis lewat OTA; tidak berafiliasi dengan Huawei, tanpa logo Huawei atau Honor.
+**Jangan klaim:** angka HRV (RMSSD) dan tingkat stres adalah perkiraan kebugaran, bukan alat medis; hanya Watch Fit 4 Pro yang teruji, jam lain "eksperimen"; data bergantung pada seberapa sering jam mencatat, celah di grafik berarti tidak ada catatan; di Android sudah lewat Google Play (update otomatis 3 Nov 2026); di iPhone baru TestFlight, belum di App Store; tidak berafiliasi dengan Huawei, tanpa logo Huawei atau Honor.

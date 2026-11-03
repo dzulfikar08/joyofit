@@ -175,7 +175,26 @@ go on a branch cut at `276b89e3`.
 | Android | Play alpha AAB 1483205, sideload APK 1483219 (Release Android run 40423944217) | `fce68de9bfdc78401cfb69ead4b7585bb7491879` |
 | iOS | TestFlight 1.1 (202610270004) (Release iOS run 40423947811) | `d6db9df49ebdcbda73dd9b8dfa5b7c1bc274ca08` |
 
-**Master OTAs target these two** (with `--runtime-version`) until the next native change.
+Superseded by the builds below: master carries native changes since (`expo-iap`, R8 flags, Kotlin import fixes).
+
+### Runtimes of the 2026-10-28 iOS and 2026-11-02 Android store builds
+
+Read from the binaries on 2026-11-03 (`base/assets/fingerprint` in the AAB, `EXUpdates.bundle/fingerprint` in the IPA).
+`scripts/ota.sh --runtime` on master `c3ae938f` prints android `ef5c1ca5...` and ios `e556e21f...`, so publish with `--runtime-version`:
+
+| Platform | Build | Runtime embedded in the binary |
+| --- | --- | --- |
+| Android | AAB 1492235 (Release Android run 41400695545, `0b63cf24`), Play production and internal | `0a3fd9bc0a228ec9cc823ebe5e9dd565671f4432` |
+| iOS | TestFlight 1.1 (202610281818) (Release iOS run 40743621602, `ef71608c`), the build in App Review | `e2d6d4af19db617691a2c2de202e47e92ed31a01` |
+
+**Master OTAs target these two** (with `--runtime-version`, the OTA workflow's `runtime_version` input) until the next native
+change on that platform. Since `ef71608c` master changed native code for Android only (`expo-iap` is excluded from iOS
+autolinking, the `expo-document-picker` patch is Kotlin), so the iOS binary runs master JS. The Play alpha track still holds
+1483642, built before `expo-iap` reached Android (a different runtime), and gets nothing from master.
+
+OTAs published for them on 2026-11-03 from master `c3ae938f` (custom share metrics #72 and all JS since the builds: classic
+card, overlays, template grid, Today hero, HRV and stress): groups `80237174-7f3f-4756-9d73-5775cdc38ad8` android (OTA
+workflow run 41589926077), `1573f0fd-c781-40e9-9a46-92a2e3290467` ios (run 41590133209).
 
 ## When OTA is not enough
 

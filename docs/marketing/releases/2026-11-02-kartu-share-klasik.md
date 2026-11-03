@@ -2,7 +2,7 @@
 app: joyofit
 feature: Kartu bagikan "Klasik" (foto penuh)
 shipped: 2026-11-02
-available: code
+available: store
 tier: free
 post: todo
 atur: JRG-475
@@ -16,4 +16,4 @@ atur: JRG-475
 
 **Bukti visual:** lembar bagikan di detail latihan (renang kolam atau lari dengan detak jantung), pilih template Klasik, foto sendiri sebagai latar. Pratinjau render: jalankan `bun scripts/stickers-sheet.ts --only run.classic --locale id` (foto contoh) atau tangkap layar dari aplikasi dengan foto asli.
 
-**Jangan klaim:** butuh foto (tanpa foto, tombol bagikan menunggu sampai ada foto); angka mengikuti yang dimiliki jam, yang tidak ada tidak ditampilkan; belum ada di build mana pun sampai dirilis lewat OTA; pace, kalori, dan detak jantung adalah perkiraan, bukan alat medis; tidak menampilkan logo Huawei, Honor, Strava, atau Health.
+**Jangan klaim:** butuh foto (tanpa foto, tombol bagikan menunggu sampai ada foto); angka mengikuti yang dimiliki jam, yang tidak ada tidak ditampilkan; di Android sudah lewat Google Play (update otomatis 3 Nov 2026); di iPhone baru TestFlight, belum di App Store; pace, kalori, dan detak jantung adalah perkiraan, bukan alat medis; tidak menampilkan logo Huawei, Honor, Strava, atau Health.
