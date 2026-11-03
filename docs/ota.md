@@ -197,6 +197,8 @@ card, overlays, template grid, Today hero, HRV and stress): groups `80237174-7f3
 workflow run 41589926077), `1573f0fd-c781-40e9-9a46-92a2e3290467` ios (run 41590133209).
 Then from master `fe858d64` (route coloured by a metric, km splits without the watch pause, `ANALYSIS_ENGINE_REV` 8): groups
 `140330de-9ff2-4d08-9a4a-9c40433b5f70` android (run 41599596411), `e41dcd71-5b5b-4e87-a636-d3cc249b1795` ios (run 41599601290).
+Then from master `c880248a` (smoother route colours): groups `ab497b21-d93f-4aa8-add2-6844f3f24344` android (run 41605156636),
+`11a60e66-16b4-4527-8a8a-5d753e818566` ios (run 41605162734).
 
 ## When OTA is not enough
 
