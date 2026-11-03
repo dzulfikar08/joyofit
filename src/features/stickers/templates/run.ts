@@ -1,4 +1,4 @@
-import { all, footer, has, is, lacks, not, sportGlyph, tl } from './blocks';
+import { all, footer, has, is, lacks, not, slotIds, sportGlyph, tl, type SlotId } from './blocks';
 import { kit, template } from './dsl';
 import type { Cond, Dim, Expr, Kit, LayerJson } from './dsl';
 import { GLASS, INK, PAPER, VOLT } from './palette';
@@ -30,7 +30,8 @@ const CELLS3: Cell[] = [CELL.time, CELL.pace, CELL.pace100, CELL.speed, CELL.hr,
 /** The same plus the climb, for layouts that stack the cells in a column. */
 const CELLS4: Cell[] = [...CELLS3, CELL.elev];
 
-const cellWhen = (cell: Cell): Cond => (cell.when ? all(has(cell.bind), cell.when) : has(cell.bind));
+const cellWhen = (cell: Cell): Cond =>
+  cell.when ? all(lacks('run._custom'), has(cell.bind), cell.when) : all(lacks('run._custom'), has(cell.bind));
 
 interface StatLook {
   size: number;
@@ -65,7 +66,30 @@ function cellStat(k: Kit, cell: Cell, look: StatLook): LayerJson {
   });
 }
 
-const cellRow = (k: Kit, cells: Cell[], look: StatLook) => cells.map((cell) => cellStat(k, cell, look));
+function slotCell(k: Kit, i: SlotId, look: StatLook): LayerJson {
+  return k.stat({ w: look.w ?? 'fill', h: 'auto' }, `{run.slot${i}Val}`, {
+    unit: `{run.slot${i}Unit?}`,
+    label: `{run.slot${i}Label?}`,
+    size: look.size,
+    labelSize: look.labelSize,
+    unitSize: look.unitSize,
+    color: look.color,
+    labelColor: look.labelColor,
+    weight: look.weight,
+    align: look.align,
+    labelPos: look.labelPos ?? 'above',
+    gap: look.gap,
+    shadow: look.shadow,
+    minSize: 40,
+    when: has(`run.slot${i}Val`),
+  });
+}
+
+/** The custom slots (`slots` of them: as many numbers as the layout has room for), then the fixed cells they replace. */
+const cellRow = (k: Kit, cells: Cell[], slots: SlotId, look: StatLook) => [
+  ...slotIds(slots).map((i) => slotCell(k, i, look)),
+  ...cells.map((cell) => cellStat(k, cell, look)),
+];
 
 /** A thin horizontal rule: a line shape `h` tall, drawn in the middle of its box. */
 const rule = (k: Kit, w: Dim, o: { color?: string; width?: number; when?: Cond } = {}) =>
@@ -117,8 +141,17 @@ function hero(k: Kit, w: Dim, look: HeroLook): LayerJson {
   return k.group(
     { w, h: 'auto' },
     [
-      distance('{run.distanceM|km}', 'unit.km', all(has('run.distanceM'), not(is('run.category', 'swim')))),
-      distance('{run.distanceM|int}', 'unit.m', all(has('run.distanceM'), is('run.category', 'swim'))),
+      k.stat({ w: 'fill' }, '{run.heroVal}', {
+        ...common,
+        unit: look.unit === false ? undefined : '{run.heroUnit?}',
+        label: look.label ? '{run.heroLabel?}' : undefined,
+        labelSize: look.labelSize,
+        labelColor: look.labelColor,
+        labelPos: look.label ? 'above' : 'none',
+        when: has('run._custom'),
+      }),
+      distance('{run.distanceM|km}', 'unit.km', all(lacks('run._custom'), has('run.distanceM'), not(is('run.category', 'swim')))),
+      distance('{run.distanceM|int}', 'unit.m', all(lacks('run._custom'), has('run.distanceM'), is('run.category', 'swim'))),
       k.stat({ w: 'fill' }, '{run.movingSec|dur}', {
         ...common,
         size: look.timeSize ?? look.size * 0.7,
@@ -126,7 +159,7 @@ function hero(k: Kit, w: Dim, look: HeroLook): LayerJson {
         labelSize: look.labelSize,
         labelColor: look.labelColor,
         labelPos: look.label ? 'above' : 'none',
-        when: lacks('run.distanceM'),
+        when: all(lacks('run._custom'), lacks('run.distanceM')),
       }),
     ],
     { dir: 'column' },
@@ -182,7 +215,7 @@ function build(spec: Spec) {
     light: spec.palette.light,
     layers: spec.layers,
     // The sport glyph is one layer per family and kind (most of them hidden): the poster draws it twice.
-    constraints: { maxLayers: 80 },
+    constraints: { maxLayers: 160 },
     meta: { tags: spec.tags, ...(spec.photo ? { needsPhoto: true } : {}) },
   });
 }
@@ -200,7 +233,7 @@ function runBold(canvas: Canvas) {
 
   let root: LayerJson;
   if (story) {
-    const stats = k.group({ w: 'fill', h: 'auto' }, cellRow(k, CELLS3, { size: 70, labelSize: 26, unitSize: 30, color: '$fg', labelColor: '$fgMuted' }), { dir: 'row', gap: 28, align: 'start' });
+    const stats = k.group({ w: 'fill', h: 'auto' }, cellRow(k, CELLS3, 3, { size: 70, labelSize: 26, unitSize: 30, color: '$fg', labelColor: '$fgMuted' }), { dir: 'row', gap: 28, align: 'start' });
     // Without a route the two spacers split the free height, so the hero sits in the middle instead of under the header.
     root = k.group(
       { x: 72, y: 250, w: W, h: 1190 },
@@ -221,13 +254,14 @@ function runBold(canvas: Canvas) {
   }
 
   // Square: hero across the top, then the route on the left with the numbers stacked beside it; no route, the numbers run as a row.
+  // Picked metrics get three slots in both: the row without a route has no room for a fourth.
   const column = k.group(
     { w: 300, h: 'fill' },
-    cellRow(k, CELLS4, { size: 60, labelSize: 26, unitSize: 28, color: '$fg', labelColor: '$fgMuted', w: 'fill' }),
+    cellRow(k, CELLS4, 3, { size: 60, labelSize: 26, unitSize: 28, color: '$fg', labelColor: '$fgMuted', w: 'fill' }),
     { dir: 'column', gap: 24, justify: 'center', when: has('run.route') },
   );
   const lower = k.group({ w: W, h: 'fill' }, [route({ w: 'fill', h: 'fill' }), column], { dir: 'row', gap: 36, align: 'stretch', when: has('run.route') });
-  const strip = k.group({ w: W, h: 'auto' }, cellRow(k, CELLS3, { size: 64, labelSize: 26, unitSize: 28, color: '$fg', labelColor: '$fgMuted' }), { dir: 'row', gap: 28, align: 'start', when: lacks('run.route') });
+  const strip = k.group({ w: W, h: 'auto' }, cellRow(k, CELLS3, 3, { size: 64, labelSize: 26, unitSize: 28, color: '$fg', labelColor: '$fgMuted' }), { dir: 'row', gap: 28, align: 'start', when: lacks('run.route') });
   root = k.group(
     { x: 72, y: 72, w: W, h: 936 },
     [header, spacer(k, lacks('run.route')), heroLayer, lower, spacer(k, lacks('run.route')), strip, footerRow(k, W)],
@@ -274,9 +308,17 @@ function runPoster(canvas: Canvas) {
       { dir: 'row', align: 'center', when },
     );
   const captions = [
-    caption('label.distance', all(has('run.distanceM'), not(is('run.category', 'swim'))), 'unit.km'),
-    caption('label.distance', all(has('run.distanceM'), is('run.category', 'swim')), 'unit.m'),
-    caption('label.time', lacks('run.distanceM')),
+    k.group(
+      { w: W, h: 'auto' },
+      [
+        k.text({ w: 'fill' }, '{run.heroLabel?}', { size: 26, weight: 700, upper: true, ls: 6, color: '$fgMuted' }),
+        k.text({ w: 'auto' }, '{run.heroUnit?}', { size: 34, weight: 800, upper: true, ls: 6, color: '$accent', align: 'right' }),
+      ],
+      { dir: 'row', align: 'center', when: has('run._custom') },
+    ),
+    caption('label.distance', all(lacks('run._custom'), has('run.distanceM'), not(is('run.category', 'swim'))), 'unit.km'),
+    caption('label.distance', all(lacks('run._custom'), has('run.distanceM'), is('run.category', 'swim')), 'unit.m'),
+    caption('label.time', all(lacks('run._custom'), lacks('run.distanceM'))),
   ];
 
   // 1032 wide: the numerals run closer to the canvas edge than the 72 px text margin.
@@ -291,13 +333,22 @@ function runPoster(canvas: Canvas) {
       ],
       { dir: 'column', gap: 14, when: cellWhen(cell) },
     );
+  const slotMetaCell = (i: SlotId, size: number) =>
+    k.group(
+      { w: 'fill', h: 'auto' },
+      [
+        k.text({ w: 'fill' }, `{run.slot${i}Label?}`, { size: 24, weight: 700, upper: true, ls: 3, color: '$fgMuted' }),
+        slotCell(k, i, { size, labelSize: 24, unitSize: 26, color: '$fg', weight: 700, labelPos: 'none' }),
+      ],
+      { dir: 'column', gap: 14, when: has(`run.slot${i}Val`) },
+    );
 
   const art = (w: Dim, padding: number) =>
     k.route({ w, h: 'fill' }, { color: '$accent', color2: '$accent2', strokeWidth: story ? 26 : 18, halo: true, markers: true, padding }, { when: has('run.route') });
   const glyphArt = (w: Dim) => k.group({ w, h: 'fill' }, [glyphBox(k, story ? 320 : 240, '$accent')], { dir: 'column', align: 'center', justify: 'center', when: lacks('run.route') });
 
   if (story) {
-    const meta = k.group({ w: W, h: 'auto' }, CELLS4.map((cell) => metaCell(cell, 56)), { dir: 'row', gap: 24, align: 'start' });
+    const meta = k.group({ w: W, h: 'auto' }, slotIds(4).map((i) => slotMetaCell(i, 56)).concat(CELLS4.map((cell) => metaCell(cell, 56))), { dir: 'row', gap: 24, align: 'start' });
     const root = k.group(
       { x: 72, y: 250, w: W, h: 1330 },
       [top, rule(k, W), ...captions, heroLayer, art(1080, 92), glyphArt(W), rule(k, W), meta, footerRow(k, W)],
@@ -307,7 +358,7 @@ function runPoster(canvas: Canvas) {
   }
 
   // Square: the route runs wide on the right, the metadata hangs off a narrow column on the left.
-  const column = k.group({ w: 270, h: 'fill' }, CELLS3.map((cell) => metaCell(cell, 52)), { dir: 'column', gap: 22, align: 'stretch' });
+  const column = k.group({ w: 270, h: 'fill' }, slotIds(3).map((i) => slotMetaCell(i, 52)).concat(CELLS3.map((cell) => metaCell(cell, 52))), { dir: 'column', gap: 22, align: 'stretch' });
   const lower = k.group({ w: W, h: 'fill' }, [column, art('fill', 10), glyphArt('fill')], { dir: 'row', gap: 24, align: 'stretch' });
   const root = k.group(
     { x: 72, y: 60, w: W, h: 960 },
@@ -357,7 +408,23 @@ function runMinimal(canvas: Canvas) {
         ],
         { dir: 'column', gap: 24, when: cellWhen(cell) },
       );
-    const table = k.group({ w: W, h: 'auto' }, CELLS4.map(row), { dir: 'column', gap: 24 });
+    const slotMinimalRow = (i: SlotId) =>
+      k.group(
+        { w: W, h: 'auto' },
+        [
+          rule(k, W),
+          k.group(
+            { w: W, h: 'auto' },
+            [
+              k.text({ w: 'auto' }, `{run.slot${i}Label?}`, { size: 32, weight: 500, color: '$fgMuted' }),
+              k.stat({ w: 'auto', h: 'auto' }, `{run.slot${i}Val}`, { unit: `{run.slot${i}Unit?}`, size: 56, unitSize: 28, weight: 600, color: '$fg', labelPos: 'none', align: 'right', minSize: 36 }),
+            ],
+            { dir: 'row', justify: 'between', align: 'end' },
+          ),
+        ],
+        { dir: 'column', gap: 24, when: has(`run.slot${i}Val`) },
+      );
+    const table = k.group({ w: W, h: 'auto' }, slotIds(4).map(slotMinimalRow).concat(CELLS4.map(row)), { dir: 'column', gap: 24 });
     const root = k.group(
       { x: 72, y: 250, w: W, h: 1330 },
       [header, rule(k, W), spacer(k), heroLayer, table, gear, spacer(k), route({ w: 440, h: 330 }), footerRow(k, W)],
@@ -371,7 +438,7 @@ function runMinimal(canvas: Canvas) {
     [header, route({ w: 260, h: 190 })],
     { dir: 'row', gap: 24, align: 'start' },
   );
-  const table = k.group({ w: W, h: 'auto' }, [rule(k, W), k.group({ w: W, h: 'auto' }, cellRow(k, CELLS3, { size: 52, labelSize: 28, unitSize: 26, weight: 600, color: '$fg', labelColor: '$fgMuted', gap: 12 }), { dir: 'row', gap: 28, align: 'start' })], { dir: 'column', gap: 28 });
+  const table = k.group({ w: W, h: 'auto' }, [rule(k, W), k.group({ w: W, h: 'auto' }, cellRow(k, CELLS3, 3, { size: 52, labelSize: 28, unitSize: 26, weight: 600, color: '$fg', labelColor: '$fgMuted', gap: 12 }), { dir: 'row', gap: 28, align: 'start' })], { dir: 'column', gap: 28 });
   const root = k.group({ x: 72, y: 72, w: W, h: 936 }, [topRow, spacer(k), heroLayer, table, spacer(k), footerRow(k, W, 44)], { dir: 'column', gap: 36, align: 'start' });
   return build({ id: 'minimal', name: 'Run, minimal, square', titleKey: 'minimal', style: 'minimal', canvas, palette: INK, background: { kind: 'color', color: '$bg' }, layers: [root], tags: ['minimal'] });
 }
@@ -422,7 +489,7 @@ function runPhoto(canvas: Canvas) {
   const header = headerRow(k, { disc: story ? 72 : 64, glyph: story ? 38 : 34, size: story ? 40 : 34, dateSize: story ? 32 : 28, color: '$fg', muted: '$fgSoft', discFill: '$surfaceStrong', shadow: true, gap: 20 });
   const route = (box: { w: Dim; h: Dim }, o: { when: Cond; size?: number }) =>
     k.route(box, { color: '$fg', color2: '$accent', strokeWidth: o.size ?? 12, halo: true, markers: true, padding: 28 }, { when: o.when });
-  const stats = k.group({ w: W, h: 'auto' }, cellRow(k, CELLS3, { size: story ? 70 : 60, labelSize: 26, unitSize: 30, color: '$fg', labelColor: '$fgSoft', weight: 800, shadow: true }), { dir: 'row', gap: 28, align: 'start' });
+  const stats = k.group({ w: W, h: 'auto' }, cellRow(k, CELLS3, 3, { size: story ? 70 : 60, labelSize: 26, unitSize: 30, color: '$fg', labelColor: '$fgSoft', weight: 800, shadow: true }), { dir: 'row', gap: 28, align: 'start' });
   const bigRoute = k.group({ x: 72, y: story ? 300 : 120, w: W, h: story ? 760 : 400 }, [route({ w: W, h: story ? 760 : 400 }, { when: lacks('photo'), size: story ? 18 : 14 })], { dir: 'column' });
 
   let root: LayerJson;
@@ -481,7 +548,7 @@ function runGlass(canvas: Canvas) {
   const routeBox = story ? { w: 'fill' as Dim, h: 400 } : { w: 240, h: 210 };
   const route = k.route(routeBox, { color: '$fg', color2: '$accent', strokeWidth: story ? 16 : 12, halo: true, markers: true, padding: 24 }, { when: has('run.route') });
   const heroLayer = hero(k, 'fill', { size: story ? 340 : 220, unitSize: story ? 76 : 52, timeSize: story ? 240 : 170, color: '$fg', minSize: 100 });
-  const stats = k.group({ w: inner, h: 'auto' }, cellRow(k, CELLS3, { size: story ? 64 : 54, labelSize: 26, unitSize: 28, color: '$fg', labelColor: '$fgMuted' }), { dir: 'row', gap: 24, align: 'start' });
+  const stats = k.group({ w: inner, h: 'auto' }, cellRow(k, CELLS3, 3, { size: story ? 64 : 54, labelSize: 26, unitSize: 28, color: '$fg', labelColor: '$fgMuted' }), { dir: 'row', gap: 24, align: 'start' });
   const body = story ? [heroLayer, route] : [k.group({ w: inner, h: 'auto' }, [heroLayer, route], { dir: 'row', gap: 20, align: 'center' })];
 
   const panel = k.group(

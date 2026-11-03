@@ -32,6 +32,8 @@ import { CoachFeedbackSection } from '@/features/coach/ui/CoachFeedbackSection';
 import { useWorkoutExport } from '@/features/export/useWorkoutExport';
 import { useExportItems, WorkoutExportRow } from '@/features/export/WorkoutExportSection';
 import { StravaWorkoutSection } from '@/features/strava/StravaWorkoutSection';
+import { useLocale } from '@/i18n';
+import { formatSwimStyle } from '@/features/stickers/data/swimStyle';
 import { ShareRunButton } from '@/features/stickers/ui/ShareRunButton';
 import { ReplayButton } from '@/features/replay/ui/ReplayButton';
 import { ShareToRogoButton } from '@/features/social/ShareToRogo';
@@ -168,6 +170,7 @@ export default function WorkoutDetailScreen() {
   const palette = useAnalysisPalette();
   const mapTheme = useMapTheme();
   const { t } = useTranslation('workouts');
+  const locale = useLocale();
   const analysisT = useAnalysisT();
   const { catalog } = useStrengthHistory();
   const recordedBy = useWorkoutSource(Number(id));
@@ -341,7 +344,7 @@ export default function WorkoutDetailScreen() {
   const { value: distance, unit: distanceUnit } = workoutDistanceParts(workout.distance);
   const swimRows: { key: string; label: string; value: string | null }[] = swim
     ? [
-        { key: 'style', label: t('detail.swim.style'), value: swim.style ?? null },
+        { key: 'style', label: t('detail.swim.style'), value: swim.style ? formatSwimStyle(swim.style, locale) : null },
         { key: 'laps', label: t('detail.swim.laps'), value: swim.laps !== undefined ? fmtInt(swim.laps) : null },
         { key: 'pool', label: t('detail.swim.pool'), value: swim.poolLengthCm !== undefined ? translate('common:units.m', { value: fmtDecimal(swim.poolLengthCm / 100, 0) }) : null },
         { key: 'strokes', label: t('detail.swim.strokes'), value: swim.strokes !== undefined ? fmtInt(swim.strokes) : null },

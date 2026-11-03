@@ -12,8 +12,8 @@ import { FIT_FONTS } from '../fonts';
 import { FIXTURES } from '../testing/fixtures';
 import { renderTemplate } from '../testing/render';
 import { STICKER_KINDS } from '../subject';
+import { applyCustomMetrics } from '../data/customMetrics';
 import { TEMPLATE_INPUTS } from './index';
-
 const CANVAS_SUFFIX: Record<string, string> = { story: 'story', square: 'square', portrait: 'portrait', free: 'sticker' };
 
 function textNodes(nodes: readonly SceneNode[]): TextNode[] {
@@ -170,4 +170,44 @@ describe('every template renders every fixture of its kind', () => {
       }
     });
   }
+});
+
+describe('custom metrics template integration', () => {
+  test('renders dynamic hero and secondary slots without degradation', async () => {
+    const runFixture = FIXTURES.find((f) => f.key === 'run.full')!;
+    const customRun = applyCustomMetrics(runFixture.data, {
+      heroId: 'pace',
+      secondaryIds: ['hr', 'cadence', 'kcal'],
+    }, { locale: 'en' });
+
+    for (const id of ['run.bold.story', 'run.photo.story', 'run.minimal.story', 'run.poster.story', 'run.classic.story', 'run.classic.square']) {
+      const template = TEMPLATES.find((t) => t.id === id)!;
+      const photo = template.meta?.needsPhoto ? { photo: { uri: 'fixture:photo-dusk', width: 1200, height: 1800 } } : undefined;
+      const { scene, issues } = renderTemplate(template, customRun, { locale: 'en', mode: 'dark', assets: photo });
+      expect({ id, issues }).toEqual({ id, issues: [] });
+      const texts = textNodes(scene.nodes).map((n) => n.text);
+      expect(texts).toContain('6:20');
+      expect(texts).toContain('154');
+      expect(texts).toContain('172');
+      expect(texts).toContain('402');
+    }
+  });
+
+  test('renders sport family templates with customized metrics', async () => {
+    const walkFixture = FIXTURES.find((f) => f.key === 'walk.hike')!;
+    const customWalk = applyCustomMetrics(walkFixture.data, {
+      heroId: 'steps',
+      secondaryIds: ['hr', 'kcal'],
+    }, { locale: 'en' });
+
+    for (const id of ['walk.bold.story', 'walk.poster.story', 'walk.minimal.story', 'walk.stats.sticker']) {
+      const template = TEMPLATES.find((t) => t.id === id)!;
+      const { scene, issues } = renderTemplate(template, customWalk, { locale: 'en', mode: 'dark' });
+      expect({ id, issues }).toEqual({ id, issues: [] });
+      const texts = textNodes(scene.nodes).map((n) => n.text);
+      expect(texts).toContain('14,210');
+      expect(texts).toContain('121');
+      expect(texts).toContain('1,010');
+    }
+  });
 });

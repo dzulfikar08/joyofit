@@ -4,6 +4,7 @@ import { applyLocale } from '@/i18n';
 
 import { TEMPLATES } from '../catalog';
 import type { SceneNode } from '../core/scene';
+import { applyCustomMetrics } from '../data/customMetrics';
 import { offerGroups } from '../offer';
 import type { JsonObject, StickerSubject } from '../subject';
 import { FIXTURES, FIXTURE_PHOTOS } from '../testing/fixtures';
@@ -141,5 +142,130 @@ describe('run.classic', () => {
     } finally {
       await applyLocale('id');
     }
+  });
+
+  test('custom metrics: hero and secondary metrics render correctly on both story and square', async () => {
+    await applyLocale('en');
+    try {
+      const RUN: JsonObject = {
+        sport: 'Run',
+        kind: 'run',
+        category: 'run',
+        startedAt: STARTED,
+        movingSec: 1992,
+        distanceM: 5240,
+        paceSecKm: 380,
+        hrAvg: 154,
+        kcal: 402,
+        elevGainM: 38,
+        cadence: 172,
+      };
+      const customData = applyCustomMetrics(
+        { run: RUN },
+        {
+          heroId: 'pace',
+          secondaryIds: ['hr', 'cadence', 'elevation', 'kcal'],
+        },
+        { locale: 'en' },
+      );
+
+      for (const canvas of ['story', 'square'] as const) {
+        const out = texts(customData.run as JsonObject, canvas, 'en');
+        expect(out).toContain('6:20');
+        expect(out).toContain('/km');
+        expect(out).toContain('Pace');
+
+        expect(out).toContain('154');
+        expect(out).toContain('bpm');
+        expect(out).toContain('Heart rate');
+        expect(out).toContain('172');
+        expect(out).toContain('spm');
+        expect(out).toContain('Cadence');
+
+        expect(out).toContain('38');
+        expect(out).toContain('m');
+        expect(out).toContain('Elevation');
+
+        expect(out).toContain('402');
+        expect(out).toContain('kcal');
+        expect(out).toContain('Calories');
+
+        expect(out).not.toContain('5.24');
+      }
+    } finally {
+      await applyLocale('id');
+    }
+  });
+
+  test('custom metrics: supports time hero and partial secondary slots', async () => {
+    await applyLocale('en');
+    try {
+      const RUN: JsonObject = {
+        sport: 'Run',
+        kind: 'run',
+        category: 'run',
+        startedAt: STARTED,
+        movingSec: 1992,
+        distanceM: 5240,
+        paceSecKm: 380,
+        hrAvg: 154,
+      };
+      const customData = applyCustomMetrics(
+        { run: RUN },
+        {
+          heroId: 'time',
+          secondaryIds: ['distance', 'pace'],
+        },
+        { locale: 'en' },
+      );
+
+      for (const canvas of ['story', 'square'] as const) {
+        const out = texts(customData.run as JsonObject, canvas, 'en');
+        expect(out).toContain('33:12');
+        expect(out).toContain('Time');
+
+        expect(out).toContain('5.24');
+        expect(out).toContain('km');
+        expect(out).toContain('Distance');
+
+        expect(out).toContain('6:20');
+        expect(out).toContain('/km');
+        expect(out).toContain('Pace');
+        expect(out).not.toContain('154');
+      }
+    } finally {
+      await applyLocale('id');
+    }
+  });
+
+  test('custom metrics: Indonesian labels are rendered when locale is id', async () => {
+    const RUN: JsonObject = {
+      sport: 'Lari',
+      kind: 'run',
+      category: 'run',
+      startedAt: STARTED,
+      movingSec: 1992,
+      distanceM: 5240,
+      paceSecKm: 380,
+      hrAvg: 154,
+    };
+    const customData = applyCustomMetrics(
+      { run: RUN },
+      {
+        heroId: 'time',
+        secondaryIds: ['distance', 'pace', 'hr'],
+      },
+      { locale: 'id' },
+    );
+
+    const out = texts(customData.run as JsonObject, 'story', 'id');
+    expect(out).toContain('33:12');
+    expect(out).toContain('Waktu');
+    expect(out).toContain('5,24');
+    expect(out).toContain('Jarak');
+    expect(out).toContain('6:20');
+    expect(out).toContain('Pace');
+    expect(out).toContain('154');
+    expect(out).toContain('Detak');
   });
 });

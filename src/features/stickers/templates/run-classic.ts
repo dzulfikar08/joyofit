@@ -4,7 +4,7 @@
  * JoyoFit wordmark with the link at the foot. White type with a soft shadow, no panel. Numbers follow the sport family
  * like every `run` card: pace per km, per 100 m or speed, whatever the workout does not have is left out and the grid closes up.
  */
-import { all, has, is, lacks, not, sportGlyph, tl } from './blocks';
+import { all, has, is, lacks, not, slotIds, sportGlyph, tl, type SlotId } from './blocks';
 import { kit, template } from './dsl';
 import type { Cond, Dim, Kit, LayerJson } from './dsl';
 import { GLASS } from './palette';
@@ -30,7 +30,8 @@ const CELL = {
   elev: { bind: 'run.elevGainM', value: '{run.elevGainM|int}', label: tl('label.elevation'), unit: tl('unit.m'), when: { bind: 'run.elevGainM', gte: 1 } },
 } satisfies Record<string, Cell>;
 
-const cellWhen = (cell: Cell): Cond => (cell.when ? all(has(cell.bind), cell.when) : has(cell.bind));
+const cellWhen = (cell: Cell): Cond =>
+  cell.when ? all(lacks('run._custom'), has(cell.bind), cell.when) : all(lacks('run._custom'), has(cell.bind));
 
 interface Metrics {
   pad: number;
@@ -102,9 +103,24 @@ function hero(k: Kit, m: Metrics, w: Dim): LayerJson {
   return k.group(
     { w, h: 'auto' },
     [
-      big('{run.distanceM|km}', 'unit.km', 'label.distance', all(has('run.distanceM'), not(is('run.category', 'swim')))),
-      big('{run.distanceM|int}', 'unit.m', 'label.distance', all(has('run.distanceM'), is('run.category', 'swim'))),
-      big('{run.movingSec|dur}', null, 'label.time', lacks('run.distanceM')),
+      k.stat({ w: 'fill' }, '{run.heroVal}', {
+        unit: '{run.heroUnit?}',
+        label: '{run.heroLabel?}',
+        size: m.primary,
+        unitSize: m.primaryUnit,
+        labelSize: m.label,
+        weight: 800,
+        color: '$fg',
+        labelColor: '$fgSoft',
+        labelPos: 'above',
+        gap: m.heroLabelGap,
+        shadow: true,
+        minSize: 90,
+        when: has('run._custom'),
+      }),
+      big('{run.distanceM|km}', 'unit.km', 'label.distance', all(lacks('run._custom'), has('run.distanceM'), not(is('run.category', 'swim')))),
+      big('{run.distanceM|int}', 'unit.m', 'label.distance', all(lacks('run._custom'), has('run.distanceM'), is('run.category', 'swim'))),
+      big('{run.movingSec|dur}', null, 'label.time', all(lacks('run._custom'), lacks('run.distanceM'))),
     ],
     { dir: 'column' },
   );
@@ -128,6 +144,24 @@ function cellStat(k: Kit, m: Metrics, cell: Cell, w: number): LayerJson {
   });
 }
 
+function slotCell(k: Kit, m: Metrics, i: SlotId, w: number): LayerJson {
+  return k.stat({ w, h: 'auto' }, `{run.slot${i}Val}`, {
+    unit: `{run.slot${i}Unit?}`,
+    label: `{run.slot${i}Label?}`,
+    size: m.value,
+    unitSize: m.unit,
+    labelSize: m.label,
+    weight: 800,
+    color: '$fg',
+    labelColor: '$fgSoft',
+    labelPos: 'above',
+    gap: m.labelGap,
+    shadow: true,
+    minSize: 40,
+    when: has(`run.slot${i}Val`),
+  });
+}
+
 /**
  * The grid: rows of `columns` slots, each slot one fixed-width column. A slot holds the cells that may fill it (the sport's pace,
  * its pace per 100 m or its speed: only one exists), so a cell keeps its column whether or not its neighbour exists, and a row
@@ -137,13 +171,23 @@ function grid(k: Kit, m: Metrics, w: number): LayerJson {
   const effort = [CELL.pace, CELL.pace100, CELL.speed];
   const slots: Cell[][] = [[CELL.time], effort, [CELL.hr], [CELL.kcal], [CELL.elev]];
   const cellW = Math.floor((w - m.columnGap * (m.columns - 1)) / m.columns);
-  const rows: Cell[][][] = [];
-  for (let i = 0; i < slots.length; i += m.columns) rows.push(slots.slice(i, i + m.columns));
-  return k.group(
-    { w, h: 'auto' },
-    rows.map((row) => k.group({ w, h: 'auto' }, row.map((cells) => k.group({ w: cellW, h: 'auto' }, cells.map((cell) => cellStat(k, m, cell, cellW)), { dir: 'column' })), { dir: 'row', gap: m.columnGap, align: 'start' })),
-    { dir: 'column', gap: m.rowGap },
+  const chunk = <T>(arr: T[], sz: number): T[][] => Array.from({ length: Math.ceil(arr.length / sz) }, (_, i) => arr.slice(i * sz, (i + 1) * sz));
+
+  const customRows = chunk(slotIds(4), m.columns).map((row) =>
+    k.group(
+      { w, h: 'auto' },
+      row.map((i) => k.group({ w: cellW, h: 'auto' }, [slotCell(k, m, i, cellW)], { dir: 'column' })),
+      { dir: 'row', gap: m.columnGap, align: 'start', when: has('run._custom') },
+    ),
   );
+  const defaultRows = chunk(slots, m.columns).map((row) =>
+    k.group(
+      { w, h: 'auto' },
+      row.map((cells) => k.group({ w: cellW, h: 'auto' }, cells.map((cell) => cellStat(k, m, cell, cellW)), { dir: 'column' })),
+      { dir: 'row', gap: m.columnGap, align: 'start', when: lacks('run._custom') },
+    ),
+  );
+  return k.group({ w, h: 'auto' }, [...customRows, ...defaultRows], { dir: 'column', gap: m.rowGap });
 }
 
 function footer(k: Kit, m: Metrics, w: number): LayerJson {

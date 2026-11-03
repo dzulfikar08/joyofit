@@ -3,6 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { applyLocale } from '@/i18n';
 
 import { TEMPLATES } from '../catalog';
+import { applyCustomMetrics } from '../data/customMetrics';
 import { lookupPath } from '../core/expr';
 import type { Scene, SceneNode, TextNode } from '../core/scene';
 import { measureText } from '../core/text';
@@ -261,6 +262,46 @@ describe('run overlays: the five templates', () => {
       }
     } finally {
       await applyLocale('id');
+    }
+  });
+
+  test('custom metrics render into hero and secondary slots across all overlays', () => {
+    const fixture = FIXTURES.find((f) => f.key === 'run.full')!;
+    const customData = applyCustomMetrics(
+      fixture.data,
+      {
+        heroId: 'hr',
+        secondaryIds: ['cadence', 'kcal'],
+      },
+      { locale: 'en' },
+    );
+
+    for (const template of OVERLAYS) {
+      const { scene, issues } = renderTemplate(template, customData, { locale: 'en', mode: 'dark' });
+      expect({ id: template.id, issues }).toEqual({ id: template.id, issues: [] });
+      const allTexts = textNodes(scene.nodes).map((n) => n.text);
+      expect(allTexts).toContain('154');
+      expect(allTexts).toContain('172');
+    }
+  });
+
+  test('custom metrics with only 1 secondary metric render without error', () => {
+    const fixture = FIXTURES.find((f) => f.key === 'run.full')!;
+    const customData = applyCustomMetrics(
+      fixture.data,
+      {
+        heroId: 'hr',
+        secondaryIds: ['cadence'],
+      },
+      { locale: 'en' },
+    );
+
+    for (const template of OVERLAYS) {
+      const { scene, issues } = renderTemplate(template, customData, { locale: 'en', mode: 'dark' });
+      expect({ id: template.id, issues }).toEqual({ id: template.id, issues: [] });
+      const allTexts = textNodes(scene.nodes).map((n) => n.text);
+      expect(allTexts).toContain('154');
+      expect(allTexts).toContain('172');
     }
   });
 });

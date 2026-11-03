@@ -30,7 +30,24 @@
     "swolf": "SWOLF",
     "pool": "Pool",
     "power": "Power",
-    "jumps": "Jumps"
+    "jumps": "Jumps",
+    "swimStyle": "Swim style",
+    "strokeRate": "Stroke rate",
+    "exercises": "Exercises",
+    "bestPace": "Best pace",
+    "maxSpeed": "Max speed",
+    "elevLoss": "Elevation loss",
+    "stepLength": "Step length",
+    "jumpRate": "Jump rate",
+    "longestStreak": "Longest streak",
+    "interruptions": "Trips",
+    "minHr": "Min HR",
+    "maxPower": "Max power",
+    "aerobicEffect": "Aerobic TE",
+    "anaerobicEffect": "Anaerobic TE",
+    "vo2max": "VO2Max",
+    "recoveryHours": "Recovery",
+    "trainingLoad": "Training load"
   },
   "unit": {
     "perKm": "/km",
@@ -43,7 +60,11 @@
     "kg": "kg",
     "km": "km",
     "rpm": "rpm",
-    "watt": "W"
+    "watt": "W",
+    "perMin": "/min",
+    "cm": "cm",
+    "hours": "h",
+    "mlKgMin": "ml/kg/min"
   },
   "ui": {
     "section": {
@@ -90,6 +111,19 @@
       "week": "Share this week",
       "badges": "Share achievements",
       "plan": "Share plan progress"
+    },
+    "customMetrics": {
+      "title": "Workout metrics",
+      "reset": "Reset to default",
+      "defaultBadge": "Default",
+      "customBadge": "Custom",
+      "heroTitle": "Hero metric",
+      "secondaryTitle": "Secondary metrics",
+      "secondarySlots": "{{count}}/{{max}} slots",
+      "addMetric": "Add metric",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "remove": "Remove"
     }
   },
   "tpl": {
@@ -162,8 +196,8 @@
       "bold": "Bold",
       "poster": "Poster",
       "minimal": "Minimal",
-      "photo": "Photo",
-      "glass": "Glass",
+      "photo": "Corner",
+      "glass": "Pill",
       "classic": "Classic",
       "tape": "Tape",
       "column": "Column",

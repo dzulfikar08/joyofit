@@ -11,7 +11,7 @@
  * Every template reads its colors from the theme tokens only. The engine has no user-chosen accent option (`StickerOptions` is
  * shared with JoyoRogo and has none), so the accent is not picked per share yet.
  */
-import { all, has, is, lacks, not, tl } from './blocks';
+import { all, any, has, is, lacks, not, slotIds, tl, type SlotId } from './blocks';
 import { kit, template } from './dsl';
 import type { Cond, Dim, Kit, LayerJson } from './dsl';
 import { STICKER } from './palette';
@@ -47,7 +47,8 @@ const CELL = {
   kcal: { bind: 'run.kcal', value: '{run.kcal|int}', label: 'label.kcal', unit: 'unit.kcal' },
 } satisfies Record<string, Cell>;
 
-const cellWhen = (cell: Cell): Cond => cell.when ?? has(cell.bind);
+const cellWhen = (cell: Cell): Cond =>
+  cell.when ? all(lacks('run._custom'), cell.when) : all(lacks('run._custom'), has(cell.bind));
 
 /** The big number: the distance, else the duration. */
 const HERO: Cell[] = [CELL.distKm, CELL.distM, { ...CELL.duration, when: NO_DISTANCE }];
@@ -94,9 +95,53 @@ function cellStat(k: Kit, cell: Cell, o: StatLook): LayerJson {
   });
 }
 
+function customSlotCell(k: Kit, i: SlotId, o: StatLook): LayerJson {
+  return k.stat({ w: o.w ?? 'auto', h: 'auto' }, `{run.slot${i}Val}`, {
+    unit: `{run.slot${i}Unit?}`,
+    label: `{run.slot${i}Label?}`,
+    size: o.size,
+    unitSize: o.unitSize,
+    labelSize: o.labelSize,
+    weight: 800,
+    align: o.align,
+    color: o.color ?? '$fg',
+    labelColor: o.labelColor ?? '$fgSoft',
+    labelPos: 'above',
+    gap: o.gap ?? 10,
+    shadow: true,
+    minSize: o.minSize ?? 40,
+    when: has(`run.slot${i}Val`),
+  });
+}
+
+function customHeroStat(k: Kit, o: StatLook, box: { x?: number; y?: number; w?: Dim } = {}): LayerJson {
+  return k.stat({ x: box.x, y: box.y, w: box.w ?? o.w ?? 'fill', h: 'auto' }, '{run.heroVal}', {
+    unit: '{run.heroUnit?}',
+    label: '{run.heroLabel?}',
+    size: o.size,
+    unitSize: o.unitSize,
+    labelSize: o.labelSize,
+    weight: 800,
+    align: o.align,
+    color: o.color ?? '$fg',
+    labelColor: o.labelColor ?? '$fgSoft',
+    labelPos: 'above',
+    gap: o.gap ?? 14,
+    shadow: true,
+    minSize: o.minSize ?? 90,
+    when: has('run._custom'),
+  });
+}
+
 /** Every variant of a slot in one group; exactly one passes its `when`, so the group is as big as that stat (or absent). */
-function slot(k: Kit, cells: Cell[], o: StatLook, box: { x?: number; y?: number; w?: Dim } = {}): LayerJson {
-  return k.group({ x: box.x, y: box.y, w: box.w ?? 'auto', h: 'auto' }, cells.map((cell) => cellStat(k, cell, { ...o, w: box.w === undefined ? 'auto' : 'fill' })), { dir: 'column', align: o.align === 'right' ? 'end' : 'start' });
+function slot(k: Kit, cells: Cell[], o: StatLook, box: { x?: number; y?: number; w?: Dim } = {}, customSlotIdx?: 1 | 2): LayerJson {
+  const w = box.w === undefined ? 'auto' : 'fill';
+  const custom = customSlotIdx ? [customSlotCell(k, customSlotIdx, { ...o, w })] : [];
+  return k.group(
+    { x: box.x, y: box.y, w: box.w ?? 'auto', h: 'auto' },
+    [...custom, ...cells.map((cell) => cellStat(k, cell, { ...o, w }))],
+    { dir: 'column', align: o.align === 'right' ? 'end' : 'start' },
+  );
 }
 
 /** The route as a thin outline with a dark underlay, so it reads on a bright photo as well as a dark one. */
@@ -170,16 +215,45 @@ function bandRow(k: Kit, cell: Cell, o: { size: number; unit: number; gap: numbe
   );
 }
 
+function slotBandRow(k: Kit, i: 1 | 2, o: { size: number; unit: number; gap: number }): LayerJson {
+  const ink = '$bg';
+  return k.group(
+    { w: 'auto', h: 'auto' },
+    [
+      k.text({ w: 'auto' }, `{run.slot${i}Label}`, { size: o.size, weight: 800, upper: true, ls: 2, color: ink, trim: true }),
+      k.group(
+        { w: 'auto', h: 'auto' },
+        [
+          k.text({ w: 'auto' }, `{run.slot${i}Val}`, { size: o.size, weight: 800, color: ink, trim: true }),
+          k.text({ w: 'auto' }, `{run.slot${i}Unit}`, { size: o.unit, weight: 800, upper: true, ls: 1, color: ink, trim: true, when: has(`run.slot${i}Unit`) }),
+        ],
+        { dir: 'row', gap: 12, align: 'end' },
+      ),
+    ],
+    { dir: 'row', gap: o.gap, align: 'end', when: has(`run.slot${i}Val`) },
+  );
+}
+
 /** A tape: a full-bleed accent band tilted about the middle of the canvas, one line of text on it. */
-function band(k: Kit, f: Frame, o: { cy: number; h: number; rotation: number; size: number; unit: number; cells: Cell[]; when: Cond }): LayerJson {
+function band(
+  k: Kit,
+  f: Frame,
+  o: { cy: number; h: number; rotation: number; size: number; unit: number; cells: Cell[]; when: Cond },
+  slotIdx?: 1 | 2,
+): LayerJson {
   const bleed = 240;
   const width = 1080 + bleed * 2;
+  const custom = slotIdx ? [slotBandRow(k, slotIdx, { size: o.size, unit: o.unit, gap: 36 })] : [];
   return k.group(
     { x: -bleed, y: o.cy - o.h / 2, w: width, h: o.h },
     [
       k.shape({ x: 0, y: 10, w: width, h: o.h }, 'rect', { fill: '#00000040' }),
       k.shape({ x: 0, y: 0, w: width, h: o.h }, 'rect', { fill: '$accent' }),
-      k.group({ x: bleed + f.pad, y: 0, w: f.W, h: o.h }, o.cells.map((cell) => bandRow(k, cell, { size: o.size, unit: o.unit, gap: 36 })), { dir: 'row', align: 'center' }),
+      k.group(
+        { x: bleed + f.pad, y: 0, w: f.W, h: o.h },
+        [...custom, ...o.cells.map((cell) => bandRow(k, cell, { size: o.size, unit: o.unit, gap: 36 }))],
+        { dir: 'row', align: 'center' },
+      ),
     ],
     // A band with nothing to say is not drawn: the group carries a fill child, so its own `when` has to say so.
     { rotation: o.rotation, when: o.when },
@@ -197,7 +271,8 @@ function runTape(canvas: Canvas) {
   const m = f.story
     ? { hero: 270, label: 38, gap: 22, top: 280, route: { x: 520, y: 700, w: 496, h: 400 }, h: 128, size: 50, unit: 32, one: { cy: 1150, rotation: 3.5 }, two: { cy: 1420, rotation: -6 }, logo: 1520 }
     : { hero: 210, label: 32, gap: 18, top: 70, route: { x: 600, y: 310, w: 424, h: 300 }, h: 104, size: 40, unit: 26, one: { cy: 640, rotation: 3 }, two: { cy: 850, rotation: -5 }, logo: 990 };
-  const hero = k.stat({ x: f.pad, y: m.top, w: f.W, h: 'auto' }, CELL.duration.value, {
+  const heroCustom = customHeroStat(k, { size: m.hero, unitSize: Math.round(m.hero * 0.35), labelSize: m.label, align: 'center', gap: m.gap, minSize: 120 }, { x: f.pad, y: m.top, w: f.W });
+  const heroDefault = k.stat({ x: f.pad, y: m.top, w: f.W, h: 'auto' }, CELL.duration.value, {
     label: tl(CELL.duration.label),
     size: m.hero,
     labelSize: m.label,
@@ -209,10 +284,34 @@ function runTape(canvas: Canvas) {
     gap: m.gap,
     shadow: true,
     minSize: 120,
+    when: lacks('run._custom'),
   });
-  const effort = { ...m.one, h: m.h, size: m.size, unit: m.unit, cells: [...EFFORT, { ...CELL.hr, when: all(NO_EFFORT, has('run.hrAvg')) }], when: { any: [has('run.paceSecKm'), has('run.pace100Sec'), has('run.speedKmh'), has('run.hrAvg')] } };
-  const distance = { ...m.two, h: m.h, size: m.size, unit: m.unit, cells: [CELL.distKm, CELL.distM, { ...CELL.kcal, when: all(NO_DISTANCE, has('run.kcal')) }], when: { any: [has('run.distanceM'), has('run.kcal')] } };
-  return overlay(f, 'tape', 'tape', 'tape', [hero, ...routeLine(k, m.route, 8), band(k, f, effort), band(k, f, distance), k.group({ x: f.pad, y: m.logo, w: f.W, h: 44 }, [lockup(k, 0, 0)], { dir: 'row', justify: 'center' })], ['tape']);
+  const effortCells = [...EFFORT, { ...CELL.hr, when: all(NO_EFFORT, has('run.hrAvg')) }];
+  const effort = {
+    ...m.one,
+    h: m.h,
+    size: m.size,
+    unit: m.unit,
+    cells: effortCells,
+    when: any(has('run.slot1Val'), all(lacks('run._custom'), any(has('run.paceSecKm'), has('run.pace100Sec'), has('run.speedKmh'), has('run.hrAvg')))),
+  };
+  const distCells = [CELL.distKm, CELL.distM, { ...CELL.kcal, when: all(NO_DISTANCE, has('run.kcal')) }];
+  const distance = {
+    ...m.two,
+    h: m.h,
+    size: m.size,
+    unit: m.unit,
+    cells: distCells,
+    when: any(has('run.slot2Val'), all(lacks('run._custom'), any(has('run.distanceM'), has('run.kcal')))),
+  };
+  return overlay(
+    f,
+    'tape',
+    'tape',
+    'tape',
+    [heroCustom, heroDefault, ...routeLine(k, m.route, 8), band(k, f, effort, 1), band(k, f, distance, 2), k.group({ x: f.pad, y: m.logo, w: f.W, h: 44 }, [lockup(k, 0, 0)], { dir: 'row', justify: 'center' })],
+    ['tape'],
+  );
 }
 
 // -------------------------------------------------------------------------------------------------------- run.column
@@ -232,7 +331,20 @@ function runColumn(canvas: Canvas) {
   // Each number is a row of the stat and an accent rail the stat's height: the rail is stretched to the row by `align`.
   const item = (cell: Cell) =>
     k.group({ w: 'fill', h: 'auto' }, [cellStat(k, cell, look), k.shape({ w: 8, h: 'auto' }, 'rect', { fill: '$accent', radius: 4 })], { dir: 'row', gap: 22, align: 'stretch', when: cellWhen(cell) });
+  const customHeroItem = k.group(
+    { w: 'fill', h: 'auto' },
+    [customHeroStat(k, look), k.shape({ w: 8, h: 'auto' }, 'rect', { fill: '$accent', radius: 4 })],
+    { dir: 'row', gap: 22, align: 'stretch', when: has('run._custom') },
+  );
+  const customSlotItem = (i: SlotId) =>
+    k.group(
+      { w: 'fill', h: 'auto' },
+      [customSlotCell(k, i, look), k.shape({ w: 8, h: 'auto' }, 'rect', { fill: '$accent', radius: 4 })],
+      { dir: 'row', gap: 22, align: 'stretch', when: has(`run.slot${i}Val`) },
+    );
   const items: LayerJson[] = [
+    customHeroItem,
+    ...slotIds(4).map(customSlotItem),
     ...[CELL.distKm, CELL.distM, CELL.duration].map(item),
     ...EFFORT.map(item),
     item(CELL.hr),
@@ -268,17 +380,21 @@ function runTrack(canvas: Canvas) {
   const innerX = m.x + 4 * m.lane;
   const innerY = m.y + 4 * m.lane;
   const inner = { x: innerX, y: innerY, w: m.w - 8 * m.lane, h: m.h - 8 * m.lane };
+  const heroLook: StatLook = { w: 'fill', size: m.hero, unitSize: m.unit, labelSize: m.label, align: 'center', gap: 14, minSize: 90 };
   const hero = k.group(
     inner,
-    HERO.map((cell) => cellStat(k, cell, { w: 'fill', size: m.hero, unitSize: m.unit, labelSize: m.label, align: 'center', gap: 14, minSize: 90 })),
+    [
+      customHeroStat(k, heroLook),
+      ...HERO.map((cell) => cellStat(k, cell, heroLook)),
+    ],
     { dir: 'column', align: 'center', justify: 'center' },
   );
   // The finish line: one accent bar across the five lanes of the top straight.
   const finish = k.shape({ x: m.x + m.w * 0.64, y: m.y - 5, w: 12, h: 4 * m.lane + 10 }, 'rect', { fill: '$accent' });
   const cornerY = m.y + m.h + (f.story ? 60 : 44);
   const corner = { size: m.corner, unitSize: m.cornerUnit, labelSize: m.cornerLabel };
-  const left = slot(k, LEFT, { ...corner, align: 'left' }, { x: m.x, y: cornerY, w: 420 });
-  const right = slot(k, RIGHT, { ...corner, align: 'right' }, { x: m.x + m.w - 420, y: cornerY, w: 420 });
+  const left = slot(k, LEFT, { ...corner, align: 'left' }, { x: m.x, y: cornerY, w: 420 }, 1);
+  const right = slot(k, RIGHT, { ...corner, align: 'right' }, { x: m.x + m.w - 420, y: cornerY, w: 420 }, 2);
   const innermost = lanes[4]!;
   const accentLane = k.shape(innermost, 'rect', { stroke: { color: '$accent', width: 8 }, radius: innermost.h / 2 });
   const layers = [...stadium({ color: '$bg/30', width: 11 }), ...stadium({ color: '$fg/95', width: 5 }), accentLane, finish, hero, left, right, lockup(k, f.pad, m.logo)];
@@ -303,13 +419,14 @@ function runLanes(canvas: Canvas) {
   const m = f.story
     ? { top: 290, hero: 230, unit: 78, label: 34, sub: 76, subUnit: 30, subLabel: 28, subGap: 64, gap: 64, cx: 430, cy: 1130, r0: 230, step: 36, stroke: 12, logo: 1530 }
     : { top: 70, hero: 190, unit: 64, label: 30, sub: 62, subUnit: 26, subLabel: 26, subGap: 52, gap: 44, cx: 370, cy: 740, r0: 150, step: 30, stroke: 11, logo: 1000 };
+  const heroLook: StatLook = { w: 'fill', size: m.hero, unitSize: m.unit, labelSize: m.label, gap: 14, minSize: 100 };
   const text = k.group(
     { x: f.pad, y: m.top, w: f.W, h: 'auto' },
     [
-      k.group({ w: f.W, h: 'auto' }, HERO.map((cell) => cellStat(k, cell, { w: 'fill', size: m.hero, unitSize: m.unit, labelSize: m.label, gap: 14, minSize: 100 })), { dir: 'column' }),
+      k.group({ w: f.W, h: 'auto' }, [customHeroStat(k, heroLook), ...HERO.map((cell) => cellStat(k, cell, heroLook))], { dir: 'column' }),
       k.group(
         { w: f.W, h: 'auto' },
-        [slot(k, LEFT, { size: m.sub, unitSize: m.subUnit, labelSize: m.subLabel }), slot(k, RIGHT, { size: m.sub, unitSize: m.subUnit, labelSize: m.subLabel })],
+        [slot(k, LEFT, { size: m.sub, unitSize: m.subUnit, labelSize: m.subLabel }, {}, 1), slot(k, RIGHT, { size: m.sub, unitSize: m.subUnit, labelSize: m.subLabel }, {}, 2)],
         { dir: 'row', gap: m.subGap, align: 'start' },
       ),
     ],
@@ -361,13 +478,27 @@ function runSwoosh(canvas: Canvas) {
       ],
       { dir: 'column', gap: 18, when: cellWhen(cell) },
     );
-  const hero = k.group({ x: f.pad, y: m.y0 - m.t / 2, w: f.W, h: m.t }, HERO.map(heroText), { dir: 'column', justify: 'center' });
+  const customHeroSwoosh = k.group(
+    { w: f.W, h: 'auto' },
+    [
+      k.text({ w: 'auto' }, '{run.heroLabel}', { size: m.label, weight: 700, upper: true, ls: 3, color: '$bg' }),
+      k.group(
+        { w: 'auto', h: 'auto' },
+        [
+          k.text({ w: 'auto' }, '{run.heroVal}', { size: m.hero, weight: 800, color: '$bg', trim: true, minSize: 100 }),
+          k.text({ w: 'auto' }, '{run.heroUnit}', { size: m.unit, weight: 800, color: '$bg', trim: true, when: has('run.heroUnit') }),
+        ],
+        { dir: 'row', gap: 14, align: 'end' },
+      ),
+    ],
+    { dir: 'column', gap: 18, when: has('run._custom') },
+  );
+  const hero = k.group({ x: f.pad, y: m.y0 - m.t / 2, w: f.W, h: m.t }, [customHeroSwoosh, ...HERO.map(heroText)], { dir: 'column', justify: 'center' });
   const sub = { size: m.sub, unitSize: m.subUnit, labelSize: m.subLabel };
-  const subRow = k.group({ x: f.pad, y: m.subTop, w: 520, h: 'auto' }, [slot(k, LEFT, sub), slot(k, RIGHT, sub)], { dir: 'row', gap: m.subGap, align: 'start' });
+  const subRow = k.group({ x: f.pad, y: m.subTop, w: 520, h: 'auto' }, [slot(k, LEFT, sub, {}, 1), slot(k, RIGHT, sub, {}, 2)], { dir: 'row', gap: m.subGap, align: 'start' });
   const routeBox = { x: f.pad - 14, y: f.bottom - m.route - (f.story ? 60 : 0), w: m.route, h: m.route };
   return overlay(f, 'swoosh', 'swoosh', 'swoosh', [ribbon, hero, subRow, ...routeLine(k, routeBox, 7), lockup(k, f.pad, m.logo)], ['swoosh']);
 }
-
 export const RUN_OVERLAY_TEMPLATES = [
   runTape('story'),
   runTape('square'),

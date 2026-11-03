@@ -18,6 +18,8 @@ import {
 } from '@/features/workouts/analysis/types';
 import type { JsonObject, StickerKind, StickerSubject } from '../subject';
 import { CATEGORY_KIND, DEFAULT_GROUP, dropInapplicable, metricApplies } from './sportMetrics';
+import { formatSwimStyle } from './swimStyle';
+import { extractWorkoutMetrics } from './workoutMetrics';
 
 export interface RunSubjectInput {
   workout: WorkoutRow;
@@ -142,8 +144,8 @@ function rankOne(analysis: WorkoutAnalysis | null): AnalysisBestEffort[] {
     .sort((a, b) => BEST_EFFORT_DISTANCES[b.key] - BEST_EFFORT_DISTANCES[a.key]);
 }
 
-/** Laps, strokes, SWOLF and pool length of a swim, as the watch summed them up. */
-function swimFields(summary: WorkoutSummary, out: JsonObject): void {
+/** Laps, strokes, SWOLF, pool length and stroke style of a swim, as the watch summed them up. */
+function swimFields(summary: WorkoutSummary, out: JsonObject, locale: 'id' | 'en' | Locale): void {
   const swim = summary.swim;
   if (!swim) return;
   if (pos(swim.laps)) out.laps = Math.round(swim.laps);
@@ -151,6 +153,8 @@ function swimFields(summary: WorkoutSummary, out: JsonObject): void {
   if (pos(swim.avgSwolf)) out.swolf = Math.round(swim.avgSwolf);
   if (pos(swim.avgStrokeRate)) out.strokeRate = Math.round(swim.avgStrokeRate);
   if (pos(swim.poolLengthCm)) out.poolM = Math.round(swim.poolLengthCm / 100);
+  const style = formatSwimStyle(swim.style, locale);
+  if (style) out.swimStyle = style;
 }
 
 /** Working sets, reps and volume of the strength log merged with the workout (warm-up sets do not count). */
@@ -203,8 +207,9 @@ export function buildRunSubject(input: RunSubjectInput, locale: 'id' | 'en' | Lo
   const jumps = pos(summary.jumps) ? summary.jumps : jumpRope ? workout.steps : null;
   if (pos(jumps)) run.jumps = Math.round(jumps);
   if (pos(workout.steps) && !jumpRope) run.steps = Math.round(workout.steps);
-  swimFields(summary, run);
+  swimFields(summary, run, locale);
   if (strength) liftFields(strength, run);
+  extractWorkoutMetrics(summary, analysis, movingSec, jumps, run);
 
   const points = route.filter((p) => num(p.lat) && num(p.lon));
   if (points.length >= 2) run.route = downsample(points, ROUTE_MAX_POINTS).map((p) => [p.lat, p.lon]);
