@@ -19,6 +19,7 @@ import { fmtInt } from '@/i18n';
 import { spacing } from '@/theme';
 import { modelFor } from '../access';
 import { chooseModel, listProviderModels } from '../engine';
+import { hasHostedConsent, withdrawHostedConsent } from '../hostedConsent';
 import { useAiSettings, useByokAccess } from '../hooks';
 import { PROVIDER_ORDER } from '../providers';
 import { parseFastFields } from '../settings';
@@ -113,6 +114,7 @@ export function AiSettingsScreen() {
   const provider = settings.provider;
   const configured = provider !== null && settings.keySaved[provider] === true;
   const ownReady = access.ok;
+  const hostedOn = hasHostedConsent(settings);
   const keyed = PROVIDER_ORDER.filter((id) => settings.keySaved[id] === true);
 
   const rogoLine =
@@ -191,6 +193,23 @@ export function AiSettingsScreen() {
               {t('prefs.engine.free')}
             </AppText>
           )}
+        </Section>
+
+        <Section title={t('hosted.settings.title')} icon="shield-checkmark" tint="link">
+          <SwitchRow
+            label={t('hosted.settings.label')}
+            hint={hostedOn ? t('hosted.settings.on') : t('hosted.settings.off')}
+            value={hostedOn}
+            onValueChange={(value) => {
+              if (value) {
+                router.push('/settings/ai-consent', OPEN_IN_STACK);
+              } else {
+                withdrawHostedConsent(aiSettings);
+                show(t('hosted.withdrawn'));
+              }
+            }}
+          />
+          <Button label={t('hosted.settings.review')} icon="eye" onPress={() => router.push('/settings/ai-consent', OPEN_IN_STACK)} />
         </Section>
 
         {pickModel && configured && provider && !minor ? <ModelSection key={provider} provider={provider} onDone={() => setPickModel(false)} /> : null}

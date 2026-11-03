@@ -85,8 +85,7 @@
     "unavailable": "This phone cannot receive notifications from JoyoFit.",
     "unavailableWithHint": "This phone cannot receive notifications from JoyoFit. {{hint}}",
     "enable": "Turn on notifications",
-    "askTitle": "Turn on notifications?",
-    "notNow": "Not now",
+    "askTitle": "Turn on notifications",
     "emailHint": "You can still be notified by email."
   },
   "payload": {

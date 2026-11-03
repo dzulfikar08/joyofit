@@ -123,10 +123,9 @@
     "title": "Rest is over",
     "body": "Time for the next set.",
     "bodyNamed": "Time for the next set: {{name}}.",
-    "askTitle": "Tell you when rest is over?",
-    "askMessage": "If the screen is off or you are in another app, JoyoFit can send a notification when the rest timer ends.",
-    "askConfirm": "Yes, notify me",
-    "askCancel": "No thanks"
+    "askTitle": "Rest-over notification",
+    "askMessage": "If the screen is off or you are in another app, JoyoFit can send a notification when the rest timer ends. Your phone asks for permission next.",
+    "askConfirm": "Continue"
   },
   "liveRest": {
     "channel": "Rest timer on the lock screen",
@@ -173,10 +172,9 @@
     "zoneShort": "Z{{zone}}",
     "bluetoothOff": "Bluetooth is off, so the heart rate strap is not connected. The workout is still logged with estimated calories.",
     "ask": {
-      "title": "Use your heart rate strap?",
+      "title": "Connect your heart rate strap",
       "body": "{{name}} is paired. JoyoFit needs Bluetooth permission to connect to it. Your heart rate is then recorded and the workout calories are worked out from it.",
-      "continue": "Continue",
-      "skip": "Skip"
+      "continue": "Continue"
     },
     "denied": {
       "body": "Bluetooth permission was not granted, so the heart rate strap cannot connect. The workout is still logged with estimated calories. You can allow it in the app settings.",

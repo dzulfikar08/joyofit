@@ -4,10 +4,10 @@ import { Linking } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { NoticeDialog } from '@/components/NoticeDialog';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
-import { enablePush, pushAllowed, type PushOutcome } from '@/features/family/push';
+import { enablePush, pushStatus, type PushOutcome } from '@/features/family/push';
 
 interface PushPermissionProps {
   /** Why notifications, as the person reads it before the system prompt (`prePermissionBody`). */
@@ -17,8 +17,9 @@ interface PushPermissionProps {
 }
 
 /**
- * Turning notifications on. The button opens an explanation first; only its "Lanjut" starts the system prompt and
- * registers this phone's push token with the Worker.
+ * Turning notifications on. The button opens an explanation first; its one button ("Lanjut") always starts the system prompt and
+ * registers this phone's push token with the Worker. Nothing on the explanation skips the prompt (Apple 5.1.1(iv)). A refusal that the
+ * system can no longer ask again shows the way to the settings instead of the explanation.
  */
 export function PushPermission({ body, unavailableHint }: PushPermissionProps) {
   const { t } = useTranslation(['family', 'common']);
@@ -28,7 +29,7 @@ export function PushPermission({ body, unavailableHint }: PushPermissionProps) {
 
   useEffect(() => {
     let live = true;
-    void pushAllowed().then((allowed) => live && setOutcome(allowed ? 'enabled' : 'idle'));
+    void pushStatus().then((status) => live && setOutcome(status));
     return () => {
       live = false;
     };
@@ -71,14 +72,12 @@ export function PushPermission({ body, unavailableHint }: PushPermissionProps) {
           onPress={() => setAsking(true)}
         />
       ) : null}
-      <ConfirmDialog
+      <NoticeDialog
         visible={asking}
         title={t('family:push.askTitle')}
         message={body}
         confirmLabel={t('common:actions.next')}
-        cancelLabel={t('family:push.notNow')}
         onConfirm={() => void proceed()}
-        onCancel={() => setAsking(false)}
       />
     </Section>
   );

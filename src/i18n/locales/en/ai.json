@@ -18,7 +18,8 @@
   "screens": {
     "setup": "Set up your own key",
     "notes": "Coach notes",
-    "data": "Data sent"
+    "data": "Data sent",
+    "consent": "Joyo AI data agreement"
   },
   "chip": {
     "own": "{{model}}, own key",
@@ -410,5 +411,44 @@
     "header": "Ask Joyo AI",
     "workout": "Ask about this workout",
     "sleep": "Ask about this night"
+  },
+  "hosted": {
+    "title": "Joyo AI sends your data to a server",
+    "intro": "Joyo AI on JoyoRogo Pro answers on a server, not on your phone. Before anything is sent, please read where it goes and agree.",
+    "toTitle": "Who gets your data",
+    "to": "JoyoRogo's server (PT Joyo Digitama Solusi) and Cloudflare Workers AI (Cloudflare, Inc.), which runs the AI model. Your phone sends it to JoyoRogo's server, which passes it on to Cloudflare Workers AI to get the answer.",
+    "lead": "Every time you send a message, JoyoFit sends:",
+    "data": {
+      "chat": "Your messages: what you type and the earlier messages of this chat (the last 12), and the date and time of your question.",
+      "profile": "Profile from your JoyoRogo account: age, sex, height, weight, goal, pregnancy or breastfeeding mode if you set one, daily eating target and estimated calorie burn.",
+      "recovery": "Recovery: readiness, training load, HRV (recent and baseline), strain, resting heart rate and VO2max.",
+      "sleep": "Sleep: how long you slept last night and your sleep debt.",
+      "workouts": "Workouts: up to 10 from the last 14 days (start time, sport, minutes, km, average heart rate).",
+      "plan": "Training plan: goal, level, week, sessions done and the next ones, and today's coach suggestion with its reason.",
+      "food": "Food: today's calories and protein, and the 7-day average, from your JoyoRogo food log."
+    },
+    "notSentTitle": "Never sent",
+    "notSent": "Your name, email, GPS location and routes, photos, device IDs, per-minute heart rate, menstrual cycle data and Strava data.",
+    "whyTitle": "Why, and how long",
+    "why": "Only to write the answer to your question. JoyoRogo's server does not store your messages or the answers; it keeps only counts such as how many messages you sent today. Cloudflare Workers AI does not keep your content after it answers and does not use it to train AI models.",
+    "choice": "It is your choice. Without your agreement nothing is sent and the chat stays closed. You can withdraw any time in Settings, Joyo AI. Using your own AI key is another way: it does not go through these servers.",
+    "privacy": "Read the privacy policy (Joyo AI section)",
+    "agree": "Agree and continue",
+    "later": "Not now",
+    "needed": "Joyo AI needs your agreement before it can send anything. Open the chat again to review it.",
+    "agreedAt": "You agreed on {{date}}.",
+    "withdraw": "Withdraw my agreement",
+    "withdrawTitle": "Withdraw agreement?",
+    "withdrawBody": "Nothing more is sent to JoyoRogo's AI. Chats already on this phone stay until you delete them. You can agree again any time.",
+    "withdrawConfirm": "Withdraw",
+    "withdrawn": "Agreement withdrawn. Nothing is sent.",
+    "agreed": "Agreement saved.",
+    "settings": {
+      "title": "Data sent to JoyoRogo's AI",
+      "label": "Allow JoyoRogo's AI to receive my data",
+      "on": "On: your messages and the data listed in the agreement go to JoyoRogo's server and Cloudflare Workers AI when you ask.",
+      "off": "Off: nothing is sent and the JoyoRogo Pro chat stays closed. Turn on to read what is sent and agree.",
+      "review": "What is sent and who gets it"
+    }
   }
 }

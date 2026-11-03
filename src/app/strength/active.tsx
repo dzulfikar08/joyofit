@@ -10,6 +10,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { NoticeDialog } from '@/components/NoticeDialog';
 import { PressableScale } from '@/components/PressableScale';
 import { LoadingState } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
@@ -71,7 +72,6 @@ import { userEnergyProfile, userWeightKg } from '@/features/strength/profile';
 import { restLiveAllowed, stopRestLive, syncRestLive } from '@/features/strength/restLive';
 import {
   cancelRestEnd,
-  declineRestPermission,
   requestRestPermission,
   restPermission,
   scheduleRestEnd,
@@ -1032,20 +1032,14 @@ export default function ActiveWorkoutScreen() {
         onConfirm={() => void startConflict(true)}
         onCancel={() => void startConflict(false)}
       />
-      <ConfirmDialog
+      <NoticeDialog
         visible={confirm === 'notify'}
         title={t('strength:notification.askTitle')}
         message={t('strength:notification.askMessage')}
         confirmLabel={t('strength:notification.askConfirm')}
-        cancelLabel={t('strength:notification.askCancel')}
         onConfirm={() => {
           setConfirm(null);
           void requestRestPermission(db).then((granted) => setPermission(granted ? 'granted' : 'blocked'));
-        }}
-        onCancel={() => {
-          setConfirm(null);
-          setPermission('blocked');
-          void declineRestPermission(db);
         }}
       />
     </KeyboardAvoidingView>

@@ -7,7 +7,7 @@ import { captureRef } from 'react-native-view-shot';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { NoticeDialog, useNotice } from '@/components/NoticeDialog';
 import { PressableScale } from '@/components/PressableScale';
 import { Segmented } from '@/components/Segmented';
 import { Notice } from '@/components/States';
@@ -40,11 +40,6 @@ import { ReplayPainter } from './ReplayPainter';
 import { usePlayer } from './usePlayer';
 
 const SAVE_AVAILABLE = canSaveToLibrary(Platform.OS === 'ios' ? 'ios' : 'android', Platform.OS === 'android' ? Number(Platform.Version) : 0);
-interface PhotosRequest {
-  purpose: 'save' | 'instagram';
-  answer: (continues: boolean) => void;
-}
-
 type MapState =
   | { status: 'unavailable'; reason: 'no-route' | 'too-short' }
   | { status: 'loading'; done: number; total: number }
@@ -117,7 +112,7 @@ export function ReplayScreen({ track, sportLabel, visible, onClose }: ReplayScre
   const [feedback, setFeedback] = useState<{ tone: 'info' | 'danger'; text: string; action?: { label: string; onPress: () => void } } | null>(null);
   const [busy, setBusy] = useState<'save' | 'instagram' | 'share' | null>(null);
   const [installed, setInstalled] = useState(false);
-  const [photosRequest, setPhotosRequest] = useState<PhotosRequest | null>(null);
+  const photos = useNotice<'save' | 'instagram'>();
   const abort = useRef<AbortController | null>(null);
   const mode: ReplayMode = modePick ?? scheme;
 
@@ -204,15 +199,8 @@ export function ReplayScreen({ track, sportLabel, visible, onClose }: ReplayScre
   const scale = frameWidth / cardWidth;
   const frameHeight = fullHeight * scale;
 
-  const askPhotos: PhotosPrompt = (purpose) => {
-    const { promise, resolve } = Promise.withResolvers<boolean>();
-    setPhotosRequest({ purpose, answer: resolve });
-    return promise;
-  };
-  const answerPhotos = (continues: boolean) => {
-    photosRequest?.answer(continues);
-    setPhotosRequest(null);
-  };
+  /** Our own one-button notice goes first, so the system Photos dialog is never a surprise; it always carries on to it. */
+  const askPhotos: PhotosPrompt = photos.show;
 
   const finishVideo = useCallback((video: EncodedVideo | null) => {
     setExportState((prev) => {
@@ -278,7 +266,8 @@ export function ReplayScreen({ track, sportLabel, visible, onClose }: ReplayScre
     setFeedback(null);
     try {
       if (target === 'save') {
-        if (await saveVideo(uri, askPhotos)) show(t('replay:export.saved'));
+        await saveVideo(uri, askPhotos);
+        show(t('replay:export.saved'));
       } else if (target === 'instagram') {
         await shareVideoToInstagram(uri, t('replay:ui.caption'), askPhotos);
       } else {
@@ -428,14 +417,12 @@ export function ReplayScreen({ track, sportLabel, visible, onClose }: ReplayScre
         {toast}
       </View>
 
-      <ConfirmDialog
-        visible={photosRequest !== null}
+      <NoticeDialog
+        visible={photos.request !== null}
         title={t('sharing:share.photosDialog.title')}
-        message={photosRequest?.purpose === 'instagram' ? t('replay:export.photosDialog.instagram') : t('replay:export.photosDialog.save')}
+        message={photos.request === 'instagram' ? t('replay:export.photosDialog.instagram') : t('replay:export.photosDialog.save')}
         confirmLabel={t('sharing:share.photosDialog.confirm')}
-        cancelLabel={t('sharing:share.photosDialog.cancel')}
-        onConfirm={() => answerPhotos(true)}
-        onCancel={() => answerPhotos(false)}
+        onConfirm={photos.done}
       />
     </Modal>
   );

@@ -28,8 +28,7 @@
       "title": "Photos access",
       "instagram": "Instagram opens an image from your photo library, so JoyoFit saves this one there first. Your phone asks for permission next.",
       "save": "JoyoFit adds this image to your photos. It does not read the photos you already have. Your phone asks for permission next.",
-      "confirm": "Continue",
-      "cancel": "Not now"
+      "confirm": "Continue"
     }
   },
   "strava": {

@@ -122,13 +122,23 @@ Written 2026-10-22. Code: `src/features/ai/`. The Coach chat has two engines, an
 | | Hosted | Own key |
 | --- | --- | --- |
 | Who | JoyoRogo Pro | Everyone 18 or older, free. No JoyoRogo account needed; food and weight (JoyoRogo data) are only read when signed in |
-| Request goes | phone to JoyoRogo to Cloudflare Workers AI | phone straight to the provider the person chose; JoyoRogo is not in the path |
+| Request goes | phone to JoyoRogo's server to Cloudflare Workers AI, only after the person agreed (see "Hosted consent") | phone straight to the provider the person chose; JoyoRogo is not in the path |
 | Limit | JoyoRogo's daily message limit (set on the server, 20 a day for Pro per the owner brief) | `dailyCeiling` provider calls a day counted on the phone (default 40, allowed 5 to 200); provider costs are the person's own |
 | Safety pass | JoyoRogo `coach-chat.ts` | the same pass ported to `safety.ts` |
 | What JoyoRogo's servers see | the message and the snapshot while answering (nothing stored but counts, see the privacy page) | nothing: no key, no message, no digest |
 | Setting | `engine = 'rogo'` (default) | `engine = 'byok'`, set by `connectProvider` |
 
 Removing the provider in use sets the engine back to `rogo` (see "Consent and withdrawing").
+
+### Hosted consent
+
+Added 2026-11-03 after App Review (5.1.1(i), 5.1.2(i): personal data went to a third-party AI without a clear explanation, the recipient and a yes). Nothing reaches the hosted engine (`coach/chat`) before the person agreed on this phone.
+
+- **Record.** `AiSettings.hostedConsent: { version, at } | null` in the Joyo AI settings (kv-store on the phone, never synced). `HOSTED_CONSENT_VERSION` and `HOSTED_CONSENT_CATEGORIES` live in `src/features/ai/hostedConsent.ts`; `hostedConsent.test.ts` pins the list to the version, and `SNAPSHOT_FIELD_CATEGORY` is a `Record<keyof CoachSnapshot, ...>`, so a new snapshot field does not compile until it is placed in a listed category. Change what is sent: reword `ai:hosted.data.*` (both locales), the privacy page (`site/src/Privasi.tsx`, ids `joyo-ai-hosted`, `joyo-ai-hosted-en`), bump the version, add its pin.
+- **Gate in code.** `coachChat` (`features/coach/chat/api.ts`) is `guardHosted(aiSettings, sendChat)` (`hostedChat.ts`): it reads the settings at call time and throws `HostedConsentError` before anything is sent. It is the only function that posts `coach/chat`. `coach/status` (the daily counter, no personal data) is not gated.
+- **Screen.** `JoyoAiChat` shows `HostedConsentCard` (recipients, the data list, what is never sent, purpose and retention, the privacy-policy link, **Agree and continue** and **Not now**) instead of the composer while engine is `rogo`, the account is Pro and there is no valid yes; Not now leaves the chat. Review and withdraw: Settings, Joyo AI, "Data sent to JoyoRogo's AI" (a switch: on opens `/settings/ai-consent`, off withdraws at once) and `/settings/ai-consent` (`HostedConsentScreen`). Delete all Joyo AI data resets it.
+- **Recipient wording** (`ai:hosted.to`): JoyoRogo's server (PT Joyo Digitama Solusi) and Cloudflare Workers AI (Cloudflare, Inc.), which runs the AI model (JoyoRogo: `@cf/google/gemma-4-26b-a4b-it`, `AI_COACH_MODEL`). What the server adds to the phone's snapshot: the account profile (age, sex, height, weight, goal, pregnancy or breastfeeding mode, eating target, TDEE) and food totals (JoyoRogo `coach-chat.ts`, `readCoachServerContext`). JoyoRogo stores no message text, only counts and token usage; Cloudflare's Workers AI data-usage page states no retention of inputs and outputs and no training.
+- JoyoRogo does not check consent for `coach/chat` (older Android builds would break), so the phone's gate is the enforcement.
 
 ### Providers and adapters
 

@@ -1,4 +1,6 @@
 import { RogoError, rogoCall } from '@/cloud/rogo';
+import { guardHosted } from '@/features/ai/hostedChat';
+import { aiSettings } from '@/features/ai/stores';
 import { getLocale } from '@/i18n';
 import type { CoachSnapshot } from './snapshot';
 
@@ -40,6 +42,11 @@ export function chatFailure(error: unknown): ChatFailure {
 
 export const coachChatStatus = (): Promise<ChatStatus> => rogoCall<ChatStatus>('coach/status', {});
 
-export function coachChat(messages: readonly ChatTurn[], snapshot: CoachSnapshot): Promise<ChatAnswer> {
-  return rogoCall<ChatAnswer>('coach/chat', { messages: messages.slice(-MAX_TURNS), snapshot, locale: getLocale() });
-}
+const sendChat = (messages: readonly ChatTurn[], snapshot: CoachSnapshot): Promise<ChatAnswer> =>
+  rogoCall<ChatAnswer>('coach/chat', { messages: messages.slice(-MAX_TURNS), snapshot, locale: getLocale() });
+
+/**
+ * The hosted Joyo AI: sends the chat and the snapshot to JoyoRogo's server, which has Cloudflare Workers AI answer. The only function in
+ * the app that does; it throws `HostedConsentError` without sending anything unless the person agreed on this phone (`hostedConsent.ts`).
+ */
+export const coachChat = guardHosted(aiSettings, sendChat);

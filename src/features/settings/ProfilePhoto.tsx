@@ -9,6 +9,7 @@ import { AppText } from '@/components/AppText';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { NoticeDialog } from '@/components/NoticeDialog';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { errorMessage } from '@/format';
@@ -25,8 +26,9 @@ type Problem = { denied: true } | { denied: false; text: string };
 
 /**
  * The profile photo of the signed-in JoyoRogo account: its picture, name and email, "Change photo" and, for a photo that was
- * uploaded (a Google photo cannot be removed), "Remove photo". "Change photo" explains first what happens to the photo;
- * only "Continue" opens the gallery. The picked photo goes up through `avatar.upload`, then the session is read again so the
+ * uploaded (a Google photo cannot be removed), "Remove photo". "Change photo" explains first what happens to the photo, in a notice
+ * whose one button always opens the gallery (no Cancel before the phone's photo access; the person can still back out of the gallery
+ * itself and nothing is sent until a photo is picked). The picked photo goes up through `avatar.upload`, then the session is read again so the
  * Settings hub, the Social profile and every post, comment and group member show it at once. Renders nothing signed out.
  */
 export function ProfilePhoto({ onNotify }: ProfilePhotoProps) {
@@ -125,13 +127,12 @@ export function ProfilePhoto({ onNotify }: ProfilePhotoProps) {
           onPress={() => setConfirmingRemove(true)}
         />
       ) : null}
-      <ConfirmDialog
+      <NoticeDialog
         visible={explaining}
         title={t('account.photo.askTitle')}
         message={t('account.photo.askBody')}
         confirmLabel={t('account.photo.continue')}
         onConfirm={() => void choose()}
-        onCancel={() => setExplaining(false)}
       />
       <ConfirmDialog
         visible={confirmingRemove}

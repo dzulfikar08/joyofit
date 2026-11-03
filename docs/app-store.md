@@ -82,24 +82,26 @@ Open source (AGPL-3.0): https://github.com/dzulfikar08/joyofit
 ```
 JoyoFit is an independent, open-source app that syncs a compatible smartwatch with the iPhone over Bluetooth (compatible models: https://fit.joyorogo.com/jam). It is not made, endorsed or sponsored by any watch maker.
 
-DEMO VIDEO (physical iPhone, build 1.1 202610281818): https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-202610281818.mp4 . 0:00: the In-App Purchase screen (both plans, Restore, terms, Terms of Use, Privacy Policy) and Pro active after a Sandbox purchase. From 1:39, BACKGROUND AUDIO: a run with the metronome on Sound, then the Home Screen (1:54) and Spotify (2:12) while the click goes on. iOS stops Screen Recording when the phone locks.
+DEMO VIDEO (physical iPhone, build 1.1 202610281818): https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-202610281818.mp4 . 0:00: the In-App Purchase screen (both plans, Restore, terms, Terms of Use, Privacy Policy) and Pro active after a Sandbox purchase. From 1:39, BACKGROUND AUDIO: a run with the metronome on Sound, then the Home Screen (1:54) and Spotify (2:12) while the click goes on.
 
-NO DEMO ACCOUNT NEEDED. Watch sync and every screen in the video work without an account. Signing in with a JoyoRogo account (Sign in with Apple works) only adds the optional cloud backup, Strava upload and the JoyoRogo Pro features (Coach and Joyo AI, cloud backup, family sharing beyond the free tier, AI connectors).
+NO DEMO ACCOUNT NEEDED. Watch sync and every screen in the video work without an account. Signing in with a JoyoRogo account only adds cloud backup, Strava upload and the Pro features (Coach, Joyo AI, family sharing beyond the free tier, AI connectors).
 
-IN-APP PURCHASE: JoyoRogo Pro is sold in JoyoFit as auto-renewable subscriptions (com.joyodigitama.joyofit.pro.monthly and .yearly, group "JoyoRogo Pro"). Path: sign in on Today's Coach card (Sign in with Apple), then Upgrade to Pro on that card (the same card is on Coach, cloud backup, Family and AI connections). The Pro screen shows both plans with Apple's prices, Restore purchases, the renewal terms and the Terms of Use and Privacy Policy links. Pro belongs to the JoyoRogo account, so it is also honoured when it was bought in our JoyoRogo app (App Store id6823222101, same developer), on Google Play or on joyorogo.com; JoyoFit never links to a purchase outside the App Store.
+IN-APP PURCHASE: JoyoRogo Pro is sold in JoyoFit as auto-renewable subscriptions (com.joyodigitama.joyofit.pro.monthly and .yearly, group "JoyoRogo Pro"). Path: sign in on Today's Coach card (Sign in with Apple), then Upgrade to Pro on that card. The Pro screen shows both plans with Apple's prices, Restore, the renewal terms, Terms of Use and Privacy Policy. Pro belongs to the JoyoRogo account, so it is also honoured when bought in our JoyoRogo app (id6823222101, same developer), on Google Play or on joyorogo.com; JoyoFit never links to a purchase outside the App Store. A Sandbox purchase ends in the normal "Pro is on" state.
 
-WITHOUT A WATCH you can still see the setup guide, the Today, Workouts and Watch screens with their empty states, the watch scan (it finds nothing without a watch in range) and every Settings screen. Screens for features iOS does not allow (find my phone, calls, SOS texts) explain that instead of showing controls.
+JOYO AI (JoyoRogo Pro, hosted engine): before anything is sent, a consent screen replaces the chat input. Path: Coach, row Joyo AI. It lists the data sent, names the recipients (JoyoRogo's server, PT Joyo Digitama Solusi, and Cloudflare Workers AI, Cloudflare, Inc., which runs the model), what is never sent, why and how long, links to the privacy policy (https://fit.joyorogo.com/privasi#joyo-ai-hosted-en) and asks Agree and continue or Not now; without Agree nothing is sent. Withdraw: engine chip at the top of the chat, Settings, Joyo AI, "Allow JoyoRogo's AI to receive my data". The optional own-key engine has its own consent screen.
+
+WITHOUT A WATCH you can still see the setup guide, the Today, Workouts and Watch screens (empty states), the watch scan and every Settings screen.
 
 PERMISSIONS and why:
 - Bluetooth: connect to the user's own watch (prompt when the user taps Connect) and, optionally, heart rate straps, cycling sensors, running pods and a Bluetooth scale the user pairs.
-- Location (when in use): optional; weather on the watch (rounded to about 1 km before it goes to Open-Meteo), the position for a watch workout while the app is open, and the route of a workout the user starts on the phone.
+- Location (when in use): optional; weather on the watch (rounded to about 1 km before it goes to Open-Meteo), the position for a watch workout, and the route of a phone workout.
 - Motion & Fitness: steps and cadence of a run or walk the user records on the phone.
-- Apple Health: writes the watch's steps, distance, active energy, heart rate, SpO2, sleep and workouts when the user switches the export on; reads Apple Health history once, only when the user taps Import from Apple Health. Nothing read leaves the phone.
-- Camera and Photos: only when the user takes or picks a photo for a shared workout image or a watch face.
-- Background modes: bluetooth-central (reconnect and sync the remembered watch; keep a paired strap during a phone workout), location (only while a phone workout with GPS runs, blue indicator shown), audio (the cadence metronome of a workout recorded on the phone: with the metronome on Sound or Both, the click goes on with the screen locked or another app in front, mixed with the user's music; never records audio; shown in the BACKGROUND AUDIO part of the demo video. Path: Workouts, Record workout, Run, Continue on the location screen, Start, then Metronome on and Sound).
-- Encryption: the Bluetooth link to the watch uses AES and HMAC; ITSAppUsesNonExemptEncryption is false.
+- Apple Health: writes the watch's steps, distance, energy, heart rate, SpO2, sleep and workouts when the user switches the export on; reads history once, only when the user taps Import from Apple Health. Nothing read leaves the phone.
+- Camera and Photos: only when the user takes or picks a photo, or taps Save on a shared image. Every explanation before a permission has one Continue or Next button that leads to the system request.
+- Background modes: bluetooth-central (reconnect and sync the watch; keep a paired strap during a phone workout), location (only while a phone workout with GPS runs), audio (the cadence metronome of a phone workout: set to Sound, the click goes on with the screen locked or another app in front, mixed with the user's music; never records audio; see the video. Path: Workouts, Record workout, Run, Continue, Start, Metronome on, Sound).
+- Encryption: the watch link uses AES and HMAC; ITSAppUsesNonExemptEncryption is false.
 
-FAMILY SHARING (optional, off until used): a user can share a few daily numbers from their own watch (steps, resting heart rate, sleep, optional SpO2, watch battery) with a family member they invite. A consent screen has a switch per category; sharing can be paused or stopped at any time, and stopping deletes the shared history. It is not real-time and not an emergency or medical tool.
+FAMILY SHARING (optional, off until used): a few daily numbers (steps, resting heart rate, sleep, optional SpO2, battery) shared with a person the user invites, one consent switch per category; stopping deletes the history. Not a medical tool.
 
 ```
 
@@ -338,3 +340,80 @@ Dzulfikar Ats Tsauri
 3. Age rating (Apple's new required question): `socialMedia` yes, `socialMediaAgeRestricted` no, and `userGeneratedContent` corrected to yes (the Social tab: posts, comments, kudos, profiles, with report and block); App Store age rating still computed 4+.
 4. Submitted 2026-10-29 02:52 UTC as a new submission `0c30c20d-7650-44b1-bb85-c6b4dc867a20` (WAITING_FOR_REVIEW): version 1.1 (202610281818), both subscriptions and the group "JoyoRogo Pro" (a first subscription must go with its group and an app version). To do that the version was removed from the rejected `bf3d4eb5` (now COMPLETE), whose thread keeps the reply.
 5. Left: wait for App Review; after approval, set `available:` in `docs/marketing/releases/2026-10-29-pro-iap-ios.md` and JRG-466.
+
+## Review 2026-11-03: third rejection of 1.1 (202610281818)
+
+Submission `0c30c20d-7650-44b1-bb85-c6b4dc867a20`, reviewed on an iPad Air 11-inch (M3), iPadOS 27.2. Three issues:
+
+| Guideline | Apple's finding | Root cause | Fix |
+|---|---|---|---|
+| 2.1(b) | "a test purchase was initiated instead of the real purchase flow": the screenshot shows the dialog "Test purchase: This was a test purchase from the store's test environment: nothing was charged and Pro lasts 24 hours." over "JoyoRogo Pro is active" | App Review buys in the Sandbox. JoyoRogo answers a Sandbox receipt with `sandbox: true`; `buyPro` turned that into the outcome `trial` and the paywall showed the dialog | The dialog, the outcome and the flag are gone: a Sandbox purchase ends in the same "Pro is on" state as a real one |
+| 5.1.1(iv) | a custom message before the Photos request, closable with "Cancel" ("Not now"): "the user should always proceed to the permission request after the message" | `ensurePhotosAccess` took a prompt that resolved `false` on "Not now" and then skipped the request | One button, no way out; the same rule applied to every pre-permission message on iOS |
+| 5.1.1(i), 5.1.2(i) | the app "appears to share the user's personal data with a third-party AI service but does not clearly explain what data is sent, identify who the data is sent to, and ask the user's permission before sharing" | The own-key engine had a consent screen (`CONSENT_VERSION` 2); the hosted engine of Joyo AI (`engine === 'rogo'`, the default for Pro) did not: the first message sent the chat and a data snapshot to JoyoRogo's server, which has Cloudflare Workers AI answer | A hosted-AI consent screen, a code gate in front of every hosted request, withdrawal in the settings, a privacy-policy section |
+
+### 1. Test purchase dialog (2.1(b))
+
+- `src/features/pro/ProPaywallScreen.tsx`: no `sandbox` alert; `bought` is the only success outcome (`PurchaseOutcome` in `billingCore.ts` lost `trial`).
+- `src/features/pro/appleBilling.ts`, `appleBillingCore.ts`: `postSignedTransaction` returns nothing; the `sandbox` answer of the server is not read. Tests in `appleBillingCore.test.ts`.
+- `src/i18n/locales/{en,id}/pro.json`: `paywall.sandbox.*` removed. `docs/pro-ios.md` step 5 rewritten.
+- Not changed (JoyoRogo server, not JS): a Sandbox receipt still credits Pro for a day on the server. The reviewer sees "Pro is on" and the active screen; the 24 hours are only a server fact.
+
+### 2. Photos pre-prompt (5.1.1(iv))
+
+- `src/components/NoticeDialog.tsx` (new): a one-button card. A tap outside does nothing, Back counts as the button; `useNotice()` resolves when it is pressed.
+- `src/features/stickers/share/shareImage.ts`: `PhotosPrompt` is `(purpose) => Promise<void>`; `ensurePhotosAccess` shows it and then always calls the system request (add-only for Save, read-write for the Instagram path). `saveCardImage`, `shareToInstagram`, `saveVideo` (`replay/shareVideo.ts`), `shareVideoToInstagram`, `saveAllAndOpenThreads` (`shareThreads.ts`) lost the "declined" return value. Callers: `StickerSheet.tsx`, `ThreadsSheet.tsx`, `ReplayScreen.tsx`. Strings: `sharing:share.photosDialog.cancel` removed in both locales; the button is Continue / Lanjut.
+- Already denied (iOS will not ask again): no explanation, the existing notice with **Open Settings** (`PhotosDeniedError`).
+- Other pre-permission messages reachable on iOS, same rule (one Next / Continue button, always followed by the system prompt): family notifications (`PushPermission.tsx`, new `pushStatus()`; the Open-settings notice when refused for good), strength heart-rate strap Bluetooth (`StrapCard.tsx`), rest-timer notification (`strength/active.tsx`), profile photo (`ProfilePhoto.tsx`), location for Record, Loops and Weather (`sensors/permissions.ts` `locationState`, `PermissionGate.tsx`, `useLoopPlanner.ts`, `WeatherSection.tsx`, `WatchNavSection.tsx`: a refusal iOS cannot repeat shows Open Settings, not an explanation). iOS "Take photo" now asks for the camera (`stickers/photo.ts`; `launchCameraAsync` only checked it before). Android-only dialogs are unchanged; the list is in `docs/ios.md`, "Explaining before a system permission".
+
+### 3. Hosted AI consent (5.1.1(i), 5.1.2(i))
+
+What goes where (checked in JoyoRogo `lib/coach-chat.ts`, `routers/coach.ts`, Cloudflare's Workers AI data-usage page, 2026-11-03):
+
+- Path: JoyoFit `coachChat` (`src/features/coach/chat/api.ts`) posts `coach/chat` to JoyoRogo's server (PT Joyo Digitama Solusi), which calls Cloudflare Workers AI (Cloudflare, Inc.) with the `env.AI` binding, model `@cf/google/gemma-4-26b-a4b-it` (`AI_COACH_MODEL`). No AI Gateway. Nothing else in the app sends personal data to an AI: the own-key engine goes to the provider the person chose (own consent, `consent.ts`); Koneksi AI is an OAuth connector the person adds in Claude or ChatGPT, where JoyoRogo's own approval page ("Izinkan Akses") lists the scopes before any data is read; Sleep insights is a rule engine on JoyoRogo (consent alert names JoyoRogo; no AI model); the Coach plans and suggestions are rules.
+- Sent per message: the last 12 turns (2000 characters each) and the phone's snapshot (`buildSnapshot`: readiness, load, HRV, last night's sleep and debt, strain, resting HR, VO2max, the suggestion, the plan, up to 10 workouts of 14 days); the server adds the account profile (age, sex, height, weight, goal, pregnancy or breastfeeding mode, eating target, TDEE) and food totals. Not sent: name, email, GPS, photos, device ids, per-minute heart rate, cycle data, Strava.
+- Retention: JoyoRogo stores no message text, only counts and token usage; Cloudflare states no retention of inputs or outputs after the request and no training on them.
+
+Code:
+
+- `src/features/ai/hostedConsent.ts`: `HOSTED_CONSENT_VERSION` (1), `HOSTED_CONSENT_CATEGORIES`, grant, withdraw, `HostedConsentError`, `SNAPSHOT_FIELD_CATEGORY` (a new snapshot field does not compile until it is placed in a listed kind of data). Record: `AiSettings.hostedConsent` (`settings.ts`), on the phone only.
+- `src/features/ai/hostedChat.ts` `guardHosted`, applied in `coachChat`: the settings are read at the moment of the call and the request is refused with `HostedConsentError` before anything is sent. The only function that posts `coach/chat`.
+- Screen: `ui/HostedConsentCard.tsx` (recipients, the data list, never sent, why and how long, **Agree and continue**, **Not now**, a link to the privacy policy section `https://fit.joyorogo.com/privasi#joyo-ai-hosted`, `#joyo-ai-hosted-en` in English). `JoyoAiChat.tsx` shows it in place of the composer (gate `rogoConsent`); Not now leaves the chat and nothing is sent.
+- Withdraw: Settings, Joyo AI, switch "Allow JoyoRogo's AI to receive my data" (off withdraws at once; on opens `/settings/ai-consent`, `ui/HostedConsentScreen.tsx`, which also shows the full text with a Withdraw button). "Delete all Joyo AI data" resets it. Strings: `ai:hosted.*` (en, id).
+- Tests: `src/features/ai/hostedConsent.test.ts` (no consent: no request; an older version asks again; withdrawn: closed; the list pinned to the version).
+- Privacy policy: `site/src/Privasi.tsx`, sections `joyo-ai-hosted` (id) and `joyo-ai-hosted-en`: recipients, data, never sent, purpose, retention, withdrawal; also the summary, the Coach section, "Third parties" and "Deleting your data". **Deploy before resubmitting** (`cd site && bun run deploy`): the consent screen links to it.
+- Not changed: JoyoRogo's `coach/chat` does not check a consent (older Android builds would stop working); the phone's gate is the enforcement. `coach/status` (daily counter, no personal data) is not gated.
+
+How a reviewer reaches the consent (Pro is needed; a Sandbox purchase gives it):
+
+1. Today, sign in (Sign in with Apple), Upgrade to Pro, buy a plan in the Sandbox.
+2. Coach (Today's Coach card, or the Coach tab), row **Joyo AI** (Ask about sleep, recovery, training and food). The chat opens with the consent card: Agree and continue / Not now. Until Agree, the chat has no input field.
+3. After Agree: type a question. Review or withdraw any time: in the chat tap the engine chip at the top ("JoyoRogo Pro ..."), Settings, Joyo AI, section **Data sent to JoyoRogo's AI**: switch off, or "What is sent and who gets it".
+
+### Updated App Review notes
+
+The notes block at the top of this file is the updated text (3,981 characters of Apple's 4,000): the IN-APP PURCHASE paragraph ends "A Sandbox purchase ends in the normal "Pro is on" state"; the new JOYO AI paragraph gives the path (Coach, row Joyo AI), the recipients, the privacy-policy link and how to withdraw; the Camera and Photos bullet says every explanation before a permission has one Continue or Next button that leads to the system request. Paste it into App Store Connect, App Review Information, Notes.
+
+### Reply to App Review (Resolution Center), to send with the resubmission
+
+```
+Hello,
+
+Thank you for the review. The new build addresses the three issues.
+
+1. Guideline 2.1(b): the "Test purchase" dialog is removed. The app no longer tells a Sandbox purchase from a real one: after the Apple purchase sheet, JoyoFit shows the same "Pro is on" state for both. Nothing in the app is a test or demo purchase.
+
+2. Guideline 5.1.1(iv): the message before the Photos permission request now has a single "Continue" button; there is no "Not now" or Cancel, and tapping outside it does nothing, so the person always goes on to the system permission request. We checked every other explanation the app shows before a system permission (notifications, Bluetooth, location, step counter, camera) and made them the same: one "Next" or "Continue" button that always leads to the system request. When a permission has already been refused, the app shows a notice with a button to the Settings app instead.
+
+3. Guidelines 5.1.1(i) and 5.1.2(i): before the app sends any personal data to the AI of JoyoRogo Pro (Joyo AI), it now shows a consent screen. It lists exactly what is sent (the person's messages; profile from their JoyoRogo account such as age, sex, height, weight and goal; recovery, sleep, workout and training-plan data; food totals), says who receives it (JoyoRogo's server, PT Joyo Digitama Solusi, and Cloudflare Workers AI, Cloudflare, Inc., which runs the AI model), what is never sent, why it is sent (only to write the answer) and how long it is kept (JoyoRogo's server does not store the messages; Cloudflare states that Workers AI does not retain the content and does not use it to train models), and links to the privacy policy section. The person must tap "Agree and continue"; with "Not now" nothing is sent and the chat stays closed. The code refuses to send a request without the saved agreement. It can be withdrawn at any time in Settings, Joyo AI, "Allow JoyoRogo's AI to receive my data". The privacy policy now has a section on it: https://fit.joyorogo.com/privasi#joyo-ai-hosted-en
+
+To see the consent screen: sign in, buy the subscription in the Sandbox, then Coach, row "Joyo AI". It opens with the consent screen before any message can be typed. The optional own-key engine (Settings, Joyo AI, Set up your own key) has its own consent screen, as before.
+
+Best regards,
+Dzulfikar Ats Tsauri
+```
+
+### Owner checklist
+
+1. Deploy the site (`cd site && bun run deploy`) so the privacy-policy section and its anchors exist; open https://fit.joyorogo.com/privasi#joyo-ai-hosted-en to check.
+2. Ship the JS (OTA, `docs/ota.md`) to TestFlight 1.1 (202610281818), or a new build if the review needs one; it contains no native change. The iOS "Take photo" camera prompt (`stickers/photo.ts`) is not tried on a device [INFERENCE]: check it once.
+3. Replace the App Review notes in App Store Connect with the block at the top of this file; send the reply above with the resubmission.

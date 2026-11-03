@@ -95,6 +95,7 @@
       "choose": "Choose photo",
       "change": "Change photo",
       "take": "Take photo",
+      "cameraDenied": "Camera access is off for JoyoFit. Turn it on in Settings > JoyoFit > Camera, or choose a photo from your gallery.",
       "placeholder": "Pick a photo from your gallery or take a new one.",
       "failed": "That photo could not be loaded. Pick another one.",
       "needed": "Add your photo first to share this card."

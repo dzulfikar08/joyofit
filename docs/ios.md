@@ -126,6 +126,16 @@ claims to have reached the watch unless it did.
 
 ## iOS specifics
 
+- **Explaining before a system permission (App Review 5.1.1(iv)).** Whatever the app says before a system prompt has one button (Continue, Next or
+  Lanjut) and always goes on to the prompt: no Cancel, Not now or Skip, and no scrim tap or Back that skips it. Inline cards (record setup, loops,
+  the heart rate strap, the step counter, the weather location) carry the one button themselves; a dialog is `NoticeDialog` (`useNotice` when the
+  request is awaited by a share or a toggle): the strength rest-over notification, the family notifications switch, the profile photo, saving to
+  Photos. A refusal the system cannot ask again (iOS location, notifications) shows a notice with **Open settings** (`Linking.openSettings()`)
+  instead of an explanation (`locationState()`, `ensureLocation()` answering `blocked`, `pushStatus()`). A decision that may be refused (sending data
+  to a provider, a purchase, the JoyoRogo sleep consent) is not a permission explanation and keeps its Cancel (`ConfirmDialog`). Android-only paths
+  (the first-launch GPS question in `LiveWorkoutProvider`, `GpsAssistNotice`, the phone and notification-access sections) are untouched. The iOS
+  "Take photo" of a sticker asks for the camera itself (`requestCameraPermissionsAsync`, because `launchCameraAsync` only checks it); the gallery
+  needs no permission.
 - **Finding the watch (JRG-173).** FE86 is not advertised, so there is no service filter: a foreground scan (duplicates on, so a name or `0xFDEE`
   service data that comes in a later packet still counts) matches the advertised name (`HUAWEI WATCH FIT 4 Pro-xxx`, same stem rule as Android)
   or the `0xFDEE` service data. The Watch tab list (`bondedDevices`, `refreshBondedDevices`) is the union of: the remembered watch; the Huawei and

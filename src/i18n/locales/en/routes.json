@@ -252,6 +252,7 @@
     "dismiss": "Close",
     "planning": "Working out the turns…",
     "locationDenied": "Navigation needs precise location.",
+    "openSettings": "Open settings",
     "otherRoute": "Navigation is running for \"{{name}}\".",
     "nextTurn": "Next turn",
     "distToTurn": "Distance to turn",

@@ -18,7 +18,8 @@
   "screens": {
     "setup": "Atur kunci sendiri",
     "notes": "Catatan coach",
-    "data": "Data yang dikirim"
+    "data": "Data yang dikirim",
+    "consent": "Persetujuan data Joyo AI"
   },
   "chip": {
     "own": "{{model}}, kunci sendiri",
@@ -405,5 +406,44 @@
     "header": "Tanya Joyo AI",
     "workout": "Tanya soal latihan ini",
     "sleep": "Tanya soal tidur ini"
+  },
+  "hosted": {
+    "title": "Joyo AI mengirim datamu ke server",
+    "intro": "Joyo AI di JoyoRogo Pro menjawab di server, bukan di ponselmu. Sebelum ada yang dikirim, baca dulu ke mana datanya pergi, lalu setujui.",
+    "toTitle": "Siapa yang menerima datamu",
+    "to": "Server JoyoRogo (PT Joyo Digitama Solusi) dan Cloudflare Workers AI (Cloudflare, Inc.), yang menjalankan model AI. Ponselmu mengirimnya ke server JoyoRogo, lalu server meneruskannya ke Cloudflare Workers AI untuk mendapat jawaban.",
+    "lead": "Setiap kamu mengirim pesan, JoyoFit mengirim:",
+    "data": {
+      "chat": "Pesanmu: yang kamu ketik dan pesan sebelumnya di chat ini (12 terakhir), serta tanggal dan jam pertanyaanmu.",
+      "profile": "Profil dari akun JoyoRogo-mu: usia, jenis kelamin, tinggi, berat, tujuan, mode hamil atau menyusui bila kamu mengaturnya, target makan harian, dan perkiraan kalori yang terbakar.",
+      "recovery": "Pemulihan: kesiapan, beban latihan, HRV (terbaru dan dasar), strain, detak jantung istirahat, dan VO2max.",
+      "sleep": "Tidur: lama tidurmu semalam dan utang tidur.",
+      "workouts": "Latihan: sampai 10 dalam 14 hari terakhir (waktu mulai, olahraga, menit, km, detak jantung rata-rata).",
+      "plan": "Rencana latihan: tujuan, level, minggu ke berapa, sesi yang selesai dan yang berikutnya, serta saran coach hari ini beserta alasannya.",
+      "food": "Makan: kalori dan protein hari ini, dan rata-rata 7 hari, dari catatan makan JoyoRogo-mu."
+    },
+    "notSentTitle": "Tidak pernah dikirim",
+    "notSent": "Namamu, email, lokasi GPS dan rute, foto, ID perangkat, detak jantung per menit, data siklus haid, dan data Strava.",
+    "whyTitle": "Untuk apa, dan berapa lama",
+    "why": "Hanya untuk menulis jawaban atas pertanyaanmu. Server JoyoRogo tidak menyimpan pesan dan jawabannya; ia hanya mencatat hitungan, misalnya berapa pesan yang kamu kirim hari ini. Cloudflare Workers AI tidak menyimpan kontenmu setelah menjawab dan tidak memakainya untuk melatih model AI.",
+    "choice": "Ini pilihanmu. Tanpa persetujuanmu tidak ada yang dikirim dan chat tetap tertutup. Kamu bisa mencabutnya kapan saja di Pengaturan, Joyo AI. Memakai kunci AI sendiri adalah cara lain: datanya tidak lewat server-server ini.",
+    "privacy": "Baca kebijakan privasi (bagian Joyo AI)",
+    "agree": "Setuju dan lanjut",
+    "later": "Nanti saja",
+    "needed": "Joyo AI butuh persetujuanmu sebelum bisa mengirim apa pun. Buka chat lagi untuk membacanya.",
+    "agreedAt": "Kamu setuju pada {{date}}.",
+    "withdraw": "Cabut persetujuanku",
+    "withdrawTitle": "Cabut persetujuan?",
+    "withdrawBody": "Tidak ada lagi yang dikirim ke AI JoyoRogo. Chat yang sudah ada di ponsel ini tetap ada sampai kamu menghapusnya. Kamu bisa setuju lagi kapan saja.",
+    "withdrawConfirm": "Cabut",
+    "withdrawn": "Persetujuan dicabut. Tidak ada yang dikirim.",
+    "agreed": "Persetujuan disimpan.",
+    "settings": {
+      "title": "Data yang dikirim ke AI JoyoRogo",
+      "label": "Izinkan AI JoyoRogo menerima data-ku",
+      "on": "Aktif: pesanmu dan data yang tercantum di persetujuan dikirim ke server JoyoRogo dan Cloudflare Workers AI saat kamu bertanya.",
+      "off": "Mati: tidak ada yang dikirim dan chat JoyoRogo Pro tetap tertutup. Nyalakan untuk membaca apa yang dikirim dan menyetujuinya.",
+      "review": "Apa yang dikirim dan siapa penerimanya"
+    }
   }
 }

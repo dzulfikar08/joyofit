@@ -122,10 +122,9 @@
     "title": "Istirahat selesai",
     "body": "Saatnya set berikutnya.",
     "bodyNamed": "Saatnya set berikutnya: {{name}}.",
-    "askTitle": "Kabari saat istirahat selesai?",
-    "askMessage": "Kalau layar mati atau kamu membuka aplikasi lain, JoyoFit bisa kirim notifikasi saat timer istirahat habis.",
-    "askConfirm": "Boleh",
-    "askCancel": "Jangan"
+    "askTitle": "Notifikasi istirahat selesai",
+    "askMessage": "Kalau layar mati atau kamu membuka aplikasi lain, JoyoFit bisa kirim notifikasi saat timer istirahat habis. Setelah ini HP kamu akan meminta izin.",
+    "askConfirm": "Lanjut"
   },
   "liveRest": {
     "channel": "Timer istirahat di layar kunci",
@@ -172,10 +171,9 @@
     "zoneShort": "Z{{zone}}",
     "bluetoothOff": "Bluetooth mati, jadi strap detak jantung belum tersambung. Latihan tetap dicatat dengan kalori perkiraan.",
     "ask": {
-      "title": "Pakai strap detak jantung?",
+      "title": "Sambungkan strap detak jantung",
       "body": "{{name}} sudah dipasangkan. JoyoFit perlu izin Bluetooth untuk menyambung ke strap. Setelah itu detak jantungmu ikut tercatat dan kalori latihan dihitung dari detak jantung.",
-      "continue": "Lanjut",
-      "skip": "Lewati"
+      "continue": "Lanjut"
     },
     "denied": {
       "body": "Izin Bluetooth belum diberikan, jadi strap detak jantung tidak bisa tersambung. Latihan tetap dicatat dengan kalori perkiraan. Kamu bisa mengizinkannya di pengaturan aplikasi.",

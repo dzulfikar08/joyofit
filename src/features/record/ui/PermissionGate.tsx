@@ -9,7 +9,7 @@ import { Details } from '@/components/Details';
 import { IconChip, type IconName } from '@/components/IconChip';
 import { Card } from '@/components/Screen';
 import { Notice } from '@/components/States';
-import { ensureLocation, ensureSensorPermissions, ensureStepCounter, locationGranted, stepCounterState } from '@/features/sensors/permissions';
+import { ensureLocation, ensureSensorPermissions, ensureStepCounter, locationState, stepCounterState } from '@/features/sensors/permissions';
 import { spacing } from '@/theme';
 
 import type { PermissionAnswer, PermissionPlan } from './format';
@@ -63,14 +63,15 @@ export function useRecordPermissions(plan: PermissionPlan, radio: BluetoothState
     let live = true;
     const check = () => {
       void Promise.all([
-        locationGranted().then(Boolean, () => null),
+        locationState().catch(() => null),
         bluetoothGranted(radio).catch(() => null),
         stepCounterState().catch(() => 'unavailable' as const),
       ]).then(([locationAllowed, bluetoothAllowed, stepCounter]) => {
         if (!live) return;
         // A phone without a step counter has nothing to ask; Android cannot tell "never asked" from "refused", iOS can.
         setSteps((prev) => (stepCounter === 'unavailable' ? 'granted' : stepCounter === 'denied' && Platform.OS !== 'android' ? 'denied' : settle(stepCounter === 'granted', prev)));
-        setLocation((prev) => settle(locationAllowed, prev));
+        // A refusal iOS can no longer ask again opens as the way to the settings, not as a question with no prompt behind it.
+        setLocation((prev) => (locationAllowed === 'blocked' ? 'blocked' : settle(locationAllowed === null ? null : locationAllowed === 'granted', prev)));
         setBluetooth((prev) =>
           bluetoothAllowed === false && Platform.OS !== 'android' && radio === 'unauthorized' ? 'denied' : settle(bluetoothAllowed, prev),
         );

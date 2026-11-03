@@ -85,8 +85,7 @@
     "unavailable": "Ponsel ini tidak bisa menerima notifikasi dari JoyoFit.",
     "unavailableWithHint": "Ponsel ini tidak bisa menerima notifikasi dari JoyoFit. {{hint}}",
     "enable": "Aktifkan notifikasi",
-    "askTitle": "Aktifkan notifikasi?",
-    "notNow": "Nanti saja",
+    "askTitle": "Aktifkan notifikasi",
     "emailHint": "Kamu masih bisa dikabari lewat email."
   },
   "payload": {

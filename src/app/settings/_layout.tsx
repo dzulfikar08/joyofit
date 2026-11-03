@@ -32,6 +32,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="ai-setup" options={{ title: ta('screens.setup') }} />
       <Stack.Screen name="ai-notes" options={{ title: ta('screens.notes') }} />
       <Stack.Screen name="ai-data" options={{ title: ta('screens.data') }} />
+      <Stack.Screen name="ai-consent" options={{ title: ta('screens.consent') }} />
       <Stack.Screen name="blocked" options={{ title: tso('moderation.blocked.title') }} />
       <Stack.Screen name="joyorogo" options={{ title: t('screens.joyorogo') }} />
       <Stack.Screen name="gear" options={{ title: t('screens.gear') }} />

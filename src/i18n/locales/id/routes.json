@@ -248,6 +248,7 @@
     "dismiss": "Tutup",
     "planning": "Menyiapkan petunjuk belok…",
     "locationDenied": "Navigasi butuh izin lokasi yang tepat.",
+    "openSettings": "Buka pengaturan",
     "otherRoute": "Navigasi sedang berjalan untuk \"{{name}}\".",
     "nextTurn": "Belokan berikut",
     "distToTurn": "Jarak ke belokan",

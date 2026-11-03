@@ -87,44 +87,41 @@ export class PhotosDeniedError extends Error {
   }
 }
 
-/** Asked before the system dialog so the person knows why; resolves `false` when they back out. */
-export type PhotosPrompt = (purpose: 'save' | 'instagram') => Promise<boolean>;
+/** Tells the person why before the system dialog (one "Continue" button, no way out: Apple 5.1.1(iv)); resolves when they pressed it. */
+export type PhotosPrompt = (purpose: 'save' | 'instagram') => Promise<void>;
 
 /**
  * Photos permission on iOS: add-only for Save, read-write for Instagram's iOS share path (it saves the image to Photos
- * and opens it by id). Android needs none for these. Resolves `false` when the person declines the pre-prompt; throws
+ * and opens it by id). Android needs none for these. The pre-prompt always leads to the system request; throws
  * `PhotosDeniedError` when iOS will not ask again or the system dialog is refused.
  */
-export async function ensurePhotosAccess(purpose: 'save' | 'instagram', prompt: PhotosPrompt): Promise<boolean> {
-  if (OS === 'android') return true;
+export async function ensurePhotosAccess(purpose: 'save' | 'instagram', prompt: PhotosPrompt): Promise<void> {
+  if (OS === 'android') return;
   const writeOnly = purpose === 'save';
   const current = await MediaLibrary.getPermissionsAsync(writeOnly);
-  if (current.granted) return true;
+  if (current.granted) return;
   if (!current.canAskAgain) throw new PhotosDeniedError();
-  if (!(await prompt(purpose))) return false;
+  await prompt(purpose);
   if (!(await MediaLibrary.requestPermissionsAsync(writeOnly)).granted) throw new PhotosDeniedError();
-  return true;
 }
 
-/** Adds the PNG to the photo library (Photos on iOS, Pictures on Android). Resolves `false` when the person declines the pre-prompt. */
-export async function saveCardImage(fileUri: string, prompt: PhotosPrompt): Promise<boolean> {
-  if (!(await ensurePhotosAccess('save', prompt))) return false;
+/** Adds the PNG to the photo library (Photos on iOS, Pictures on Android). */
+export async function saveCardImage(fileUri: string, prompt: PhotosPrompt): Promise<void> {
+  await ensurePhotosAccess('save', prompt);
   await MediaLibrary.Asset.create(fileUri);
-  return true;
 }
 
 /**
  * Instagram button. With a Facebook App ID the Story composer opens directly: a transparent sticker goes in as
  * `stickerImage` (placed over the person's own Story), a card as the full-bleed `backgroundImage`.
- * Without one the PNG goes to the Instagram app's share target, where the person picks Story or post. Returns the route
- * taken, or `null` when the person backed out of the Photos pre-prompt.
+ * Without one the PNG goes to the Instagram app's share target, where the person picks Story or post. Returns the route taken.
  */
 export async function shareToInstagram(
   fileUri: string,
   transparent: boolean,
   caption: string,
   prompt: PhotosPrompt,
-): Promise<InstagramRoute | null> {
+): Promise<InstagramRoute> {
   const route = instagramRoute(FACEBOOK_APP_ID, OS, transparent);
   try {
     if (route === 'stories' && FACEBOOK_APP_ID) {
@@ -134,7 +131,7 @@ export async function shareToInstagram(
         ...(transparent ? { stickerImage: fileUri } : { backgroundImage: fileUri }),
       });
     } else if (route === 'instagram') {
-      if (OS === 'ios' && !(await ensurePhotosAccess('instagram', prompt))) return null;
+      if (OS === 'ios') await ensurePhotosAccess('instagram', prompt);
       await Share.shareSingle({ social: Social.Instagram, url: fileUri, type: 'image/png' });
     } else {
       await shareCardImage(fileUri, caption);

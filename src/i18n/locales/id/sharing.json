@@ -28,8 +28,7 @@
       "title": "Akses foto",
       "instagram": "Instagram membuka gambar dari galeri foto kamu, jadi JoyoFit menyimpan gambar ini di sana dulu. Setelah ini HP kamu akan meminta izin.",
       "save": "JoyoFit menambahkan gambar ini ke foto kamu. Foto yang sudah ada tidak dibaca. Setelah ini HP kamu akan meminta izin.",
-      "confirm": "Lanjut",
-      "cancel": "Nanti saja"
+      "confirm": "Lanjut"
     }
   },
   "strava": {

@@ -46,8 +46,8 @@ export interface StoreProduct {
 
 export type StoreProducts = Record<ProPlan, StoreProduct | null>;
 
-/** `bought`: credited. `trial`: a store test purchase, nothing charged, Pro lasts a day. `pending`: waiting for approval or payment. */
-export type PurchaseOutcome = 'bought' | 'trial' | 'cancelled' | 'pending';
+/** `bought`: credited (a purchase in the store's sandbox included: it looks like a real one). `pending`: waiting for approval or payment. */
+export type PurchaseOutcome = 'bought' | 'cancelled' | 'pending';
 
 /** What the paywall needs from a store; one implementation per platform (`appleBilling.ts`, `playBilling.ts`). */
 export interface ProBilling {

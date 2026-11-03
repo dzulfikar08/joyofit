@@ -48,10 +48,6 @@
       "body": "Pro menyala untuk akun JoyoRogo kamu: di JoyoFit, di aplikasi JoyoRogo, dan di situsnya."
     },
     "activated": "Pro menyala. Layar-layarmu sedang terbuka.",
-    "sandbox": {
-      "title": "Pembelian uji coba",
-      "body": "Ini pembelian uji coba dari lingkungan uji coba toko: tidak ada yang ditagih dan Pro berlaku 24 jam."
-    },
     "pending": "Pembelian menunggu persetujuan atau pembayaran (misalnya Ask to Buy, atau pembayaran yang belum selesai). Pro menyala setelah berhasil.",
     "restored": "Pembelian dipulihkan. Pro menyala.",
     "restoredNone": "Tidak ditemukan langganan aktif di Apple ID ini.",

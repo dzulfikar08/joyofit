@@ -48,10 +48,6 @@
       "body": "Pro is on for your JoyoRogo account: in JoyoFit, in the JoyoRogo app and on the website."
     },
     "activated": "Pro is on. Your screens are unlocking.",
-    "sandbox": {
-      "title": "Test purchase",
-      "body": "This was a test purchase from the store's test environment: nothing was charged and Pro lasts 24 hours."
-    },
     "pending": "The purchase is waiting for approval or payment (for example Ask to Buy, or a payment that is not completed yet). Pro turns on once it goes through.",
     "restored": "Purchases restored. Pro is on.",
     "restoredNone": "No active subscription was found for this Apple ID.",

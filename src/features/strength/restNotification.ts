@@ -1,7 +1,7 @@
 /**
  * The local notification that tells the person the rest is over when the app is not in front. One notification at most (a fixed
- * identifier replaces the previous one). The permission is asked once, after an explanation, the first time a set is completed with
- * the rest timer on; a "no" is remembered and never asked again.
+ * identifier replaces the previous one). The permission is asked once, after a one-button explanation that always goes on to the system
+ * prompt, the first time a set is completed with the rest timer on; the system answer is remembered and never asked again.
  */
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
@@ -35,11 +35,6 @@ export async function restPermission(db: SQLiteDatabase): Promise<RestPermission
   } catch {
     return 'blocked';
   }
-}
-
-/** The person said no to the explanation: remembered, so nothing asks again. */
-export async function declineRestPermission(db: SQLiteDatabase): Promise<void> {
-  await setStrengthMeta(db, ASKED_KEY, '1');
 }
 
 /** The system prompt, after the explanation dialog. Remembers that the person was asked, whatever the answer. */

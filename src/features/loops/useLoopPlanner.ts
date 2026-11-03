@@ -9,7 +9,7 @@ import { routing } from '@/features/routes/map/services';
 import { formatRouteDistance, type RoutePoint, type SavedRoute } from '@/features/routes/routeModel';
 import { renameRoute, saveRoute } from '@/features/routes/routeStore';
 import { useRoutePush, type RoutePush } from '@/features/routes/useRoutePush';
-import { ensureLocation, locationGranted } from '@/features/sensors/permissions';
+import { ensureLocation, locationState } from '@/features/sensors/permissions';
 import { errorMessage } from '@/format';
 import { t } from '@/i18n';
 
@@ -142,14 +142,14 @@ export function useLoopPlanner(maplibre: MapLibre): LoopPlanner {
     setLocating(false);
   }, [maplibre]);
 
-  // What the person already allowed is read without asking; with location allowed, "here" is read at once.
+  // What the person already allowed (or, on iOS, refused for good) is read without asking; with location allowed, "here" is read at once.
   useEffect(() => {
     let live = true;
-    void locationGranted().then(
-      (granted) => {
+    void locationState().then(
+      (state) => {
         if (!live) return;
-        setLocation(granted ? 'granted' : 'unknown');
-        if (granted && prefs.startFrom === 'here') void readLocation();
+        setLocation(state);
+        if (state === 'granted' && prefs.startFrom === 'here') void readLocation();
       },
       () => {},
     );

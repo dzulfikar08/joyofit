@@ -14,6 +14,14 @@ export interface ConsentRecord {
   adult: true;
 }
 
+/** The yes of this phone to the hosted Joyo AI (JoyoRogo's server and Cloudflare Workers AI); see `hostedConsent.ts`. */
+export interface HostedConsentRecord {
+  /** `HOSTED_CONSENT_VERSION` the person said yes to. */
+  version: number;
+  /** Unix seconds. */
+  at: number;
+}
+
 export interface AiSettings {
   engine: Engine;
   provider: ProviderId | null;
@@ -24,6 +32,8 @@ export interface AiSettings {
   /** A key is stored for the provider (the key itself lives in the secure store). */
   keySaved: Partial<Record<ProviderId, true>>;
   consents: Partial<Record<ProviderId, ConsentRecord>>;
+  /** Null until the person agreed (or after they withdrew): nothing goes to the hosted engine then. */
+  hostedConsent: HostedConsentRecord | null;
   insightDaily: boolean;
   insightWeekly: boolean;
   /** Ask thinking models to answer without long reasoning: faster and cheaper, sometimes less thorough. */
@@ -47,6 +57,7 @@ export const DEFAULT_SETTINGS: AiSettings = {
   customBaseUrl: '',
   keySaved: {},
   consents: {},
+  hostedConsent: null,
   insightDaily: false,
   insightWeekly: false,
   fastMode: true,
@@ -73,6 +84,9 @@ export function parseSettings(value: unknown): AiSettings {
       }
     }
   }
+  const hosted = value.hostedConsent;
+  const hostedConsent: HostedConsentRecord | null =
+    isObject(hosted) && typeof hosted.version === 'number' && Number.isFinite(hosted.version) && typeof hosted.at === 'number' ? { version: hosted.version, at: hosted.at } : null;
   const ceiling = typeof value.dailyCeiling === 'number' && Number.isFinite(value.dailyCeiling) ? Math.round(value.dailyCeiling) : DEFAULT_CEILING;
   return {
     engine: value.engine === 'byok' ? 'byok' : 'rogo',
@@ -81,6 +95,7 @@ export function parseSettings(value: unknown): AiSettings {
     customBaseUrl: typeof value.customBaseUrl === 'string' ? value.customBaseUrl.slice(0, 300) : '',
     keySaved,
     consents,
+    hostedConsent,
     insightDaily: value.insightDaily === true,
     insightWeekly: value.insightWeekly === true,
     // On unless the person turned it off: a thinking model that thinks for 30 s is the usual cause of a slow answer.

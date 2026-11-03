@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { ButtonRow } from '@/components/ButtonRow';
 import { IconChip } from '@/components/IconChip';
 import { Card } from '@/components/Screen';
 import { Notice } from '@/components/States';
@@ -13,9 +12,10 @@ import { useStrengthHr } from '../useStrengthHr';
 
 /**
  * What the heart rate strap asks of the person in the logger, once per workout: a short explanation of the Bluetooth permission with
- * "Lanjut" (only that button asks), a notice with the app settings when the permission was refused, a note when Bluetooth is off.
- * Renders nothing when no strap is paired for workouts, while the strap is fine, and after a dismissal. It is its own component: the
- * sensor state it follows changes every second, which must not redraw the workout.
+ * "Lanjut" as its only button, which always goes on to the permission (no way to skip it, Apple 5.1.1(iv)); a notice with the app settings
+ * when the permission was refused (that one can be closed), a note when Bluetooth is off. Renders nothing when no strap is paired for
+ * workouts, while the strap is fine, and after the refusal notice was closed. It is its own component: the sensor state it follows
+ * changes every second, which must not redraw the workout.
  */
 export function StrapCard({ workoutId }: { workoutId: string | null }) {
   const { t } = useTranslation(['strength', 'common']);
@@ -36,10 +36,7 @@ export function StrapCard({ workoutId }: { workoutId: string | null }) {
             </AppText>
           </View>
         </View>
-        <ButtonRow>
-          <Button label={t('strength:hr.ask.skip')} variant="ghost" onPress={strap.onDismiss} />
-          <Button label={t('strength:hr.ask.continue')} variant="primary" onPress={strap.onContinue} />
-        </ButtonRow>
+        <Button label={t('strength:hr.ask.continue')} variant="primary" onPress={strap.onContinue} />
       </Card>
     );
   }

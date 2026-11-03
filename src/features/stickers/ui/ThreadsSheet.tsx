@@ -21,7 +21,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Details } from '@/components/Details';
 import { ChipRow } from '@/components/ChipRow';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { NoticeDialog, useNotice } from '@/components/NoticeDialog';
 import { useFlash } from '@/components/motion';
 import { Input } from '@/components/Input';
 import { PressableScale } from '@/components/PressableScale';
@@ -71,11 +71,6 @@ interface Feedback {
   tone: 'info' | 'danger';
   text: string;
   action?: { label: string; onPress: () => void };
-}
-
-interface PhotosRequest {
-  purpose: 'save' | 'instagram';
-  answer: (continues: boolean) => void;
 }
 
 /** Resolves after two frames, so a slide just mounted into the export stage has been drawn before it is captured. */
@@ -148,7 +143,7 @@ export function ThreadsSheet({ subject, visible, onClose }: { subject: StickerSu
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [installed, setInstalled] = useState<boolean | null>(null);
   const [fontsReady, setFontsReady] = useState(false);
-  const [photosRequest, setPhotosRequest] = useState<PhotosRequest | null>(null);
+  const photos = useNotice<'save' | 'instagram'>();
   const [copied, flashCopied] = useFlash(1400);
 
   useEffect(() => {
@@ -211,17 +206,8 @@ export function ThreadsSheet({ subject, visible, onClose }: { subject: StickerSu
     setIndex(Math.round(event.nativeEvent.contentOffset.x / pageWidth));
   };
 
-  /** Our own "Continue" dialog goes first, so the system Photos dialog is never a surprise. */
-  const askPhotos: PhotosPrompt = (purpose) => {
-    const { promise, resolve } = Promise.withResolvers<boolean>();
-    setPhotosRequest({ purpose, answer: resolve });
-    return promise;
-  };
-
-  const answerPhotos = (continues: boolean) => {
-    photosRequest?.answer(continues);
-    setPhotosRequest(null);
-  };
+  /** Our own one-button notice goes first, so the system Photos dialog is never a surprise; it always carries on to it. */
+  const askPhotos: PhotosPrompt = photos.show;
 
   /** Mounts `scene` in the export stage; resolves once the painter has settled it. */
   const paintStage = (scene: Scene): Promise<void> => {
@@ -261,7 +247,8 @@ export function ThreadsSheet({ subject, visible, onClose }: { subject: StickerSu
       if (target === 'share') {
         show(t('threadsshare:toasts.captionCopied'));
         await shareThreadsCarousel(uris, text);
-      } else if (await saveAllAndOpenThreads(uris, text, askPhotos)) {
+      } else {
+        await saveAllAndOpenThreads(uris, text, askPhotos);
         show(t('sharing:share.toasts.saved'));
       }
     } catch (e) {
@@ -490,14 +477,12 @@ export function ThreadsSheet({ subject, visible, onClose }: { subject: StickerSu
         {toast}
       </KeyboardAvoidingView>
 
-      <ConfirmDialog
-        visible={photosRequest !== null}
+      <NoticeDialog
+        visible={photos.request !== null}
         title={t('sharing:share.photosDialog.title')}
-        message={photosRequest?.purpose === 'instagram' ? t('sharing:share.photosDialog.instagram') : t('sharing:share.photosDialog.save')}
+        message={photos.request === 'instagram' ? t('sharing:share.photosDialog.instagram') : t('sharing:share.photosDialog.save')}
         confirmLabel={t('sharing:share.photosDialog.confirm')}
-        cancelLabel={t('sharing:share.photosDialog.cancel')}
-        onConfirm={() => answerPhotos(true)}
-        onCancel={() => answerPhotos(false)}
+        onConfirm={photos.done}
       />
     </Modal>
   );

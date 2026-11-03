@@ -6,7 +6,7 @@ import { cloudLog } from '@/cloud/log';
 import { errorMessage } from '@/format';
 
 import { appleIap } from '../../../modules/apple-iap';
-import { APPLE_TERMS_URL, appleAccountToken, postSignedTransaction, type PostedTransaction } from './appleBillingCore';
+import { APPLE_TERMS_URL, appleAccountToken, postSignedTransaction } from './appleBillingCore';
 import { BillingError, PRO_PRODUCT_IDS, type ProBilling, type ProPlan, type PurchaseOutcome, type StoreProducts } from './billingCore';
 
 /** Apple's own subscription page, for a phone where the native management sheet cannot open. */
@@ -22,7 +22,7 @@ async function loadProducts(): Promise<StoreProducts> {
   return { monthly, yearly };
 }
 
-async function post(signedTransaction: string): Promise<PostedTransaction> {
+async function post(signedTransaction: string): Promise<void> {
   return postSignedTransaction({ baseUrl: JOYOROGO_URL, cookie: await authClient.getCookie(), signedTransaction });
 }
 
@@ -51,15 +51,14 @@ async function buyPro(plan: ProPlan): Promise<PurchaseOutcome> {
     throw new BillingError('failed', false);
   });
   if (result.status !== 'success') return result.status;
-  let posted: PostedTransaction;
   try {
-    posted = await post(result.signedTransaction);
+    await post(result.signedTransaction);
   } catch (error) {
     if (error instanceof BillingError && error.definitive) await appleIap.finish(result.transactionId);
     throw error;
   }
   await appleIap.finish(result.transactionId);
-  return posted.sandbox ? 'trial' : 'bought';
+  return 'bought';
 }
 
 /**

@@ -28,10 +28,11 @@ import { useWatch } from '@/state/WatchProvider';
 import { radius as radii, spacing, useColors } from '@/theme';
 import { chatLines, type ChatMessage } from '../conversations';
 import { askJoyoAi, warmDigestData } from '../engine';
+import { grantHostedConsent, HostedConsentError, hasHostedConsent } from '../hostedConsent';
 import { hostOf } from '../providers';
 import { useByokAccess } from '../hooks';
 import { finishReply, type SafetyText } from '../safety';
-import { aiChats, aiUsage } from '../stores';
+import { aiChats, aiSettings, aiUsage } from '../stores';
 import { AiError } from '../types';
 import { AiErrorNotice } from './AiErrorNotice';
 import {
@@ -49,6 +50,7 @@ import {
 import { Composer } from './Composer';
 import { EngineChip } from './EngineChip';
 import { GateCard } from './GateCard';
+import { HostedConsentCard } from './HostedConsentCard';
 import { viewAiError, type AiErrorView } from './errors';
 import { LiveMessage } from './LiveMessage';
 import { HeaderBackButton } from '@/components/HiddenTabHeader';
@@ -210,7 +212,7 @@ export function JoyoAiChat() {
     router.setParams({ seed: undefined, ref: undefined, label: undefined });
   }, [seedKey, seed, open, router, t]);
 
-  const gate: 'checking' | 'rogoSignIn' | 'rogoUpsell' | 'blocked' | 'ready' =
+  const gate: 'checking' | 'rogoSignIn' | 'rogoUpsell' | 'rogoConsent' | 'blocked' | 'ready' =
     engine === 'rogo'
       ? coachAccess === 'checking'
         ? 'checking'
@@ -218,7 +220,9 @@ export function JoyoAiChat() {
           ? 'rogoSignIn'
           : coachAccess === 'free'
             ? 'rogoUpsell'
-            : 'ready'
+            : hasHostedConsent(settings)
+              ? 'ready'
+              : 'rogoConsent'
       : access === null
         ? 'checking'
         : access.ok
@@ -334,6 +338,9 @@ export function JoyoAiChat() {
       }
       if (own) {
         setAiError(viewAiError(e, t, { provider: own.provider, ceiling: settings.dailyCeiling }));
+      } else if (e instanceof HostedConsentError) {
+        // Withdrawn (or the list of data changed) while this screen was open: nothing was sent, the gate card shows again.
+        setHostedError(t('hosted.needed'));
       } else {
         const failure = chatFailure(e);
         setPaywall(failure.kind === 'paywall');
@@ -566,6 +573,14 @@ export function JoyoAiChat() {
             <Button label={t('chat.ownCta')} variant="secondary" icon="key" onPress={() => router.push('/settings/ai-setup', OPEN_IN_STACK)} />
           </Card>
         </>
+      ) : null}
+      {gate === 'rogoConsent' ? (
+        <Card>
+          <HostedConsentCard
+            onAgree={() => grantHostedConsent(aiSettings, Math.floor(Date.now() / 1000))}
+            onLater={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+          />
+        </Card>
       ) : null}
       {gate === 'blocked' && access && !access.ok ? <GateCard reason={access.reason} provider={settings.provider} /> : null}
       {gate === 'ready' && !coach ? <Skeleton width="100%" height={220} radius="card" /> : null}

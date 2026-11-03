@@ -67,6 +67,16 @@ export async function pushAllowed(): Promise<boolean> {
 }
 
 /**
+ * Where the notification permission stands, without asking: `enabled`, `denied` (refused for good: the system shows no prompt any more, only
+ * the settings change it) or `idle` (the system prompt is still due). A screen shows the way to the settings for `denied`, not an explanation.
+ */
+export async function pushStatus(): Promise<'enabled' | 'denied' | 'idle'> {
+  const current = await Notifications.getPermissionsAsync();
+  if (current.granted) return 'enabled';
+  return current.canAskAgain ? 'idle' : 'denied';
+}
+
+/**
  * Registers the token again for a person who already allowed notifications: Expo push tokens can change, and the Worker
  * only sends to the one it has. Quiet when it cannot (offline, no project id).
  */

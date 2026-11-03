@@ -29,7 +29,7 @@ Both answer 200 without cookies (the `/avatar/...` route is public, immutable, c
 
 ## Setting a photo
 
-1. "Change photo" opens a dialog that says why and what happens ("Pilih foto dari galeri ... terlihat oleh orang lain di feed dan grup"); only its "Lanjut" opens the gallery. Same pattern as `PushPermission`: `ConfirmDialog` first, then the system UI.
+1. "Change photo" opens a notice that says why and what happens ("Pilih foto dari galeri ... terlihat oleh orang lain di feed dan grup"); its one button, "Lanjut", always opens the gallery (`NoticeDialog`: no Cancel and no scrim or Back exit, Apple 5.1.1(iv)). Nothing is sent until a photo is picked, and the system gallery has its own Cancel.
 2. `ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.8, exif: false })`. The system crop screen gives the square. Gallery only, no camera.
 3. `pickAvatar` center-crops to a square anyway (`cropSquare`), resizes to 512 x 512 and renders a JPEG at 0.85 with base64, exactly like `apps/native/app/profil/akun.tsx` in JoyoRogo. Backing out at any step does nothing and shows nothing.
 4. `avatar.upload({ imageBase64, mimeType: 'image/jpeg' })` through `rogoCall` (the session cookie of better-auth's expo client, `credentials: 'omit'`).

@@ -56,6 +56,7 @@ function Indonesian() {
             "Semua yang dikirim aplikasi lewat internet memakai HTTPS (TLS).",
             "Postingan, komentar, dan foto di tab Social ada di JoyoRogo dan hanya muncul bila kamu sendiri yang memostingnya.",
             "Koneksi AI itu opsional (khusus Pro): hanya bila kamu menyambungkan Claude, ChatGPT, atau aplikasi MCP lain, aplikasi itu bisa membaca datamu, dan hanya saat kamu bertanya di sana. Bisa kamu putuskan kapan saja di Pengaturan, Koneksi AI.",
+            "Joyo AI dari JoyoRogo (khusus Pro) menjawab di server: hanya setelah kamu menyetujui di layar persetujuan, pesanmu dan ringkasan datamu dikirim ke server JoyoRogo (PT Joyo Digitama Solusi) dan diteruskan ke Cloudflare Workers AI (Cloudflare, Inc.) yang menjalankan model AI. Tanpa persetujuan tidak ada yang dikirim, dan kamu bisa mencabutnya kapan saja. Rinciannya di bagian Joyo AI dari JoyoRogo.",
             "Joyo AI dengan kunci sendiri itu opsional (gratis, untuk usia 18 tahun ke atas): hanya setelah kamu memasukkan kunci API dan menyetujui untuk satu penyedia, ringkasan datamu dikirim dari HP langsung ke penyedia itu saat kamu bertanya. Kuncinya hanya ada di HP-mu dan server kami tidak melihat kunci maupun percakapannya. Data siklus haid tidak pernah ikut. Rinciannya di bagian Joyo AI dengan kunci sendiri.",
             "Kode sumbernya terbuka (AGPL-3.0), jadi semua yang ditulis di sini bisa kamu periksa sendiri.",
           ]}
@@ -443,13 +444,34 @@ function Indonesian() {
 
       <Block id="coach" title="Coach (Pro)">
         <p>
-          Rencana latihan Coach (tujuan, level, hari latihan, sesi yang selesai) disimpan di akun JoyoRogo-mu agar ikut ke ponsel lain, dan ikut terhapus bersama akunmu. Pesan Joyo AI (dulu bernama Tanya coach) dengan mesin JoyoRogo dan ringkasan datamu (metrik hari ini, rencana, latihan terakhir, dan catatan makan di JoyoRogo) dikirim ke AI JoyoRogo (Cloudflare Workers AI) untuk dijawab. Mesin ini khusus Pro dan terpisah dari mesin kunci sendiri (bagian berikutnya). Pesan tidak disimpan di server; yang dicatat hanya jumlah pesan per hari dan pemakaian token. Obrolan hanya tersimpan di ponselmu dan bisa dihapus dari layar chat. Pesan tentang nyeri atau cedera dijawab dengan anjuran menemui tenaga medis tanpa memanggil AI.
+          Rencana latihan Coach (tujuan, level, hari latihan, sesi yang selesai) disimpan di akun JoyoRogo-mu agar ikut ke ponsel lain, dan ikut terhapus bersama akunmu. Pesan Joyo AI (dulu bernama Tanya coach) dengan mesin JoyoRogo dikirim ke server JoyoRogo dan Cloudflare Workers AI untuk dijawab, hanya setelah kamu menyetujuinya: apa yang dikirim, siapa penerimanya, dan cara mencabutnya ada di bagian Joyo AI dari JoyoRogo (berikutnya). Mesin ini khusus Pro dan terpisah dari mesin kunci sendiri. Obrolan hanya tersimpan di ponselmu dan bisa dihapus dari layar chat. Pesan tentang nyeri atau cedera dijawab dengan anjuran menemui tenaga medis tanpa memanggil AI.
         </p>
+      </Block>
+
+      <Block id="joyo-ai-hosted" title="Joyo AI dari JoyoRogo (Pro): server JoyoRogo dan Cloudflare Workers AI">
+        <p>
+          Mesin JoyoRogo dari Joyo AI menjawab di server, bukan di HP-mu. Ia baru dipakai setelah kamu membuka Joyo AI dan
+          menekan Setuju di layar persetujuan, yang menampilkan isi bagian ini. Tanpa persetujuan tidak ada yang dikirim dan
+          chat tetap tertutup. Persetujuan disimpan di HP-mu per versi daftar data di bawah; bila daftarnya berubah, kamu
+          diminta menyetujui lagi.
+        </p>
+        <List
+          items={[
+            "Penerima: server JoyoRogo (PT Joyo Digitama Solusi), yang meneruskan permintaan ke Cloudflare Workers AI (Cloudflare, Inc.). Cloudflare Workers AI menjalankan model AI (saat ini @cf/google/gemma-4-26b-a4b-it) dan mengembalikan jawabannya. Tidak ada penyedia AI lain pada mesin ini.",
+            "Yang dikirim setiap kali kamu mengirim pesan: pesanmu dan pesan sebelumnya di chat itu (12 terakhir), serta tanggal dan jam pertanyaan; metrik dari HP: kesiapan, beban latihan, HRV (terbaru dan dasar), strain, detak jantung istirahat, VO2max, lama tidur semalam dan utang tidur, saran coach hari ini beserta alasannya, rencana latihan (tujuan, level, minggu, sesi yang selesai dan berikutnya), dan sampai 10 latihan dalam 14 hari terakhir (waktu mulai, olahraga, menit, km, detak jantung rata-rata). Dari akun JoyoRogo-mu, server menambahkan profil (usia, jenis kelamin, tinggi, berat, tujuan, mode hamil atau menyusui bila kamu mengaturnya, target makan harian, perkiraan kalori yang terbakar) dan kalori serta protein dari catatan makanmu (hari ini dan rata-rata 7 hari).",
+            "Tidak pernah dikirim: namamu, email, lokasi GPS dan rute, foto, ID perangkat, detak jantung per menit, data siklus haid, dan data Strava.",
+            "Untuk apa: hanya untuk menulis jawaban atas pertanyaanmu, dan untuk menghitung batas pesan harian. Tidak untuk iklan dan tidak dijual.",
+            "Berapa lama: server JoyoRogo tidak menyimpan pesan, jawaban, maupun ringkasan data itu; yang dicatat hanya hitungan seperti jumlah pesan per hari, waktu respons, dan pemakaian token. Cloudflare menyatakan bahwa Workers AI memproses isi yang kamu kirim hanya selama diperlukan untuk menjawab dan tidak menyimpannya sesudahnya (kecuali metadata operasional tanpa isi), serta tidak memakainya untuk melatih model AI (developers.cloudflare.com/workers-ai/platform/data-usage). Obrolan hanya tersimpan di HP-mu dan bisa dihapus dari layar chat.",
+            "Mencabut: di Pengaturan, Joyo AI, matikan Izinkan AI JoyoRogo menerima data-ku. Mulai permintaan berikutnya tidak ada yang dikirim dan chat JoyoRogo tertutup sampai kamu menyetujui lagi. Hapus semua data Joyo AI di pengaturan yang sama juga mengembalikan persetujuan ke belum ada.",
+            "Pesan tentang nyeri, cedera, gejala, obat, atau gangguan makan dijawab dengan jawaban tetap tanpa memanggil model AI. Jawaban AI bisa keliru dan bukan saran medis.",
+            "Pilihan lain: mesin kunci sendiri (bagian berikutnya) tidak lewat server JoyoRogo.",
+          ]}
+        />
       </Block>
 
       <Block id="joyo-ai" title="Joyo AI dengan kunci sendiri (opsional, gratis)">
         <p>
-          Joyo AI punya dua mesin. Mesin JoyoRogo (khusus Pro) dijelaskan di bagian Coach di atas. Mesin kunci sendiri
+          Joyo AI punya dua mesin. Mesin JoyoRogo (khusus Pro) dijelaskan di bagian Joyo AI dari JoyoRogo di atas. Mesin kunci sendiri
           bekerja begini: kamu memasukkan kunci API dari OpenRouter, OpenAI, Anthropic, Google Gemini, atau alamat lain
           yang kamu isi sendiri, dan HP-mu mengirim langsung ke penyedia itu. Tidak ada yang dikirim sebelum kamu
           memasukkan kunci, uji koneksi berhasil, dan kamu mencentang persetujuan untuk penyedia itu. Persetujuan
@@ -523,7 +545,7 @@ function Indonesian() {
             "CODE (Institut Astronomi, Universitas Bern): prediksi orbit satelit publik yang diambil server JoyoFit untuk eksperimen HW_PGNSS_PRED (bagian Lokasi). HP tidak menghubungi mereka.",
             "Kontributor OpenStreetMap (ODbL): data peta untuk eksperimen peta offline, dibuat oleh JoyoFit dari ekstrak Geofabrik (bagian Lokasi). HP tidak menghubungi OpenStreetMap atau Geofabrik.",
             "FOSSGIS e.V. (OSRM) dan Nominatim (OpenStreetMap): jalur rute dan pencarian tempat untuk Loop dari rumah, serta belokan dan rute baru untuk eksperimen navigasi di jam (bagian Loop dari rumah).",
-            "Cloudflare: tempat cloud JoyoFit dan situs ini berjalan.",
+            "Cloudflare: tempat cloud JoyoFit dan situs ini berjalan, dan, lewat Cloudflare Workers AI (Cloudflare, Inc.), penerima pesan dan ringkasan datamu bila kamu menyetujui Joyo AI dari JoyoRogo (bagian Joyo AI dari JoyoRogo).",
             "JoyoRogo, Google dan Apple: login dan layanan JoyoRogo (bagian Cloud dan Masuk dengan Apple).",
             "Expo, Google (Firebase Cloud Messaging) dan Apple (APNs): mengantar notifikasi push Keluarga (bagian Notifikasi push).",
             "Apple: Apple Health (menulis, dan membaca satu kali saat impor), Masuk dengan Apple, dan geocoding nama tempat di iPhone.",
@@ -540,6 +562,7 @@ function Indonesian() {
         <List
           items={[
             "Di HP: hapus instalasi JoyoFit atau pilih Pengaturan Android, Aplikasi, JoyoFit, Penyimpanan, Hapus data. Semua data lokal terhapus. Atau pilih Hapus dari HP ini saat keluar dari akun: itu menghapus data JoyoFit dari HP tanpa melepas jam. Lepas jam dengan Forget pairing di aplikasi.",
+            "Joyo AI dari JoyoRogo: di pengaturan Joyo AI, matikan Izinkan AI JoyoRogo menerima data-ku untuk mencabut persetujuan; obrolan di HP dihapus dari layar chat atau dengan Hapus semua data Joyo AI.",
             "Joyo AI (kunci sendiri): di pengaturan Joyo AI kamu bisa menghapus kunci, catatan dan percakapan, atau semuanya; Hapus dari HP ini saat keluar akun juga menghapus semuanya (lihat bagian Joyo AI dengan kunci sendiri). Data yang sudah sampai ke penyedia dihapus di akunmu di penyedia itu.",
             "Di Health Connect (Android) atau Apple Health (iPhone): hapus data yang ditulis JoyoFit lewat aplikasi Health Connect atau aplikasi Kesehatan.",
             "Di Strava: Putuskan Strava di aplikasi, atau cabut aplikasi di strava.com; token dihapus dari server JoyoRogo saat itu juga (bila JoyoRogo masih memakai sambungan yang sama, izin di Strava baru dicabut saat keduanya diputus).",
@@ -599,6 +622,7 @@ function English() {
             "Everything the app sends over the internet uses HTTPS (TLS).",
             "Posts, comments and photos in the Social tab live on JoyoRogo and only appear when you post them yourself.",
             "The AI connection is optional (Pro only): only if you connect Claude, ChatGPT or another MCP app can it read your data, and only when you ask a question there. You can disconnect any time in Settings, Koneksi AI.",
+            "Joyo AI from JoyoRogo (Pro only) answers on a server: only after you agree on the consent screen are your messages and a summary of your data sent to JoyoRogo's server (PT Joyo Digitama Solusi), which passes them on to Cloudflare Workers AI (Cloudflare, Inc.), which runs the AI model. Without your agreement nothing is sent, and you can withdraw at any time. Details in the Joyo AI from JoyoRogo section.",
             "Joyo AI with your own key is optional (free, for ages 18 and over): only after you enter an API key and agree for one provider is a summary of your data sent from the phone straight to that provider when you ask a question. The key stays on your phone, and our servers see neither the key nor the conversation. Menstrual cycle data is never included. Details in the Joyo AI with your own key section.",
             "The source code is open (AGPL-3.0), so you can check everything stated here.",
           ]}
@@ -988,13 +1012,34 @@ function English() {
 
       <Block id="coach-en" title="Coach (Pro)">
         <p>
-          Your Coach training plan (goal, level, training days, finished sessions) is stored in your JoyoRogo account so it follows you to other phones, and is deleted with your account. Messages to Joyo AI (called Tanya coach before) on the JoyoRogo engine, with a summary of your data (today&apos;s metrics, plan, latest workouts, and your food log in JoyoRogo), are sent to JoyoRogo&apos;s AI (Cloudflare Workers AI) to be answered. This engine is Pro only and separate from the own-key engine (next section). Messages are not stored on the server; only the number of messages per day and token usage are recorded. The chat is kept only on your phone and can be cleared from the chat screen. Messages about pain or injury get a see-a-professional answer without calling the AI.
+          Your Coach training plan (goal, level, training days, finished sessions) is stored in your JoyoRogo account so it follows you to other phones, and is deleted with your account. Messages to Joyo AI (called Tanya coach before) on the JoyoRogo engine are sent to JoyoRogo&apos;s server and Cloudflare Workers AI to be answered, only after you agree: what is sent, who receives it and how to withdraw are in the Joyo AI from JoyoRogo section (next). This engine is Pro only and separate from the own-key engine. The chat is kept only on your phone and can be cleared from the chat screen. Messages about pain or injury get a see-a-professional answer without calling the AI.
         </p>
+      </Block>
+
+      <Block id="joyo-ai-hosted-en" title="Joyo AI from JoyoRogo (Pro): JoyoRogo&apos;s server and Cloudflare Workers AI">
+        <p>
+          The JoyoRogo engine of Joyo AI answers on a server, not on your phone. It is only used after you open Joyo AI and
+          tap Agree on the consent screen, which shows the content of this section. Without your agreement nothing is sent
+          and the chat stays closed. Your agreement is stored on your phone for one version of the list of data below; if the
+          list changes, you are asked again.
+        </p>
+        <List
+          items={[
+            "Recipients: JoyoRogo's server (PT Joyo Digitama Solusi), which passes the request on to Cloudflare Workers AI (Cloudflare, Inc.). Cloudflare Workers AI runs the AI model (currently @cf/google/gemma-4-26b-a4b-it) and returns the answer. There is no other AI provider on this engine.",
+            "What is sent each time you send a message: your message and the earlier messages of that chat (the last 12), and the date and time of the question; metrics from the phone: readiness, training load, HRV (recent and baseline), strain, resting heart rate, VO2max, how long you slept last night and your sleep debt, today's coach suggestion with its reason, your training plan (goal, level, week, sessions done and next), and up to 10 workouts from the last 14 days (start time, sport, minutes, km, average heart rate). From your JoyoRogo account the server adds your profile (age, sex, height, weight, goal, pregnancy or breastfeeding mode if you set one, daily eating target, estimated calorie burn) and the calories and protein from your food log (today and the 7-day average).",
+            "Never sent: your name, email, GPS location and routes, photos, device IDs, per-minute heart rate, menstrual cycle data and Strava data.",
+            "Purpose: only to write the answer to your question and to count the daily message limit. Not for advertising and not sold.",
+            "How long: JoyoRogo's server does not store the messages, the answers or this data summary; it records only counts such as messages per day, response time and token usage. Cloudflare states that Workers AI processes the content you send only as long as needed to answer and does not retain it afterwards (apart from operational metadata that does not include the content), and does not use it to train AI models (developers.cloudflare.com/workers-ai/platform/data-usage). The chat is kept only on your phone and can be cleared from the chat screen.",
+            "Withdrawing: in Settings, Joyo AI, turn off Allow JoyoRogo's AI to receive my data. From the next request on nothing is sent and the JoyoRogo chat is closed until you agree again. Delete all Joyo AI data in the same settings also resets the agreement to none.",
+            "Messages about pain, injury, symptoms, medication or eating disorders get a fixed answer without calling the AI model. AI answers can be wrong and are not medical advice.",
+            "Another option: the own-key engine (next section) does not go through JoyoRogo's server.",
+          ]}
+        />
       </Block>
 
       <Block id="joyo-ai-en" title="Joyo AI with your own key (optional, free)">
         <p>
-          Joyo AI has two engines. The JoyoRogo engine (Pro only) is described in the Coach section above. The own-key
+          Joyo AI has two engines. The JoyoRogo engine (Pro only) is described in the Joyo AI from JoyoRogo section above. The own-key
           engine works like this: you enter an API key from OpenRouter, OpenAI, Anthropic, Google Gemini, or another
           address you type yourself, and your phone sends directly to that provider. Nothing is sent until you enter a
           key, the connection test succeeds, and you tick the consent for that provider. Consent is per provider and
@@ -1030,7 +1075,7 @@ function English() {
       <Block title="Third parties">
         <p>
           Open-Meteo (weather), Broadcom (satellite-assist data), IGS and BKG (public broadcast satellite data fetched by JoyoFit&apos;s server for the HW_AGNSS and HW_PGNSS_PRED experiments; the phone does not contact them), CODE at the University of Bern (public satellite orbit predictions fetched by JoyoFit&apos;s server for the HW_PGNSS_PRED experiment; the phone does not contact it), OpenStreetMap contributors (ODbL; map data for the offline-map experiment, built by JoyoFit from Geofabrik extracts; the phone does not contact OpenStreetMap or Geofabrik), FOSSGIS e.V. (OSRM) and Nominatim (OpenStreetMap) (route paths and place search for Loop from home, turns and new routes for the watch navigation experiment), Cloudflare (hosting of the cloud and this
-          site), JoyoRogo, Google and Apple (sign-in), Apple (Apple Health write and one-time import read, and place-name geocoding on iPhone), Strava (upload destination when you connect it), the AI provider you choose, for example Anthropic for Claude or OpenAI for ChatGPT (receives the data read while you ask questions, only if you connect the AI connection), the AI provider you choose for Joyo AI with your own key (OpenRouter, OpenAI, Anthropic, Google Gemini or an address you enter; your choice and your own account, not our data processor; receives your data summary and conversation only after you enter a key and consent), Expo, Google (Firebase Cloud Messaging) and Apple (APNs) (delivery of Keluarga push notifications), RevKlik (visitor
+          site, and, through Cloudflare Workers AI (Cloudflare, Inc.), the recipient of your messages and data summary if you agree to Joyo AI from JoyoRogo; see that section), JoyoRogo, Google and Apple (sign-in), Apple (Apple Health write and one-time import read, and place-name geocoding on iPhone), Strava (upload destination when you connect it), the AI provider you choose, for example Anthropic for Claude or OpenAI for ChatGPT (receives the data read while you ask questions, only if you connect the AI connection), the AI provider you choose for Joyo AI with your own key (OpenRouter, OpenAI, Anthropic, Google Gemini or an address you enter; your choice and your own account, not our data processor; receives your data summary and conversation only after you enter a key and consent), Expo, Google (Firebase Cloud Messaging) and Apple (APNs) (delivery of Keluarga push notifications), RevKlik (visitor
           statistics for this site). No ads and no sale of data. Data is not used for advertising or
           ad profiling. Everything the app and this site send over the internet uses HTTPS (TLS).
         </p>
@@ -1040,6 +1085,7 @@ function English() {
         <List
           items={[
             "On the phone: uninstall JoyoFit, or Android Settings, Apps, JoyoFit, Storage, Clear data. Or choose Delete from this phone when you sign out: that removes JoyoFit data from the phone without releasing the watch. Use Forget pairing in the app to release the watch.",
+            "Joyo AI from JoyoRogo: in the Joyo AI settings, turn off Allow JoyoRogo's AI to receive my data to withdraw your agreement; chats on the phone are deleted from the chat screen or with Delete all Joyo AI data.",
             "Joyo AI (own key): in the Joyo AI settings you can delete the keys, the notes and conversation, or everything; Hapus dari HP ini when you sign out also deletes everything (see the Joyo AI with your own key section). Data that has already reached the provider is deleted in your account with that provider.",
             "In Health Connect (Android) or Apple Health (iPhone): delete what JoyoFit wrote in the Health Connect or Health app.",
             "Strava: Disconnect Strava in the app, or revoke the app on strava.com; the tokens are deleted from the JoyoRogo server at once (if JoyoRogo still uses the same connection, the access on Strava is revoked when both are disconnected).",

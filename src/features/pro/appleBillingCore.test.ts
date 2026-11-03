@@ -32,15 +32,15 @@ describe('postSignedTransaction', () => {
       init = i;
       return new Response(JSON.stringify({ activated: true, founderUntil: 'x', sandbox: false }));
     }) as unknown as typeof fetch;
-    expect(await post(spy)).toEqual({ sandbox: false });
+    await post(spy);
     expect(url).toBe('https://api.example.com/api/billing/apple');
     expect(init?.method).toBe('POST');
     expect((init?.headers as Record<string, string>).Cookie).toBe('better-auth.session_token=abc');
     expect(init?.body).toBe(JSON.stringify({ signedTransaction: 'jws' }));
   });
 
-  test('reports the sandbox verdict', async () => {
-    expect(await post(answer(200, { activated: true, sandbox: true }))).toEqual({ sandbox: true });
+  test('a sandbox receipt is credited like a real one', async () => {
+    await post(answer(200, { activated: true, sandbox: true }));
   });
 
   test('maps every refusal to a reason and says whether it is final', async () => {

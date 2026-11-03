@@ -18,14 +18,9 @@ export function appleAccountToken(userId: string): string {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
-export interface PostedTransaction {
-  /** JoyoRogo says this was Apple's Sandbox and nothing was charged (Pro then lasts a day). Omitted for review accounts. */
-  sandbox: boolean;
-}
-
 /**
  * `POST <joyorogo>/api/billing/apple` with the signed transaction (JWS) and the JoyoRogo session cookie; idempotent per transaction.
- * 200 `{activated, founderUntil, sandbox}` credited (or already credited, or an old period: nothing to add), 400 bad receipt,
+ * 200 credited (or already credited, or an old period: nothing to add), 400 bad receipt,
  * 401 no session, 403 the subscription belongs to another JoyoRogo account, 404 Apple billing is off on that server,
  * 409 still processing. Throws {@link BillingError}.
  */
@@ -34,7 +29,7 @@ export async function postSignedTransaction(args: {
   cookie: string | null;
   signedTransaction: string;
   fetchImpl?: typeof fetch;
-}): Promise<PostedTransaction> {
+}): Promise<void> {
   const { baseUrl, cookie, signedTransaction, fetchImpl = fetch } = args;
   if (!cookie) throw new BillingError('signIn', false);
   let response: Response;
@@ -54,6 +49,4 @@ export async function postSignedTransaction(args: {
   if (response.status === 404) throw new BillingError('unavailable', false);
   if (response.status === 409) throw new BillingError('processing', false);
   if (!response.ok) throw new BillingError('failed', false);
-  const body = (await response.json().catch(() => null)) as { sandbox?: unknown } | null;
-  return { sandbox: body?.sandbox === true };
 }

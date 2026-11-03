@@ -95,6 +95,7 @@
       "choose": "Pilih foto",
       "change": "Ganti foto",
       "take": "Ambil foto",
+      "cameraDenied": "Akses kamera mati untuk JoyoFit. Nyalakan di Pengaturan > JoyoFit > Kamera, atau pilih foto dari galeri.",
       "placeholder": "Pilih foto dari galeri atau ambil foto baru.",
       "failed": "Foto itu tidak bisa dimuat. Pilih foto lain.",
       "needed": "Tambahkan fotomu dulu untuk membagikan kartu ini."

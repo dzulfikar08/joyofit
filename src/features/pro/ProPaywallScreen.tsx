@@ -21,7 +21,6 @@ import { HuaweiWear } from '@/wear';
 import { billing } from './billing';
 import { BillingError, fetchBillingSwitch, PRIVACY_URL, yearlySavingPercent, type ProPlan, type StoreProducts } from './billingCore';
 import { PlanOption } from './PlanOption';
-import { appAlert } from '@/components/AppAlert';
 
 /** Whether JoyoRogo's `/api/config` says billing for this store is on: `loading` until it answers, `unknown` when it could not be read. */
 type BillingSwitch = 'loading' | 'on' | 'off' | 'unknown';
@@ -102,10 +101,9 @@ function Paywall() {
     try {
       const outcome = await billing.buyPro(plan);
       if (outcome === 'pending') setMessage({ tone: 'info', text: t('paywall.pending') });
-      if (outcome === 'bought' || outcome === 'trial') {
+      if (outcome === 'bought') {
         setMessage({ tone: 'info', text: t('paywall.activated') });
         void cloud.refreshPro();
-        if (outcome === 'trial') appAlert(t('paywall.sandbox.title'), t('paywall.sandbox.body'));
       }
     } catch (error) {
       failed(error);

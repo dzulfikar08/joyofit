@@ -10,6 +10,7 @@ import { Section } from '@/components/Screen';
 import { Segmented } from '@/components/Segmented';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
+import { locationState } from '@/features/sensors/permissions';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { forecastLine } from '@/features/settings/forecastStatus';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
@@ -61,7 +62,18 @@ export function WeatherSection() {
   /** iOS asks only once: after a refusal the only way to allow location is the Settings app. */
   const [needsSettings, setNeedsSettings] = useState(false);
 
-  const refresh = useCallback(() => setStatus(HuaweiWear.getWeatherStatus()), []);
+  const refresh = useCallback(() => {
+    setStatus(HuaweiWear.getWeatherStatus());
+    // iOS asks once: a refusal from an earlier visit already leaves only the Settings app, so "Next" has no prompt behind it.
+    if (Platform.OS !== 'ios') return;
+    void locationState().then(
+      (state) => {
+        if (state === 'blocked') setNeedsSettings(true);
+        else if (state === 'granted') setNeedsSettings(false);
+      },
+      () => {},
+    );
+  }, []);
   useNativeRefresh(refresh);
 
   const run = async (action: () => Promise<void>, done?: string) => {

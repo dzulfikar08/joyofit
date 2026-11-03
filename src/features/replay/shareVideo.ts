@@ -11,11 +11,10 @@ import { instagramRoute, type InstagramRoute } from '@/features/stickers/share/s
 
 const VIDEO_TYPE = 'video/mp4';
 
-/** Adds the MP4 to the photo library. Resolves `false` when the person declines the pre-prompt. */
-export async function saveVideo(fileUri: string, prompt: PhotosPrompt): Promise<boolean> {
-  if (!(await ensurePhotosAccess('save', prompt))) return false;
+/** Adds the MP4 to the photo library. */
+export async function saveVideo(fileUri: string, prompt: PhotosPrompt): Promise<void> {
+  await ensurePhotosAccess('save', prompt);
   await MediaLibrary.Asset.create(fileUri);
-  return true;
 }
 
 /** Opens the system share sheet with the MP4; resolves quietly when the person closes it. */
@@ -29,16 +28,15 @@ export async function shareVideoFile(fileUri: string, caption: string): Promise<
 
 /**
  * Instagram button. With a Facebook App ID the Story composer opens with the video as its background; without one the MP4 goes
- * to the Instagram app's own share target, where the person picks Story, Reel or post. Returns the route taken, or `null` when
- * the person backed out of the Photos pre-prompt.
+ * to the Instagram app's own share target, where the person picks Story, Reel or post. Returns the route taken.
  */
-export async function shareVideoToInstagram(fileUri: string, caption: string, prompt: PhotosPrompt): Promise<InstagramRoute | null> {
+export async function shareVideoToInstagram(fileUri: string, caption: string, prompt: PhotosPrompt): Promise<InstagramRoute> {
   const route = instagramRoute(FACEBOOK_APP_ID, OS, false);
   try {
     if (route === 'stories' && FACEBOOK_APP_ID) {
       await Share.shareSingle({ social: Social.InstagramStories, appId: FACEBOOK_APP_ID, backgroundVideo: fileUri });
     } else if (route === 'instagram') {
-      if (OS === 'ios' && !(await ensurePhotosAccess('instagram', prompt))) return null;
+      if (OS === 'ios') await ensurePhotosAccess('instagram', prompt);
       await Share.shareSingle({ social: Social.Instagram, url: fileUri, type: VIDEO_TYPE });
     } else {
       await shareVideoFile(fileUri, caption);

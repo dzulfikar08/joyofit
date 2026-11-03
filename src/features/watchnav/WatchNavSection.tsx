@@ -1,6 +1,6 @@
 import { useCallback, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -74,6 +74,8 @@ export function WatchNavSection({ route, points }: { route: SavedRoute; points: 
   const [reroute, setReroute] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  /** The refusal cannot be asked again (iOS after one answer, Android after "don't ask again"): only the settings change it. */
+  const [needsSettings, setNeedsSettings] = useState(false);
 
   useNativeRefresh(useCallback(() => setStatus(readWatchNavStatus()), []));
 
@@ -83,10 +85,13 @@ export function WatchNavSection({ route, points }: { route: SavedRoute; points: 
 
   const start = async () => {
     setError(null);
+    setNeedsSettings(false);
     setStarting(true);
     try {
-      if ((await ensureLocation()) !== 'granted') {
+      const answer = await ensureLocation();
+      if (answer !== 'granted') {
         setError(t('watchNav.locationDenied'));
+        setNeedsSettings(answer === 'blocked');
         return;
       }
       setWatchNavNotification(t('watchNav.notificationTitle'), t('watchNav.notificationText'));
@@ -150,7 +155,13 @@ export function WatchNavSection({ route, points }: { route: SavedRoute; points: 
         </>
       ) : null}
 
-      {error !== null ? <Notice tone="danger">{error}</Notice> : null}
+      {error !== null ? (
+        <Notice
+          tone="danger"
+          action={needsSettings ? { label: t('watchNav.openSettings'), onPress: () => void Linking.openSettings() } : undefined}>
+          {error}
+        </Notice>
+      ) : null}
       <AppText variant="caption" muted>
         {t('watchNav.credit')}
       </AppText>

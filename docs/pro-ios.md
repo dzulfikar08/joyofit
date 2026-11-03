@@ -43,10 +43,10 @@ launch replay below.
    server rejects a transaction whose token belongs to another account.
 3. `AppleIap.purchase(productId, token)` returns the signed transaction (JWS). JoyoFit posts `{signedTransaction}` to
    `https://api.joyorogo.com/api/billing/apple` with the session cookie (`authClient.getCookie()`, the way every JoyoRogo call in JoyoFit authenticates).
-4. The transaction is finished (`AppleIap.finish`) only after the answer is 200 `{activated, founderUntil, sandbox}`, or when the answer says it will never be
+4. The transaction is finished (`AppleIap.finish`) only after the answer is 200, or when the answer says it will never be
    credited: 400 `receiptInvalid`, 403 `linkedOtherAccount`. Anything else leaves it unfinished so it is replayed: 401 (sign in), 404 (Apple billing off
    on JoyoRogo), 409 `processing`, other 5xx, no network.
-5. `sandbox: true` (Apple's test environment, nothing charged, Pro lasts a day) shows a "Test purchase" alert. The server leaves the flag off for review accounts.
+5. A sandbox purchase (Apple's test environment, nothing charged; the server may cap Pro at a day) looks exactly like a real one in the app: App Review buys in the sandbox and rejected a "Test purchase" dialog (2.1(b), 2026-11-03). The app never shows it.
 
 ## Restore and replay
 

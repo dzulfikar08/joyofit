@@ -6,7 +6,7 @@ import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { NoticeDialog, useNotice } from '@/components/NoticeDialog';
 import { PopIn, useFlash } from '@/components/motion';
 import { PressableScale } from '@/components/PressableScale';
 import { Segmented } from '@/components/Segmented';
@@ -76,11 +76,6 @@ interface Feedback {
   tone: 'info' | 'danger';
   text: string;
   action?: { label: string; onPress: () => void };
-}
-
-interface PhotosRequest {
-  purpose: 'save' | 'instagram';
-  answer: (continues: boolean) => void;
 }
 
 /** Checkerboard behind a transparent sticker so the person sees what is and is not drawn. Dark squares for light-on-dark stickers. */
@@ -247,7 +242,7 @@ export function StickerSheet({
   const [installed, setInstalled] = useState(false);
   const [fontsReady, setFontsReady] = useState(false);
   const [settled, setSettled] = useState<{ scene: Scene; failed: boolean } | null>(null);
-  const [photosRequest, setPhotosRequest] = useState<PhotosRequest | null>(null);
+  const photos = useNotice<'save' | 'instagram'>();
   const [copied, flashCopied] = useFlash(1400);
   const [saved, flashSaved] = useFlash(1400);
   const threadsPending = useRef(false);
@@ -328,17 +323,8 @@ export function StickerSheet({
     }
   };
 
-  /** Our own "Continue" dialog goes first, so the system Photos dialog is never a surprise. */
-  const askPhotos: PhotosPrompt = (purpose) => {
-    const { promise, resolve } = Promise.withResolvers<boolean>();
-    setPhotosRequest({ purpose, answer: resolve });
-    return promise;
-  };
-
-  const answerPhotos = (continues: boolean) => {
-    photosRequest?.answer(continues);
-    setPhotosRequest(null);
-  };
+  /** Our own one-button notice goes first, so the system Photos dialog is never a surprise; it always carries on to it. */
+  const askPhotos: PhotosPrompt = photos.show;
 
   const run = async (target: Target) => {
     const card = cardRef.current;
@@ -354,10 +340,9 @@ export function StickerSheet({
       } else if (target === 'more') {
         await shareCardImage(await captureToFile(card, size), subject.caption);
       } else if (target === 'save') {
-        if (await saveCardImage(await captureToFile(card, size), askPhotos)) {
-          show(t('sharing:share.toasts.saved'));
-          flashSaved();
-        }
+        await saveCardImage(await captureToFile(card, size), askPhotos);
+        show(t('sharing:share.toasts.saved'));
+        flashSaved();
       } else {
         await shareToInstagram(await captureToFile(card, size), scene.transparent, subject.caption, askPhotos);
       }
@@ -574,14 +559,12 @@ export function StickerSheet({
         {toast}
       </View>
 
-      <ConfirmDialog
-        visible={photosRequest !== null}
+      <NoticeDialog
+        visible={photos.request !== null}
         title={t('sharing:share.photosDialog.title')}
-        message={photosRequest?.purpose === 'instagram' ? t('sharing:share.photosDialog.instagram') : t('sharing:share.photosDialog.save')}
+        message={photos.request === 'instagram' ? t('sharing:share.photosDialog.instagram') : t('sharing:share.photosDialog.save')}
         confirmLabel={t('sharing:share.photosDialog.confirm')}
-        cancelLabel={t('sharing:share.photosDialog.cancel')}
-        onConfirm={() => answerPhotos(true)}
-        onCancel={() => answerPhotos(false)}
+        onConfirm={photos.done}
       />
     </Modal>
   );

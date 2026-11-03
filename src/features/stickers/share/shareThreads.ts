@@ -39,13 +39,12 @@ export async function shareThreadsCarousel(fileUris: readonly string[], caption:
 
 /**
  * The route that works everywhere: every PNG goes to the photo library, the caption to the clipboard, and the Threads composer
- * opens with the text filled in; the person taps its photo button and picks the saved images. Resolves `false` when the person
- * declines the Photos pre-prompt (nothing was saved); throws `PhotosDeniedError` when Photos access is refused.
+ * opens with the text filled in; the person taps its photo button and picks the saved images. Throws `PhotosDeniedError` when
+ * Photos access is refused.
  */
-export async function saveAllAndOpenThreads(fileUris: readonly string[], caption: string, prompt: PhotosPrompt): Promise<boolean> {
-  if (!(await ensurePhotosAccess('save', prompt))) return false;
+export async function saveAllAndOpenThreads(fileUris: readonly string[], caption: string, prompt: PhotosPrompt): Promise<void> {
+  await ensurePhotosAccess('save', prompt);
   for (const uri of fileUris) await MediaLibrary.Asset.create(uri);
   await Clipboard.setStringAsync(caption);
   await Linking.openURL(threadsComposerUrl(caption));
-  return true;
 }

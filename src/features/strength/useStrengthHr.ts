@@ -22,11 +22,11 @@ export interface StrengthStrap {
   bluetoothOff: boolean;
   /** "Lanjut" of the explanation card: asks for the permission, then connects. */
   onContinue: () => void;
-  /** Dismisses the card or the notice; the strap is not asked for again in this workout. */
+  /** Closes the refusal notice; the strap is not asked for again in this workout. The explanation has no such way out: it always goes on to the permission. */
   onDismiss: () => void;
 }
 
-/** Workouts whose strap the person turned down: not asked again until the app restarts. */
+/** Workouts whose refusal notice the person closed: not asked again until the app restarts. */
 const dismissed = new Set<string>();
 
 /**
