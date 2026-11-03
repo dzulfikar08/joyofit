@@ -17,6 +17,8 @@ export interface SplitGrid {
   /** Cumulative hysteresis gain/loss per sample (see `elevationProfile`), null without altitude. */
   cumGain: readonly number[] | null;
   cumLoss: readonly number[] | null;
+  /** The watch's pause, seconds from the start (`Grid.pause`): no split counts it, as Strava leaves out the file's timer stop. */
+  pause: { from: number; to: number } | null;
 }
 
 function mean(values: readonly (number | null)[] | null, from: number, to: number): number | null {
@@ -48,8 +50,8 @@ function timeAt(dist: readonly number[], step: number, d: number): number {
   return ((lo - 1) + (d1 > d0 ? (d - d0) / (d1 - d0) : 1)) * step;
 }
 
-function makeSplit(g: SplitGrid, n: number, distM: number, tStart: number, tEnd: number, foot: boolean): AnalysisSplit {
-  const sec = tEnd - tStart;
+/** `sec` is the split's time; the default is the whole span, a km split passes it without the pause. */
+function makeSplit(g: SplitGrid, n: number, distM: number, tStart: number, tEnd: number, foot: boolean, sec = tEnd - tStart): AnalysisSplit {
   const from = Math.ceil(tStart / g.stepSec);
   const to = Math.floor(tEnd / g.stepSec);
   const hr = mean(g.hr, from, to) ?? mean(g.hr, Math.round(tStart / g.stepSec), Math.round(tEnd / g.stepSec));
@@ -70,7 +72,9 @@ function makeSplit(g: SplitGrid, n: number, distM: number, tStart: number, tEnd:
 
 /**
  * Kilometre splits from the cumulative distance, each crossing time interpolated inside its grid step. The last, partial
- * split is kept from 100 m on. `sec` is elapsed time, pauses included; `paceSecKm = sec / distKm` (run, walk and ride only).
+ * split is kept from 100 m on. `sec` is moving time: the span between the crossings minus the part of the watch's pause in
+ * it, which is how Strava times the kilometres of the file JoyoFit uploads (its timer stops for the same window, see
+ * `workouts/pause.ts`), so the splits add up to the moving time; `paceSecKm = sec / distKm` (run, walk and ride only).
  */
 export function kmSplits(g: SplitGrid, kind: SportKind): AnalysisSplit[] {
   const dist = g.dist;
@@ -79,15 +83,18 @@ export function kmSplits(g: SplitGrid, kind: SportKind): AnalysisSplit[] {
   const total = dist[dist.length - 1];
   const whole = Math.floor(total / 1000);
   const splits: AnalysisSplit[] = [];
+  const pause = g.pause;
+  const moving = (t0: number, t1: number) => t1 - t0 - (pause ? Math.max(0, Math.min(t1, pause.to) - Math.max(t0, pause.from)) : 0);
   let tStart = 0;
   for (let k = 1; k <= whole && splits.length < MAX_SPLITS; k++) {
     const tEnd = timeAt(dist, g.stepSec, k * 1000);
-    splits.push(makeSplit(g, k, 1000, tStart, tEnd, foot));
+    splits.push(makeSplit(g, k, 1000, tStart, tEnd, foot, moving(tStart, tEnd)));
     tStart = tEnd;
   }
   const rest = total - whole * 1000;
   if (rest >= MIN_PARTIAL_SPLIT_M && splits.length < MAX_SPLITS) {
-    splits.push(makeSplit(g, whole + 1, rest, tStart, timeAt(dist, g.stepSec, total), foot));
+    const tEnd = timeAt(dist, g.stepSec, total);
+    splits.push(makeSplit(g, whole + 1, rest, tStart, tEnd, foot, moving(tStart, tEnd)));
   }
   return splits;
 }

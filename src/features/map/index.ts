@@ -1,5 +1,5 @@
 export { TileMap } from './TileMap';
-export type { MapMarker, TileMapColors, TileMapProps } from './TileMap';
+export type { MapMarker, RouteRun, TileMapColors, TileMapProps } from './TileMap';
 export {
   ATTRIBUTION_URL,
   darkPalette,

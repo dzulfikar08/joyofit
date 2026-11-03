@@ -221,7 +221,7 @@ export function analyzeWorkoutWithDetail(input: AnalyzeInput, options: AnalyzeOp
     step === null
       ? null
       : buildSeries(buildGrid({ ...gridInputOf(input, kind), stepSec: step, fixes: grid.fixes }), options);
-  return { analysis, detail: { series: fine, route: options.includeRoute ? routeDetail(grid.fixes, grid.watch) : null } };
+  return { analysis, detail: { series: fine, route: options.includeRoute ? routeDetail(grid.fixes, grid.watch, input.workout.start) : null } };
 }
 
 function gridInputOf(input: AnalyzeInput, kind: SportKind): GridInput {
@@ -255,6 +255,7 @@ function run(input: AnalyzeInput, options: AnalyzeOptions): { analysis: WorkoutA
     cad: grid.cad,
     cumGain: profile?.cumGain ?? null,
     cumLoss: profile?.cumLoss ?? null,
+    pause: grid.pause,
   };
   const hasBlocks = (summary.paceBlocks ?? []).some((b) => b.type === 0);
   let splits: AnalysisSplit[];

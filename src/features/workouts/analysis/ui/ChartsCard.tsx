@@ -4,36 +4,16 @@ import { PanResponder, Pressable, StyleSheet, View, type LayoutChangeEvent } fro
 
 import type { AnalysisSeries, WorkoutAnalysis } from '../types';
 import { availableMetrics, indexFromX, type WorkoutMetric } from './chartMath';
-import { ChartPanel, PAD_X, Readout, metricColor } from './ChartPanel';
+import { ChartPanel, PAD_X, Readout } from './ChartPanel';
 import { useAnalysisContext } from './context';
-import { Card, MIN_HIT, Txt } from './primitives';
+import { METRIC_LABEL, MetricTabs } from './MetricTabs';
+import { Card, MIN_HIT } from './primitives';
 import { useScrubSelector, type ScrubStore } from './scrub';
-import type { AnalysisTextKey } from './text';
 
 export const CHART_HEIGHT = 176;
 const STRIP_HEIGHT = 52;
 /** Horizontal travel before a touch counts as a scrub that owns the gesture. */
 const ENGAGE_DX = 6;
-
-const TAB_LABEL: Record<WorkoutMetric, AnalysisTextKey> = {
-  pace: 'metric.pace',
-  speed: 'metric.speed',
-  hr: 'metric.hr',
-  alt: 'metric.elevation',
-  cad: 'metric.cadence',
-  stride: 'metric.stride',
-  power: 'metric.power',
-};
-
-const TAB_ICON: Record<WorkoutMetric, keyof typeof Ionicons.glyphMap> = {
-  pace: 'speedometer',
-  speed: 'speedometer',
-  hr: 'heart',
-  alt: 'trending-up',
-  cad: 'footsteps',
-  stride: 'swap-horizontal',
-  power: 'flash',
-};
 
 interface GestureTarget {
   series: AnalysisSeries;
@@ -121,7 +101,7 @@ export function ClearButton() {
 }
 
 function ChartsCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
-  const { palette, t, store, setScrubActive } = useAnalysisContext();
+  const { t, store, setScrubActive } = useAnalysisContext();
   const series = analysis.series;
   const kind = analysis.sport.kind;
   const metrics = useMemo(() => (series ? availableMetrics(series, kind) : []), [series, kind]);
@@ -153,27 +133,7 @@ function ChartsCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
 
   return (
     <Card title={t('section.charts')}>
-      <View style={styles.tabs} accessibilityRole="tablist">
-        {metrics.map((m) => {
-          const selected = m === metric;
-          const color = metricColor(palette, m);
-          return (
-            <Pressable
-              key={m}
-              onPress={() => setChosen(m)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected }}
-              hitSlop={{ top: 5, bottom: 5, left: 2, right: 2 }}
-              style={[styles.tab, { backgroundColor: selected ? color : palette.surfaceAlt }]}
-            >
-              <Ionicons name={TAB_ICON[m]} size={14} color={selected ? palette.surface : color} />
-              <Txt size={13} bold color={selected ? palette.surface : palette.text}>
-                {t(TAB_LABEL[m])}
-              </Txt>
-            </Pressable>
-          );
-        })}
-      </View>
+      <MetricTabs metrics={metrics} selected={metric} onSelect={setChosen} />
       <View style={styles.readoutLine}>
         <View style={styles.readoutFlex}>
           <Readout series={series} metric={metric} kind={kind} />
@@ -184,7 +144,7 @@ function ChartsCardImpl({ analysis }: { analysis: WorkoutAnalysis }) {
         onLayout={onLayout}
         accessible
         accessibilityRole="adjustable"
-        accessibilityLabel={t('chart.a11y', { metric: t(TAB_LABEL[metric]) })}
+        accessibilityLabel={t('chart.a11y', { metric: t(METRIC_LABEL[metric]) })}
         accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
         onAccessibilityAction={onAccessibilityAction}
         {...handlers}
@@ -213,8 +173,6 @@ const EMPTY_SERIES: AnalysisSeries = { stepSec: 1, n: 0, dist: null, hr: null, p
 export const ChartsCard = memo(ChartsCardImpl);
 
 const styles = StyleSheet.create({
-  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tab: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: MIN_HIT - 10, borderRadius: 999 },
   readoutLine: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
   readoutFlex: { flex: 1, minWidth: 0 },
   clear: { width: MIN_HIT, height: MIN_HIT, alignItems: 'center', justifyContent: 'center' },

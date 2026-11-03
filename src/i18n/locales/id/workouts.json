@@ -65,6 +65,9 @@
       "a11y": "Grafik {{metric}}. Geser ke atas atau bawah untuk memindahkan penanda.",
       "noData": "Data belum cukup untuk grafik ini."
     },
+    "map": {
+      "legend": "Rute diwarnai menurut {{metric}}, dari {{low}} sampai {{high}} {{unit}}"
+    },
     "splits": {
       "km": "Km",
       "pace": "Pace",

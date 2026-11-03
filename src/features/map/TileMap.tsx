@@ -88,8 +88,16 @@ export interface TileMapColors {
   surface: string;
 }
 
+/** One colour of a route coloured by a value along it: every stretch of the route in that colour. */
+export interface RouteRun {
+  color: string;
+  segments: readonly (readonly LatLon[])[];
+}
+
 export interface TileMapProps {
   segments: readonly (readonly LatLon[])[];
+  /** Draws the route in these colours instead of `colors.route`; `segments` still sets the fit and the casing under them. */
+  routeRuns?: readonly RouteRun[] | null;
   markers?: readonly MapMarker[];
   /** A ring + dot that follows e.g. a chart scrubber. */
   highlight?: LatLon | null;
@@ -202,6 +210,7 @@ interface Gesture {
 
 export function TileMap({
   segments,
+  routeRuns,
   markers,
   highlight,
   theme,
@@ -385,6 +394,10 @@ export function TileMap({
     }
     if (paths.length === 0 && !dot) return null;
     const d = paths.join('');
+    // The coloured stretches share their end points, so with round caps the line reads as one.
+    const runs = routeRuns
+      ? routeRuns.map((run) => ({ color: run.color, d: run.segments.map((seg) => routePath(seg, zoom, ox, oy) ?? '').join('') }))
+      : [{ color: colors.route, d }];
     return (
       <>
         {d ? (
@@ -397,14 +410,19 @@ export function TileMap({
               strokeLinejoin="round"
               strokeLinecap="round"
             />
-            <Path
-              d={d}
-              fill="none"
-              stroke={colors.route}
-              strokeWidth={ROUTE_WIDTH}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
+            {runs.map((run, i) =>
+              run.d ? (
+                <Path
+                  key={i}
+                  d={run.d}
+                  fill="none"
+                  stroke={run.color}
+                  strokeWidth={ROUTE_WIDTH}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+              ) : null,
+            )}
           </>
         ) : null}
         {dot ? (
@@ -415,7 +433,7 @@ export function TileMap({
         ) : null}
       </>
     );
-  }, [segments, view, width, height, marginX, marginY, colors.route, colors.routeCasing]);
+  }, [segments, routeRuns, view, width, height, marginX, marginY, colors.route, colors.routeCasing]);
 
   // ----- gesture -----
   const g = useRef<Gesture>({

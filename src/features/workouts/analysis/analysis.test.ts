@@ -206,9 +206,9 @@ describe('pause', () => {
     expect(analyze(synth, { duration: 0 }).movingSec).toBe(1620);
   });
 
-  it('splits keep elapsed time, so the split with the pause is longer', () => {
-    expect(a.splits.map((s) => s.sec)).toEqual([300, 300, 300, 420, 300]);
-    expect(a.splits.reduce((s, x) => s + x.sec, 0)).toBeGreaterThan(1500);
+  it('splits leave the watch pause out, as Strava does with the file: every kilometre 5:00, summing to the moving time', () => {
+    expect(a.splits.map((s) => s.sec)).toEqual([300, 300, 300, 300, 300]);
+    expect(a.splits.reduce((s, x) => s + x.sec, 0)).toBe(a.movingSec);
   });
 
   it('keeps the position through the pause (same place) and the best effort ignores it', () => {
@@ -370,7 +370,7 @@ describe('no GPS', () => {
     expect(a3.splits[5].distM).toBe(300);
     expect(a3.splits[5].sec).toBe(90);
     expect(a3.splits[0].hr).toBe(150);
-    expect(paceBlockSplits(undefined, { stepSec: 1, n: 2, dist: null, hr: null, cad: null, cumGain: null, cumLoss: null })).toEqual([]);
+    expect(paceBlockSplits(undefined, { stepSec: 1, n: 2, dist: null, hr: null, cad: null, cumGain: null, cumLoss: null, pause: null })).toEqual([]);
   });
 });
 

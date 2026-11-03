@@ -65,6 +65,9 @@
       "a11y": "{{metric}} chart. Swipe up or down to move the marker.",
       "noData": "Not enough data for this chart."
     },
+    "map": {
+      "legend": "Route coloured by {{metric}}, from {{low}} to {{high}} {{unit}}"
+    },
     "splits": {
       "km": "Km",
       "pace": "Pace",

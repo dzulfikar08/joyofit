@@ -12,6 +12,7 @@
 
 import { type FitFieldDef, type FitFieldType, type FitValue, FitWriter, toFitTime, toSemicircles } from './fitEncoder';
 import { plausibleStepLength } from '../workouts/analysis/stride';
+import { validFix, watchPause, type WatchPause } from '../workouts/pause';
 import { movingOf } from '../workouts/times';
 import { FIT_MANUFACTURER_DEVELOPMENT, type StravaDevice } from './device';
 
@@ -244,10 +245,6 @@ function haversine(aLat: number, aLon: number, bLat: number, bLon: number): numb
   return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
-function validFix(lat: number | null, lon: number | null): lat is number {
-  return lat !== null && lon !== null && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && !(lat === 0 && lon === 0);
-}
-
 /**
  * One sample per second at most, in time order, inside `[start, end]`, with a sample exactly at `start` and at `end` so
  * Strava's elapsed time is the watch's. Several points of one second merge: a fix, an altitude or a heart rate
@@ -284,43 +281,6 @@ function collectSamples(workout: StravaWorkout, points: readonly StravaPoint[]):
   return [...bySecond.values()].sort((a, b) => a.ts - b.ts);
 }
 
-/** A stretch of the workout the watch had paused, in Unix seconds. */
-interface Pause {
-  start: number;
-  end: number;
-}
-
-/**
- * Where the watch's pause was. The watch only gives its timer (`duration`), so the pause is `elapsed - timer` seconds long
- * (2 s on a run whose end stamp is 2 s after the timer stopped, minutes for a real pause); Strava reads its moving time from
- * the timer events once a file has a pause (see `activityFile` docs in `times.ts`), so the file always writes it. Where it sat is
- * not stored, but nothing is recorded while the watch is paused, so it lies around the longest stretch the samples leave
- * empty: the longest gap between GPS fixes when the workout has at least two (the watch stops the GPS when it pauses;
- * heart-rate samples may run on or stop a little later), else between any samples. The window is centred on that gap (a gap
- * shorter than the pause is widened to the pause's length, a longer one is cut to it) and kept inside the workout; no
- * sample is dropped. Null only when the watch reports no timer or the timer is not shorter than the elapsed time.
- */
-function findPause(workout: StravaWorkout, samples: readonly Sample[]): Pause | null {
-  const first = samples[0];
-  const last = samples[samples.length - 1];
-  if (!first || !last || !(workout.duration > 0)) return null;
-  const length = last.ts - first.ts - Math.round(workout.duration);
-  if (length < 1) return null;
-  const fixes = samples.filter((s) => s.lat !== null);
-  const candidates = fixes.length >= 2 ? fixes : samples;
-  let gapStart = first.ts;
-  let gap = 0;
-  for (let i = 1; i < candidates.length; i++) {
-    const width = (candidates[i] as Sample).ts - (candidates[i - 1] as Sample).ts;
-    if (width > gap) {
-      gap = width;
-      gapStart = (candidates[i - 1] as Sample).ts;
-    }
-  }
-  const start = Math.min(last.ts - length, Math.max(first.ts, Math.round(gapStart + gap / 2 - length / 2)));
-  return { start, end: start + length };
-}
-
 /**
  * Cumulative distance from the per-sample speed (m/s), scaled so the last sample is `total`. False (nothing written) when fewer than
  * half of the samples carry a speed or they are all zero. A gap of more than 5 s between samples (a pause) adds nothing.
@@ -352,7 +312,7 @@ function speedDistance(samples: Sample[], total: number): boolean {
  * - without two fixes (treadmill, pool) the distance grows linearly in active time over the whole workout.
  * The first sample is 0 and the last is the total.
  */
-function withDistance(samples: Sample[], total: number, pause: Pause | null): void {
+function withDistance(samples: Sample[], total: number, pause: WatchPause | null): void {
   const first = samples[0];
   const last = samples[samples.length - 1];
   if (!(total > 0) || !first || !last) return;
@@ -486,10 +446,10 @@ export interface BuiltFit {
 
 /**
  * The FIT activity of one workout: file_id, device_info, a timer start event, one record per sample, a timer stop event
- * (and, when the watch was paused, a stop and start around the pause, see `findPause`), one lap, one session and the
+ * (and, when the watch was paused, a stop and start around the pause, see `watchPause`), one lap, one session and the
  * activity. The record timestamps run from the workout's start to its end, the session's
  * `total_elapsed_time` is that span, `total_timer_time` the watch's timer (`movingOf`, the time the app shows; the gap to the
- * elapsed time is a timer stop and start, see `findPause`, so the file agrees with itself and with the app) and `total_distance` the watch's
+ * elapsed time is a timer stop and start, see `watchPause`, so the file agrees with itself and with the app) and `total_distance` the watch's
  * distance. Foot sports get the watch's step count as strides (a stride is two steps) and an average cadence of strides
  * per minute over the active time, as Garmin devices write it. `utcOffsetSeconds` is the wearer's offset from UTC at the
  * workout; it defaults to this device's. `device` is the watch that recorded the workout (`stravaDevice`): it becomes
@@ -506,7 +466,7 @@ export function buildFit(
 ): BuiltFit {
   const samples = collectSamples(workout, points);
   const total = workout.distance > 0 ? workout.distance : 0;
-  const pause = findPause(workout, samples);
+  const pause = watchPause(workout, points);
   withDistance(samples, total, pause);
   const sport = stravaSport(workout.sportType, workout.ebike);
   // `collectSamples` always has a sample at the start and at the end.

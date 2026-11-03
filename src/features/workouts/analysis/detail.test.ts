@@ -196,7 +196,7 @@ describe('routeDetail', () => {
       Array.from({ length: 601 }, (_, i) => row(T0 + i, { lat: north(i * 5), lon: 106.8 })),
       'ride',
     );
-    const out = routeDetail(fixes, null)!;
+    const out = routeDetail(fixes, null, T0)!;
     expect(out.kms.map((k) => k.km)).toEqual([1, 2, 3]);
     expect(out.kms[1]!.pos[0]).toBeCloseTo(north(2000), 6);
   });
@@ -208,7 +208,7 @@ describe('routeDetail', () => {
     );
     // 700 s elapsed, the first fix at 100 s, 3 000 m of fixes; the watch says 3 500 m, so the 100 s before the first fix were 500 m.
     const grid = buildGrid({ start: T0, end: T0 + 700, duration: 700, distance: 3500, kind: 'ride', points: fixes.map((f) => row(f.ts, { lat: f.lat, lon: f.lon })) });
-    const out = routeDetail(grid.fixes, grid.watch)!;
+    const out = routeDetail(grid.fixes, grid.watch, T0)!;
     expect(out.kms.map((k) => k.km)).toEqual([1, 2, 3]);
     // The watch counted 500 m before the first fix, so km 1 is 500 m into the fixes.
     expect(out.kms[0]!.pos[0]).toBeCloseTo(north(500), 5);
@@ -225,15 +225,17 @@ describe('routeDetail', () => {
       ],
       'ride',
     );
-    const out = routeDetail(fixes, null)!;
+    const out = routeDetail(fixes, null, T0)!;
     expect(out.segments.map((s) => s.length)).toEqual([2, 2]);
+    // Each position keeps its time on the series axis, split the same way as the line.
+    expect(out.secs).toEqual([[0, 10], [130, 140]]);
     expect(out.kms.map((k) => k.km)).toEqual([1, 2]);
     // Both kilometres are crossed inside the gap: they are shown at the fix that ended it, not on the empty ground in between.
     for (const k of out.kms) expect(k.pos[0]).toBeCloseTo(north(2050), 6);
   });
 
   it('is null with fewer than two fixes', () => {
-    expect(routeDetail([], null)).toBeNull();
-    expect(routeDetail([{ ts: T0, lat: -6.2, lon: 106.8, dist: 0 }], null)).toBeNull();
+    expect(routeDetail([], null, T0)).toBeNull();
+    expect(routeDetail([{ ts: T0, lat: -6.2, lon: 106.8, dist: 0 }], null, T0)).toBeNull();
   });
 });

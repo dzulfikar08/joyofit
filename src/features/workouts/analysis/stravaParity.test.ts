@@ -220,3 +220,64 @@ describe('elevation gain: smoothed, near Strava, not the barometer sum', () => {
     expect(flat).toBeLessThan(FLAT_WALK.stravaGainM + 3);
   });
 });
+
+describe('splits: the kilometre times Strava takes from the uploaded file', () => {
+  /** A run of 5.3 km over `elapsed` s, pace wandering between 5:00 and 6:20, the watch paused (no samples) for `pause`. */
+  function pausedRun(elapsed: number, pause: { at: number; sec: number } | null) {
+    const points: AnalysisPoint[] = [];
+    let along = 0;
+    for (let t = 20; t <= elapsed - 15; t++) {
+      if (pause && t >= pause.at && t < pause.at + pause.sec) continue;
+      along += 1000 / (340 + 40 * Math.sin(t / 200));
+      points.push(row(T0 + t, { lat: -6.2 + along / M_PER_DEG, lon: 106.8, hr: 150 }));
+    }
+    const run = workoutRow({ start: T0, end: T0 + elapsed, duration: elapsed - (pause?.sec ?? 0), distance: 5300, sportName: 'Outdoor Run' });
+    return { run, points, analysis: analyzeWorkout({ workout: run, summary: {}, points, zones: hrZonesForMax(190), daySamples: [], history: NO_HISTORY }, ALL) };
+  }
+
+  /** What Strava does with the file: each kilometre from where the record distance crosses it, without the time the timer was stopped. */
+  function stravaSplits(run: WorkoutRow, points: readonly AnalysisPoint[]): number[] {
+    const decoded = decodeFit(buildFit(run, points.map((p) => ({ ts: p.ts, lat: p.lat, lon: p.lon, alt: null, hr: p.hr })), { utcOffsetSeconds: 0 }).bytes);
+    const records = decoded.messages.recordMesgs ?? [];
+    const at = (m: { timestamp?: unknown }) => Number(m.timestamp ?? 0);
+    const stops: [number, number][] = [];
+    let stoppedAt: number | null = null;
+    for (const e of decoded.messages.eventMesgs ?? []) {
+      const start = e.eventType === 0 || String(e.eventType) === 'start';
+      if (!start) stoppedAt = at(e);
+      else if (stoppedAt !== null) {
+        stops.push([stoppedAt, at(e)]);
+        stoppedAt = null;
+      }
+    }
+    const crossing = (d: number) => {
+      const i = records.findIndex((r) => (r.distance ?? 0) >= d);
+      const a = records[i - 1]!;
+      const b = records[i]!;
+      return at(a) + ((d - (a.distance ?? 0)) / ((b.distance ?? 0) - (a.distance ?? 0))) * (at(b) - at(a));
+    };
+    const out: number[] = [];
+    let from = at(records[0]!);
+    for (let km = 1; km * 1000 <= (records.at(-1)?.distance ?? 0); km++) {
+      const to = crossing(km * 1000);
+      const stopped = stops.reduce((s, [a, b]) => s + Math.max(0, Math.min(to, b) - Math.max(from, a)), 0);
+      out.push(Math.round(to - from - stopped));
+      from = to;
+    }
+    return out;
+  }
+
+  it('match to the second without a pause', () => {
+    const { run, points, analysis } = pausedRun(1800, null);
+    expect(analysis.splits.slice(0, 5).map((s) => s.sec)).toEqual(stravaSplits(run, points));
+  });
+
+  it('leave the watch pause out of the kilometre it fell in, as Strava does', () => {
+    const { run, points, analysis } = pausedRun(1890, { at: 700, sec: 90 });
+    const strava = stravaSplits(run, points);
+    expect(analysis.splits.slice(0, 5).map((s) => s.sec)).toEqual(strava);
+    // The paused kilometre is about 6 minutes, not 7:30; the splits add up to the moving time.
+    expect(analysis.splits[1]!.sec).toBeLessThan(400);
+    expect(Math.abs(analysis.splits.reduce((sum, s) => sum + s.sec, 0) - analysis.movingSec)).toBeLessThanOrEqual(analysis.splits.length);
+  });
+});

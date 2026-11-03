@@ -19,6 +19,8 @@ export interface RouteKm {
  */
 export interface RouteDetail {
   segments: LatLon[][];
+  /** Seconds since the workout start of every position in `segments` (same shape): the series' time axis, so a fix finds its sample. */
+  secs: number[][];
   kms: RouteKm[];
 }
 
@@ -29,15 +31,18 @@ function joined(a: CleanFix, b: CleanFix): boolean {
 /**
  * Builds the route from the grid's cleaned fixes. `watch` maps the fixes' path length to the watch's distance (without it
  * the path itself is the distance), so a km pill sits where the splits and the charts say the kilometre ends. Kilometres
- * the watch covered before the first fix or after the last one have no position and get no pill. Null without a track.
+ * the watch covered before the first fix or after the last one have no position and get no pill. `start` is the workout's
+ * start (unix seconds), the origin of the series grid. Null without a track.
  */
-export function routeDetail(fixes: readonly CleanFix[], watch: WatchDistance | null): RouteDetail | null {
+export function routeDetail(fixes: readonly CleanFix[], watch: WatchDistance | null, start: number): RouteDetail | null {
   if (fixes.length < 2) return null;
   const segments: LatLon[][] = [];
+  const secs: number[][] = [];
   const kms: RouteKm[] = [];
   const lead = watch?.lead ?? 0;
   const scale = watch?.scale ?? 1;
   let current: LatLon[] = [[fixes[0].lat, fixes[0].lon]];
+  let currentSecs: number[] = [fixes[0].ts - start];
   // The first kilometre mark past the first fix: those before it were covered without a position.
   let next = Math.floor(lead / 1000) + 1;
   for (let i = 1; i < fixes.length; i++) {
@@ -46,9 +51,12 @@ export function routeDetail(fixes: readonly CleanFix[], watch: WatchDistance | n
     const link = joined(a, b);
     if (!link) {
       segments.push(current);
+      secs.push(currentSecs);
       current = [];
+      currentSecs = [];
     }
     current.push([b.lat, b.lon]);
+    currentSecs.push(b.ts - start);
     const d0 = lead + scale * a.dist;
     const d1 = lead + scale * b.dist;
     while (d1 >= next * 1000 && d0 < next * 1000) {
@@ -58,5 +66,6 @@ export function routeDetail(fixes: readonly CleanFix[], watch: WatchDistance | n
     }
   }
   segments.push(current);
-  return { segments, kms };
+  secs.push(currentSecs);
+  return { segments, secs, kms };
 }

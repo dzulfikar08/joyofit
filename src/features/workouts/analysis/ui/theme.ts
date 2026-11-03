@@ -107,3 +107,9 @@ export function hrZoneColors(palette: Pick<AnalysisPalette, 'zones' | 'zoneExtra
 export function hrZoneColor(palette: Pick<AnalysisPalette, 'zones' | 'zoneExtra'>, zone: number): string {
   return palette.zones[zone - 1] ?? palette.zoneExtra;
 }
+
+/**
+ * The colours of a route coloured by a metric, low to high: blue through green and yellow to red, the scale people know from
+ * the heat maps of other sports apps. The same in every theme: it is read against the map tiles, not the app's surfaces.
+ */
+export const ROUTE_RAMP: readonly string[] = ['#1E4FD8', '#2F8BF5', '#22B8C9', '#3CC46A', '#A6CF2F', '#F5C21B', '#F98A1C', '#E8402A'];
