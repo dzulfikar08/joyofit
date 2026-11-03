@@ -5,10 +5,10 @@ import { Chip } from '@/components/Chip';
 import { useTranslation } from '@/i18n';
 import { spacing, useTheme } from '@/theme';
 
-import type { MetricDefinition } from '../data/customMetrics';
+import type { MetricDef } from '../data/metricCatalog';
 
 interface HeroMetricPickerProps {
-  metrics: readonly MetricDefinition[];
+  metrics: readonly MetricDef[];
   selectedHeroId: string;
   onSelectHero: (id: string) => void;
 }

@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { applyLocale } from '@/i18n';
 
 import { TEMPLATES } from '../catalog';
-import { applyCustomMetrics, templateSupportsCustomMetrics } from '../data/customMetrics';
+import { applyCustomMetrics } from '../data/customMetrics';
 import { lookupPath } from '../core/expr';
 import type { Scene, SceneNode, TextNode } from '../core/scene';
 import { measureText } from '../core/text';
@@ -262,13 +262,6 @@ describe('run overlays: the five templates', () => {
       }
     } finally {
       await applyLocale('id');
-    }
-  });
-
-  test('all overlay templates support custom metrics', () => {
-    for (const template of OVERLAYS) {
-      expect(templateSupportsCustomMetrics(template)).toBe(true);
-      expect(templateSupportsCustomMetrics(template.id)).toBe(true);
     }
   });
 

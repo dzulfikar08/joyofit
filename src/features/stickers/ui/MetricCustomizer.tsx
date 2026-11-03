@@ -8,15 +8,13 @@ import type { SportCategory } from '@/features/workouts/sportCategory';
 import { useTranslation } from '@/i18n';
 import { spacing, useTheme } from '@/theme';
 
-import type { Template } from '../core/schema';
 import {
   getAvailableHeroMetrics,
   getAvailableSecondaryMetrics,
   getDefaultConfig,
-  getTemplateSecondarySlotCount,
-  MAX_SECONDARY_METRICS,
   type CustomMetricsConfig,
 } from '../data/customMetrics';
+import { METRIC_CATALOG } from '../data/metricCatalog';
 import type { JsonObject } from '../subject';
 import { HeroMetricPicker } from './HeroMetricPicker';
 import { SecondaryMetricSlots } from './SecondaryMetricSlots';
@@ -24,80 +22,42 @@ import { SecondaryMetricSlots } from './SecondaryMetricSlots';
 interface Props {
   run: JsonObject;
   category: SportCategory;
-  config: CustomMetricsConfig;
-  onChange: (config: CustomMetricsConfig) => void;
-  template?: Template | string | null;
-  maxSecondarySlots?: number;
+  /** `null` until the person changes something: the card then draws its own fixed numbers. */
+  config: CustomMetricsConfig | null;
+  onChange: (config: CustomMetricsConfig | null) => void;
+  /** The secondary numbers the chosen template draws (`customSlotCount`). */
+  slots: number;
 }
 
-export function MetricCustomizer({
-  run,
-  category,
-  config,
-  onChange,
-  template,
-  maxSecondarySlots: propMaxSlots,
-}: Props) {
+export function MetricCustomizer({ run, category, config, onChange, slots }: Props) {
   const { colors, fonts, radius } = useTheme();
   const { t } = useTranslation('stickers');
   const [expanded, setExpanded] = useState(false);
 
-  const maxSecondarySlots = propMaxSlots ?? (template ? getTemplateSecondarySlotCount(template) : MAX_SECONDARY_METRICS);
-
-  const heroMetrics = useMemo(() => getAvailableHeroMetrics(run, category), [run, category]);
-  const secondaryAvailable = useMemo(
-    () => getAvailableSecondaryMetrics(run, category, config.heroId),
-    [run, category, config.heroId],
-  );
-  const defaults = useMemo(
-    () => getDefaultConfig(run, category, maxSecondarySlots),
-    [run, category, maxSecondarySlots],
-  );
-
-  const activeSecondaryIds = useMemo(
-    () => config.secondaryIds.slice(0, maxSecondarySlots),
-    [config.secondaryIds, maxSecondarySlots],
-  );
-
-  const isCustomized = useMemo(() => {
-    if (config.heroId !== defaults.heroId) return true;
-    if (activeSecondaryIds.length !== defaults.secondaryIds.length) return true;
-    return activeSecondaryIds.some((id, i) => id !== defaults.secondaryIds[i]);
-  }, [config.heroId, defaults, activeSecondaryIds]);
-
+  // Edits start from the sport's defaults (all four picks, whatever this template shows), so a later, roomier template keeps them.
+  const base = useMemo(() => config ?? getDefaultConfig(run, category), [config, run, category]);
+  const heroMetrics = useMemo(() => getAvailableHeroMetrics(run), [run]);
+  const secondaryAvailable = useMemo(() => getAvailableSecondaryMetrics(run, base.heroId), [run, base.heroId]);
   const metricLabels = useMemo(() => {
     const map: Record<string, string> = Object.create(null);
-    for (const m of heroMetrics) {
-      map[m.id] = t(`label.${m.labelKey}` as 'label.time');
-    }
+    for (const m of METRIC_CATALOG) map[m.id] = t(`label.${m.labelKey}` as 'label.time');
     return map;
-  }, [heroMetrics, t]);
+  }, [t]);
 
-  const handleHeroSelect = (heroId: string) => {
-    const nextSecondary = activeSecondaryIds.filter((id) => id !== heroId);
-    const rest = config.secondaryIds.slice(maxSecondarySlots).filter((id) => id !== heroId);
-    onChange({ heroId, secondaryIds: [...nextSecondary, ...rest] });
-  };
+  // The picks past this template's slots are kept for a template with more room.
+  const hidden = (except?: string) => base.secondaryIds.slice(slots).filter((id) => id !== except);
+  const shown = base.secondaryIds.slice(0, slots);
 
-  const handleAddSecondary = (id: string) => {
-    if (activeSecondaryIds.length >= maxSecondarySlots) return;
-    if (activeSecondaryIds.includes(id)) return;
-    const nextSecondary = [...activeSecondaryIds, id];
-    const rest = config.secondaryIds.slice(maxSecondarySlots).filter((item) => item !== id);
-    onChange({ ...config, secondaryIds: [...nextSecondary, ...rest] });
+  const selectHero = (heroId: string) => onChange({ heroId, secondaryIds: [...shown.filter((id) => id !== heroId), ...hidden(heroId)] });
+  const addSecondary = (id: string) => {
+    if (shown.length >= slots || shown.includes(id)) return;
+    onChange({ ...base, secondaryIds: [...shown, id, ...hidden(id)] });
   };
+  const reorderSecondary = (ids: string[]) => onChange({ ...base, secondaryIds: [...ids, ...hidden()] });
+  const removeSecondary = (id: string) => onChange({ ...base, secondaryIds: [...shown.filter((item) => item !== id), ...hidden()] });
 
-  const handleRemoveSecondary = (id: string) => {
-    const nextSecondary = activeSecondaryIds.filter((item) => item !== id);
-    const rest = config.secondaryIds.slice(maxSecondarySlots);
-    onChange({ ...config, secondaryIds: [...nextSecondary, ...rest] });
-  };
-
-  const handleReorderSecondary = (reordered: string[]) => {
-    const rest = config.secondaryIds.slice(maxSecondarySlots);
-    onChange({ ...config, secondaryIds: [...reordered, ...rest] });
-  };
   if (heroMetrics.length <= 1) return null;
+  const customized = config !== null;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.muted, borderRadius: radius.card }]}>
@@ -112,8 +72,8 @@ export function MetricCustomizer({
           {t('ui.customMetrics.title')}
         </AppText>
         <View style={[styles.badge, { backgroundColor: colors.card, borderRadius: radius.control }]}>
-          <AppText variant="caption" muted={!isCustomized} style={{ fontFamily: fonts.medium }}>
-            {isCustomized ? t('ui.customMetrics.customBadge') : t('ui.customMetrics.defaultBadge')}
+          <AppText variant="caption" muted={!customized} style={{ fontFamily: fonts.medium }}>
+            {customized ? t('ui.customMetrics.customBadge') : t('ui.customMetrics.defaultBadge')}
           </AppText>
         </View>
         <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedForeground} />
@@ -121,9 +81,9 @@ export function MetricCustomizer({
 
       {expanded ? (
         <View style={styles.content}>
-          {isCustomized ? (
+          {customized ? (
             <View style={styles.resetRow}>
-              <PressableScale accessibilityRole="button" onPress={() => onChange(defaults)}>
+              <PressableScale accessibilityRole="button" onPress={() => onChange(null)}>
                 <AppText variant="caption" style={{ color: colors.primary, fontFamily: fonts.bold }}>
                   {t('ui.customMetrics.reset')}
                 </AppText>
@@ -131,20 +91,16 @@ export function MetricCustomizer({
             </View>
           ) : null}
 
-          <HeroMetricPicker
-            metrics={heroMetrics}
-            selectedHeroId={config.heroId}
-            onSelectHero={handleHeroSelect}
-          />
+          <HeroMetricPicker metrics={heroMetrics} selectedHeroId={base.heroId} onSelectHero={selectHero} />
 
           <SecondaryMetricSlots
-            secondaryIds={activeSecondaryIds}
+            secondaryIds={shown}
             availableMetrics={secondaryAvailable}
             metricLabels={metricLabels}
-            maxSlots={maxSecondarySlots}
-            onReorder={handleReorderSecondary}
-            onAdd={handleAddSecondary}
-            onRemove={handleRemoveSecondary}
+            maxSlots={slots}
+            onReorder={reorderSecondary}
+            onAdd={addSecondary}
+            onRemove={removeSecondary}
           />
         </View>
       ) : null}

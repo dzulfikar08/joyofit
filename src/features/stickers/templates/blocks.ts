@@ -13,6 +13,10 @@ export const all = (...conds: Record<string, unknown>[]) => ({ all: conds });
 export const any = (...conds: Record<string, unknown>[]) => ({ any: conds });
 export const not = (cond: Record<string, unknown>) => ({ not: cond });
 
+export type SlotId = 1 | 2 | 3 | 4;
+/** The first `n` custom metric slots (`run.slot1Val`..), for a layout with room for `n` secondary numbers. */
+export const slotIds = (n: SlotId): SlotId[] => ([1, 2, 3, 4] as const).slice(0, n);
+
 /** `{ t: 'stickers:label.time' }`. */
 export const tl = (key: string, args?: Record<string, string>) => ({ t: `stickers:${key}`, ...(args ? { args } : {}) });
 

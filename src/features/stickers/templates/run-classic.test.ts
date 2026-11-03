@@ -177,7 +177,7 @@ describe('run.classic', () => {
 
         expect(out).toContain('154');
         expect(out).toContain('bpm');
-        expect(out).toContain('Avg heart rate');
+        expect(out).toContain('Heart rate');
         expect(out).toContain('172');
         expect(out).toContain('spm');
         expect(out).toContain('Cadence');
@@ -266,6 +266,6 @@ describe('run.classic', () => {
     expect(out).toContain('6:20');
     expect(out).toContain('Pace');
     expect(out).toContain('154');
-    expect(out).toContain('Detak rata-rata');
+    expect(out).toContain('Detak');
   });
 });

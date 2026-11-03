@@ -64,7 +64,7 @@ describe('formatMetric', () => {
     expect(formatMetric({ swimStyle: 'Gaya Bebas' }, 'swimStyle', 'id')?.value).toBe('Gaya Bebas');
     expect(formatMetric({ laps: 20 }, 'laps', 'id')?.value).toBe('20');
     expect(formatMetric({ swolf: 38 }, 'swolf', 'id')?.value).toBe('38');
-    expect(formatMetric({ volumeKg: 3500 }, 'volume', 'id')?.value).toBe('3.500');
+    expect(formatMetric({ volume: 3500, unit: 'kg' }, 'volume', 'id')).toMatchObject({ value: '3.500', unit: 'kg' });
     expect(formatMetric({ sets: 12 }, 'sets', 'id')?.value).toBe('12');
     expect(formatMetric({ reps: 96 }, 'reps', 'id')?.value).toBe('96');
   });

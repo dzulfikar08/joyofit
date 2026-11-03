@@ -53,7 +53,8 @@ export function formatMetric(
     case 'maxSpeed':
       return pos(run.maxSpeedKmh) ? { value: formatNumber(run.maxSpeedKmh, locale, 1), unit: tr('unit.kmh', locale, t), label: tr('label.maxSpeed', locale, t) } : null;
     case 'hr':
-      return pos(run.hrAvg) ? { value: formatNumber(run.hrAvg, locale, 0), unit: tr('unit.bpm', locale, t), label: tr('label.avgHr', locale, t) } : null;
+      // The card's short label, as the fixed cards print it: the picker chip says "average", the card has no room for it.
+      return pos(run.hrAvg) ? { value: formatNumber(run.hrAvg, locale, 0), unit: tr('unit.bpm', locale, t), label: tr('label.hr', locale, t) } : null;
     case 'hrMax':
       return pos(run.hrMax) ? { value: formatNumber(run.hrMax, locale, 0), unit: tr('unit.bpm', locale, t), label: tr('label.maxHr', locale, t) } : null;
     case 'minHr':
@@ -92,10 +93,9 @@ export function formatMetric(
       return pos(run.poolM) ? { value: formatNumber(run.poolM, locale, 0), unit: tr('unit.m', locale, t), label: tr('label.pool', locale, t) } : null;
     case 'swimStyle':
       return typeof run.swimStyle === 'string' && run.swimStyle.length > 0 ? { value: run.swimStyle, label: tr('label.swimStyle', locale, t) } : null;
-    case 'volume': {
-      const vol = pos(run.volumeKg) ? run.volumeKg : pos(run.volume) ? run.volume : null;
-      return vol ? { value: formatNumber(vol, locale, 0), unit: tr('unit.kg', locale, t), label: tr('label.volume', locale, t) } : null;
-    }
+    case 'volume':
+      // `run.volume` is already in the person's weight unit (`run.unit`: kg or lb).
+      return pos(run.volume) ? { value: formatNumber(run.volume, locale, 0), unit: typeof run.unit === 'string' ? run.unit : undefined, label: tr('label.volume', locale, t) } : null;
     case 'sets':
       return pos(run.sets) ? { value: formatNumber(run.sets, locale, 0), label: tr('label.sets', locale, t) } : null;
     case 'reps':

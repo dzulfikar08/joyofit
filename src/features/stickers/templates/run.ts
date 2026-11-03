@@ -1,4 +1,4 @@
-import { all, footer, has, is, lacks, not, sportGlyph, tl } from './blocks';
+import { all, footer, has, is, lacks, not, slotIds, sportGlyph, tl, type SlotId } from './blocks';
 import { kit, template } from './dsl';
 import type { Cond, Dim, Expr, Kit, LayerJson } from './dsl';
 import { GLASS, INK, PAPER, VOLT } from './palette';
@@ -66,7 +66,7 @@ function cellStat(k: Kit, cell: Cell, look: StatLook): LayerJson {
   });
 }
 
-function slotCell(k: Kit, i: 1 | 2 | 3 | 4, look: StatLook): LayerJson {
+function slotCell(k: Kit, i: SlotId, look: StatLook): LayerJson {
   return k.stat({ w: look.w ?? 'fill', h: 'auto' }, `{run.slot${i}Val}`, {
     unit: `{run.slot${i}Unit?}`,
     label: `{run.slot${i}Label?}`,
@@ -85,11 +85,9 @@ function slotCell(k: Kit, i: 1 | 2 | 3 | 4, look: StatLook): LayerJson {
   });
 }
 
-const cellRow = (k: Kit, cells: Cell[], look: StatLook) => [
-  slotCell(k, 1, look),
-  slotCell(k, 2, look),
-  slotCell(k, 3, look),
-  slotCell(k, 4, look),
+/** The custom slots (`slots` of them: as many numbers as the layout has room for), then the fixed cells they replace. */
+const cellRow = (k: Kit, cells: Cell[], slots: SlotId, look: StatLook) => [
+  ...slotIds(slots).map((i) => slotCell(k, i, look)),
   ...cells.map((cell) => cellStat(k, cell, look)),
 ];
 
@@ -235,7 +233,7 @@ function runBold(canvas: Canvas) {
 
   let root: LayerJson;
   if (story) {
-    const stats = k.group({ w: 'fill', h: 'auto' }, cellRow(k, CELLS3, { size: 70, labelSize: 26, unitSize: 30, color: '$fg', labelColor: '$fgMuted' }), { dir: 'row', gap: 28, align: 'start' });
+    const stats = k.group({ w: 'fill', h: 'auto' }, cellRow(k, CELLS3, 3, { size: 70, labelSize: 26, unitSize: 30, color: '$fg', labelColor: '$fgMuted' }), { dir: 'row', gap: 28, align: 'start' });
     // Without a route the two spacers split the free height, so the hero sits in the middle instead of under the header.
     root = k.group(
       { x: 72, y: 250, w: W, h: 1190 },
@@ -256,13 +254,14 @@ function runBold(canvas: Canvas) {
   }
 
   // Square: hero across the top, then the route on the left with the numbers stacked beside it; no route, the numbers run as a row.
+  // Picked metrics get three slots in both: the row without a route has no room for a fourth.
   const column = k.group(
     { w: 300, h: 'fill' },
-    cellRow(k, CELLS4, { size: 60, labelSize: 26, unitSize: 28, color: '$fg', labelColor: '$fgMuted', w: 'fill' }),
+    cellRow(k, CELLS4, 3, { size: 60, labelSize: 26, unitSize: 28, color: '$fg', labelColor: '$fgMuted', w: 'fill' }),
     { dir: 'column', gap: 24, justify: 'center', when: has('run.route') },
   );
   const lower = k.group({ w: W, h: 'fill' }, [route({ w: 'fill', h: 'fill' }), column], { dir: 'row', gap: 36, align: 'stretch', when: has('run.route') });
-  const strip = k.group({ w: W, h: 'auto' }, cellRow(k, CELLS3, { size: 64, labelSize: 26, unitSize: 28, color: '$fg', labelColor: '$fgMuted' }), { dir: 'row', gap: 28, align: 'start', when: lacks('run.route') });
+  const strip = k.group({ w: W, h: 'auto' }, cellRow(k, CELLS3, 3, { size: 64, labelSize: 26, unitSize: 28, color: '$fg', labelColor: '$fgMuted' }), { dir: 'row', gap: 28, align: 'start', when: lacks('run.route') });
   root = k.group(
     { x: 72, y: 72, w: W, h: 936 },
     [header, spacer(k, lacks('run.route')), heroLayer, lower, spacer(k, lacks('run.route')), strip, footerRow(k, W)],
@@ -334,7 +333,7 @@ function runPoster(canvas: Canvas) {
       ],
       { dir: 'column', gap: 14, when: cellWhen(cell) },
     );
-  const slotMetaCell = (i: 1 | 2 | 3 | 4, size: number) =>
+  const slotMetaCell = (i: SlotId, size: number) =>
     k.group(
       { w: 'fill', h: 'auto' },
       [
@@ -349,7 +348,7 @@ function runPoster(canvas: Canvas) {
   const glyphArt = (w: Dim) => k.group({ w, h: 'fill' }, [glyphBox(k, story ? 320 : 240, '$accent')], { dir: 'column', align: 'center', justify: 'center', when: lacks('run.route') });
 
   if (story) {
-    const meta = k.group({ w: W, h: 'auto' }, ([1, 2, 3, 4] as const).map((i) => slotMetaCell(i, 56)).concat(CELLS4.map((cell) => metaCell(cell, 56))), { dir: 'row', gap: 24, align: 'start' });
+    const meta = k.group({ w: W, h: 'auto' }, slotIds(4).map((i) => slotMetaCell(i, 56)).concat(CELLS4.map((cell) => metaCell(cell, 56))), { dir: 'row', gap: 24, align: 'start' });
     const root = k.group(
       { x: 72, y: 250, w: W, h: 1330 },
       [top, rule(k, W), ...captions, heroLayer, art(1080, 92), glyphArt(W), rule(k, W), meta, footerRow(k, W)],
@@ -359,7 +358,7 @@ function runPoster(canvas: Canvas) {
   }
 
   // Square: the route runs wide on the right, the metadata hangs off a narrow column on the left.
-  const column = k.group({ w: 270, h: 'fill' }, ([1, 2, 3, 4] as const).map((i) => slotMetaCell(i, 52)).concat(CELLS3.map((cell) => metaCell(cell, 52))), { dir: 'column', gap: 22, align: 'stretch' });
+  const column = k.group({ w: 270, h: 'fill' }, slotIds(3).map((i) => slotMetaCell(i, 52)).concat(CELLS3.map((cell) => metaCell(cell, 52))), { dir: 'column', gap: 22, align: 'stretch' });
   const lower = k.group({ w: W, h: 'fill' }, [column, art('fill', 10), glyphArt('fill')], { dir: 'row', gap: 24, align: 'stretch' });
   const root = k.group(
     { x: 72, y: 60, w: W, h: 960 },
@@ -409,7 +408,7 @@ function runMinimal(canvas: Canvas) {
         ],
         { dir: 'column', gap: 24, when: cellWhen(cell) },
       );
-    const slotMinimalRow = (i: 1 | 2 | 3 | 4) =>
+    const slotMinimalRow = (i: SlotId) =>
       k.group(
         { w: W, h: 'auto' },
         [
@@ -425,7 +424,7 @@ function runMinimal(canvas: Canvas) {
         ],
         { dir: 'column', gap: 24, when: has(`run.slot${i}Val`) },
       );
-    const table = k.group({ w: W, h: 'auto' }, ([1, 2, 3, 4] as const).map(slotMinimalRow).concat(CELLS4.map(row)), { dir: 'column', gap: 24 });
+    const table = k.group({ w: W, h: 'auto' }, slotIds(4).map(slotMinimalRow).concat(CELLS4.map(row)), { dir: 'column', gap: 24 });
     const root = k.group(
       { x: 72, y: 250, w: W, h: 1330 },
       [header, rule(k, W), spacer(k), heroLayer, table, gear, spacer(k), route({ w: 440, h: 330 }), footerRow(k, W)],
@@ -439,7 +438,7 @@ function runMinimal(canvas: Canvas) {
     [header, route({ w: 260, h: 190 })],
     { dir: 'row', gap: 24, align: 'start' },
   );
-  const table = k.group({ w: W, h: 'auto' }, [rule(k, W), k.group({ w: W, h: 'auto' }, cellRow(k, CELLS3, { size: 52, labelSize: 28, unitSize: 26, weight: 600, color: '$fg', labelColor: '$fgMuted', gap: 12 }), { dir: 'row', gap: 28, align: 'start' })], { dir: 'column', gap: 28 });
+  const table = k.group({ w: W, h: 'auto' }, [rule(k, W), k.group({ w: W, h: 'auto' }, cellRow(k, CELLS3, 3, { size: 52, labelSize: 28, unitSize: 26, weight: 600, color: '$fg', labelColor: '$fgMuted', gap: 12 }), { dir: 'row', gap: 28, align: 'start' })], { dir: 'column', gap: 28 });
   const root = k.group({ x: 72, y: 72, w: W, h: 936 }, [topRow, spacer(k), heroLayer, table, spacer(k), footerRow(k, W, 44)], { dir: 'column', gap: 36, align: 'start' });
   return build({ id: 'minimal', name: 'Run, minimal, square', titleKey: 'minimal', style: 'minimal', canvas, palette: INK, background: { kind: 'color', color: '$bg' }, layers: [root], tags: ['minimal'] });
 }
@@ -490,7 +489,7 @@ function runPhoto(canvas: Canvas) {
   const header = headerRow(k, { disc: story ? 72 : 64, glyph: story ? 38 : 34, size: story ? 40 : 34, dateSize: story ? 32 : 28, color: '$fg', muted: '$fgSoft', discFill: '$surfaceStrong', shadow: true, gap: 20 });
   const route = (box: { w: Dim; h: Dim }, o: { when: Cond; size?: number }) =>
     k.route(box, { color: '$fg', color2: '$accent', strokeWidth: o.size ?? 12, halo: true, markers: true, padding: 28 }, { when: o.when });
-  const stats = k.group({ w: W, h: 'auto' }, cellRow(k, CELLS3, { size: story ? 70 : 60, labelSize: 26, unitSize: 30, color: '$fg', labelColor: '$fgSoft', weight: 800, shadow: true }), { dir: 'row', gap: 28, align: 'start' });
+  const stats = k.group({ w: W, h: 'auto' }, cellRow(k, CELLS3, 3, { size: story ? 70 : 60, labelSize: 26, unitSize: 30, color: '$fg', labelColor: '$fgSoft', weight: 800, shadow: true }), { dir: 'row', gap: 28, align: 'start' });
   const bigRoute = k.group({ x: 72, y: story ? 300 : 120, w: W, h: story ? 760 : 400 }, [route({ w: W, h: story ? 760 : 400 }, { when: lacks('photo'), size: story ? 18 : 14 })], { dir: 'column' });
 
   let root: LayerJson;
@@ -549,7 +548,7 @@ function runGlass(canvas: Canvas) {
   const routeBox = story ? { w: 'fill' as Dim, h: 400 } : { w: 240, h: 210 };
   const route = k.route(routeBox, { color: '$fg', color2: '$accent', strokeWidth: story ? 16 : 12, halo: true, markers: true, padding: 24 }, { when: has('run.route') });
   const heroLayer = hero(k, 'fill', { size: story ? 340 : 220, unitSize: story ? 76 : 52, timeSize: story ? 240 : 170, color: '$fg', minSize: 100 });
-  const stats = k.group({ w: inner, h: 'auto' }, cellRow(k, CELLS3, { size: story ? 64 : 54, labelSize: 26, unitSize: 28, color: '$fg', labelColor: '$fgMuted' }), { dir: 'row', gap: 24, align: 'start' });
+  const stats = k.group({ w: inner, h: 'auto' }, cellRow(k, CELLS3, 3, { size: story ? 64 : 54, labelSize: 26, unitSize: 28, color: '$fg', labelColor: '$fgMuted' }), { dir: 'row', gap: 24, align: 'start' });
   const body = story ? [heroLayer, route] : [k.group({ w: inner, h: 'auto' }, [heroLayer, route], { dir: 'row', gap: 20, align: 'center' })];
 
   const panel = k.group(

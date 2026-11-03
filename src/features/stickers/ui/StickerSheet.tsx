@@ -40,7 +40,7 @@ import { canSaveToLibrary } from '../share/shareTargets';
 import { LruCache, hashText, thumbKey } from '../thumbCache';
 import type { JsonObject, StickerSubject } from '../subject';
 import type { SportCategory } from '@/features/workouts/sportCategory';
-import { applyCustomMetrics, getDefaultConfig, templateSupportsCustomMetrics, type CustomMetricsConfig } from '../data/customMetrics';
+import { applyCustomMetrics, customSlotCount, type CustomMetricsConfig } from '../data/customMetrics';
 import { MetricCustomizer } from './MetricCustomizer';
 import { EXPORT_CARD_WIDTH, ScenePainter } from './ScenePainter';
 import { templateTitle } from './templateTitle';
@@ -259,13 +259,9 @@ export function StickerSheet({
   }, [visible]);
 
   const runData = subject.data.run as JsonObject | undefined;
-  const category = (runData?.category as SportCategory) ?? 'run';
-
-  const defaultConfig = useMemo(
-    () => (runData ? getDefaultConfig(runData, category) : { heroId: '', secondaryIds: [] }),
-    [runData, category],
-  );
-  const [metricsConfig, setMetricsConfig] = useState<CustomMetricsConfig>(defaultConfig);
+  const category = (runData?.category as SportCategory | undefined) ?? 'run';
+  // Null until the person edits the numbers: every card then draws its own fixed cells, exactly as without the customizer.
+  const [metricsConfig, setMetricsConfig] = useState<CustomMetricsConfig | null>(null);
 
   // A new subject (another workout) starts from the card that fits its sport; a filter that no longer has the chosen group moves on.
   const [seenSubjectId, setSeenSubjectId] = useState(subject.id);
@@ -274,13 +270,13 @@ export function StickerSheet({
     setGroupKey(null);
     setPhoto(null);
     setFeedback(null);
-    setMetricsConfig(defaultConfig);
+    setMetricsConfig(null);
   }
 
-  const activeData = useMemo(() => {
-    if (!runData || !metricsConfig.heroId) return subject.data;
-    return applyCustomMetrics(subject.data, metricsConfig, { locale });
-  }, [subject.data, runData, metricsConfig, locale]);
+  const activeData = useMemo(
+    () => (metricsConfig ? applyCustomMetrics(subject.data, metricsConfig, { locale }) : subject.data),
+    [subject.data, metricsConfig, locale],
+  );
 
   const dataHash = useMemo(() => hashText(JSON.stringify(activeData)), [activeData]);
 
@@ -317,6 +313,7 @@ export function StickerSheet({
     setGroupKey(key);
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
   };
+
   const addPhoto = async (source: PhotoSource) => {
     if (busy) return;
     setBusy('photo');
@@ -478,16 +475,15 @@ export function StickerSheet({
                 value={mode}
                 onChange={setModePick}
               />
-
             </View>
 
-            {runData && metricsConfig.heroId && templateSupportsCustomMetrics(template) ? (
+            {runData && template && customSlotCount(template) > 0 ? (
               <MetricCustomizer
                 run={runData}
                 category={category}
                 config={metricsConfig}
                 onChange={setMetricsConfig}
-                template={template}
+                slots={customSlotCount(template)}
               />
             ) : null}
 

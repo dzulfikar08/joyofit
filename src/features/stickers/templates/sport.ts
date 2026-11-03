@@ -10,13 +10,16 @@
  *   <family>.minimal   INK       restrained: the hero, ruled rows of the brief numbers, small art                    story square
  *   <family>.stats     STICKER   transparent: the hero and a row of the brief numbers, shadowed                       sticker
  */
-import { all, any, footer, has, lacks, not, sportGlyph, tl } from './blocks';
+import { all, any, footer, has, lacks, not, slotIds, sportGlyph, tl, type SlotId } from './blocks';
 import { kit, template, type Cond, type Dim, type Expr, type Kit, type LayerJson } from './dsl';
 import { INK, PAPER, STICKER, VOLT, type Palette } from './palette';
 
 export type SportFamily = 'walk' | 'ride' | 'swim' | 'gym' | 'cardio' | 'flow' | 'court';
 type Canvas = 'story' | 'square';
 type Style = 'bold' | 'poster' | 'minimal' | 'stats';
+
+/** Picked metrics: every family layout has room for four secondary numbers (`run.slot1Val`..`run.slot4Val`). */
+const CUSTOM_SLOTS: SlotId = 4;
 
 interface Metric {
   /** The `run.*` path whose presence shows the metric. */
@@ -319,7 +322,8 @@ function cell(k: Kit, spec: FamilySpec, m: Metric, o: CellLook): LayerJson {
     when: cellWhen(spec, m),
   });
 }
-function slotCell(k: Kit, i: 1 | 2 | 3 | 4, o: CellLook): LayerJson {
+
+function slotCell(k: Kit, i: SlotId, o: CellLook): LayerJson {
   return k.stat({ w: 'fill', h: 'auto' }, `{run.slot${i}Val}`, {
     unit: `{run.slot${i}Unit?}`,
     label: `{run.slot${i}Label?}`,
@@ -341,7 +345,7 @@ function slotCell(k: Kit, i: 1 | 2 | 3 | 4, o: CellLook): LayerJson {
 function rows(k: Kit, spec: FamilySpec, list: Metric[][], o: CellLook & { rowGap: number }): LayerJson {
   const customRow = k.group(
     { w: 'fill', h: 'auto' },
-    ([1, 2, 3, 4] as const).map((i) => slotCell(k, i, o)),
+    slotIds(CUSTOM_SLOTS).map((i) => slotCell(k, i, o)),
     { dir: 'row', gap: o.gap ?? 28, align: 'start', when: has('run._custom') },
   );
 
@@ -524,7 +528,7 @@ function poster(spec: FamilySpec) {
       ],
       { dir: 'column', gap: 12, when: cellWhen(spec, m) },
     );
-  const slotMetaCell = (i: 1 | 2 | 3 | 4) =>
+  const slotMetaCell = (i: SlotId) =>
     k.group(
       { w: 'fill', h: 'auto' },
       [
@@ -535,7 +539,7 @@ function poster(spec: FamilySpec) {
     );
   const customPosterRow = k.group(
     { w: W, h: 'auto' },
-    ([1, 2, 3, 4] as const).map(slotMetaCell),
+    slotIds(CUSTOM_SLOTS).map(slotMetaCell),
     { dir: 'row', gap: 24, align: 'start', when: has('run._custom') },
   );
   const meta = k.group(
@@ -584,7 +588,7 @@ function minimal(spec: FamilySpec, canvas: Canvas) {
         ],
         { dir: 'column', gap: 24, when: cellWhen(spec, m) },
       );
-    const slotLine = (i: 1 | 2 | 3 | 4) =>
+    const slotLine = (i: SlotId) =>
       k.group(
         { w: W, h: 'auto' },
         [
@@ -600,7 +604,7 @@ function minimal(spec: FamilySpec, canvas: Canvas) {
         ],
         { dir: 'column', gap: 24, when: has(`run.slot${i}Val`) },
       );
-    const table = k.group({ w: W, h: 'auto' }, ([1, 2, 3, 4] as const).map(slotLine).concat(spec.brief.map(line)), { dir: 'column', gap: 24 });
+    const table = k.group({ w: W, h: 'auto' }, slotIds(CUSTOM_SLOTS).map(slotLine).concat(spec.brief.map(line)), { dir: 'column', gap: 24 });
     const middle = art(k, spec, { chartH: 220, stroke: 6, captionSize: 26, zoneLabels: true, routeColor: '$accent', routeColor2: '$accent', glyph: 240, glyphColor: '$fgMuted' });
     const root = k.group(
       { x: 72, y: 250, w: W, h: 1330 },
@@ -616,7 +620,7 @@ function minimal(spec: FamilySpec, canvas: Canvas) {
       rule(k, W),
       k.group(
         { w: W, h: 'auto' },
-        ([1, 2, 3, 4] as const)
+        slotIds(CUSTOM_SLOTS)
           .map((i) => slotCell(k, i, { size: 50, labelSize: 26, unitSize: 24, weight: 600, color: '$fg', labelColor: '$fgMuted' }))
           .concat(spec.brief.map((m) => cell(k, spec, m, { size: 50, labelSize: 26, unitSize: 24, weight: 600, color: '$fg', labelColor: '$fgMuted' }))),
         { dir: 'row', gap: 24, align: 'start' },
@@ -642,7 +646,7 @@ function stats(spec: FamilySpec) {
   const heroLayer = hero(k, spec, { size: 200, unitSize: 56, color: '$accent', labelColor: '$fgSoft', labelSize: 30, shadow: true, align: 'center', w: W });
   const brief = k.group(
     { w: W, h: 'auto' },
-    ([1, 2, 3, 4] as const)
+    slotIds(CUSTOM_SLOTS)
       .map((i) => slotCell(k, i, { size: 76, labelSize: 28, unitSize: 30, color: '$fg', labelColor: '$fgSoft', shadow: true }))
       .concat(spec.brief.map((m) => cell(k, spec, m, { size: 76, labelSize: 28, unitSize: 30, color: '$fg', labelColor: '$fgSoft', shadow: true }))),
     { dir: 'row', gap: 28, align: 'start', when: any(has('run._custom'), rowWhen(spec, spec.brief)) },

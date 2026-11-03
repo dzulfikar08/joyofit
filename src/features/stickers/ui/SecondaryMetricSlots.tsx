@@ -5,14 +5,14 @@ import { Chip } from '@/components/Chip';
 import { useTranslation } from '@/i18n';
 import { spacing, useTheme } from '@/theme';
 
-import { MAX_SECONDARY_METRICS, type MetricDefinition } from '../data/customMetrics';
+import type { MetricDef } from '../data/metricCatalog';
 import { SlotItem } from './SlotItem';
 
 interface SecondaryMetricSlotsProps {
   secondaryIds: readonly string[];
-  availableMetrics: readonly MetricDefinition[];
+  availableMetrics: readonly MetricDef[];
   metricLabels: Record<string, string>;
-  maxSlots?: number;
+  maxSlots: number;
   onReorder: (ids: string[]) => void;
   onAdd: (id: string) => void;
   onRemove: (id: string) => void;
@@ -22,7 +22,7 @@ export function SecondaryMetricSlots({
   secondaryIds,
   availableMetrics,
   metricLabels,
-  maxSlots,
+  maxSlots: max,
   onReorder,
   onAdd,
   onRemove,
@@ -39,7 +39,6 @@ export function SecondaryMetricSlots({
     onReorder(next);
   };
 
-  const max = maxSlots ?? MAX_SECONDARY_METRICS;
   const unusedAvailable = availableMetrics.filter((m) => !secondaryIds.includes(m.id));
   const canAdd = secondaryIds.length < max;
   return (

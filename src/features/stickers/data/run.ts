@@ -20,6 +20,7 @@ import type { JsonObject, StickerKind, StickerSubject } from '../subject';
 import { CATEGORY_KIND, DEFAULT_GROUP, dropInapplicable, metricApplies } from './sportMetrics';
 import { formatSwimStyle } from './swimStyle';
 import { extractWorkoutMetrics } from './workoutMetrics';
+
 export interface RunSubjectInput {
   workout: WorkoutRow;
   summary: WorkoutSummary;
@@ -152,11 +153,10 @@ function swimFields(summary: WorkoutSummary, out: JsonObject, locale: 'id' | 'en
   if (pos(swim.avgSwolf)) out.swolf = Math.round(swim.avgSwolf);
   if (pos(swim.avgStrokeRate)) out.strokeRate = Math.round(swim.avgStrokeRate);
   if (pos(swim.poolLengthCm)) out.poolM = Math.round(swim.poolLengthCm / 100);
-  if (swim.style) {
-    const style = formatSwimStyle(swim.style, locale);
-    if (style) out.swimStyle = style;
-  }
+  const style = formatSwimStyle(swim.style, locale);
+  if (style) out.swimStyle = style;
 }
+
 /** Working sets, reps and volume of the strength log merged with the workout (warm-up sets do not count). */
 function liftFields(strength: Pick<StrengthWorkout, 'exercises'>, out: JsonObject): void {
   const totals = workoutTotals(strength);

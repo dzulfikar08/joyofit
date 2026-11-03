@@ -11,7 +11,7 @@
  * Every template reads its colors from the theme tokens only. The engine has no user-chosen accent option (`StickerOptions` is
  * shared with JoyoRogo and has none), so the accent is not picked per share yet.
  */
-import { all, any, has, is, lacks, not, tl } from './blocks';
+import { all, any, has, is, lacks, not, slotIds, tl, type SlotId } from './blocks';
 import { kit, template } from './dsl';
 import type { Cond, Dim, Kit, LayerJson } from './dsl';
 import { STICKER } from './palette';
@@ -95,7 +95,7 @@ function cellStat(k: Kit, cell: Cell, o: StatLook): LayerJson {
   });
 }
 
-function customSlotCell(k: Kit, i: 1 | 2 | 3 | 4, o: StatLook): LayerJson {
+function customSlotCell(k: Kit, i: SlotId, o: StatLook): LayerJson {
   return k.stat({ w: o.w ?? 'auto', h: 'auto' }, `{run.slot${i}Val}`, {
     unit: `{run.slot${i}Unit?}`,
     label: `{run.slot${i}Label?}`,
@@ -314,6 +314,8 @@ function runTape(canvas: Canvas) {
   );
 }
 
+// -------------------------------------------------------------------------------------------------------- run.column
+
 /**
  * `run.column`: small label over a big value, stacked down the right edge (distance, duration, pace or speed, heart rate,
  * cadence), the route small at the bottom left and the wordmark standing up the left edge. Each number has a short accent rail
@@ -334,7 +336,7 @@ function runColumn(canvas: Canvas) {
     [customHeroStat(k, look), k.shape({ w: 8, h: 'auto' }, 'rect', { fill: '$accent', radius: 4 })],
     { dir: 'row', gap: 22, align: 'stretch', when: has('run._custom') },
   );
-  const customSlotItem = (i: 1 | 2 | 3 | 4) =>
+  const customSlotItem = (i: SlotId) =>
     k.group(
       { w: 'fill', h: 'auto' },
       [customSlotCell(k, i, look), k.shape({ w: 8, h: 'auto' }, 'rect', { fill: '$accent', radius: 4 })],
@@ -342,7 +344,7 @@ function runColumn(canvas: Canvas) {
     );
   const items: LayerJson[] = [
     customHeroItem,
-    ...([1, 2, 3, 4] as const).map(customSlotItem),
+    ...slotIds(4).map(customSlotItem),
     ...[CELL.distKm, CELL.distM, CELL.duration].map(item),
     ...EFFORT.map(item),
     item(CELL.hr),
@@ -360,6 +362,8 @@ function runColumn(canvas: Canvas) {
   });
   return overlay(f, 'column', 'column', 'stat column', [column, ...routeLine(k, { x: f.pad - 14, y: f.bottom - m.route, w: m.route, h: m.route }, 6), standing], ['column']);
 }
+
+// --------------------------------------------------------------------------------------------------------- run.track
 
 /**
  * `run.track`: an athletics track, five thin lanes in a stadium oval around the big number, the duration and the pace (or
@@ -397,6 +401,8 @@ function runTrack(canvas: Canvas) {
   return overlay(f, 'track', 'track', 'track', layers, ['track']);
 }
 
+// --------------------------------------------------------------------------------------------------------- run.lanes
+
 /** A lane: comes in from the right edge, turns a half circle about (cx, cy) and goes back out to the right edge. */
 function lanePath(cx: number, cy: number, r: number): string {
   const edge = 1160;
@@ -433,6 +439,8 @@ function runLanes(canvas: Canvas) {
   });
   return overlay(f, 'lanes', 'lanes', 'lanes', [...lanes, text, lockup(k, f.pad, m.logo)], ['lanes']);
 }
+
+// -------------------------------------------------------------------------------------------------------- run.swoosh
 
 /** A ribbon of constant height `t`: flat at `y0` out to `xs`, then sweeping down to `y1` at the right edge. */
 function ribbonPath(y0: number, y1: number, t: number, xs: number): string {

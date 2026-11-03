@@ -114,8 +114,6 @@
     },
     "customMetrics": {
       "title": "Workout metrics",
-      "count": "Choose 1–{{max}} metrics",
-      "maxReached": "Maximum {{max}} metrics to keep the card clean",
       "reset": "Reset to default",
       "defaultBadge": "Default",
       "customBadge": "Custom",
