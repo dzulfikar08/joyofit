@@ -30,7 +30,8 @@ const CELLS3: Cell[] = [CELL.time, CELL.pace, CELL.pace100, CELL.speed, CELL.hr,
 /** The same plus the climb, for layouts that stack the cells in a column. */
 const CELLS4: Cell[] = [...CELLS3, CELL.elev];
 
-const cellWhen = (cell: Cell): Cond => (cell.when ? all(has(cell.bind), cell.when) : has(cell.bind));
+const cellWhen = (cell: Cell): Cond =>
+  cell.when ? all(lacks('run._custom'), has(cell.bind), cell.when) : all(lacks('run._custom'), has(cell.bind));
 
 interface StatLook {
   size: number;
@@ -65,7 +66,32 @@ function cellStat(k: Kit, cell: Cell, look: StatLook): LayerJson {
   });
 }
 
-const cellRow = (k: Kit, cells: Cell[], look: StatLook) => cells.map((cell) => cellStat(k, cell, look));
+function slotCell(k: Kit, i: 1 | 2 | 3 | 4, look: StatLook): LayerJson {
+  return k.stat({ w: look.w ?? 'fill', h: 'auto' }, `{run.slot${i}Val}`, {
+    unit: `{run.slot${i}Unit?}`,
+    label: `{run.slot${i}Label?}`,
+    size: look.size,
+    labelSize: look.labelSize,
+    unitSize: look.unitSize,
+    color: look.color,
+    labelColor: look.labelColor,
+    weight: look.weight,
+    align: look.align,
+    labelPos: look.labelPos ?? 'above',
+    gap: look.gap,
+    shadow: look.shadow,
+    minSize: 40,
+    when: has(`run.slot${i}Val`),
+  });
+}
+
+const cellRow = (k: Kit, cells: Cell[], look: StatLook) => [
+  slotCell(k, 1, look),
+  slotCell(k, 2, look),
+  slotCell(k, 3, look),
+  slotCell(k, 4, look),
+  ...cells.map((cell) => cellStat(k, cell, look)),
+];
 
 /** A thin horizontal rule: a line shape `h` tall, drawn in the middle of its box. */
 const rule = (k: Kit, w: Dim, o: { color?: string; width?: number; when?: Cond } = {}) =>
@@ -117,8 +143,17 @@ function hero(k: Kit, w: Dim, look: HeroLook): LayerJson {
   return k.group(
     { w, h: 'auto' },
     [
-      distance('{run.distanceM|km}', 'unit.km', all(has('run.distanceM'), not(is('run.category', 'swim')))),
-      distance('{run.distanceM|int}', 'unit.m', all(has('run.distanceM'), is('run.category', 'swim'))),
+      k.stat({ w: 'fill' }, '{run.heroVal}', {
+        ...common,
+        unit: look.unit === false ? undefined : '{run.heroUnit?}',
+        label: look.label ? '{run.heroLabel?}' : undefined,
+        labelSize: look.labelSize,
+        labelColor: look.labelColor,
+        labelPos: look.label ? 'above' : 'none',
+        when: has('run._custom'),
+      }),
+      distance('{run.distanceM|km}', 'unit.km', all(lacks('run._custom'), has('run.distanceM'), not(is('run.category', 'swim')))),
+      distance('{run.distanceM|int}', 'unit.m', all(lacks('run._custom'), has('run.distanceM'), is('run.category', 'swim'))),
       k.stat({ w: 'fill' }, '{run.movingSec|dur}', {
         ...common,
         size: look.timeSize ?? look.size * 0.7,
@@ -126,7 +161,7 @@ function hero(k: Kit, w: Dim, look: HeroLook): LayerJson {
         labelSize: look.labelSize,
         labelColor: look.labelColor,
         labelPos: look.label ? 'above' : 'none',
-        when: lacks('run.distanceM'),
+        when: all(lacks('run._custom'), lacks('run.distanceM')),
       }),
     ],
     { dir: 'column' },
@@ -182,7 +217,7 @@ function build(spec: Spec) {
     light: spec.palette.light,
     layers: spec.layers,
     // The sport glyph is one layer per family and kind (most of them hidden): the poster draws it twice.
-    constraints: { maxLayers: 80 },
+    constraints: { maxLayers: 160 },
     meta: { tags: spec.tags, ...(spec.photo ? { needsPhoto: true } : {}) },
   });
 }
@@ -274,9 +309,17 @@ function runPoster(canvas: Canvas) {
       { dir: 'row', align: 'center', when },
     );
   const captions = [
-    caption('label.distance', all(has('run.distanceM'), not(is('run.category', 'swim'))), 'unit.km'),
-    caption('label.distance', all(has('run.distanceM'), is('run.category', 'swim')), 'unit.m'),
-    caption('label.time', lacks('run.distanceM')),
+    k.group(
+      { w: W, h: 'auto' },
+      [
+        k.text({ w: 'fill' }, '{run.heroLabel?}', { size: 26, weight: 700, upper: true, ls: 6, color: '$fgMuted' }),
+        k.text({ w: 'auto' }, '{run.heroUnit?}', { size: 34, weight: 800, upper: true, ls: 6, color: '$accent', align: 'right' }),
+      ],
+      { dir: 'row', align: 'center', when: has('run._custom') },
+    ),
+    caption('label.distance', all(lacks('run._custom'), has('run.distanceM'), not(is('run.category', 'swim'))), 'unit.km'),
+    caption('label.distance', all(lacks('run._custom'), has('run.distanceM'), is('run.category', 'swim')), 'unit.m'),
+    caption('label.time', all(lacks('run._custom'), lacks('run.distanceM'))),
   ];
 
   // 1032 wide: the numerals run closer to the canvas edge than the 72 px text margin.
@@ -291,13 +334,22 @@ function runPoster(canvas: Canvas) {
       ],
       { dir: 'column', gap: 14, when: cellWhen(cell) },
     );
+  const slotMetaCell = (i: 1 | 2 | 3 | 4, size: number) =>
+    k.group(
+      { w: 'fill', h: 'auto' },
+      [
+        k.text({ w: 'fill' }, `{run.slot${i}Label?}`, { size: 24, weight: 700, upper: true, ls: 3, color: '$fgMuted' }),
+        slotCell(k, i, { size, labelSize: 24, unitSize: 26, color: '$fg', weight: 700, labelPos: 'none' }),
+      ],
+      { dir: 'column', gap: 14, when: has(`run.slot${i}Val`) },
+    );
 
   const art = (w: Dim, padding: number) =>
     k.route({ w, h: 'fill' }, { color: '$accent', color2: '$accent2', strokeWidth: story ? 26 : 18, halo: true, markers: true, padding }, { when: has('run.route') });
   const glyphArt = (w: Dim) => k.group({ w, h: 'fill' }, [glyphBox(k, story ? 320 : 240, '$accent')], { dir: 'column', align: 'center', justify: 'center', when: lacks('run.route') });
 
   if (story) {
-    const meta = k.group({ w: W, h: 'auto' }, CELLS4.map((cell) => metaCell(cell, 56)), { dir: 'row', gap: 24, align: 'start' });
+    const meta = k.group({ w: W, h: 'auto' }, ([1, 2, 3, 4] as const).map((i) => slotMetaCell(i, 56)).concat(CELLS4.map((cell) => metaCell(cell, 56))), { dir: 'row', gap: 24, align: 'start' });
     const root = k.group(
       { x: 72, y: 250, w: W, h: 1330 },
       [top, rule(k, W), ...captions, heroLayer, art(1080, 92), glyphArt(W), rule(k, W), meta, footerRow(k, W)],
@@ -307,7 +359,7 @@ function runPoster(canvas: Canvas) {
   }
 
   // Square: the route runs wide on the right, the metadata hangs off a narrow column on the left.
-  const column = k.group({ w: 270, h: 'fill' }, CELLS3.map((cell) => metaCell(cell, 52)), { dir: 'column', gap: 22, align: 'stretch' });
+  const column = k.group({ w: 270, h: 'fill' }, ([1, 2, 3, 4] as const).map((i) => slotMetaCell(i, 52)).concat(CELLS3.map((cell) => metaCell(cell, 52))), { dir: 'column', gap: 22, align: 'stretch' });
   const lower = k.group({ w: W, h: 'fill' }, [column, art('fill', 10), glyphArt('fill')], { dir: 'row', gap: 24, align: 'stretch' });
   const root = k.group(
     { x: 72, y: 60, w: W, h: 960 },
@@ -357,7 +409,23 @@ function runMinimal(canvas: Canvas) {
         ],
         { dir: 'column', gap: 24, when: cellWhen(cell) },
       );
-    const table = k.group({ w: W, h: 'auto' }, CELLS4.map(row), { dir: 'column', gap: 24 });
+    const slotMinimalRow = (i: 1 | 2 | 3 | 4) =>
+      k.group(
+        { w: W, h: 'auto' },
+        [
+          rule(k, W),
+          k.group(
+            { w: W, h: 'auto' },
+            [
+              k.text({ w: 'auto' }, `{run.slot${i}Label?}`, { size: 32, weight: 500, color: '$fgMuted' }),
+              k.stat({ w: 'auto', h: 'auto' }, `{run.slot${i}Val}`, { unit: `{run.slot${i}Unit?}`, size: 56, unitSize: 28, weight: 600, color: '$fg', labelPos: 'none', align: 'right', minSize: 36 }),
+            ],
+            { dir: 'row', justify: 'between', align: 'end' },
+          ),
+        ],
+        { dir: 'column', gap: 24, when: has(`run.slot${i}Val`) },
+      );
+    const table = k.group({ w: W, h: 'auto' }, ([1, 2, 3, 4] as const).map(slotMinimalRow).concat(CELLS4.map(row)), { dir: 'column', gap: 24 });
     const root = k.group(
       { x: 72, y: 250, w: W, h: 1330 },
       [header, rule(k, W), spacer(k), heroLayer, table, gear, spacer(k), route({ w: 440, h: 330 }), footerRow(k, W)],

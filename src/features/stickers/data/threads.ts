@@ -26,7 +26,6 @@
  */
 import type { WorkoutRow } from '@/db/queries';
 import { isCounted, setVolume, type PersonalRecord } from '@/features/strength/calc';
-import type { Catalog } from '@/features/strength/catalog';
 import type { StrengthSet, StrengthWorkout } from '@/features/strength/types';
 import { getWeightUnit, kgToUnit } from '@/features/strength/units';
 import { haversineM } from '@/features/workouts/analysis/geo';

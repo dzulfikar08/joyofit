@@ -30,7 +30,24 @@
     "swolf": "SWOLF",
     "pool": "Kolam",
     "power": "Daya",
-    "jumps": "Lompatan"
+    "jumps": "Lompatan",
+    "swimStyle": "Gaya renang",
+    "strokeRate": "Laju ayunan",
+    "exercises": "Gerakan",
+    "bestPace": "Pace terbaik",
+    "maxSpeed": "Kecepatan maks",
+    "elevLoss": "Turunan",
+    "stepLength": "Panjang langkah",
+    "jumpRate": "Laju lompatan",
+    "longestStreak": "Beruntun terbaik",
+    "interruptions": "Terputus",
+    "minHr": "Detak min",
+    "maxPower": "Daya maks",
+    "aerobicEffect": "Efek aerobik",
+    "anaerobicEffect": "Efek anaerobik",
+    "vo2max": "VO2Max",
+    "recoveryHours": "Waktu pulih",
+    "trainingLoad": "Beban latihan"
   },
   "unit": {
     "perKm": "/km",
@@ -43,7 +60,11 @@
     "kg": "kg",
     "km": "km",
     "rpm": "rpm",
-    "watt": "W"
+    "watt": "W",
+    "perMin": "/mnt",
+    "cm": "cm",
+    "hours": "jam",
+    "mlKgMin": "ml/kg/mnt"
   },
   "ui": {
     "section": {
@@ -90,6 +111,21 @@
       "week": "Bagikan minggu ini",
       "badges": "Bagikan pencapaian",
       "plan": "Bagikan progres rencana"
+    },
+    "customMetrics": {
+      "title": "Data latihan",
+      "count": "Pilih 1–{{max}} data",
+      "maxReached": "Maksimal {{max}} data agar tampilan tetap rapi",
+      "reset": "Reset ke bawaan",
+      "defaultBadge": "Bawaan",
+      "customBadge": "Kustom",
+      "heroTitle": "Metrik utama",
+      "secondaryTitle": "Metrik sekunder",
+      "secondarySlots": "{{count}}/{{max}} slot",
+      "addMetric": "Tambah metrik",
+      "moveUp": "Pindahkan ke atas",
+      "moveDown": "Pindahkan ke bawah",
+      "remove": "Hapus"
     }
   },
   "tpl": {
@@ -159,8 +195,8 @@
       "bold": "Tebal",
       "poster": "Poster",
       "minimal": "Minimal",
-      "photo": "Foto",
-      "glass": "Kaca",
+      "photo": "Sudut",
+      "glass": "Kapsul",
       "classic": "Klasik",
       "tape": "Pita",
       "column": "Kolom",

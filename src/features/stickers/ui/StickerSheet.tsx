@@ -38,7 +38,10 @@ import {
 } from '../share/shareImage';
 import { canSaveToLibrary } from '../share/shareTargets';
 import { LruCache, hashText, thumbKey } from '../thumbCache';
-import type { StickerSubject } from '../subject';
+import type { JsonObject, StickerSubject } from '../subject';
+import type { SportCategory } from '@/features/workouts/sportCategory';
+import { applyCustomMetrics, getDefaultConfig, templateSupportsCustomMetrics, type CustomMetricsConfig } from '../data/customMetrics';
+import { MetricCustomizer } from './MetricCustomizer';
 import { EXPORT_CARD_WIDTH, ScenePainter } from './ScenePainter';
 import { templateTitle } from './templateTitle';
 import { useStickerPro } from './useStickerPro';
@@ -139,7 +142,8 @@ function TargetButton({ label, icon, loading, done = false, disabled, onPress }:
 interface ThumbProps {
   group: TemplateGroup;
   canvas: CanvasPref;
-  subject: StickerSubject;
+  data: JsonObject;
+  date?: number;
   dataHash: string;
   mode: Mode;
   options: StickerData['options'];
@@ -154,16 +158,16 @@ interface ThumbProps {
  * A grid cell: the real Scene of the style, with the person's workout data and chosen photo, painted once at thumbnail size.
  * The list only mounts cells near the screen and the Scene comes from `sceneCache`, so scrolling never rebuilds them.
  */
-const Thumb = memo(function Thumb({ group, canvas, subject, dataHash, mode, options, photo, width, selected, label, onPress }: ThumbProps) {
+const Thumb = memo(function Thumb({ group, canvas, data, date, dataHash, mode, options, photo, width, selected, label, onPress }: ThumbProps) {
   const { colors, radius } = useTheme();
   const locale = useLocale();
   const template = pickVariant(group, canvas);
   const scene = useMemo(
     () =>
-      sceneCache.getOrCreate(thumbKey({ templateId: template.id, dataHash, date: subject.date, photoUri: photo?.uri ?? null, locale, mode, options }), () =>
-        sceneFor(template, subject.data, { locale, mode, options, date: subject.date, assets: photo ? { photo } : undefined }),
+      sceneCache.getOrCreate(thumbKey({ templateId: template.id, dataHash, date, photoUri: photo?.uri ?? null, locale, mode, options }), () =>
+        sceneFor(template, data, { locale, mode, options, date, assets: photo ? { photo } : undefined }),
       ),
-    [template, subject.data, subject.date, dataHash, photo, locale, mode, options],
+    [template, data, date, dataHash, photo, locale, mode, options],
   );
   const frameHeight = width * CELL_ASPECT;
   const paintWidth = Math.min(width, (frameHeight * scene.width) / scene.height);
@@ -230,7 +234,6 @@ export function StickerSheet({
 
   const groups = useMemo(() => offerGroups(subject), [subject]);
   const rows = useMemo(() => gridRows(groups), [groups]);
-  const dataHash = useMemo(() => hashText(JSON.stringify(subject.data)), [subject.data]);
   const listRef = useRef<FlatList<GridRow>>(null);
   const cellWidth = (screen.width - spacing.lg * 2 - GRID_GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
   const [groupKey, setGroupKey] = useState<string | null>(null);
@@ -255,6 +258,15 @@ export function StickerSheet({
     void ensureStickerFonts().then(() => setFontsReady(true));
   }, [visible]);
 
+  const runData = subject.data.run as JsonObject | undefined;
+  const category = (runData?.category as SportCategory) ?? 'run';
+
+  const defaultConfig = useMemo(
+    () => (runData ? getDefaultConfig(runData, category) : { heroId: '', secondaryIds: [] }),
+    [runData, category],
+  );
+  const [metricsConfig, setMetricsConfig] = useState<CustomMetricsConfig>(defaultConfig);
+
   // A new subject (another workout) starts from the card that fits its sport; a filter that no longer has the chosen group moves on.
   const [seenSubjectId, setSeenSubjectId] = useState(subject.id);
   if (seenSubjectId !== subject.id) {
@@ -262,10 +274,18 @@ export function StickerSheet({
     setGroupKey(null);
     setPhoto(null);
     setFeedback(null);
+    setMetricsConfig(defaultConfig);
   }
 
+  const activeData = useMemo(() => {
+    if (!runData || !metricsConfig.heroId) return subject.data;
+    return applyCustomMetrics(subject.data, metricsConfig, { locale });
+  }, [subject.data, runData, metricsConfig, locale]);
+
+  const dataHash = useMemo(() => hashText(JSON.stringify(activeData)), [activeData]);
+
   const group = groups.find((g) => g.key === groupKey) ?? initialGroup(groups, subject);
-  const template = group ? pickVariant(group, canvas) : null;
+  const template = useMemo(() => (group ? pickVariant(group, canvas) : null), [group, canvas]);
   const mode: Mode = modePick ?? scheme;
   const hasRoute = !isMissing(lookupPath(subject.data, 'run.route'));
 
@@ -273,7 +293,10 @@ export function StickerSheet({
     () => ({ watermark: pro ? watermark : true, hideNumbers: false, showName: false, privacy: { routeTrimMeters: routePrivacy ? 200 : 0 } }),
     [pro, watermark, routePrivacy],
   );
-  const scene = template ? sceneFor(template, subject.data, { locale, mode, options, date: subject.date, assets: photo ? { photo } : undefined }) : null;
+  const scene = useMemo(
+    () => (template ? sceneFor(template, activeData, { locale, mode, options, date: subject.date, assets: photo ? { photo } : undefined }) : null),
+    [template, activeData, subject.date, locale, mode, options, photo],
+  );
 
   const needsPhoto = group?.needsPhoto === true;
   const imagesReady = scene !== null && settled?.scene === scene && !settled.failed;
@@ -283,15 +306,17 @@ export function StickerSheet({
   // The live card keeps its real size and is shrunk from its top-left corner to fill the frame.
   const fullHeight = scene ? (EXPORT_CARD_WIDTH * scene.height) / scene.width : 0;
   const maxFrameHeight = Math.max(screen.height * 0.42, 240);
-  const frameWidth = scene ? Math.min(screen.width - spacing.lg * 2, (maxFrameHeight * EXPORT_CARD_WIDTH) / fullHeight) : 0;
+  const stagePadding = spacing.md;
+  const maxFrameWidth = Math.max(screen.width - spacing.lg * 2 - stagePadding * 2, 0);
+  const frameWidth = scene ? Math.min(maxFrameWidth, (maxFrameHeight * EXPORT_CARD_WIDTH) / fullHeight) : 0;
   const scale = frameWidth / EXPORT_CARD_WIDTH;
   const frameHeight = fullHeight * scale;
+  const innerRadius = Math.max(radius.card - stagePadding, radius.input);
 
   const pickGroup = (key: string) => {
     setGroupKey(key);
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
   };
-
   const addPhoto = async (source: PhotoSource) => {
     if (busy) return;
     setBusy('photo');
@@ -396,12 +421,20 @@ export function StickerSheet({
           maxToRenderPerBatch={4}
           windowSize={5}
           removeClippedSubviews
-          extraData={`${mode}${locale}${canvas}${group?.key ?? ''}${photo?.uri ?? ''}`}
+          extraData={`${mode}${locale}${canvas}${group?.key ?? ''}${photo?.uri ?? ''}${dataHash}`}
           ListHeaderComponent={
             <View style={styles.headerBlock}>
             <View style={[styles.stage, { backgroundColor: colors.muted, borderRadius: radius.card }]}>
               {scene ? (
-                <View style={{ width: frameWidth, height: frameHeight, borderRadius: radius.input, overflow: 'hidden' }}>
+                <View
+                  style={{
+                    width: frameWidth,
+                    height: frameHeight,
+                    borderRadius: innerRadius,
+                    overflow: 'hidden',
+                    borderWidth: StyleSheet.hairlineWidth,
+                    borderColor: colors.hairline,
+                  }}>
                   {scene.transparent ? <Checker mode={mode} /> : null}
                   <View
                     pointerEvents="none"
@@ -445,7 +478,18 @@ export function StickerSheet({
                 value={mode}
                 onChange={setModePick}
               />
+
             </View>
+
+            {runData && metricsConfig.heroId && templateSupportsCustomMetrics(template) ? (
+              <MetricCustomizer
+                run={runData}
+                category={category}
+                config={metricsConfig}
+                onChange={setMetricsConfig}
+                template={template}
+              />
+            ) : null}
 
             {needsPhoto ? (
               <View style={styles.row}>
@@ -480,7 +524,8 @@ export function StickerSheet({
                     key={g.key}
                     group={g}
                     canvas={canvas}
-                    subject={subject}
+                    data={activeData}
+                    date={subject.date}
                     dataHash={dataHash}
                     mode={mode}
                     options={options}
@@ -558,7 +603,7 @@ const styles = StyleSheet.create({
   gridRow: { flexDirection: 'row', gap: GRID_GAP, marginBottom: spacing.sm },
   thumbLabel: { textAlign: 'center', marginTop: spacing.xs },
   check: { position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  stage: { paddingVertical: spacing.md, alignItems: 'center' },
+  stage: { padding: spacing.md, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   centered: { textAlign: 'center' },
   controls: { gap: spacing.sm },
   row: { flexDirection: 'row', gap: spacing.sm },

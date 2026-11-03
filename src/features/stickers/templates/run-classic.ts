@@ -30,34 +30,14 @@ const CELL = {
   elev: { bind: 'run.elevGainM', value: '{run.elevGainM|int}', label: tl('label.elevation'), unit: tl('unit.m'), when: { bind: 'run.elevGainM', gte: 1 } },
 } satisfies Record<string, Cell>;
 
-const cellWhen = (cell: Cell): Cond => (cell.when ? all(has(cell.bind), cell.when) : has(cell.bind));
+const cellWhen = (cell: Cell): Cond =>
+  cell.when ? all(lacks('run._custom'), has(cell.bind), cell.when) : all(lacks('run._custom'), has(cell.bind));
 
 interface Metrics {
-  pad: number;
-  /** Between the header, the hero, the grid and the footer. */
-  gap: number;
-  /** Between the grid's rows, and between a column's cells. */
-  rowGap: number;
-  columnGap: number;
-  /** Between a label and its number: the hero's, a cell's. */
-  heroLabelGap: number;
-  labelGap: number;
-  /** Between the sport and the date. */
-  titleGap: number;
-  disc: number;
-  glyph: number;
-  headGap: number;
-  title: number;
-  date: number;
-  primary: number;
-  primaryUnit: number;
-  value: number;
-  unit: number;
-  label: number;
-  wordmark: number;
-  link: number;
-  columns: number;
-  inset: number;
+  pad: number; gap: number; rowGap: number; columnGap: number; heroLabelGap: number; labelGap: number;
+  titleGap: number; disc: number; glyph: number; headGap: number; title: number; date: number;
+  primary: number; primaryUnit: number; value: number; unit: number; label: number; wordmark: number;
+  link: number; columns: number; inset: number;
 }
 
 const METRICS: Record<Canvas, Metrics> = {
@@ -102,9 +82,24 @@ function hero(k: Kit, m: Metrics, w: Dim): LayerJson {
   return k.group(
     { w, h: 'auto' },
     [
-      big('{run.distanceM|km}', 'unit.km', 'label.distance', all(has('run.distanceM'), not(is('run.category', 'swim')))),
-      big('{run.distanceM|int}', 'unit.m', 'label.distance', all(has('run.distanceM'), is('run.category', 'swim'))),
-      big('{run.movingSec|dur}', null, 'label.time', lacks('run.distanceM')),
+      k.stat({ w: 'fill' }, '{run.heroVal}', {
+        unit: '{run.heroUnit?}',
+        label: '{run.heroLabel?}',
+        size: m.primary,
+        unitSize: m.primaryUnit,
+        labelSize: m.label,
+        weight: 800,
+        color: '$fg',
+        labelColor: '$fgSoft',
+        labelPos: 'above',
+        gap: m.heroLabelGap,
+        shadow: true,
+        minSize: 90,
+        when: has('run._custom'),
+      }),
+      big('{run.distanceM|km}', 'unit.km', 'label.distance', all(lacks('run._custom'), has('run.distanceM'), not(is('run.category', 'swim')))),
+      big('{run.distanceM|int}', 'unit.m', 'label.distance', all(lacks('run._custom'), has('run.distanceM'), is('run.category', 'swim'))),
+      big('{run.movingSec|dur}', null, 'label.time', all(lacks('run._custom'), lacks('run.distanceM'))),
     ],
     { dir: 'column' },
   );
@@ -127,6 +122,23 @@ function cellStat(k: Kit, m: Metrics, cell: Cell, w: number): LayerJson {
     when: cellWhen(cell),
   });
 }
+function slotCell(k: Kit, m: Metrics, i: 1 | 2 | 3 | 4, w: number): LayerJson {
+  return k.stat({ w, h: 'auto' }, `{run.slot${i}Val}`, {
+    unit: `{run.slot${i}Unit?}`,
+    label: `{run.slot${i}Label?}`,
+    size: m.value,
+    unitSize: m.unit,
+    labelSize: m.label,
+    weight: 800,
+    color: '$fg',
+    labelColor: '$fgSoft',
+    labelPos: 'above',
+    gap: m.labelGap,
+    shadow: true,
+    minSize: 40,
+    when: has(`run.slot${i}Val`),
+  });
+}
 
 /**
  * The grid: rows of `columns` slots, each slot one fixed-width column. A slot holds the cells that may fill it (the sport's pace,
@@ -137,13 +149,23 @@ function grid(k: Kit, m: Metrics, w: number): LayerJson {
   const effort = [CELL.pace, CELL.pace100, CELL.speed];
   const slots: Cell[][] = [[CELL.time], effort, [CELL.hr], [CELL.kcal], [CELL.elev]];
   const cellW = Math.floor((w - m.columnGap * (m.columns - 1)) / m.columns);
-  const rows: Cell[][][] = [];
-  for (let i = 0; i < slots.length; i += m.columns) rows.push(slots.slice(i, i + m.columns));
-  return k.group(
-    { w, h: 'auto' },
-    rows.map((row) => k.group({ w, h: 'auto' }, row.map((cells) => k.group({ w: cellW, h: 'auto' }, cells.map((cell) => cellStat(k, m, cell, cellW)), { dir: 'column' })), { dir: 'row', gap: m.columnGap, align: 'start' })),
-    { dir: 'column', gap: m.rowGap },
+  const chunk = <T>(arr: T[], sz: number): T[][] => Array.from({ length: Math.ceil(arr.length / sz) }, (_, i) => arr.slice(i * sz, (i + 1) * sz));
+
+  const customRows = chunk<1 | 2 | 3 | 4>([1, 2, 3, 4], m.columns).map((row) =>
+    k.group(
+      { w, h: 'auto' },
+      row.map((i) => k.group({ w: cellW, h: 'auto' }, [slotCell(k, m, i, cellW)], { dir: 'column' })),
+      { dir: 'row', gap: m.columnGap, align: 'start', when: has('run._custom') },
+    ),
   );
+  const defaultRows = chunk(slots, m.columns).map((row) =>
+    k.group(
+      { w, h: 'auto' },
+      row.map((cells) => k.group({ w: cellW, h: 'auto' }, cells.map((cell) => cellStat(k, m, cell, cellW)), { dir: 'column' })),
+      { dir: 'row', gap: m.columnGap, align: 'start', when: lacks('run._custom') },
+    ),
+  );
+  return k.group({ w, h: 'auto' }, [...customRows, ...defaultRows], { dir: 'column', gap: m.rowGap });
 }
 
 function footer(k: Kit, m: Metrics, w: number): LayerJson {
@@ -172,12 +194,7 @@ function runClassic(canvas: Canvas) {
       fill: {
         gradient: {
           angle: 180,
-          stops: [
-            { at: 0, color: '$bg/55' },
-            { at: 0.3, color: '$bg/0' },
-            { at: 0.5, color: '$bg/0' },
-            { at: 1, color: '$bg/80' },
-          ],
+          stops: [{ at: 0, color: '$bg/55' }, { at: 0.3, color: '$bg/0' }, { at: 0.5, color: '$bg/0' }, { at: 1, color: '$bg/80' }],
         },
       },
     }),

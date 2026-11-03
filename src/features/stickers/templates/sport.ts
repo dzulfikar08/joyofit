@@ -61,7 +61,6 @@ const M = {
   sets: metric('sets', 'int', 'sets'),
   reps: metric('reps', 'int', 'reps'),
 } satisfies Record<string, Metric>;
-
 /** The picture of a card, first one the workout has wins: its route, its climb, its heart rate, its heart rate zones. */
 type Art = 'route' | 'alt' | 'hr' | 'zones';
 
@@ -186,7 +185,9 @@ const heroWhen = (spec: FamilySpec, i: number): Cond => all(has(spec.hero[i]!.bi
 /** A number shows when the workout has it and it is not already the hero. */
 function cellWhen(spec: FamilySpec, cell: Metric): Cond {
   const asHero = spec.hero.indexOf(cell);
-  return asHero < 0 ? has(cell.bind) : all(has(cell.bind), not(heroWhen(spec, asHero)));
+  return asHero < 0
+    ? all(lacks('run._custom'), has(cell.bind))
+    : all(lacks('run._custom'), has(cell.bind), not(heroWhen(spec, asHero)));
 }
 
 const rowWhen = (spec: FamilySpec, row: Metric[]): Cond => any(...row.map((cell) => cellWhen(spec, cell)));
@@ -239,10 +240,10 @@ interface HeroLook {
 function hero(k: Kit, spec: FamilySpec, o: HeroLook): LayerJson {
   return k.group(
     { w: o.w ?? 'fill', h: 'auto' },
-    spec.hero.map((cell, i) =>
-      k.stat({ w: 'fill', h: 'auto' }, cell.value, {
-        unit: o.unit === false ? undefined : cell.unit,
-        label: cell.label,
+    [
+      k.stat({ w: 'fill', h: 'auto' }, '{run.heroVal}', {
+        unit: o.unit === false ? undefined : '{run.heroUnit?}',
+        label: '{run.heroLabel?}',
         size: o.size,
         unitSize: o.unitSize,
         labelSize: o.labelSize,
@@ -254,9 +255,27 @@ function hero(k: Kit, spec: FamilySpec, o: HeroLook): LayerJson {
         minSize: 110,
         align: o.align,
         shadow: o.shadow,
-        when: heroWhen(spec, i),
+        when: has('run._custom'),
       }),
-    ),
+      ...spec.hero.map((cell, i) =>
+        k.stat({ w: 'fill', h: 'auto' }, cell.value, {
+          unit: o.unit === false ? undefined : cell.unit,
+          label: cell.label,
+          size: o.size,
+          unitSize: o.unitSize,
+          labelSize: o.labelSize,
+          weight: o.weight ?? 800,
+          color: o.color,
+          labelColor: o.labelColor,
+          labelPos: o.labelPos ?? 'above',
+          gap: 16,
+          minSize: 110,
+          align: o.align,
+          shadow: o.shadow,
+          when: all(lacks('run._custom'), heroWhen(spec, i)),
+        }),
+      ),
+    ],
     { dir: 'column' },
   );
 }
@@ -300,13 +319,45 @@ function cell(k: Kit, spec: FamilySpec, m: Metric, o: CellLook): LayerJson {
     when: cellWhen(spec, m),
   });
 }
+function slotCell(k: Kit, i: 1 | 2 | 3 | 4, o: CellLook): LayerJson {
+  return k.stat({ w: 'fill', h: 'auto' }, `{run.slot${i}Val}`, {
+    unit: `{run.slot${i}Unit?}`,
+    label: `{run.slot${i}Label?}`,
+    size: o.size,
+    labelSize: o.labelSize,
+    unitSize: o.unitSize,
+    weight: o.weight ?? 800,
+    color: o.color,
+    labelColor: o.labelColor,
+    labelPos: 'above',
+    gap: o.gap ?? 10,
+    minSize: 36,
+    shadow: o.shadow,
+    when: has(`run.slot${i}Val`),
+  });
+}
 
 /** The number rows: a row whose numbers are all missing (or the hero) is removed with its gap. */
 function rows(k: Kit, spec: FamilySpec, list: Metric[][], o: CellLook & { rowGap: number }): LayerJson {
+  const customRow = k.group(
+    { w: 'fill', h: 'auto' },
+    ([1, 2, 3, 4] as const).map((i) => slotCell(k, i, o)),
+    { dir: 'row', gap: o.gap ?? 28, align: 'start', when: has('run._custom') },
+  );
+
   return k.group(
     { w: 'fill', h: 'auto' },
-    list.map((row) => k.group({ w: 'fill', h: 'auto' }, row.map((m) => cell(k, spec, m, o)), { dir: 'row', gap: o.gap ?? 28, align: 'start', when: rowWhen(spec, row) })),
-    { dir: 'column', gap: o.rowGap, align: 'stretch', when: any(...list.map((row) => rowWhen(spec, row))) },
+    [
+      customRow,
+      ...list.map((row) =>
+        k.group(
+          { w: 'fill', h: 'auto' },
+          row.map((m) => cell(k, spec, m, o)),
+          { dir: 'row', gap: o.gap ?? 28, align: 'start', when: rowWhen(spec, row) },
+        ),
+      ),
+    ],
+    { dir: 'column', gap: o.rowGap, align: 'stretch', when: any(has('run._custom'), ...list.map((row) => rowWhen(spec, row))) },
   );
 }
 
@@ -442,16 +493,26 @@ function poster(spec: FamilySpec) {
     ],
     { dir: 'row', gap: 20, align: 'center' },
   );
-  const captions = spec.hero.map((h, i) =>
+  const captions = [
     k.group(
       { w: W, h: 'auto' },
       [
-        k.text({ w: 'fill' }, h.label, { size: 26, weight: 700, upper: true, ls: 6, color: '$fgMuted' }),
-        ...(h.unit ? [k.text({ w: 'auto' }, h.unit, { size: 34, weight: 800, upper: true, ls: 6, color: '$accent', align: 'right' })] : []),
+        k.text({ w: 'fill' }, '{run.heroLabel?}', { size: 26, weight: 700, upper: true, ls: 6, color: '$fgMuted' }),
+        k.text({ w: 'auto' }, '{run.heroUnit?}', { size: 34, weight: 800, upper: true, ls: 6, color: '$accent', align: 'right' }),
       ],
-      { dir: 'row', align: 'center', when: heroWhen(spec, i) },
+      { dir: 'row', align: 'center', when: has('run._custom') },
     ),
-  );
+    ...spec.hero.map((h, i) =>
+      k.group(
+        { w: W, h: 'auto' },
+        [
+          k.text({ w: 'fill' }, h.label, { size: 26, weight: 700, upper: true, ls: 6, color: '$fgMuted' }),
+          ...(h.unit ? [k.text({ w: 'auto' }, h.unit, { size: 34, weight: 800, upper: true, ls: 6, color: '$accent', align: 'right' })] : []),
+        ],
+        { dir: 'row', align: 'center', when: all(lacks('run._custom'), heroWhen(spec, i)) },
+      ),
+    ),
+  ];
   const big = hero(k, spec, { size: 470, unitSize: 1, unit: false, color: '$fg', labelColor: '$fgMuted', labelSize: 26, labelPos: 'none', w: W });
   const middle = art(k, spec, { chartH: 280, stroke: 8, captionSize: 26, zoneLabels: true, routeColor: '$accent', routeColor2: '$accent2', glyph: 300, glyphColor: '$accent' });
   const metaCell = (m: Metric) =>
@@ -463,9 +524,28 @@ function poster(spec: FamilySpec) {
       ],
       { dir: 'column', gap: 12, when: cellWhen(spec, m) },
     );
+  const slotMetaCell = (i: 1 | 2 | 3 | 4) =>
+    k.group(
+      { w: 'fill', h: 'auto' },
+      [
+        k.text({ w: 'fill' }, `{run.slot${i}Label?}`, { size: 24, weight: 700, upper: true, ls: 3, color: '$fgMuted' }),
+        slotCell(k, i, { size: 52, labelSize: 24, unitSize: 26, color: '$fg', labelColor: '$fgMuted', weight: 700, shadow: false }),
+      ],
+      { dir: 'column', gap: 12, when: has(`run.slot${i}Val`) },
+    );
+  const customPosterRow = k.group(
+    { w: W, h: 'auto' },
+    ([1, 2, 3, 4] as const).map(slotMetaCell),
+    { dir: 'row', gap: 24, align: 'start', when: has('run._custom') },
+  );
   const meta = k.group(
     { w: W, h: 'auto' },
-    spec.rows.slice(0, 2).map((row) => k.group({ w: W, h: 'auto' }, row.map(metaCell), { dir: 'row', gap: 24, align: 'start', when: rowWhen(spec, row) })),
+    [
+      customPosterRow,
+      ...spec.rows.slice(0, 2).map((row) =>
+        k.group({ w: W, h: 'auto' }, row.map(metaCell), { dir: 'row', gap: 24, align: 'start', when: rowWhen(spec, row) }),
+      ),
+    ],
     { dir: 'column', gap: 24 },
   );
   const root = k.group(
@@ -504,7 +584,23 @@ function minimal(spec: FamilySpec, canvas: Canvas) {
         ],
         { dir: 'column', gap: 24, when: cellWhen(spec, m) },
       );
-    const table = k.group({ w: W, h: 'auto' }, spec.brief.map(line), { dir: 'column', gap: 24 });
+    const slotLine = (i: 1 | 2 | 3 | 4) =>
+      k.group(
+        { w: W, h: 'auto' },
+        [
+          rule(k, W),
+          k.group(
+            { w: W, h: 'auto' },
+            [
+              k.text({ w: 'auto' }, `{run.slot${i}Label?}`, { size: 32, weight: 500, color: '$fgMuted' }),
+              k.stat({ w: 'auto', h: 'auto' }, `{run.slot${i}Val}`, { unit: `{run.slot${i}Unit?}`, size: 56, unitSize: 28, weight: 600, color: '$fg', labelPos: 'none', align: 'right', minSize: 36 }),
+            ],
+            { dir: 'row', justify: 'between', align: 'end' },
+          ),
+        ],
+        { dir: 'column', gap: 24, when: has(`run.slot${i}Val`) },
+      );
+    const table = k.group({ w: W, h: 'auto' }, ([1, 2, 3, 4] as const).map(slotLine).concat(spec.brief.map(line)), { dir: 'column', gap: 24 });
     const middle = art(k, spec, { chartH: 220, stroke: 6, captionSize: 26, zoneLabels: true, routeColor: '$accent', routeColor2: '$accent', glyph: 240, glyphColor: '$fgMuted' });
     const root = k.group(
       { x: 72, y: 250, w: W, h: 1330 },
@@ -516,8 +612,17 @@ function minimal(spec: FamilySpec, canvas: Canvas) {
 
   const table = k.group(
     { w: W, h: 'auto' },
-    [rule(k, W), k.group({ w: W, h: 'auto' }, spec.brief.map((m) => cell(k, spec, m, { size: 50, labelSize: 26, unitSize: 24, weight: 600, color: '$fg', labelColor: '$fgMuted' })), { dir: 'row', gap: 24, align: 'start' })],
-    { dir: 'column', gap: 26, when: rowWhen(spec, spec.brief) },
+    [
+      rule(k, W),
+      k.group(
+        { w: W, h: 'auto' },
+        ([1, 2, 3, 4] as const)
+          .map((i) => slotCell(k, i, { size: 50, labelSize: 26, unitSize: 24, weight: 600, color: '$fg', labelColor: '$fgMuted' }))
+          .concat(spec.brief.map((m) => cell(k, spec, m, { size: 50, labelSize: 26, unitSize: 24, weight: 600, color: '$fg', labelColor: '$fgMuted' }))),
+        { dir: 'row', gap: 24, align: 'start' },
+      ),
+    ],
+    { dir: 'column', gap: 26, when: any(has('run._custom'), rowWhen(spec, spec.brief)) },
   );
   const root = k.group({ x: 72, y: 72, w: W, h: 936 }, [head, spacer(k), heroLayer, ...effort, table, spacer(k), footerRow(k, W, 44)], { dir: 'column', gap: 32, align: 'stretch' });
   return build(spec, 'minimal', canvas, INK, [root], { tags: ['minimal', spec.family] });
@@ -537,8 +642,10 @@ function stats(spec: FamilySpec) {
   const heroLayer = hero(k, spec, { size: 200, unitSize: 56, color: '$accent', labelColor: '$fgSoft', labelSize: 30, shadow: true, align: 'center', w: W });
   const brief = k.group(
     { w: W, h: 'auto' },
-    spec.brief.map((m) => cell(k, spec, m, { size: 76, labelSize: 28, unitSize: 30, color: '$fg', labelColor: '$fgSoft', shadow: true })),
-    { dir: 'row', gap: 28, align: 'start', when: rowWhen(spec, spec.brief) },
+    ([1, 2, 3, 4] as const)
+      .map((i) => slotCell(k, i, { size: 76, labelSize: 28, unitSize: 30, color: '$fg', labelColor: '$fgSoft', shadow: true }))
+      .concat(spec.brief.map((m) => cell(k, spec, m, { size: 76, labelSize: 28, unitSize: 30, color: '$fg', labelColor: '$fgSoft', shadow: true }))),
+    { dir: 'row', gap: 28, align: 'start', when: any(has('run._custom'), rowWhen(spec, spec.brief)) },
   );
   const root = k.group({ x: 0, y: 0, w: 1080, h: 1000 }, [title, heroLayer, brief, k.brand({ w: 'auto', h: 44 }, 'lockup', { size: 44 })], {
     dir: 'column',
