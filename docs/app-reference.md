@@ -434,9 +434,11 @@ for a session that has no analysis card (a logged strength session, or an analys
   (Douglas-Peucker at half a pixel), so a 12 h, 44k-fix ride stays sharp zoomed in at a few milliseconds per redraw. It is phone-only: the analysis' own track (what the
   cloud copy and the posts carry) stays on the 600-sample grid.
   The line is coloured by a metric picked under the map (heart rate first, else the first chart metric: pace or speed, elevation, cadence, step length, power),
-  eight colours from blue (low) to red (high) over the route's 5th to 95th percentile, with the values at both ends in a legend; pace runs slow (blue) to fast
-  (red). Each GPS fix reads the chart grid's sample at its time (`RouteDetail.secs`), a stretch takes the colour of its first fix and a stretch without a value
-  (a heart-rate gap, a stop) stays in the plain route colour (`ui/routeColor.ts` `routeColoring`, drawn by `TileMap` `routeRuns` as one path per colour).
+  a smooth ramp from blue (low) to red (high) over the route's 5th to 95th percentile, with the values at both ends in a gradient legend; pace runs slow (blue)
+  to fast (red). Each GPS fix reads the chart series at its own time, interpolated between the two samples around it (`RouteDetail.secs`), and each stretch
+  between two fixes takes the colour of the mean of its ends, blended from eight stops and cut into 48 steps (`ROUTE_RAMP`, `ROUTE_RAMP_STEPS`), so the line
+  fades instead of jumping between bands. A stretch with no value at either end (a heart-rate gap, a stop) stays in the plain route colour
+  (`ui/routeColor.ts` `routeColoring`, drawn by `TileMap` `routeRuns` as one path per colour, at most 49).
 - **Scrubber charts.** Pace or speed, heart rate, elevation, cadence, step length and power on one shared time grid; touching a chart moves a dot on the map and fills a
   readout. The screen's scroll freezes while a chart is touched. The analysis' grid has at most 600 steps (the JoyoRogo schema takes 720 and 200 kB), so a ride over 2 h
   gets the phone's own finer grid for these charts and the map dot, one sample per 12 s up to 4 000 samples (12 h is 3 676; `detailGridStep` in `series.ts`), with the

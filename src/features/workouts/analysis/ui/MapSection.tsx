@@ -1,5 +1,6 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useId, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { TileMap, type MapMarker, type RouteRun } from '@/features/map';
 
@@ -12,7 +13,7 @@ import { Card, Txt } from './primitives';
 import { routeColoring } from './routeColor';
 import { useScrubFrame } from './scrub';
 import type { AnalysisTextKey } from './text';
-import { ROUTE_RAMP, type AnalysisMapTheme } from './theme';
+import { ROUTE_RAMP, ROUTE_RAMP_STEPS, type AnalysisMapTheme } from './theme';
 
 const MAP_HEIGHT = 260;
 
@@ -101,9 +102,10 @@ function MapSectionImpl({ analysis, mapTheme, route = null }: Props) {
   const [chosen, setChosen] = useState<WorkoutMetric | null>(null);
   const metric = chosen && metrics.includes(chosen) ? chosen : metrics.includes('hr') ? 'hr' : (metrics[0] ?? null);
   const coloring = useMemo(
-    () => (series && metric ? routeColoring(series, route, metric, ROUTE_RAMP, palette.mapRoute) : null),
+    () => (series && metric ? routeColoring(series, route, metric, { stops: ROUTE_RAMP, steps: ROUTE_RAMP_STEPS, gapColor: palette.mapRoute }) : null),
     [series, route, metric, palette.mapRoute],
   );
+  const gradientId = useId();
 
   const index = useScrubFrame(store);
   const highlight = index !== null && track ? (track[index] ?? null) : null;
@@ -126,11 +128,16 @@ function MapSectionImpl({ analysis, mapTheme, route = null }: Props) {
             <Txt size={12} bold>
               {low}
             </Txt>
-            <View style={styles.ramp}>
-              {ROUTE_RAMP.map((color) => (
-                <View key={color} style={[styles.rampStep, { backgroundColor: color }]} />
-              ))}
-            </View>
+            <Svg style={styles.ramp} height={RAMP_HEIGHT}>
+              <Defs>
+                <LinearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
+                  {ROUTE_RAMP.map((color, i) => (
+                    <Stop key={color} offset={i / (ROUTE_RAMP.length - 1)} stopColor={color} />
+                  ))}
+                </LinearGradient>
+              </Defs>
+              <Rect x={0} y={0} width="100%" height={RAMP_HEIGHT} rx={RAMP_HEIGHT / 2} fill={`url(#${gradientId})`} />
+            </Svg>
             <Txt size={12} bold>
               {high}
             </Txt>
@@ -146,9 +153,10 @@ function MapSectionImpl({ analysis, mapTheme, route = null }: Props) {
 
 export const MapSection = memo(MapSectionImpl);
 
+const RAMP_HEIGHT = 8;
+
 const styles = StyleSheet.create({
   below: { padding: 14, gap: 12 },
   legend: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  ramp: { flex: 1, flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden' },
-  rampStep: { flex: 1 },
+  ramp: { flex: 1 },
 });
