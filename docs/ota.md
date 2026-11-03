@@ -195,6 +195,8 @@ autolinking, the `expo-document-picker` patch is Kotlin), so the iOS binary runs
 OTAs published for them on 2026-11-03 from master `c3ae938f` (custom share metrics #72 and all JS since the builds: classic
 card, overlays, template grid, Today hero, HRV and stress): groups `80237174-7f3f-4756-9d73-5775cdc38ad8` android (OTA
 workflow run 41589926077), `1573f0fd-c781-40e9-9a46-92a2e3290467` ios (run 41590133209).
+Then from master `fe858d64` (route coloured by a metric, km splits without the watch pause, `ANALYSIS_ENGINE_REV` 8): groups
+`140330de-9ff2-4d08-9a4a-9c40433b5f70` android (run 41599596411), `e41dcd71-5b5b-4e87-a636-d3cc249b1795` ios (run 41599601290).
 
 ## When OTA is not enough
 
