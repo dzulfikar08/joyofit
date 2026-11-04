@@ -2,7 +2,7 @@
 app: joyofit
 feature: Shutter jarak jauh
 shipped: 2026-11-04
-available: code
+available: test-build
 tier: free
 post: todo
 atur:
