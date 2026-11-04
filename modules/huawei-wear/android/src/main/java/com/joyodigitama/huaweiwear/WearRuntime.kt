@@ -84,6 +84,7 @@ internal class WearRuntime private constructor(context: Context) {
       watchWorkout.onLinkState(state)
       p2p.onLinkState(state)
       ephemeris.onLinkState(state)
+      cameraRemote.onLinkState(state)
     }
 
     override fun battery(level: Int) {
@@ -150,6 +151,10 @@ internal class WearRuntime private constructor(context: Context) {
     override fun watchNav(payload: Map<String, Any?>) {
       listeners.forEach { it.watchNav(payload) }
     }
+
+    override fun cameraRemote(payload: Map<String, Any?>) {
+      listeners.forEach { it.cameraRemote(payload) }
+    }
   }
 
   /** Same fan-out the link reports through; background code logs here so the Log tab shows it. */
@@ -215,6 +220,7 @@ internal class WearRuntime private constructor(context: Context) {
   val p2p = P2pController(appContext, P2pSettings(appContext), link, settings, syncStore, events, scope)
   val family = FamilyUploader(appContext, FamilySettings(appContext), FamilyStoreSource(syncStore), { status.value.battery }, events, scope)
   val ephemeris = EphemerisLink(appContext, link, events, scope, settings)
+  val cameraRemote = CameraRemoteController(link, events, scope)
 
   init {
     DataSyncFeatures.install(this)

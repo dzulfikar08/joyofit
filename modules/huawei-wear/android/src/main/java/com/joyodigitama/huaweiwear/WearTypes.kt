@@ -154,4 +154,7 @@ internal interface WearEvents {
 
   /** Watch navigation (`onWatchNav`): a message of JoyoFit's watch app or a change of its presence ([WatchNavService]). */
   fun watchNav(payload: Map<String, Any?>) = Unit
+
+  /** The watch's Remote shutter (`onCameraRemote`, [CameraRemoteController]): `{action: "open" | "shutter" | "close"}`. */
+  fun cameraRemote(payload: Map<String, Any?>) = Unit
 }

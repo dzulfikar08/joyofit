@@ -115,6 +115,10 @@ class HuaweiWearModule : Module() {
       emit("onWatchNav", payload)
     }
 
+    override fun cameraRemote(payload: Map<String, Any?>) {
+      emit("onCameraRemote", payload)
+    }
+
     fun emit(name: String, payload: Map<String, Any?>) {
       if (destroyed) return
       try {
@@ -156,7 +160,7 @@ class HuaweiWearModule : Module() {
     // "play" for the Google Play build, "sideload" otherwise (see Distribution.kt).
     Constant("distribution") { Distribution.name }
 
-    Events("onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged", "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress", "onDeviceDiscovered", "onScanStateChange", "onWatchNav")
+    Events("onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged", "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress", "onDeviceDiscovered", "onScanStateChange", "onWatchNav", "onCameraRemote")
 
     OnCreate {
       val runtime = runtime()
@@ -419,6 +423,15 @@ class HuaweiWearModule : Module() {
 
     // Songs on the watch (service 25 + FileUpload type 2; experimental switch): info, list, upload, cancel, delete (WatchMusicModuleApi.kt, WatchMusic.kt).
     watchMusicApi { runtime() }
+
+    // The watch's Remote shutter (service 01, commands 29/2A): status and the phone camera's state (CameraRemoteController.kt).
+    Function("getCameraRemote") {
+      runtime().cameraRemote.status()
+    }
+
+    AsyncFunction("setPhoneCameraOpen") Coroutine { open: Boolean ->
+      runtime().cameraRemote.setPhoneCamera(open)
+    }
 
     OnDestroy {
       destroyed = true

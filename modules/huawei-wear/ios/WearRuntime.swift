@@ -86,6 +86,8 @@ public final class WearRuntime: @unchecked Sendable {
     public private(set) var family: FamilyUploader!
     /// Satellite data (A-GPS) for the watch: the watch's 0x1F / 0x1C exchange, the phone copy kept fresh after every sync, "update now".
     public private(set) var ephemeris: EphemerisLink!
+    /// The watch's Remote shutter: the camera announced at connect, the watch's open / shutter / close handed to JS.
+    public private(set) var cameraRemote: CameraRemoteController!
 
     /// Called after every stored sync (the HealthKit export hooks in here).
     public var onSyncComplete: (@Sendable (SyncSummary) -> Void)?
@@ -207,6 +209,8 @@ public final class WearRuntime: @unchecked Sendable {
             isOnline: agpsOnline
         )
         linkObservers.add(ephemeris)
+        cameraRemote = CameraRemoteController(link: link, events: fanOut)
+        linkObservers.add(cameraRemote)
     }
 
     // MARK: events
@@ -286,6 +290,7 @@ public final class WearRuntime: @unchecked Sendable {
         func watchMealLogged(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.watchMealLogged(payload) } }
         func liveWorkout(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.liveWorkout(payload) } }
         func watchNav(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.watchNav(payload) } }
+        func cameraRemote(_ payload: [String: Any]) { runtime?.currentListeners().forEach { $0.cameraRemote(payload) } }
     }
 
     // MARK: bonded devices

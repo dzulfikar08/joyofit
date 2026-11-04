@@ -43,6 +43,7 @@ import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.FileDownloadS
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.Notifications;
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.Alarms;
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.Calls;
+import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.CameraRemote;
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.DataSync;
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.FindPhone;
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.P2P;
@@ -485,6 +486,10 @@ public class HuaweiPacket {
                         return new DeviceConfig.WearStatus.Response(paramsProvider).fromPacket(this);
                     case DeviceConfig.ReverseCapabilities.id:
                         return new DeviceConfig.ReverseCapabilities.Response(paramsProvider).fromPacket(this);
+
+                    // Camera remote has same ID as DeviceConfig
+                    case CameraRemote.CameraRemoteStatus.id:
+                        return new CameraRemote.CameraRemoteStatus.Response(paramsProvider).fromPacket(this);
 
                     default:
                         this.isEncrypted = this.attemptDecrypt(); // Helps with debugging

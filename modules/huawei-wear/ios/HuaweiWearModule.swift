@@ -146,6 +146,7 @@ public final class HuaweiWearModule: Module {
         func watchMealLogged(_ payload: [String: Any]) { emit("onWatchMealLogged", payload) }
         func liveWorkout(_ payload: [String: Any]) { emit("onLiveWorkout", payload) }
         func watchNav(_ payload: [String: Any]) { emit("onWatchNav", payload) }
+        func cameraRemote(_ payload: [String: Any]) { emit("onCameraRemote", payload) }
         func log(_ entry: LogEntry) {
             emit(
                 "onLog",
@@ -172,7 +173,8 @@ public final class HuaweiWearModule: Module {
 
         Events(
             "onStateChange", "onBattery", "onLog", "onSyncComplete", "onUploadProgress", "onUploadResult", "onHeartRate", "onWatchMealLogged",
-            "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress", "onDeviceDiscovered", "onScanStateChange", "onWatchNav"
+            "onFaceCustomization", "onLiveWorkout", "onHrvProgress", "onHuaweiImportProgress", "onDeviceDiscovered", "onScanStateChange", "onWatchNav",
+            "onCameraRemote"
         )
 
         OnCreate {
@@ -695,6 +697,13 @@ public final class HuaweiWearModule: Module {
         }
         AsyncFunction("stopWatchNav") { () async throws -> Void in
             try await wearCall { runtime.p2p.watchNav.stop() }
+        }
+
+        // MARK: camera remote (CameraRemoteController.swift)
+
+        Function("getCameraRemote") { () -> [String: Any] in runtime.cameraRemote.status() }
+        AsyncFunction("setPhoneCameraOpen") { (open: Bool) async -> Void in
+            await runtime.cameraRemote.setPhoneCamera(open: open)
         }
 
         // MARK: cycle calendar

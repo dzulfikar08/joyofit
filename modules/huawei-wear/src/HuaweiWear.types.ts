@@ -602,4 +602,17 @@ export type HuaweiWearModuleEvents = {
   onScanStateChange: (event: { scanning: boolean; error: string | null }) => void;
   /** Watch navigation (lab): a message of the watch app, or a change of whether it answers. */
   onWatchNav: (event: WatchNavEvent) => void;
+  /** The watch's Remote shutter: the person opened it, pressed the shutter, or closed it on the watch. */
+  onCameraRemote: (event: CameraRemoteEvent) => void;
 };
+
+/** What the watch's Remote shutter app sent (`01/29`): 1 open, 2 take a picture, 3 close. */
+export interface CameraRemoteEvent {
+  action: 'open' | 'shutter' | 'close';
+}
+
+/** `getCameraRemote`: whether the connected watch has the Remote shutter (lists `01/29`); the phone announces its camera at connect. */
+export interface CameraRemoteStatus {
+  connected: boolean;
+  supported: boolean;
+}

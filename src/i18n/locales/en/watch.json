@@ -57,7 +57,9 @@
     "photo": "Photo face",
     "photoSub": "Your photos on the watch",
     "alarms": "Alarms",
-    "alarmsSub": "Read and change"
+    "alarmsSub": "Read and change",
+    "camera": "Remote shutter",
+    "cameraSub": "Take photos from the watch"
   },
   "device": {
     "connectFirst": "Connect your watch first.",
@@ -745,5 +747,25 @@
       "waiting": "Data ready, waiting for your watch to take it...",
       "sending": "Sending to your watch..."
     }
+  },
+  "camera": {
+    "close": "Close the camera",
+    "ready": "Press the shutter on your watch, or the button below",
+    "notConnected": "Watch not connected: use the button below",
+    "unsupported": "This watch has no remote shutter: use the button below",
+    "permissionTitle": "Camera for the remote shutter",
+    "permissionBody": "JoyoFit shows the camera here so your watch can take photos. Photos go to your photo library and are not uploaded. Your phone asks for permission next.",
+    "permissionDenied": "Camera access is off for JoyoFit. Turn it on in Settings to take photos with your watch.",
+    "continue": "Continue",
+    "openSettings": "Open Settings",
+    "photosNotice": "Photos you take with the watch are added to your photo library. JoyoFit does not read the photos you already have. Your phone asks for permission next.",
+    "photosOff": "Photos access is off: photos are not saved. Tap to open Settings.",
+    "failed": "The photo could not be taken. Try again.",
+    "shutter": "Take a photo",
+    "flip": "Switch camera",
+    "lastPhoto": "Last photo",
+    "channel": "Watch camera",
+    "notifyTitle": "Your watch wants the camera",
+    "notifyBody": "Tap to open the camera, then press the shutter on your watch."
   }
 }
