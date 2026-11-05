@@ -223,6 +223,11 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    */
   getHuaweiAccount(): string | null;
   setHuaweiAccount(account: string | null): Promise<void>;
+  /**
+   * The cookies the app's WebView holds for `url` (Android `CookieManager`, iOS default `WKHTTPCookieStore`), HttpOnly ones included,
+   * as one `name=value; ...` string ("" when none). Only the Huawei account sign-in screen calls it, to read the numeric `userId`.
+   */
+  readWebCookies(url: string): Promise<string>;
   /** The once-a-day "Morning summary" notification, posted after the first sync that stored last night's sleep. Off by default. */
   getMorningSummaryEnabled(): boolean;
   setMorningSummaryEnabled(enabled: boolean): Promise<void>;
