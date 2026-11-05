@@ -773,7 +773,9 @@
     "disconnect": "Disconnect Strava",
     "signInToDisconnect": "Sign in with JoyoRogo to disconnect or send.",
     "compatible": "Compatible with Strava",
-    "legal": "Compatible with Strava. JoyoFit is not made, sponsored or endorsed by Strava. What you send follows your Strava privacy settings; you can remove JoyoFit any time in Strava under Settings, My Apps."
+    "legal": "Compatible with Strava. JoyoFit is not made, sponsored or endorsed by Strava. What you send follows your Strava privacy settings; you can remove JoyoFit any time in Strava under Settings, My Apps.",
+    "remind": "Remind me after a workout",
+    "remindHint": "A notification when a new watch workout can be uploaded to Strava by hand."
   },
   "joyorogo": {
     "title": "Exercise energy to JoyoRogo",

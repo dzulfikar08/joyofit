@@ -24,6 +24,7 @@ import { serializeQueries } from '@/db/serialize';
 import { DatabaseGate } from '@/features/dbhealth/DatabaseGate';
 import { DbHealthNotice } from '@/features/dbhealth/DbHealthNotice';
 import { CameraRemoteRunner } from '@/features/camera/CameraRemoteRunner';
+import { ManualReminderRunner } from '@/features/strava/ManualReminderRunner';
 import { FamilyProvider } from '@/features/family/FamilyProvider';
 import { syncHrZonesAtLaunch } from '@/features/hrzones/settings';
 import { BikeRideProvider } from '@/features/bikecomputer/BikeRideProvider';
@@ -212,6 +213,8 @@ function RootNavigator() {
                   <LiveExtrasFeed />
                   {/* The watch's Remote shutter: opens the camera screen when the watch opens its shutter (a notification while in the background). */}
                   <CameraRemoteRunner />
+                  {/* "Ready for Strava": a notification that opens the manual upload of a new workout while Strava is not connected. */}
+                  <ManualReminderRunner />
                   <TabBarInsetProvider>
                   <StartWorkoutProvider>
                   <View style={{ flex: 1 }}>

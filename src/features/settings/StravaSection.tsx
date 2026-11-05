@@ -1,3 +1,6 @@
+import * as Notifications from 'expo-notifications';
+import { useSQLiteContext } from 'expo-sqlite';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, StyleSheet, View } from 'react-native';
 
@@ -11,6 +14,7 @@ import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
 import { formatDateTime } from '@/format';
+import { getManualReminder, setManualReminder } from '@/features/strava/manualReminder';
 import { spacing, useTheme } from '@/theme';
 import { useCloud } from '@/state/CloudProvider';
 import { useStrava } from '@/state/StravaProvider';
@@ -37,6 +41,27 @@ export function StravaSection() {
   const { scheme } = useTheme();
   const connected = strava.settings.connectedAt !== null;
   const slotsFull = !connected && strava.slots.full;
+  const db = useSQLiteContext();
+  // "Ready for Strava" after a workout (features/strava/manualReminder.ts); null until read.
+  const [remind, setRemind] = useState<boolean | null>(null);
+  useEffect(() => {
+    let live = true;
+    getManualReminder(db)
+      .then((on) => live && setRemind(on))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [db]);
+  const changeRemind = useCallback(
+    async (on: boolean) => {
+      setRemind(on);
+      await setManualReminder(db, on);
+      // Asks only when turned on here, by the person: the reminder never asks from the background.
+      if (on) await Notifications.requestPermissionsAsync().catch(() => {});
+    },
+    [db],
+  );
 
   return (
     <Section title="Strava" leading={<BrandMark brand="strava" size={32} />}>
@@ -96,6 +121,9 @@ export function StravaSection() {
           style={[styles.connect, (strava.busy || strava.serverReady === false) && styles.dim]}>
           <Image source={CONNECT_BUTTON} style={BUTTON_SIZE} accessibilityIgnoresInvertColors />
         </PressableScale>
+      ) : null}
+      {!connected && strava.settings.manualUpload && remind !== null ? (
+        <SwitchRow label={t('strava.remind')} hint={t('strava.remindHint')} value={remind} onValueChange={(on) => void changeRemind(on)} />
       ) : null}
       {connected ? (
         <>

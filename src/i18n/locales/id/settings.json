@@ -764,7 +764,9 @@
     "disconnect": "Putuskan Strava",
     "signInToDisconnect": "Masuk dengan JoyoRogo untuk memutuskan atau mengirim.",
     "compatible": "Kompatibel dengan Strava",
-    "legal": "Kompatibel dengan Strava. JoyoFit tidak dibuat, disponsori, atau didukung oleh Strava. Yang kamu kirim mengikuti pengaturan privasi Strava kamu; kamu bisa menghapus JoyoFit kapan saja di Strava lewat Settings, My Apps."
+    "legal": "Kompatibel dengan Strava. JoyoFit tidak dibuat, disponsori, atau didukung oleh Strava. Yang kamu kirim mengikuti pengaturan privasi Strava kamu; kamu bisa menghapus JoyoFit kapan saja di Strava lewat Settings, My Apps.",
+    "remind": "Ingatkan setelah latihan",
+    "remindHint": "Notifikasi saat latihan baru dari jam bisa diunggah manual ke Strava."
   },
   "joyorogo": {
     "title": "Kalori olahraga ke JoyoRogo",

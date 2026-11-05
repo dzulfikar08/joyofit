@@ -69,7 +69,13 @@
       "inApp": "Inside JoyoFit (email & password login)",
       "chooseTitle": "Upload this workout on Strava's page. Choose how:",
       "browserHint": "Pick {{file}} from Downloads/Files. If the page asks, turn on Desktop site.",
-      "otherWay": "Other way"
+      "otherWay": "Other way",
+      "remind": {
+        "channel": "Ready for Strava",
+        "title": "Ready for Strava",
+        "body": "Your {{workout}} can go to Strava. Tap to upload it by hand.",
+        "bodyMore": "Your {{workout}} and {{more}} more can go to Strava. Tap to upload by hand."
+      }
     }
   },
   "fitImport": {

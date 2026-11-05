@@ -442,6 +442,15 @@ the workout is deleted.
 Differences from the API upload: Strava names the activity itself and takes the sport from the file (`session.sport`), and no
 description, gear or `external_id` is set (those are API form fields, not in the file).
 
+**Ready for Strava (reminder).** While Strava is not connected and the switch is on, each sync that brings new watch workouts
+posts one local notification, "Siap ke Strava" (`features/strava/ManualReminderRunner.tsx`, `manualReminder.ts`): the newest
+workout (and how many more), tapping it opens that workout's manual upload. Only complete watch workouts that ended within the
+last two days and are neither sent by the API nor marked as uploaded by hand; each workout once (`cloud_state`
+`strava_manual_remind_seen`, a `workouts.id` watermark whose first value is set without announcing anything). The choice is
+`strava_manual_remind` (Settings › Strava, **Remind me after a workout**, shown while not connected): unset means on once the
+person has marked a manual upload, so people who never upload by hand are not nagged. It never asks for notification permission
+from the background; turning the switch on asks. JavaScript only (OTA).
+
 **Build.** `modules/strava-upload-web` is a native module (Kotlin + Swift), so this needs a new binary; the fingerprint
 runtime (`docs/ota.md`) keeps an OTA of it away from older binaries. Nothing new leaves the phone toward JoyoFit's or
 JoyoRogo's servers: the file goes from the phone to Strava, sent by the person.

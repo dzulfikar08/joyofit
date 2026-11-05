@@ -69,7 +69,13 @@
       "inApp": "Di dalam JoyoFit (login email & password)",
       "chooseTitle": "Unggah latihan ini di halaman Strava. Pilih caranya:",
       "browserHint": "Pilih file {{file}} dari Unduhan/Files. Kalau halaman minta, nyalakan Situs desktop.",
-      "otherWay": "Cara lain"
+      "otherWay": "Cara lain",
+      "remind": {
+        "channel": "Siap ke Strava",
+        "title": "Siap ke Strava",
+        "body": "{{workout}} kamu bisa dikirim ke Strava. Ketuk untuk unggah manual.",
+        "bodyMore": "{{workout}} kamu dan {{more}} latihan lain bisa dikirim ke Strava. Ketuk untuk unggah manual."
+      }
     }
   },
   "fitImport": {
