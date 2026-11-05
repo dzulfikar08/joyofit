@@ -13,6 +13,7 @@ import { haversineM } from '../workouts/analysis/geo';
 import { SPORT_ROWS, type ManualSport } from '../workouts/manual';
 import { SensorTracker, type SensorReadings } from '../sensors/gatt';
 import { PhoneStepCount } from '../sensors/phoneSteps';
+import { filterRriArtefacts, withinPhysiological } from './rri';
 import { HR_COVERAGE_MIN, type EnergyProfile, keytelKcalPerMin, metKcalPerSec } from './energy';
 
 export type RecorderStatus = 'idle' | 'recording' | 'paused' | 'finished';
@@ -89,6 +90,8 @@ export interface RecordedWorkout {
   /** Mean percent of the left pedal while pedalling, when the power meter reports balance. */
   balanceLeftPct: number | null;
   samples: RecordedSample[];
+  /** Filtered beat-to-beat R-R intervals (ms) from a chest strap, for post-session HRV; absent when none were received. */
+  rri?: number[];
   laps: RecordedLap[];
 }
 
@@ -168,6 +171,8 @@ export interface RecorderMeta {
   phoneSteps?: number;
   /** Live climb in metres. Absent in a journal written before it existed. */
   elevationGainM?: number;
+  /** Raw R-R intervals (ms) captured so far, for crash recovery; absent in a journal written before it existed. */
+  rri?: number[];
 }
 
 const isCycling = (sport: ManualSport) => sport === 'ride' || sport === 'indoorRide';
@@ -183,6 +188,8 @@ export class Recorder {
   private distance = 0;
   /** Steps added up from the running pod's cadence. */
   private podSteps = 0;
+  /** Raw beat-to-beat R-R intervals (ms) from a chest strap, filtered at finish for post-session HRV. */
+  private rri: number[] = [];
   /** The phone's step counter: steps counted while recording and the cadence of the last seconds. */
   private phoneSteps = new PhoneStepCount();
   /** Heart rate of the recorded seconds: sum, count and highest, for the live average and maximum. */
@@ -365,6 +372,7 @@ export class Recorder {
     const cycling = isCycling(sport);
     // The sensors are read at the real instant, not at the (earlier) second being filled in after a stall.
     const r: SensorReadings = this.tracker.read(nowMs);
+    if (r.rrMs) for (const v of r.rrMs) if (withinPhysiological(v)) this.rri.push(v);
     const fix = this.latestFix && nowMs - this.latestFix.ts <= FIX_FRESH_MS && gps ? this.latestFix : null;
 
     // Distance of this second and the speed that goes with the same source.
@@ -519,6 +527,7 @@ export class Recorder {
       laps: this.laps,
       lapStartIndex: this.lapStartIndex,
       lapStartDistance: this.lapStartDistance,
+      rri: this.rri,
     };
   }
 
@@ -556,6 +565,7 @@ export class Recorder {
     r.laps = meta.laps.map((l) => ({ ...l }));
     r.lapStartIndex = meta.lapStartIndex;
     r.lapStartDistance = meta.lapStartDistance;
+    r.rri = meta.rri ?? [];
     return r;
   }
 
@@ -633,6 +643,7 @@ export class Recorder {
       balanceLeftPct: this.balances.length > 0 ? Math.round((mean(this.balances) * 10)) / 10 : null,
       samples: s,
       laps: this.laps,
+      rri: this.rri.length > 0 ? filterRriArtefacts(this.rri) : undefined,
     };
   }
 }

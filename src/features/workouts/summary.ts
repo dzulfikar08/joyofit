@@ -72,6 +72,8 @@ export interface WorkoutSummary {
   avgPower?: number;
   maxPower?: number;
   normalizedPower?: number;
+  /** Heart-rate variability from a chest strap's R-R intervals this session (RMSSD/SDNN in ms); absent without a strap. */
+  hrv?: { rmssd: number; sdnn: number; beats: number };
   /** Mean percent of the left pedal of a power meter that measures balance (a phone recording or an imported file). */
   balanceLeftPct?: number;
   avgCadence?: number;
