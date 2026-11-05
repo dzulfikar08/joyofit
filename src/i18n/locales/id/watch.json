@@ -320,7 +320,7 @@
         "too_long": "Terlalu panjang untuk ID akun Huawei."
       },
       "confirmTitle": "Jam mungkin minta direset",
-      "confirmBody": "Kalau ID ini bukan akun yang terdaftar di jam, jam akan minta reset pabrik saat terhubung berikutnya. Jam yang sudah dipasangkan ke JoyoFit belum punya akun, jadi jam akan minta. Ketuk Batal di jam supaya tetap aman.\n\nReset menghapus yang hanya ada di jam: alarm, watch face, photo face, dan pengaturan jam. JoyoFit menyinkronkan jam dulu, jadi data yang sudah terekam tetap aman.",
+      "confirmBody": "Kalau ID ini bukan akun yang terdaftar di jam, jam akan minta reset pabrik saat terhubung berikutnya. Jam yang sudah dipasangkan ke JoyoFit belum punya akun, jadi jam akan minta. Ketuk Batal di jam supaya tetap aman.\n\nReset menghapus watch face, photo face, dan deteksi jatuh. JoyoFit menyinkronkan jam dulu supaya data yang terekam tetap aman, mengirim lagi pengaturan sensor, dan menawarkan untuk memulihkan alarm.",
       "confirmPro": "Dengan JoyoFit Pro, riwayat dan pengaturan aplikasimu juga tersimpan di cloud dan kembali di HP mana pun.",
       "confirmSeePro": "Lihat Pro",
       "confirmSyncSave": "Sinkron lalu simpan",

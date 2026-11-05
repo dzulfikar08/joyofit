@@ -321,7 +321,7 @@
         "too_long": "That is too long for a Huawei account ID."
       },
       "confirmTitle": "Your watch may ask to reset",
-      "confirmBody": "If this ID is not the account your watch is registered to, the watch asks for a factory reset at the next connect. A watch already paired with JoyoFit has no account yet, so it will ask. Tap Cancel on the watch to keep it.\n\nA reset erases what lives only on the watch: alarms, watch faces, the photo face and watch settings. JoyoFit syncs the watch first, so your recorded data is kept.",
+      "confirmBody": "If this ID is not the account your watch is registered to, the watch asks for a factory reset at the next connect. A watch already paired with JoyoFit has no account yet, so it will ask. Tap Cancel on the watch to keep it.\n\nA reset erases watch faces, the photo face and fall detection. JoyoFit syncs the watch first so your recorded data is kept, sends your sensor settings again, and offers to restore your alarms.",
       "confirmPro": "With JoyoFit Pro your history and app settings are also kept in the cloud and come back on any phone.",
       "confirmSeePro": "See Pro",
       "confirmSyncSave": "Sync and save",
