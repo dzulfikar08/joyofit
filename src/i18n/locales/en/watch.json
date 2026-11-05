@@ -308,7 +308,7 @@
       "signInTitle": "Sign in to Huawei",
       "signInHint": "Sign in with the Huawei account your watch was set up with. JoyoFit reads only your account ID from the page, never your password.",
       "savedReconnect": "Saved. Reconnect your watch for it to take effect.",
-      "resetWarning": "Use the same Huawei account your watch was set up with. A different ID can make the watch ask for a factory reset. If your watch was first paired to JoyoFit without an account, forget it and connect again after setting this.",
+      "resetWarning": "Risky: if the ID does not match the account your watch is registered to, the watch asks for a factory reset when it connects. Always tap Cancel on the watch. A watch already paired with JoyoFit has no account and will ask.",
       "guideTitle": "Why and how",
       "guide": "Some watches check which Huawei account the connecting app sends. When JoyoFit sends none, the watch can refuse a face or ask to reset. Connecting your account sends the same ID Huawei Health uses.\n\n1. Tap Connect Huawei account and sign in. JoyoFit picks up your 17-digit account ID automatically.\n2. If nothing is picked up, get the ID on a computer: open chrome and sign in at cloud.huawei.com, press F12, open Application > Cookies, copy the 17 digits of userId, then paste it into Enter the ID manually.\n3. Reconnect your watch. If it asks to be restored (factory reset), the ID does not match: cancel and check it.",
       "invalid": {
@@ -316,7 +316,13 @@
         "non_digit": "The account ID is only digits.",
         "too_short": "That is too short for a Huawei account ID.",
         "too_long": "That is too long for a Huawei account ID."
-      }
+      },
+      "confirmTitle": "Your watch may ask to reset",
+      "confirmBody": "If this ID is not the account your watch is registered to, the watch asks for a factory reset at the next connect. A watch already paired with JoyoFit has no account yet, so it will ask. Tap Cancel on the watch to keep it.\n\nA reset erases what lives only on the watch: alarms, watch faces, the photo face and watch settings. JoyoFit syncs the watch first, so your recorded data is kept.",
+      "confirmPro": "With JoyoFit Pro your history and app settings are also kept in the cloud and come back on any phone.",
+      "confirmSeePro": "See Pro",
+      "confirmSyncSave": "Sync and save",
+      "confirmSave": "Save anyway"
     },
     "updateApp": "Update the app to use this feature",
     "importHwt": "Import .hwt file",

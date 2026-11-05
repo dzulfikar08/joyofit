@@ -1,7 +1,9 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
+import { appAlert, type AppAlertButton } from '@/components/AppAlert';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Details } from '@/components/Details';
@@ -11,6 +13,8 @@ import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { HuaweiAccountSignInModal } from '@/features/watchfaces/HuaweiAccountSignInModal';
 import { normalizeHuaweiAccountId } from '@/features/watchfaces/huaweiAccount';
+import { useCloud } from '@/state/CloudProvider';
+import { useWatch } from '@/state/WatchProvider';
 import { spacing } from '@/theme';
 import { HuaweiWear, hasNative } from '@/wear';
 
@@ -32,6 +36,9 @@ export function HuaweiAccountSection() {
   const [manualText, setManualText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const { pro } = useCloud();
+  const { device, sync } = useWatch();
+  const router = useRouter();
 
   if (!supported) return null;
 
@@ -42,9 +49,38 @@ export function HuaweiAccountSection() {
     setSaved(true);
   };
 
+  /**
+   * Saving an id is the risky step: a watch registered to another account (or, for a watch already paired with JoyoFit, to none)
+   * asks for a factory reset at the next connect. Confirm first, sync the watch so nothing recorded on it is lost, and say what a
+   * reset would erase. History already in JoyoFit is safe; Pro also keeps a cloud copy of it and of the app settings.
+   */
+  const confirmSave = (id: string) => {
+    const lines = [t('watch:faces.account.confirmBody')];
+    if (pro !== true) lines.push(t('watch:faces.account.confirmPro'));
+    const buttons: AppAlertButton[] = [{ text: t('common:actions.cancel'), style: 'cancel' }];
+    if (pro !== true) buttons.push({ text: t('watch:faces.account.confirmSeePro'), onPress: () => router.push('/pro') });
+    buttons.push({
+      text: device ? t('watch:faces.account.confirmSyncSave') : t('watch:faces.account.confirmSave'),
+      style: 'destructive',
+      onPress: () => {
+        void (async () => {
+          if (device) {
+            try {
+              await sync();
+            } catch {
+              // A failed sync still lets the person decide; the warning already said what is at stake.
+            }
+          }
+          await save(id);
+        })();
+      },
+    });
+    appAlert(t('watch:faces.account.confirmTitle'), lines.join('\n\n'), buttons);
+  };
+
   const onCapture = (id: string) => {
     setSignInOpen(false);
-    void save(id);
+    confirmSave(id);
   };
 
   const saveManual = () => {
@@ -55,7 +91,7 @@ export function HuaweiAccountSection() {
     }
     setManualOpen(false);
     setManualText('');
-    void save(result.id);
+    confirmSave(result.id);
   };
 
   const remove = () => {
