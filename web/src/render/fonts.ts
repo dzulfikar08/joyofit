@@ -32,6 +32,12 @@ export const FONTS: FontChoice[] = [
   { family: "Audiowide", label: "Audiowide", weights: [400], note: "retroDigital" },
   { family: "DM Mono", label: "DM Mono", weights: [400, 500], note: "monospace" },
   { family: "Playfair Display", label: "Playfair Display", weights: [400, 700], note: "classicSerif" },
+  { family: "Teko", label: "Teko", weights: [400, 600], note: "condensed" },
+  { family: "Saira Condensed", label: "Saira Condensed", weights: [500, 700], note: "condensed" },
+  { family: "Space Grotesk", label: "Space Grotesk", weights: [400, 600], note: "geometric" },
+  { family: "Michroma", label: "Michroma", weights: [400], note: "futuristic" },
+  { family: "Syncopate", label: "Syncopate", weights: [400, 700], note: "wideTechy" },
+  { family: "Share Tech Mono", label: "Share Tech Mono", weights: [400], note: "retroDigital" },
 ];
 
 export const DEFAULT_FONT: FontRef = { family: "Plus Jakarta Sans Variable", weight: 700 };
@@ -74,6 +80,16 @@ const FONT_CSS: Record<string, () => Promise<unknown>> = {
   "dm-mono-500": () => import("../../node_modules/@fontsource/dm-mono/latin-500.css"),
   "playfair-display-400": () => import("../../node_modules/@fontsource/playfair-display/latin-400.css"),
   "playfair-display-700": () => import("../../node_modules/@fontsource/playfair-display/latin-700.css"),
+  "teko-400": () => import("../../node_modules/@fontsource/teko/latin-400.css"),
+  "teko-600": () => import("../../node_modules/@fontsource/teko/latin-600.css"),
+  "saira-condensed-500": () => import("../../node_modules/@fontsource/saira-condensed/latin-500.css"),
+  "saira-condensed-700": () => import("../../node_modules/@fontsource/saira-condensed/latin-700.css"),
+  "space-grotesk-400": () => import("../../node_modules/@fontsource/space-grotesk/latin-400.css"),
+  "space-grotesk-600": () => import("../../node_modules/@fontsource/space-grotesk/latin-600.css"),
+  "michroma-400": () => import("../../node_modules/@fontsource/michroma/latin-400.css"),
+  "syncopate-400": () => import("../../node_modules/@fontsource/syncopate/latin-400.css"),
+  "syncopate-700": () => import("../../node_modules/@fontsource/syncopate/latin-700.css"),
+  "share-tech-mono-400": () => import("../../node_modules/@fontsource/share-tech-mono/latin-400.css"),
 };
 
 function packageName(family: string): string {
