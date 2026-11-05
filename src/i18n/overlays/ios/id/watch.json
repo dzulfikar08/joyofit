@@ -40,7 +40,7 @@
       "signIn": "Hubungkan akun jam",
       "signInTitle": "Masuk ke akun jam",
       "signInHint": "Masuk dengan akun yang dipakai saat menyiapkan jam. JoyoFit hanya membaca ID akun dari halaman ini, tidak pernah kata sandimu.",
-      "resetWarning": "Pakai akun yang sama dengan saat menyiapkan jam. ID yang berbeda bisa membuat jam minta direset ke setelan pabrik. Jika jam pertama kali dipasangkan ke JoyoFit tanpa akun, lupakan jam lalu hubungkan lagi setelah mengatur ini.",
+      "resetWarning": "Berisiko: kalau ID tidak cocok dengan akun yang terdaftar di jam, jam minta reset pabrik saat terhubung. Selalu ketuk Batal di jam. Jam yang sudah dipasangkan ke JoyoFit belum punya akun dan akan minta.",
       "guideTitle": "Kenapa dan caranya",
       "guide": "Sebagian jam memeriksa akun mana yang dikirim aplikasi yang terhubung. Saat JoyoFit tidak mengirim apa-apa, jam bisa menolak watch face atau minta direset. Menghubungkan akunmu mengirim ID yang sama dengan yang dipakai aplikasi bawaan jam.\n\n1. Ketuk Hubungkan akun jam dan masuk. JoyoFit mengambil ID akun 17 digit secara otomatis.\n2. Kalau tidak terbaca, ambil ID di komputer: buka browser dan masuk di cloud.huawei.com, tekan F12, buka Application > Cookies, salin 17 angka pada userId, lalu tempel di Masukkan ID secara manual.\n3. Hubungkan ulang jam. Kalau jam minta dipulihkan (reset pabrik), ID tidak cocok: batalkan dan periksa lagi.",
       "invalid": {

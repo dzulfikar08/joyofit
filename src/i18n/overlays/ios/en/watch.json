@@ -40,7 +40,7 @@
       "signIn": "Connect watch account",
       "signInTitle": "Sign in to your watch account",
       "signInHint": "Sign in with the account your watch was set up with. JoyoFit reads only your account ID from the page, never your password.",
-      "resetWarning": "Use the same account your watch was set up with. A different ID can make the watch ask for a factory reset. If your watch was first paired to JoyoFit without an account, forget it and connect again after setting this.",
+      "resetWarning": "Risky: if the ID does not match the account your watch is registered to, the watch asks for a factory reset when it connects. Always tap Cancel on the watch. A watch already paired with JoyoFit has no account and will ask.",
       "guideTitle": "Why and how",
       "guide": "Some watches check which account the connecting app sends. When JoyoFit sends none, the watch can refuse a face or ask to reset. Connecting your account sends the same ID the watch's own app uses.\n\n1. Tap Connect watch account and sign in. JoyoFit picks up your 17-digit account ID automatically.\n2. If nothing is picked up, get the ID on a computer: open a browser and sign in at cloud.huawei.com, press F12, open Application > Cookies, copy the 17 digits of userId, then paste it into Enter the ID manually.\n3. Reconnect your watch. If it asks to be restored (factory reset), the ID does not match: cancel and check it.",
       "invalid": {
