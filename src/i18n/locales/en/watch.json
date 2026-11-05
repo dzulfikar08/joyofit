@@ -240,7 +240,10 @@
       "on": "Smart alarm on",
       "edit": "Edit smart alarm",
       "set": "Set smart alarm"
-    }
+    },
+    "restore_one": "Restore {{count}} alarm",
+    "restore_other": "Restore {{count}} alarms",
+    "restoreHint": "This watch has no alarms, but JoyoFit kept a copy of your last ones (after a reset, or on a new phone). Put them back?"
   },
   "faces": {
     "builtInAuthor": "Built in",
