@@ -10,6 +10,7 @@ import { SPORT_ROWS } from '../workouts/manual';
 import type { VirtualRide, WorkoutSummary } from '../workouts/summary';
 import { insertWorkoutSensors, type WorkoutSensor } from '../sensors/store';
 import type { RecordedSample, RecordedWorkout } from './recorder';
+import { hrvMetrics } from './rri';
 
 export type SaveDb = Pick<SQLiteDatabase, 'getAllAsync' | 'withExclusiveTransactionAsync'>;
 
@@ -78,6 +79,10 @@ export function summaryOf(w: RecordedWorkout, sensors: readonly WorkoutSensor[],
     summary.elevationGain = virtual.elevM;
     summary.ascentSource = 'virtual';
     if (w.movingSec > 0) summary.avgSpeed = virtual.distM / w.movingSec;
+  }
+  if (w.rri && w.rri.length > 0) {
+    const hrv = hrvMetrics(w.rri);
+    if (hrv) summary.hrv = hrv;
   }
   return summary;
 }
