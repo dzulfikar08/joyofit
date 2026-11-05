@@ -215,6 +215,14 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    */
   getForceBle(): boolean;
   setForceBle(enabled: boolean): Promise<void>;
+  /**
+   * The user's Huawei account id (the 17-18 digit `userId` of their Huawei account), sent to the watch at the next connect in 1A/05 so
+   * a watch set up under that account keeps its data instead of asking for a factory reset. `null`/empty sends the empty default (the
+   * behaviour before this setting). This is only an account id: no signature or token, and it does not let JoyoFit install a face a
+   * watch that enforces signatures would reject. Takes effect on the next connect; a live link keeps the account it opened with.
+   */
+  getHuaweiAccount(): string | null;
+  setHuaweiAccount(account: string | null): Promise<void>;
   /** The once-a-day "Morning summary" notification, posted after the first sync that stored last night's sleep. Off by default. */
   getMorningSummaryEnabled(): boolean;
   setMorningSummaryEnabled(enabled: boolean): Promise<void>;

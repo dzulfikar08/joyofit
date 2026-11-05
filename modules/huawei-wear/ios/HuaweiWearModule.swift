@@ -302,6 +302,13 @@ public final class HuaweiWearModule: Module {
 
         AsyncFunction("setForceBle") { (enabled: Bool) async throws -> Void in }
 
+        // The user's Huawei account id, sent in 1A/05 at the next connect (see WearSettings.huaweiAccount).
+        Function("getHuaweiAccount") { () -> String? in runtime.settings.huaweiAccount }
+
+        AsyncFunction("setHuaweiAccount") { (account: String?) async throws -> Void in
+            runtime.settings.huaweiAccount = account
+        }
+
         // MARK: profile
 
         Function("getUserProfile") { () -> [String: Any]? in

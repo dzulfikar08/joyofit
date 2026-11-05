@@ -34,7 +34,20 @@
     "signatureRefused": "The watch rejected this face because it is not signed by the watch maker. Try another face from the JoyoFit gallery.",
     "installAbout": "Make faces in the watch maker's watch-face designer and export them as .hwt files. Make them for your watch's screen size. A face made for another screen is refused before it is sent.\n\nWhether the watch accepts a face that the watch maker did not sign is not known. If it refuses, the exact status code it returned is shown here and in the log.",
     "installAboutSized": "Make faces in the watch maker's watch-face designer and export them as .hwt files. This watch's screen is {{width}} x {{height}} px. A face made for another screen is refused before it is sent.\n\nWhether the watch accepts a face that the watch maker did not sign is not known. If it refuses, the exact status code it returned is shown here and in the log.",
-    "notHwtWarning": "\"{{name}}\" does not have a .hwt extension. Please select a valid watch face (.hwt) file."
+    "notHwtWarning": "\"{{name}}\" does not have a .hwt extension. Please select a valid watch face (.hwt) file.",
+    "account": {
+      "title": "Watch account",
+      "signIn": "Connect watch account",
+      "signInTitle": "Sign in to your watch account",
+      "signInHint": "Sign in with the account your watch was set up with. JoyoFit reads only your account ID from the page, never your password.",
+      "resetWarning": "Use the same account your watch was set up with. A different ID can make the watch ask for a factory reset. If your watch was first paired to JoyoFit without an account, forget it and connect again after setting this.",
+      "guideTitle": "Why and how",
+      "guide": "Some watches check which account the connecting app sends. When JoyoFit sends none, the watch can refuse a face or ask to reset. Connecting your account sends the same ID the watch's own app uses.\n\n1. Tap Connect watch account and sign in. JoyoFit picks up your 17-digit account ID automatically.\n2. If nothing is picked up, get the ID on a computer: open a browser and sign in at cloud.huawei.com, press F12, open Application > Cookies, copy the 17 digits of userId, then paste it into Enter the ID manually.\n3. Reconnect your watch. If it asks to be restored (factory reset), the ID does not match: cancel and check it.",
+      "invalid": {
+        "too_short": "That is too short for a watch account ID.",
+        "too_long": "That is too long for a watch account ID."
+      }
+    }
   },
   "courses": {
     "gateSet": "Watch maker's gate: set",

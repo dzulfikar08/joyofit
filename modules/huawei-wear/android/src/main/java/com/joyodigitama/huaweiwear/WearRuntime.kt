@@ -456,6 +456,13 @@ internal class WearRuntime private constructor(context: Context) {
     settings.forceBle = enabled
   }
 
+  fun huaweiAccount(): String? = settings.huaweiAccount
+
+  /** Takes effect on the next connect; a live link keeps the account it was opened with. Blank clears it (sends GB's empty default). */
+  fun setHuaweiAccount(account: String?) {
+    settings.huaweiAccount = account
+  }
+
   fun morningSummaryEnabled(): Boolean = settings.morningSummaryEnabled
 
   /** Turning it on lets the next sync post today's summary if it has not been posted yet. */

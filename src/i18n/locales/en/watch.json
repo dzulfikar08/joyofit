@@ -296,6 +296,28 @@
     "deleteFromPhone": "Delete from Phone",
     "personalLibrary": "Personal library",
     "personalLibraryHint": "Watch faces stored on your phone. Keep your favorites here and swap them onto your watch anytime.",
+    "account": {
+      "title": "Huawei account",
+      "status": "Account",
+      "notSet": "Not connected",
+      "signIn": "Connect Huawei account",
+      "signInAgain": "Reconnect account",
+      "remove": "Remove",
+      "enterManually": "Enter the ID manually",
+      "manualPlaceholder": "17-digit account ID",
+      "signInTitle": "Sign in to Huawei",
+      "signInHint": "Sign in with the Huawei account your watch was set up with. JoyoFit reads only your account ID from the page, never your password.",
+      "savedReconnect": "Saved. Reconnect your watch for it to take effect.",
+      "resetWarning": "Use the same Huawei account your watch was set up with. A different ID can make the watch ask for a factory reset. If your watch was first paired to JoyoFit without an account, forget it and connect again after setting this.",
+      "guideTitle": "Why and how",
+      "guide": "Some watches check which Huawei account the connecting app sends. When JoyoFit sends none, the watch can refuse a face or ask to reset. Connecting your account sends the same ID Huawei Health uses.\n\n1. Tap Connect Huawei account and sign in. JoyoFit picks up your 17-digit account ID automatically.\n2. If nothing is picked up, get the ID on a computer: open chrome and sign in at cloud.huawei.com, press F12, open Application > Cookies, copy the 17 digits of userId, then paste it into Enter the ID manually.\n3. Reconnect your watch. If it asks to be restored (factory reset), the ID does not match: cancel and check it.",
+      "invalid": {
+        "empty": "Enter your account ID.",
+        "non_digit": "The account ID is only digits.",
+        "too_short": "That is too short for a Huawei account ID.",
+        "too_long": "That is too long for a Huawei account ID."
+      }
+    },
     "updateApp": "Update the app to use this feature",
     "importHwt": "Import .hwt file",
     "noSaved": "No watch faces saved",
