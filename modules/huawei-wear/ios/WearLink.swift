@@ -250,6 +250,7 @@ public final class WearLink: @unchecked Sendable {
         // GB HuaweiSupportProvider: the AW70 bands send their workout records with their own layout.
         session.params.isAW = connection.deviceType == .aw
         connection.session = session
+        await PhoneInfoResponder.install(on: session, model: phoneModel, events: events)
 
         do {
             if mode == .background {
