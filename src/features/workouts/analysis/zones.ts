@@ -6,8 +6,12 @@ import { BEST_EFFORT_DISTANCES, type AnalysisBestEffort, type AnalysisHrZones, t
 
 /** Efforts shorter than this say little about a one-hour pace. */
 const MIN_THRESHOLD_EFFORT_SEC = 480;
-/** Riegel's fatigue exponent minus one: pace slows by (T2 / T1) ^ 0.06 when the same effort lasts T2 instead of T1. */
-const RIEGEL_PACE_EXPONENT = 0.06;
+/**
+ * Riegel's time-to-pace scaling exponent. Riegel's law is T2 = T1 * (D2/D1)^1.06; rescaling a pace by the ratio of the efforts'
+ * durations needs the exponent (b-1)/b = 0.06/1.06 ≈ 0.0566, not the distance exponent b-1 = 0.06 itself. (JoyoFit fix 2026-11, from
+ * Jeremy's review: the two differ by ~0.4% of threshold pace.)
+ */
+const RIEGEL_PACE_EXPONENT = 0.06 / 1.06;
 const THRESHOLD_EFFORT_SEC = 3600;
 const THRESHOLD_KEYS: readonly BestEffortKey[] = ['1mi', '5k', '10k', 'half'];
 

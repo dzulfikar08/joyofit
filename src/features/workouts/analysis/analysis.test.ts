@@ -152,7 +152,7 @@ describe('constant 5:00/km run', () => {
 
   it('has no pace zones without an effort of 8 minutes or more, and with one puts everything in vo2', () => {
     expect(a.paceZones).not.toBeNull();
-    const threshold = Math.round(300 * (3600 / 1500) ** 0.06);
+    const threshold = Math.round(300 * (3600 / 1500) ** (0.06 / 1.06));
     expect(a.paceZones?.thresholdSecKm).toBe(threshold);
     const zones = a.paceZones!.zones;
     expect(zones.map((z) => z.key)).toEqual(['recovery', 'endurance', 'tempo', 'threshold', 'vo2']);
@@ -172,7 +172,7 @@ describe('best efforts ranking and history', () => {
     expect(by['5k'].rank).toBe(1);
     expect(by['400m'].rank).toBeNull();
     const fast = analyze(steady5k(), { history: { ...NO_HISTORY, efforts: [{ '10k': 2700 }] } });
-    expect(fast.paceZones?.thresholdSecKm).toBe(Math.round(270 * (3600 / 2700) ** 0.06));
+    expect(fast.paceZones?.thresholdSecKm).toBe(Math.round(270 * (3600 / 2700) ** (0.06 / 1.06)));
   });
 
   it('computes past efforts from points only for runs and walks', () => {

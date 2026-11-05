@@ -7,8 +7,9 @@
  * 10..90 cannot be a human VO2max (it would mean the unit is not what we think), so it is not used.
  *
  * Estimate: Uth-Sorensen (2004), VO2max = 15.3 x maximum heart rate / resting heart rate. The maximum is 220 minus the age
- * from the profile, not a measured one, and the resting rate is the median of the watch's daily lowest readings over the
- * last 14 days (a daily minimum reads low, which pushes this estimate up), so treat it as a rough figure.
+ * from the profile, not a measured one, and the resting rate is the median over the last 14 days of the watch's own daily
+ * `restingHeartRate` reading (`listRestingHeartRateByDay` selects `MIN(resting_heart_rate)`, the value the watch reports as
+ * resting, not the day's lowest instantaneous heart rate), so treat it as a rough figure.
  */
 export const VO2_MIN = 10;
 export const VO2_MAX = 90;
