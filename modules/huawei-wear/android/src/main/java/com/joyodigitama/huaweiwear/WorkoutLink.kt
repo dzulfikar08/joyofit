@@ -460,7 +460,7 @@ internal object WorkoutReport {
     val calories = uint(tlv, 0x09) // cal, like the step frames (UNVERIFIED)
     val rise = uint(tlv, 0x0A)
     val descent = uint(tlv, 0x0B)
-    val altitude = tlv.getBytes(0x0C, null)?.let { LiveWorkoutWire.signedWhenFour(it) }
+    val altitude = tlv.getBytes(0x0C, null)?.let { LiveWorkoutWire.signedBytes(it) }
     val aerobic = uint(tlv, 0x0D)
     val anaerobic = uint(tlv, 0x0E)
     // Tag 11: `CommonUtil.c(bytes, 10)`, the hex digits read as decimal.

@@ -9,6 +9,21 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LiveWorkoutTest {
+  @Test
+  fun signedBytesSignExtendsAnyWidthWhileSignedWhenFourDoesNot() {
+    // Altitude -10 m sent as two bytes FF F6.
+    assertEquals(65526, LiveWorkoutWire.signedWhenFour(hex("FF F6")))
+    assertEquals(-10, LiveWorkoutWire.signedBytes(hex("FF F6")))
+    // One byte, three bytes, and the four-byte case both already handle.
+    assertEquals(-1, LiveWorkoutWire.signedBytes(hex("FF")))
+    assertEquals(-10, LiveWorkoutWire.signedBytes(hex("FF FF F6")))
+    assertEquals(-10, LiveWorkoutWire.signedBytes(hex("FF FF FF F6")))
+    // Positive altitude and status-sized values are unchanged.
+    assertEquals(1234, LiveWorkoutWire.signedBytes(hex("04 D2")))
+    assertEquals(100014, LiveWorkoutWire.signedBytes(hex("01 86 AE")))
+    assertNull(LiveWorkoutWire.signedBytes(hex("00 00 00 00 00")))
+  }
+
   private fun hex(s: String): ByteArray = s.replace(" ", "").chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 
   private val plain = HuaweiPacket.ParamsProvider().also { it.setTransactionsCrypted(false); it.setSliceSize(1022) }
