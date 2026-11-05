@@ -20,6 +20,8 @@ import { LEGACY_CALORIES_ID } from "@/model/fields";
 import { presetById, presetScreen, type ScreenSpec } from "@/model/screens";
 import type { Element, Project } from "@/model/types";
 import { defaultSim } from "@/render/values";
+import { alignOffsetX } from "@/render/layout";
+import { layoutOf } from "@/render/scene";
 import { TEMPLATES } from "@/templates";
 import { registerTestAsset } from "@/test/node-canvas";
 import { buildHwt } from "./build";
@@ -120,6 +122,25 @@ describe("export assembly", () => {
     const wf = readHwt(result.bytes).watchface!;
     const sizes = new Set((normal[0]!.res_name as string[]).map((r) => { const i = decodeImage(wf.images[Number(r) - 1]!); return `${i.width}x${i.height}`; }));
     expect(sizes.size).toBe(1);
+  });
+
+  it("aligns a text element left, center or right by shifting the whole block at its x", async () => {
+    // A small block centred on the screen, so every alignment stays on-screen (the exporter drops a block pushed off the edge).
+    const opts = { x: 204, y: 120, size: 24, showColon: false } as const;
+    const hourX = async (align: "left" | "center" | "right") => {
+      const result = await buildHwt(withElements([newTime({ ...opts, align })]), sim, { includeExperimental: false });
+      expect(result.elements.find((e) => e.name === "Time")?.exported).toBe(true);
+      const hour = layers(result.bytes)
+        .filter(({ label, layer }) => label === "ELEMENT_LABEL_TIME" && layer.draw_type === "DRAW_TYPE_COMBINED_RES")
+        .map(({ layer }) => bodyOf(layer))
+        .find((b) => b.value_type === VALUE_TYPE.hour && b.ambient_mode === "NORMAL_ONLY");
+      return (hour!.res_position as { x: number }).x;
+    };
+    const w = layoutOf(newTime({ ...opts, align: "left" }))!.w;
+    expect(w).toBeGreaterThan(0);
+    expect(await hourX("left")).toBe(204);
+    expect(await hourX("center")).toBe(204 + alignOffsetX("center", w));
+    expect(await hourX("right")).toBe(204 + alignOffsetX("right", w));
   });
 
   it("encodes weekday, day and month, and keeps seconds out unless unconfirmed elements are on", async () => {

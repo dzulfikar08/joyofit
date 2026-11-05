@@ -30,7 +30,7 @@ import { context2d, createSurface, newSprite, scaleSprite, spriteRgba, surfaceTo
 import { ensureFont, fontFailed } from "@/render/fonts";
 import type { DigitSet } from "@/render/glyphs";
 import { layoutOf, renderBackgroundSprite, drawProject } from "@/render/scene";
-import type { Part } from "@/render/layout";
+import { alignOffsetX, type Part } from "@/render/layout";
 import { shownSim, type DataRole } from "@/render/values";
 import { renderHand, renderRing } from "@/render/shapes";
 import { HAND_VALUE, minusDropped, elementSupport, isExportable, type SupportLevel } from "./support";
@@ -188,9 +188,9 @@ function staticImage(e: ElementBuilder, sprite: Sprite, x: number, y: number, am
 type Mode = "normal" | "aod";
 
 /** Emits the parts of a text-like element (time, date, widget). Returns what was left out. */
-function emitParts(e: ElementBuilder, el: Element, parts: Part[], mode: Mode, notes: string[]): void {
+function emitParts(e: ElementBuilder, el: Element, parts: Part[], mode: Mode, notes: string[], offsetX = 0): void {
   for (const part of parts) {
-    const x = el.x + part.x;
+    const x = el.x + offsetX + part.x;
     const y = el.y + part.y;
     if (part.kind === "icon") {
       ensureOnScreen(el.name, x, y);
@@ -272,10 +272,12 @@ function emitElement(fb: FaceBuilder, el: Element, screen: ScreenSize): string[]
     }
     case "time":
     case "date": {
+      const lay = layoutOf(el)!;
+      const off = alignOffsetX(el.align, lay.w);
       fb.element(el.type, (e) => {
-        emitParts(e, el, layoutOf(el)!.parts, "normal", left);
+        emitParts(e, el, lay.parts, "normal", left, off);
         const aod = dimmed(el);
-        emitParts(e, aod, layoutOf(aod)!.parts, "aod", []);
+        emitParts(e, aod, layoutOf(aod)!.parts, "aod", [], off);
       });
       break;
     }
@@ -287,10 +289,11 @@ function emitElement(fb: FaceBuilder, el: Element, screen: ScreenSize): string[]
       break;
     case "widget": {
       const layout = layoutOf(el)!;
+      const off = alignOffsetX(el.align, layout.w);
       fb.element("widget", (e) =>
         e.container(
-          (c) => emitParts(c, el, layout.parts, "normal", left),
-          { dataType: fieldDef(el.valueType)!.slot, rect: { x: Math.round(el.x), y: Math.round(el.y), width: Math.round(layout.w), height: Math.round(layout.h) } },
+          (c) => emitParts(c, el, layout.parts, "normal", left, off),
+          { dataType: fieldDef(el.valueType)!.slot, rect: { x: Math.round(el.x + off), y: Math.round(el.y), width: Math.round(layout.w), height: Math.round(layout.h) } },
         ),
       );
       break;

@@ -48,14 +48,25 @@ function isElement(value: unknown): value is Element {
 
 export class ProjectFileError extends Error {}
 
-/** Projects written before the field registry stored `source: "steps"` and the like; the codec id replaces it. */
+const TEXT_ALIGNS = new Set(["left", "center", "right"]);
+
+/**
+ * Projects written before the field registry stored `source: "steps"` and the like; the codec id replaces it. Text elements written
+ * before alignment existed have no `align`; they default to `left`, the old behaviour.
+ */
 function migrateElement(value: unknown): unknown {
   if (typeof value !== "object" || value === null) return value;
-  const { source, ...rest } = value as Record<string, unknown>;
-  if (typeof source !== "string" || "valueType" in rest) return value;
-  const table = rest.type === "widget" ? LEGACY_WIDGET_SOURCES : rest.type === "ring" ? LEGACY_RING_SOURCES : null;
-  const valueType = table?.[source];
-  return valueType === undefined ? value : { ...rest, valueType };
+  let out = value as Record<string, unknown>;
+  const { source, ...rest } = out;
+  if (typeof source === "string" && !("valueType" in rest)) {
+    const table = rest.type === "widget" ? LEGACY_WIDGET_SOURCES : rest.type === "ring" ? LEGACY_RING_SOURCES : null;
+    const valueType = table?.[source];
+    if (valueType !== undefined) out = { ...rest, valueType };
+  }
+  if ((out.type === "time" || out.type === "date" || out.type === "widget") && !TEXT_ALIGNS.has(out.align as string)) {
+    out = { ...out, align: "left" };
+  }
+  return out;
 }
 
 /**

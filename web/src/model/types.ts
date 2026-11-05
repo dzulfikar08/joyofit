@@ -12,6 +12,9 @@ export const PROJECT_VERSION = 1;
 
 export type FontRef = { family: string; weight: number };
 
+/** Horizontal anchor of a text element's content box at its `x`: `left` grows right, `center` is centred on `x`, `right` ends at `x`. */
+export type TextAlign = "left" | "center" | "right";
+
 export type Outline = { color: string; width: number } | null;
 
 export type BackgroundFill =
@@ -51,6 +54,7 @@ export interface TimeElement extends Base {
   size: number;
   color: string;
   outline: Outline;
+  align: TextAlign;
   layout: "row" | "stack";
   showColon: boolean;
   showSeconds: boolean;
@@ -70,6 +74,7 @@ export interface DateElement extends Base {
   size: number;
   color: string;
   outline: Outline;
+  align: TextAlign;
   parts: DatePart[];
   upper: boolean;
   tracking: number;
@@ -114,6 +119,7 @@ export interface WidgetElement extends Base {
   size: number;
   color: string;
   outline: Outline;
+  align: TextAlign;
   showIcon: boolean;
   iconColor: string;
   layout: "side" | "stack";

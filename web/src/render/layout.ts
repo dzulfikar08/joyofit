@@ -1,4 +1,4 @@
-import type { DateElement, TimeElement, WidgetElement } from "@/model/types";
+import type { DateElement, TextAlign, TimeElement, WidgetElement } from "@/model/types";
 import { fieldDef } from "@/model/fields";
 import { dateWords, renderDigitSet, renderWordSet, type DigitSet, type GlyphStyle, type WordSet } from "./glyphs";
 import { renderIcon } from "./shapes";
@@ -35,6 +35,13 @@ export interface Layout {
   w: number;
   h: number;
   parts: Part[];
+}
+
+/** Horizontal shift of a text element's whole block so its `x` is the left edge, the centre, or the right edge of the block. */
+export function alignOffsetX(align: TextAlign, width: number): number {
+  if (align === "center") return -Math.round(width / 2);
+  if (align === "right") return -width;
+  return 0;
 }
 
 function style(el: { font: GlyphStyle["font"]; color: string; outline: GlyphStyle["outline"]; tracking: number }, digitHeight: number): GlyphStyle {
