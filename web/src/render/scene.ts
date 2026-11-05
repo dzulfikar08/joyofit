@@ -12,7 +12,7 @@ import {
 } from "@/model/types";
 import { context2d, createSurface, drawSprite, newSprite, type Ctx2D, type Sprite } from "./canvas";
 import { renderIconSet } from "./iconsets";
-import { layoutDate, layoutTime, layoutWidget, type Layout, type Part } from "./layout";
+import { alignOffsetX, layoutDate, layoutTime, layoutWidget, type Layout, type Part } from "./layout";
 import { drawRingProgress, renderHand, renderRing, type HandSprite } from "./shapes";
 import { clockFields, digitList, fieldFraction, fieldValue, iconSetIndex, type DataRole } from "./values";
 
@@ -121,7 +121,9 @@ export function elementBounds(el: Exclude<Element, BackgroundElement>, sim: Sim)
     }
     default: {
       const l = layoutOf(el);
-      return { x: el.x, y: el.y, w: l?.w ?? 0, h: l?.h ?? 0 };
+      const w = l?.w ?? 0;
+      const off = l ? alignOffsetX(el.align, w) : 0;
+      return { x: el.x + off, y: el.y, w, h: l?.h ?? 0 };
     }
   }
 }
@@ -228,7 +230,7 @@ export function drawElement(ctx: Ctx2D, el: Element, sim: Sim, screen: ScreenSiz
     case "date":
     case "widget": {
       const layout = layoutOf(el);
-      if (layout) drawLayout(ctx, layout, el.x, el.y, sim, el.type === "time" && el.ampm);
+      if (layout) drawLayout(ctx, layout, el.x + alignOffsetX(el.align, layout.w), el.y, sim, el.type === "time" && el.ampm);
       return;
     }
   }

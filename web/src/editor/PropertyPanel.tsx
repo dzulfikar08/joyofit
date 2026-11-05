@@ -134,6 +134,16 @@ function TimeFields({ el, set }: { el: TimeElement; set: Patch<TimeElement> }) {
         <ColorField label={t("common.color")} value={el.color} onChange={(color) => set({ color })} />
         <OutlineField value={el.outline} onChange={(outline) => set({ outline })} fallback="#000000" />
         <SliderField label={t("common.spacing")} value={el.tracking} min={-8} max={30} unit="px" onChange={(tracking) => set({ tracking })} />
+        <SegmentedField
+          label={t("common.align")}
+          value={el.align}
+          options={[
+            { value: "left", label: t("common.alignLeft") },
+            { value: "center", label: t("common.alignCenter") },
+            { value: "right", label: t("common.alignRight") },
+          ]}
+          onChange={(align) => set({ align })}
+        />
       </Section>
       <Section title={t("section.layout")}>
         <SegmentedField
@@ -201,6 +211,16 @@ function DateFields({ el, set }: { el: DateElement; set: Patch<DateElement> }) {
         <ColorField label={t("common.color")} value={el.color} onChange={(color) => set({ color })} />
         <OutlineField value={el.outline} onChange={(outline) => set({ outline })} fallback="#000000" />
         <SliderField label={t("common.spacing")} value={el.tracking} min={-4} max={30} unit="px" onChange={(tracking) => set({ tracking })} />
+        <SegmentedField
+          label={t("common.align")}
+          value={el.align}
+          options={[
+            { value: "left", label: t("common.alignLeft") },
+            { value: "center", label: t("common.alignCenter") },
+            { value: "right", label: t("common.alignRight") },
+          ]}
+          onChange={(align) => set({ align })}
+        />
       </Section>
     </>
   );
@@ -369,6 +389,16 @@ function WidgetFields({ el, set }: { el: WidgetElement; set: Patch<WidgetElement
         <ColorField label={t("common.color")} value={el.color} onChange={(color) => set({ color })} />
         <OutlineField value={el.outline} onChange={(outline) => set({ outline })} fallback="#000000" />
         <SliderField label={t("common.spacing")} value={el.tracking} min={-4} max={20} unit="px" onChange={(tracking) => set({ tracking })} />
+        <SegmentedField
+          label={t("common.align")}
+          value={el.align}
+          options={[
+            { value: "left", label: t("common.alignLeft") },
+            { value: "center", label: t("common.alignCenter") },
+            { value: "right", label: t("common.alignRight") },
+          ]}
+          onChange={(align) => set({ align })}
+        />
       </Section>
       <Section title={t("section.icon")}>
         <ToggleRow label={t("widget.showIcon")} checked={el.showIcon} onChange={(showIcon) => set({ showIcon })} />
