@@ -71,12 +71,25 @@ internal object LiveWorkoutWire {
     return n
   }
 
-  /** `cph.e`: big-endian, signed only when it is four bytes (a negative altitude). */
+  /** `cph.e`: big-endian, signed only when it is four bytes (a negative altitude). Kept for status codes (always positive). */
   fun signedWhenFour(bytes: ByteArray?): Int? {
     if (bytes == null || bytes.isEmpty() || bytes.size > 4) return null
     var n = 0
     for (b in bytes) n = (n shl 8) or (b.toInt() and 0xFF)
     return n
+  }
+
+  /**
+   * Big-endian two's-complement over 1-4 bytes, sign-extended to the full Int width. Altitude is used only here: a value sent in
+   * fewer than four bytes (the watch sends `-10 m` as `FF F6`) must read `-10`, not `65526` as [signedWhenFour] would. No range clamp:
+   * plausibility is the caller's business, and the function is also what status codes would break on if they used it.
+   */
+  fun signedBytes(bytes: ByteArray?): Int? {
+    if (bytes == null || bytes.isEmpty() || bytes.size > 4) return null
+    var n = 0
+    for (b in bytes) n = (n shl 8) or (b.toInt() and 0xFF)
+    val shift = (4 - bytes.size) * 8
+    return (n shl shift) shr shift
   }
 
   private fun uint(tlv: HuaweiTLV, tag: Int): Long? = if (tlv.contains(tag)) {
@@ -124,7 +137,7 @@ internal data class LiveMetrics(
         LiveWorkoutWire.KEY_STEP_RATE -> LiveWorkoutWire.unsigned(raw)?.let { m.copy(stepRate = it.toInt()) }
         LiveWorkoutWire.KEY_STEPS -> LiveWorkoutWire.unsigned(raw)?.let { m.copy(steps = it.toInt()) }
         LiveWorkoutWire.KEY_CADENCE -> LiveWorkoutWire.unsigned(raw)?.let { m.copy(cadence = it.toInt()) }
-        LiveWorkoutWire.KEY_ALTITUDE -> LiveWorkoutWire.signedWhenFour(raw)?.let { m.copy(altitudeM = it) }
+        LiveWorkoutWire.KEY_ALTITUDE -> LiveWorkoutWire.signedBytes(raw)?.let { m.copy(altitudeM = it) }
         LiveWorkoutWire.KEY_RISE -> LiveWorkoutWire.unsigned(raw)?.let { m.copy(riseM = it.toInt()) }
         LiveWorkoutWire.KEY_DESCENT -> LiveWorkoutWire.unsigned(raw)?.let { m.copy(descentM = it.toInt()) }
         LiveWorkoutWire.KEY_AEROBIC_TE -> LiveWorkoutWire.unsigned(raw)?.let { m.copy(aerobicTe = it / 10.0) }

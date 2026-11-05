@@ -75,12 +75,22 @@ public enum LiveWorkoutWire {
         return n
     }
 
-    /// `cph.e`: big-endian, signed only when it is four bytes (a negative altitude).
+    /// `cph.e`: big-endian, signed only when it is four bytes (a negative altitude). Kept for status codes (always positive).
     public static func signedWhenFour(_ bytes: Bytes?) -> Int? {
         guard let bytes, !bytes.isEmpty, bytes.count <= 4 else { return nil }
         var n: Int32 = 0
         for b in bytes { n = (n << 8) | Int32(b) }
         return Int(n)
+    }
+
+    /// Big-endian two's-complement over 1-4 bytes, sign-extended. Altitude only: a value in fewer than four bytes (the watch sends
+    /// `-10 m` as `FF F6`) reads `-10`, not `65526` as `signedWhenFour` would. No range clamp.
+    public static func signedBytes(_ bytes: Bytes?) -> Int? {
+        guard let bytes, !bytes.isEmpty, bytes.count <= 4 else { return nil }
+        var n: Int32 = 0
+        for b in bytes { n = (n << 8) | Int32(b) }
+        let shift = Int32((4 - bytes.count) * 8)
+        return Int((n << shift) >> shift)
     }
 
     /// Kotlin `Long.toInt()`: the low 32 bits, signed.
@@ -131,7 +141,7 @@ public struct LiveMetrics: Equatable, Sendable {
             case LiveWorkoutWire.keyStepRate: if let u { m.stepRate = LiveWorkoutWire.toInt(u) }
             case LiveWorkoutWire.keySteps: if let u { m.steps = LiveWorkoutWire.toInt(u) }
             case LiveWorkoutWire.keyCadence: if let u { m.cadence = LiveWorkoutWire.toInt(u) }
-            case LiveWorkoutWire.keyAltitude: if let s = LiveWorkoutWire.signedWhenFour(v.value) { m.altitudeM = s }
+            case LiveWorkoutWire.keyAltitude: if let s = LiveWorkoutWire.signedBytes(v.value) { m.altitudeM = s }
             case LiveWorkoutWire.keyRise: if let u { m.riseM = LiveWorkoutWire.toInt(u) }
             case LiveWorkoutWire.keyDescent: if let u { m.descentM = LiveWorkoutWire.toInt(u) }
             case LiveWorkoutWire.keyAerobicTe: if let u { m.aerobicTe = Double(u) / 10.0 }
@@ -256,7 +266,7 @@ public struct WorkoutReport: Sendable {
             calories: LiveWorkoutWire.uint(tlv, 0x09), // cal, like the step frames (UNVERIFIED)
             rise: LiveWorkoutWire.uint(tlv, 0x0A),
             descent: LiveWorkoutWire.uint(tlv, 0x0B),
-            altitude: tlv.bytes(0x0C, default: nil).flatMap { LiveWorkoutWire.signedWhenFour($0) },
+            altitude: tlv.bytes(0x0C, default: nil).flatMap { LiveWorkoutWire.signedBytes($0) },
             aerobic: LiveWorkoutWire.uint(tlv, 0x0D),
             anaerobic: LiveWorkoutWire.uint(tlv, 0x0E),
             operatorType: operatorType

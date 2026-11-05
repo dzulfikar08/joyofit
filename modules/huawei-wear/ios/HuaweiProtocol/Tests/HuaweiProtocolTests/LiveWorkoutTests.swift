@@ -4,6 +4,17 @@ import XCTest
 /// Translation of Kotlin LiveWorkoutTest, plus the 17/11 report, the phone-GPS and status packets against the Java HuaweiTLV
 /// (Fixtures/liveworkout.json, from GoldenGen/src/GoldenLiveWorkout.java).
 final class LiveWorkoutTests: XCTestCase {
+    func testSignedBytesSignExtendsAnyWidthWhileSignedWhenFourDoesNot() {
+        XCTAssertEqual(LiveWorkoutWire.signedWhenFour([0xFF, 0xF6]), 65526)
+        XCTAssertEqual(LiveWorkoutWire.signedBytes([0xFF, 0xF6]), -10)
+        XCTAssertEqual(LiveWorkoutWire.signedBytes([0xFF]), -1)
+        XCTAssertEqual(LiveWorkoutWire.signedBytes([0xFF, 0xFF, 0xF6]), -10)
+        XCTAssertEqual(LiveWorkoutWire.signedBytes([0xFF, 0xFF, 0xFF, 0xF6]), -10)
+        XCTAssertEqual(LiveWorkoutWire.signedBytes([0x04, 0xD2]), 1234)
+        XCTAssertEqual(LiveWorkoutWire.signedBytes([0x01, 0x86, 0xAE]), 100_014)
+        XCTAssertNil(LiveWorkoutWire.signedBytes([0, 0, 0, 0, 0]))
+    }
+
     private func hex(_ s: String) -> Bytes { Bytes(hex: s.replacingOccurrences(of: " ", with: ""))! }
 
     private func plain() -> ParamsProvider {
