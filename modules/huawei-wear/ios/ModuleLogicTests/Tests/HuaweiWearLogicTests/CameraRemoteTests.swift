@@ -12,7 +12,7 @@ private final class CameraEvents: WearEvents, @unchecked Sendable {
     func cameraRemote(_ payload: [String: Any]) { lock.locked { _actions.append(payload["action"] as? String ?? "?") } }
 }
 
-/// The watch's Remote shutter: the 01/2A announcement at connect, the 01/29 events handed on, the phone camera's state answered.
+/// The watch's Remote shutter: the 01/2A announcement at connect, the watch's open and close answered natively, its 01/29 events handed on.
 final class CameraRemoteTests: XCTestCase {
     private struct Rig {
         let watch = RigWatch()
@@ -65,7 +65,6 @@ final class CameraRemoteTests: XCTestCase {
         let rig = Rig(listed: true)
         await rig.controller.linkConnected(rig.source.current!)
         XCTAssertEqual(rig.setups(), [0])
-        XCTAssertEqual(rig.controller.status()["supported"] as? Bool, true)
         // A sync ending reports the same session again: no second announcement.
         await rig.controller.linkConnected(rig.source.current!)
         XCTAssertEqual(rig.setups(), [0])
@@ -74,31 +73,21 @@ final class CameraRemoteTests: XCTestCase {
     func testAWatchWithoutTheCommandGetsNothing() async {
         let rig = Rig(listed: false)
         await rig.controller.linkConnected(rig.source.current!)
-        await rig.controller.setPhoneCamera(open: true)
+        rig.session.onData(statusFrame(1))
+        await settle()
         XCTAssertTrue(rig.watch.sent.isEmpty)
-        XCTAssertEqual(rig.controller.status()["supported"] as? Bool, false)
+        XCTAssertTrue(rig.events.actions.isEmpty)
     }
 
-    func testTheWatchsEventsReachJsAndThePhoneCameraIsReported() async {
+    /// The phone answers open and close itself (no camera screen in JoyoFit; the shutter is a volume key the watch sends as a keyboard).
+    func testOpenAndCloseAreAnsweredNativelyAndTheShutterIsNot() async {
         let rig = Rig(listed: true)
         await rig.controller.linkConnected(rig.source.current!)
-        for value: UInt8 in [1, 2, 3, 9] { rig.session.onData(statusFrame(value)) }
-        await settle()
-        XCTAssertEqual(rig.events.actions, ["open", "shutter", "close"], "an unknown value is dropped, like GB")
-
-        await rig.controller.setPhoneCamera(open: true)
-        await rig.controller.setPhoneCamera(open: false)
+        for value: UInt8 in [1, 2, 2, 3, 9] {
+            rig.session.onData(statusFrame(value))
+            await settle()
+        }
+        XCTAssertEqual(rig.events.actions, ["open", "shutter", "shutter", "close"], "an unknown value is dropped, like GB")
         XCTAssertEqual(rig.setups(), [0, 1, 2])
-    }
-
-    func testACameraOpenBeforeTheWatchConnectsIsReportedAfterTheAnnouncement() async {
-        let rig = Rig(listed: true)
-        let handle = rig.source.current!
-        rig.source.current = nil
-        await rig.controller.setPhoneCamera(open: true)
-        XCTAssertTrue(rig.watch.sent.isEmpty)
-        rig.source.current = handle
-        await rig.controller.linkConnected(handle)
-        XCTAssertEqual(rig.setups(), [0, 1])
     }
 }

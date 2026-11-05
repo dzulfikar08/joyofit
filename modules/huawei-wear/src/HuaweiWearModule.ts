@@ -22,7 +22,6 @@ import type {
   UserProfile,
   WatchWorkoutResult,
   WatchWorkoutStatus,
-  CameraRemoteStatus,
   WorkoutRefetchReport,
   WeatherLocationMode,
   WeatherPlace,
@@ -623,14 +622,6 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   sendOfflineMap(uri: string, name: string): Promise<OfflineMapSendResult>;
   /** Deletes one map on the watch (`05`). */
   deleteOfflineMap(mapId: string, mapType: number): Promise<OfflineMapDeleteResult>;
-
-  /** The watch's Remote shutter: connected, and whether the watch lists it (`01/29`). Synchronous. */
-  getCameraRemote(): CameraRemoteStatus;
-  /**
-   * Tells the watch the phone's camera screen is showing (`true`: 01/2A "camera started", the watch then shows its shutter) or has closed
-   * (`false`: "camera stopped"). Remembered and sent again after a reconnect. Resolves without sending when no watch with the shutter is connected.
-   */
-  setPhoneCameraOpen(open: boolean): Promise<void>;
 
   /** Watch navigation (lab): the switch, the session, the registration and whether the watch app answers. Synchronous. */
   getWatchNav(): WatchNavStatus;

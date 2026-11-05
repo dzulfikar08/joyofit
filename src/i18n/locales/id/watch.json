@@ -57,9 +57,7 @@
     "photo": "Tampilan foto",
     "photoSub": "Fotomu di jam",
     "alarms": "Alarm",
-    "alarmsSub": "Baca dan ubah",
-    "camera": "Shutter jarak jauh",
-    "cameraSub": "Ambil foto dari jam"
+    "alarmsSub": "Baca dan ubah"
   },
   "device": {
     "connectFirst": "Hubungkan jam kamu dulu.",
@@ -744,25 +742,5 @@
       "waiting": "Data siap, menunggu jam-mu mengambilnya...",
       "sending": "Mengirim ke jam-mu..."
     }
-  },
-  "camera": {
-    "close": "Tutup kamera",
-    "ready": "Tekan shutter di jam, atau tombol di bawah",
-    "notConnected": "Jam belum terhubung: pakai tombol di bawah",
-    "unsupported": "Jam ini tidak punya shutter jarak jauh: pakai tombol di bawah",
-    "permissionTitle": "Kamera untuk shutter jarak jauh",
-    "permissionBody": "JoyoFit menampilkan kamera di sini supaya jam kamu bisa mengambil foto. Foto masuk ke galeri dan tidak diunggah. Setelah ini HP kamu akan meminta izin.",
-    "permissionDenied": "Akses kamera untuk JoyoFit mati. Nyalakan di Pengaturan untuk mengambil foto dengan jam.",
-    "continue": "Lanjut",
-    "openSettings": "Buka Pengaturan",
-    "photosNotice": "Foto yang kamu ambil dengan jam disimpan ke galeri. JoyoFit tidak membaca foto yang sudah ada. Setelah ini HP kamu akan meminta izin.",
-    "photosOff": "Akses Foto mati: foto tidak disimpan. Ketuk untuk membuka Pengaturan.",
-    "failed": "Foto gagal diambil. Coba lagi.",
-    "shutter": "Ambil foto",
-    "flip": "Ganti kamera",
-    "lastPhoto": "Foto terakhir",
-    "channel": "Kamera jam",
-    "notifyTitle": "Jam kamu ingin membuka kamera",
-    "notifyBody": "Ketuk untuk membuka kamera, lalu tekan shutter di jam."
   }
 }

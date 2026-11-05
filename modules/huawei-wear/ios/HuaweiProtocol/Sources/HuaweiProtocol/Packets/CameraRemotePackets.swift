@@ -1,7 +1,7 @@
 // Port of CameraRemote.java (Gadgetbridge, AGPL-3.0-or-later; see NOTICE): the watch's remote shutter. It shares service 0x01 with
 // DeviceConfig. The phone announces the camera at connect (01/2A, tag 01 = 0); only then does the watch list its Remote shutter app.
-// The watch pushes open, take picture and close (01/29, tag 01 = 1, 2, 3); the phone answers "camera started" (01/2A, 1) once its
-// viewfinder runs and "camera stopped" (01/2A, 2) when it closes.
+// The watch pushes open, take picture and close (01/29, tag 01 = 1, 2, 3); the phone answers "camera started" (01/2A, 1) and
+// "camera stopped" (01/2A, 2). The picture itself is a volume key the watch sends as a Bluetooth keyboard, not a packet.
 import Foundation
 
 public enum CameraRemote {

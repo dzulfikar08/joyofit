@@ -23,7 +23,6 @@ import { BUSY_TIMEOUT_MS } from '@/db/migrations';
 import { serializeQueries } from '@/db/serialize';
 import { DatabaseGate } from '@/features/dbhealth/DatabaseGate';
 import { DbHealthNotice } from '@/features/dbhealth/DbHealthNotice';
-import { CameraRemoteRunner } from '@/features/camera/CameraRemoteRunner';
 import { ManualReminderRunner } from '@/features/strava/ManualReminderRunner';
 import { FamilyProvider } from '@/features/family/FamilyProvider';
 import { syncHrZonesAtLaunch } from '@/features/hrzones/settings';
@@ -211,8 +210,6 @@ function RootNavigator() {
                   <AppAlertHost />
                   {/* A watch-started workout's average and highest heart rate, and the phone's step counter while it runs on foot. */}
                   <LiveExtrasFeed />
-                  {/* The watch's Remote shutter: opens the camera screen when the watch opens its shutter (a notification while in the background). */}
-                  <CameraRemoteRunner />
                   {/* "Ready for Strava": a notification that opens the manual upload of a new workout while Strava is not connected. */}
                   <ManualReminderRunner />
                   <TabBarInsetProvider>
@@ -292,8 +289,6 @@ function RootNavigator() {
                     <Tabs.Screen name="steps" options={{ href: null }} />
                     {/* Opens by itself when a workout starts on the watch (LiveWorkoutProvider). */}
                     <Tabs.Screen name="workout-live" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-                    {/* The phone's viewfinder for the watch's Remote shutter: opened by the watch (CameraRemoteRunner) or from the Watch hub; full screen. */}
-                    <Tabs.Screen name="camera" options={{ href: null, tabBarStyle: { display: 'none' } }} />
                     {/* Family monitoring: opened from Today, More and notifications; its stack draws its own headers. */}
                     <Tabs.Screen name="family" options={{ href: null }} />
                     {/* Watch routes: opened from More (Watch section) and by shared GPX/TCX files; its stack draws its own headers. */}

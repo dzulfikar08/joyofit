@@ -9,9 +9,12 @@ import nodomain.freeyourgadget.gadgetbridge.devices.huawei.HuaweiPacket
 import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.CameraRemote
 
 /**
- * The watch's Remote shutter. At connect the phone announces its camera (01/2A, 0), which makes the watch show the app; the
- * watch's open, take picture and close (01/29) go to JS as `onCameraRemote`, whose camera screen answers with
- * [setPhoneCamera] (01/2A, 1 started / 2 stopped).
+ * The watch's Remote shutter, for the phone's own camera app. At connect the phone announces its camera (01/2A, 0), which makes the
+ * watch show the app. The shutter itself is not ours: the watch is also a Bluetooth keyboard ("<name> Consumer Control") and each
+ * press sends a volume key (seen on a Watch Fit 4 Pro and a Xiaomi, 2026-11-05: alternating volume down and up), which any camera app
+ * takes as its shutter. All this controller does is answer the watch's open (01/29, 1) with "camera started" (01/2A, 1) and its close
+ * (3) with "camera stopped" (2), here in native code so it also works while JoyoFit is in the background. The watch's events still go
+ * to JS as `onCameraRemote`, for the log only.
  */
 internal class CameraRemoteController(
   private val link: WearLink,
@@ -22,18 +25,9 @@ internal class CameraRemoteController(
   private var attached: HuaweiSession? = null
   private var subscription: AutoCloseable? = null
 
-  /** What JS last reported: the phone's viewfinder is on screen. Re-sent on a reconnect so the watch does not wait for it. */
-  @Volatile
-  private var phoneOpen = false
-
   private fun log(message: String) = events.log(LogDirection.INFO, null, null, null, message)
 
   private fun error(message: String) = events.log(LogDirection.ERROR, null, null, null, message)
-
-  fun status(): Map<String, Any?> = mapOf(
-    "connected" to (link.handle() != null),
-    "supported" to (link.handle() != null && supported()),
-  )
 
   private fun supported() = DeviceCaps.supports(CameraRemote.id.toInt(), CameraRemote.CameraRemoteStatus.id.toInt())
 
@@ -50,12 +44,9 @@ internal class CameraRemoteController(
             log("Camera remote: the watch does not list 01/29; not announced")
             return
           }
-          subscription = session.subscribe(CameraRemote.id, CameraRemote.CameraRemoteStatus.id, "camera remote") { onStatus(it) }
+          subscription = session.subscribe(CameraRemote.id, CameraRemote.CameraRemoteStatus.id, "camera remote") { onStatus(session, it) }
         }
-        scope.launch {
-          send(session, CameraRemote.CameraRemoteSetup.Request.Event.ENABLE_CAMERA)
-          if (phoneOpen) send(session, CameraRemote.CameraRemoteSetup.Request.Event.CAMERA_STARTED)
-        }
+        scope.launch { send(session, CameraRemote.CameraRemoteSetup.Request.Event.ENABLE_CAMERA) }
       }
       LinkState.DISCONNECTED -> synchronized(lock) {
         subscription?.close()
@@ -66,8 +57,8 @@ internal class CameraRemoteController(
     }
   }
 
-  /** Runs on the read thread: parse, then hand to JS. */
-  private fun onStatus(packet: HuaweiPacket) {
+  /** Runs on the read thread: parse, answer an open or a close, then tell JS. */
+  private fun onStatus(session: HuaweiSession, packet: HuaweiPacket) {
     val event = try {
       packet.parseTlv()
       (packet as CameraRemote.CameraRemoteStatus.Response).event
@@ -85,18 +76,13 @@ internal class CameraRemoteController(
       }
     }
     log("Camera remote: the watch sent $action")
+    val answer = when (event) {
+      CameraRemote.CameraRemoteStatus.Response.Event.OPEN_CAMERA -> CameraRemote.CameraRemoteSetup.Request.Event.CAMERA_STARTED
+      CameraRemote.CameraRemoteStatus.Response.Event.CLOSE_CAMERA -> CameraRemote.CameraRemoteSetup.Request.Event.CAMERA_STOPPED
+      else -> null
+    }
+    if (answer != null) scope.launch { send(session, answer) }
     events.cameraRemote(mapOf("action" to action))
-  }
-
-  /** The camera screen is showing (`true`, "camera started") or has closed (`false`, "camera stopped"). */
-  suspend fun setPhoneCamera(open: Boolean) {
-    phoneOpen = open
-    val handle = link.handle() ?: return
-    if (!supported()) return
-    send(
-      handle.session,
-      if (open) CameraRemote.CameraRemoteSetup.Request.Event.CAMERA_STARTED else CameraRemote.CameraRemoteSetup.Request.Event.CAMERA_STOPPED,
-    )
   }
 
   private suspend fun send(session: HuaweiSession, event: CameraRemote.CameraRemoteSetup.Request.Event) {

@@ -699,13 +699,6 @@ public final class HuaweiWearModule: Module {
             try await wearCall { runtime.p2p.watchNav.stop() }
         }
 
-        // MARK: camera remote (CameraRemoteController.swift)
-
-        Function("getCameraRemote") { () -> [String: Any] in runtime.cameraRemote.status() }
-        AsyncFunction("setPhoneCameraOpen") { (open: Bool) async -> Void in
-            await runtime.cameraRemote.setPhoneCamera(open: open)
-        }
-
         // MARK: cycle calendar
 
         AsyncFunction("setCycleEnabled") { (enabled: Bool) async throws -> Void in

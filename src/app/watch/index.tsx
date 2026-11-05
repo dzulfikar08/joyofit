@@ -142,14 +142,6 @@ function WatchHub() {
         style={styles.navRow}
         onPress={() => router.push('/routes')}
       />
-      <Divider />
-      <NavRow
-        icon="camera"
-        title={t('watch:hub.camera')}
-        subtitle={t('watch:hub.cameraSub')}
-        style={styles.navRow}
-        onPress={() => router.push('/camera')}
-      />
     </Section>
   );
 

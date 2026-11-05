@@ -273,24 +273,15 @@
         "expo-image-picker",
         {
           "photosPermission": "JoyoFit reads a photo only when you pick one, for a watch face or for the image of a workout you share, and when you send that image to Instagram.",
-          "cameraPermission": "JoyoFit uses the camera only when you take a photo to put behind the numbers of a workout you share, or when you take photos with your watch's Remote shutter.",
+          "cameraPermission": "JoyoFit uses the camera only when you take a photo to put behind the numbers of a workout you share.",
           "microphonePermission": false
-        }
-      ],
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "JoyoFit uses the camera only when you take a photo to put behind the numbers of a workout you share, or when you take photos with your watch's Remote shutter.",
-          "microphonePermission": false,
-          "recordAudioAndroid": false,
-          "barcodeScannerEnabled": false
         }
       ],
       [
         "expo-media-library",
         {
           "photosPermission": "JoyoFit reads a photo only when you pick one, for a watch face or for the image of a workout you share, and when you send that image to Instagram.",
-          "savePhotosPermission": "JoyoFit saves the image of a workout or day you share to your photos when you tap Save, and the photos you take with your watch's Remote shutter.",
+          "savePhotosPermission": "JoyoFit saves the image of a workout or day you share to your photos, only when you tap Save.",
           "granularPermissions": [],
           "isAccessMediaLocationEnabled": false
         }

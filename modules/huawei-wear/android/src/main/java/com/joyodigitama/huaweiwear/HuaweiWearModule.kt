@@ -424,15 +424,6 @@ class HuaweiWearModule : Module() {
     // Songs on the watch (service 25 + FileUpload type 2; experimental switch): info, list, upload, cancel, delete (WatchMusicModuleApi.kt, WatchMusic.kt).
     watchMusicApi { runtime() }
 
-    // The watch's Remote shutter (service 01, commands 29/2A): status and the phone camera's state (CameraRemoteController.kt).
-    Function("getCameraRemote") {
-      runtime().cameraRemote.status()
-    }
-
-    AsyncFunction("setPhoneCameraOpen") Coroutine { open: Boolean ->
-      runtime().cameraRemote.setPhoneCamera(open)
-    }
-
     OnDestroy {
       destroyed = true
       runtimeRef?.let {
