@@ -2,7 +2,7 @@
 app: joyofit
 feature: Siap ke Strava (pengingat unggah manual)
 shipped: 2026-11-05
-available: code
+available: test-build
 tier: free
 post: todo
 atur:

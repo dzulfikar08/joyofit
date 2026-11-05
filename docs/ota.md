@@ -199,6 +199,8 @@ Then from master `fe858d64` (route coloured by a metric, km splits without the w
 `140330de-9ff2-4d08-9a4a-9c40433b5f70` android (run 41599596411), `e41dcd71-5b5b-4e87-a636-d3cc249b1795` ios (run 41599601290).
 Then from master `c880248a` (smoother route colours): groups `ab497b21-d93f-4aa8-add2-6844f3f24344` android (run 41605156636),
 `11a60e66-16b4-4527-8a8a-5d753e818566` ios (run 41605162734).
+Then from master `73d03142` (Siap ke Strava reminder; published by owner choice although a new notification use is on the "not over the air" list): groups
+`e901743c-077b-40e2-9fd8-7979fef7cadb` android, runtime `b22dd22d...` (embedded in the 59015b77 build, versionCode 1495680/1495667; run 41973721707), `a56cf349-ca90-423d-8257-96ccf25502a0` ios, runtime `36019113...` (run 41973724939).
 
 ## When OTA is not enough
 
