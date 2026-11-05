@@ -138,7 +138,17 @@ export function HuaweiAccountSection() {
         </AppText>
       </Details>
 
-      <HuaweiAccountSignInModal visible={signInOpen} onClose={() => setSignInOpen(false)} onCapture={onCapture} />
+      <HuaweiAccountSignInModal
+        visible={signInOpen}
+        onClose={() => setSignInOpen(false)}
+        onManual={() => {
+          setSignInOpen(false);
+          setError(null);
+          setManualText(account ?? '');
+          setManualOpen(true);
+        }}
+        onCapture={onCapture}
+      />
     </Section>
   );
 }

@@ -10,6 +10,13 @@
 #if canImport(ExpoModulesCore) && canImport(CoreBluetooth) && (canImport(SQLite3) || canImport(CSQLite))
 import CoreBluetooth
 import ExpoModulesCore
+import WebKit
+
+/// Every cookie in the default WebKit store, the one react-native-webview uses when not incognito (HttpOnly ones included).
+@MainActor
+private func webViewCookies() async -> [HTTPCookie] {
+    await WKWebsiteDataStore.default().httpCookieStore.allCookies()
+}
 import Foundation
 #if canImport(UIKit)
 import UIKit
@@ -307,6 +314,20 @@ public final class HuaweiWearModule: Module {
 
         AsyncFunction("setHuaweiAccount") { (account: String?) async throws -> Void in
             runtime.settings.huaweiAccount = account
+        }
+
+        // The cookies the app's WebView store holds for `url`'s host and its parent domains, HttpOnly ones included, as one
+        // `name=value; ...` string. Used only by the account sign-in screen to read the numeric `userId`; it never leaves the phone.
+        AsyncFunction("readWebCookies") { (url: String) async -> String in
+            guard let host = URL(string: url)?.host?.lowercased() else { return "" }
+            let cookies = await webViewCookies()
+            return cookies
+                .filter { cookie in
+                    let domain = cookie.domain.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+                    return host == domain || host.hasSuffix("." + domain)
+                }
+                .map { "\($0.name)=\($0.value)" }
+                .joined(separator: "; ")
         }
 
         // MARK: profile
