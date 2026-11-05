@@ -50,3 +50,12 @@ call never leaves Cloudflare. JoyoRogo needs no change for this. In `server/wran
 `services` and put JoyoRogo's deployed Worker name in `service` (alchemy names it from the `server`
 resource; check `wrangler deployments`/the dashboard). The code uses `AUTH_SERVICE` automatically when it
 is bound; `JOYOROGO_AUTH_URL` is still used to build the request URL.
+
+## 4. Optional: proxy `/api/fit/watchfaces` for Studio "Publish to my watch app"
+
+The web Studio publishes a built `.hwt` to the account's library so it shows up in the JoyoFit app with no file transfer. The browser
+calls `POST /api/fit/watchfaces?filename=...` (same origin as the existing `/api/fit/studio/projects`), which JoyoRogo forwards to the
+JoyoFit Worker's `POST /v1/watchfaces`. If JoyoRogo's proxy already rewrites `/api/fit/*` to the Worker's `/v1/*` generically, nothing is
+needed. If it is path-specific, add `/api/fit/watchfaces` (and `/api/fit/watchfaces/:id`, `/api/fit/watchfaces/:id/file`) the same way
+`/api/fit/studio/projects` is routed. The Worker already gates the upload with `requireFounder` (Pro only); reads stay open to any
+signed-in account.

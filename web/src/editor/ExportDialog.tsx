@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
-import { CircleAlert, CircleCheck, Download, FileJson, FileSearch, Loader2, TriangleAlert } from "lucide-react";
+import { CircleAlert, CircleCheck, Download, FileJson, FileSearch, Loader2, TriangleAlert, UploadCloud } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { i18n } from "@/i18n";
+import { isCloudError } from "@/cloud/api";
+import { useCloud } from "@/cloud/store";
+import { publishWatchface } from "@/cloud/watchfaces";
 import { hwtFileName } from "@/model/defaults";
 import { downloadBlob, serializeProject } from "@/model/projectFile";
 import { presetById, type ScreenSpec } from "@/model/screens";
@@ -246,6 +249,43 @@ export function ExportDialog({ open, onClose, project, sim }: { open: boolean; o
     downloadBlob(`${fileBase}.project.json`, await serializeProject(project), "application/json");
   };
 
+  const access = useCloud((s) => s.access);
+  const [publishing, setPublishing] = useState(false);
+  const publishHwt = async () => {
+    if (!hwtResult) return;
+    if (access === "unknown" || access === "signed-out") {
+      toast.error(i18n.t("export:dialog.publishSignIn"), { description: i18n.t("export:dialog.publishSignInHint") });
+      return;
+    }
+    if (access === "free") {
+      toast.error(i18n.t("export:dialog.publishProRequired"), { description: i18n.t("export:dialog.publishProRequiredHint") });
+      return;
+    }
+    setPublishing(true);
+    try {
+      const published = await publishWatchface(hwtResult.bytes, hwtResult.fileName);
+      toast.success(i18n.t("export:dialog.published", { name: published.name }), { description: i18n.t("export:dialog.publishedHint") });
+    } catch (error) {
+      const kind = isCloudError(error) ? error.kind : "server";
+      const max = isCloudError(error) ? error.max : undefined;
+      const description =
+        kind === "library_full"
+          ? i18n.t("export:dialog.publishFailedLibraryFull", { max: max ?? "" })
+          : kind === "too_large"
+            ? i18n.t("export:dialog.publishFailedTooLarge")
+            : kind === "network"
+              ? i18n.t("export:dialog.publishFailedOffline")
+              : kind === "paywall"
+                ? i18n.t("export:dialog.publishProRequiredHint")
+                : kind === "unauthorized"
+                  ? i18n.t("export:dialog.publishSignInHint")
+                  : undefined;
+      toast.error(i18n.t("export:dialog.publishFailed"), { description });
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   const experimental = hwtResult?.elements.filter((e) => e.exported && e.level === "experimental") ?? [];
   const state = target === "photo" ? photo : hwt;
 
@@ -273,10 +313,15 @@ export function ExportDialog({ open, onClose, project, sim }: { open: boolean; o
               {t("dialog.downloadPhoto")}
             </Button>
           ) : (
-            <Button onClick={downloadHwt} disabled={hwtBlocked} data-testid="download-hwt">
-              {hwt.status === "building" ? <Loader2 className="animate-spin" /> : <Download />}
-              {t("dialog.downloadHwt")}
-            </Button>
+            <>
+              <Button variant="ghost" size="sm" onClick={downloadHwt} disabled={hwtBlocked} data-testid="download-hwt">
+                <Download /> {t("dialog.downloadHwt")}
+              </Button>
+              <Button onClick={() => void publishHwt()} disabled={hwtBlocked || publishing} data-testid="publish-hwt">
+                {publishing ? <Loader2 className="animate-spin" /> : <UploadCloud />}
+                {t("dialog.publishHwt")}
+              </Button>
+            </>
           )}
         </>
       }

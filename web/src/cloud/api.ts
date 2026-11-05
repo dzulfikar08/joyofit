@@ -7,7 +7,7 @@
 /** JoyoRogo API origin; `VITE_API_URL` points a local build at another one. */
 const DEFAULT_ORIGIN = "https://api.joyorogo.com";
 
-function envOrigin(): string {
+export function envOrigin(): string {
   const value: unknown = import.meta.env?.VITE_API_URL;
   return typeof value === "string" && value ? value.replace(/\/+$/, "") : DEFAULT_ORIGIN;
 }
@@ -91,7 +91,7 @@ export function bodyBytes(body: string): number {
   return new Blob([body]).size;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
