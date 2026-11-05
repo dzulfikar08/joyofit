@@ -928,6 +928,48 @@ public enum DeviceConfig {
             public init(packet: HuaweiPacket) throws {}
         }
     }
+
+    /// The watch asks for the phone's details (01/10, GB `PhoneInfo`): it pushes the tags it wants, empty, and the phone answers with
+    /// the same tags filled in; the watch then acknowledges (tag 7F = 100000). Tag meanings from GB and from Huawei Health 15.1.4
+    /// (`kjk.getHandsetInfo`, `kjs`): 02 manufacturer, 04 model, 08 OS version, 0D the phone's platform (Huawei Health on Android
+    /// always sends 2; JoyoFit on iOS sends 1, an inference: the band's Remote shutter showed the Android flow while this was unanswered),
+    /// 0E always 1 in Huawei Health, 11 app version, 15 OS platform version, 16 phone capability bits.
+    public enum PhoneInfo {
+        public static let id: UInt8 = 0x10
+        /// Tag 0D as Huawei Health on Android sends it.
+        public static let platformAndroid: UInt8 = 2
+        /// Tag 0D for an iPhone (inferred, see above).
+        public static let platformIos: UInt8 = 1
+
+        /// The watch's acknowledgement of an answer (only tag 7F = 100000), which needs no reply.
+        public static func isAck(_ tlv: HuaweiTLV) -> Bool {
+            tlv.entries.count == 1 && tlv.contains(0x7F) && tlv.int(0x7F, default: 0) == 100_000
+        }
+
+        /// The tags the watch asked for, in its order.
+        public static func requestedTags(_ tlv: HuaweiTLV) -> [UInt8] { tlv.entries.map(\.tag) }
+
+        /// GB's answer (empty manufacturer and model, zero for unknown tags, app version 16.1.3.320) with this phone's platform and
+        /// OS version.
+        public static func reply(tags: [UInt8], platform: UInt8, manufacturer: String, model: String, osVersion: String) -> HuaweiPacket {
+            var tlv = HuaweiTLV()
+            for tag in tags {
+                let t = Int(tag)
+                switch tag {
+                case 0x00, 0x0F: break
+                case 0x02: tlv.put(t, string: manufacturer)
+                case 0x04: tlv.put(t, string: model)
+                case 0x08: tlv.put(t, string: osVersion)
+                case 0x0D: tlv.put(t, byte: platform)
+                case 0x0E: tlv.put(t, byte: 1)
+                case 0x11: tlv.put(t, int: 1_600_103_320)
+                case 0x15: tlv.put(t)
+                default: tlv.put(t, byte: 0)
+                }
+            }
+            return HuaweiPacket(serviceId: DeviceConfig.id, commandId: id, tlv: tlv)
+        }
+    }
 }
 
 // MARK: - HiChain JSON text
