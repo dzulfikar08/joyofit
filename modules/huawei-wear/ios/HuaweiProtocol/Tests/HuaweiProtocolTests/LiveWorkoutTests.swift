@@ -100,9 +100,10 @@ final class LiveWorkoutTests: XCTestCase {
         XCTAssertEqual(second.heartRate, 90)
     }
 
-    func testAltitudeIsSignedOnlyInFourBytes() {
+    func testAltitudeIsSignedAtAnyWidth() {
         XCTAssertEqual(LiveMetrics().applyPoint([PointValue(key: LiveWorkoutWire.keyAltitude, value: hex("FFFFFFF4"))]).altitudeM, -12)
-        XCTAssertEqual(LiveMetrics().applyPoint([PointValue(key: LiveWorkoutWire.keyAltitude, value: hex("F4"))]).altitudeM, 244)
+        // A negative altitude in fewer than four bytes is now sign-extended too (was read as 244 before BLE-03).
+        XCTAssertEqual(LiveMetrics().applyPoint([PointValue(key: LiveWorkoutWire.keyAltitude, value: hex("F4"))]).altitudeM, -12)
     }
 
     func testMalformedValuesLeaveTheMetricUnset() {

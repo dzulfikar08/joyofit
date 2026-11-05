@@ -75,9 +75,10 @@ class LiveWorkoutTest {
   }
 
   @Test
-  fun altitudeIsSignedOnlyInFourBytes() {
+  fun altitudeIsSignedAtAnyWidth() {
     assertEquals(-12, LiveMetrics().applyPoint(listOf(PointValue(LiveWorkoutWire.KEY_ALTITUDE, hex("FFFFFFF4")))).altitudeM)
-    assertEquals(244, LiveMetrics().applyPoint(listOf(PointValue(LiveWorkoutWire.KEY_ALTITUDE, hex("F4")))).altitudeM)
+    // A negative altitude in fewer than four bytes is now sign-extended too (was read as 244 before BLE-03).
+    assertEquals(-12, LiveMetrics().applyPoint(listOf(PointValue(LiveWorkoutWire.KEY_ALTITUDE, hex("F4")))).altitudeM)
   }
 
   @Test
