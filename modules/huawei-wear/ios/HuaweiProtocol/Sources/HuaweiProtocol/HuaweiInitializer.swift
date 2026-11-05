@@ -45,6 +45,9 @@ public final class HuaweiInitializer {
     private let phoneLanguage: String
     /// The heart-rate zones the user configured in the app; nil sends GB's defaults for the profile age.
     private let heartRateZones: HeartRateZonesCalc.UserZones?
+    /// The user's Huawei account id, sent in 1A/05 so a watch set up under that account is not asked to factory-reset; nil/empty sends
+    /// GB's empty default (the behaviour before this setting). Only an account id, no signature.
+    private let huaweiAccount: String?
 
     /// Replaced by tests: the phase timeouts, the clock SetTime reads and the zone it reports.
     var timeouts = LinkTimeouts()
@@ -57,7 +60,7 @@ public final class HuaweiInitializer {
         session: HuaweiSession, caps: DeviceCaps, log: @escaping LogSink, bondedName: String?, protocolVersion: Int,
         profile: UserProfileData? = nil, healthSensors: HealthSensorConfig = HealthSensorConfig(), deviceType: HuaweiDeviceType = .ble,
         pinnedLanguage: String? = nil, phoneLanguage: String = LanguageSender.phoneLanguage(),
-        heartRateZones: HeartRateZonesCalc.UserZones? = nil
+        heartRateZones: HeartRateZonesCalc.UserZones? = nil, huaweiAccount: String? = nil
     ) {
         self.session = session
         self.caps = caps
@@ -70,6 +73,7 @@ public final class HuaweiInitializer {
         self.pinnedLanguage = pinnedLanguage
         self.phoneLanguage = phoneLanguage
         self.heartRateZones = heartRateZones
+        self.huaweiAccount = huaweiAccount
     }
 
     private func info(_ message: String) {
@@ -172,15 +176,17 @@ public final class HuaweiInitializer {
         func listed(_ service: Int) -> String { supportedCommands[service].map { $0.map { $0.hex2 }.joined(separator: " ") } ?? "not listed" }
         info("Language and music: 0C=[\(listed(0x0C))] 25=[\(listed(0x25))] moreMusic(ExpandCapability 122)=\(expandCapability(122))")
 
-        // SendExtendedAccountRequest (first in GB initializeDynamicServices): no Huawei account, so GB's default empty account is sent.
-        // Watches that judge accounts wait for this after a bind.
+        // SendExtendedAccountRequest (first in GB initializeDynamicServices): the user's Huawei account id if they set one on the
+        // watch-face screen, else GB's empty default. Watches that judge accounts wait for this after a bind; sending the account the
+        // watch was set up under keeps it from asking for a factory reset.
         if supports(Int(AccountRelated.id), 0x05) && supports(Int(AccountRelated.id), 0x06) {
             try await soft("ExtendedAccount") {
                 _ = try await session.request(
-                    AccountRelated.SendExtendedAccountToDevice.request(accountPairingOptimization: expandCapability(0xac), account: ""),
+                    AccountRelated.SendExtendedAccountToDevice.request(
+                        accountPairingOptimization: expandCapability(0xac), account: huaweiAccount ?? ""),
                     timeoutMs: timeouts.initMs, label: "ExtendedAccount"
                 )
-                info("ExtendedAccount: acknowledged")
+                info("ExtendedAccount: acknowledged (account \(huaweiAccount != nil ? "set" : "empty"))")
             }
         }
         if supports(0x01, Int(DeviceConfig.SettingRelated.id)) {

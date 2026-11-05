@@ -49,6 +49,11 @@ internal class HuaweiInitializer(
   private val phoneLocale: Locale = Locale.getDefault(),
   /** The heart-rate zones the user set in the app; null = GB's defaults for the profile age. */
   private val heartRateZones: HeartRateZonesCalc.UserZones? = null,
+  /**
+   * The user's Huawei account id, sent in 1A/05 so a watch set up under that account is not asked to factory-reset; null or blank =
+   * GB's empty default (the behaviour before this setting). Only an account id, no signature.
+   */
+  private val huaweiAccount: String? = null,
 ) {
   private val params get() = session.params
 
@@ -149,16 +154,17 @@ internal class HuaweiInitializer(
       null,
       "Language and music: 0C=[${listed(0x0C)}] 25=[${listed(0x25)}] moreMusic(ExpandCapability 122)=${expandCapability(122)}",
     )
-    // SendExtendedAccountRequest (first in GB initializeDynamicServices): no Huawei account, so
-    // GB's default empty account is sent. Watches that judge accounts wait for this after a bind.
+    // SendExtendedAccountRequest (first in GB initializeDynamicServices): the user's Huawei account id if they set one on the
+    // watch-face screen, else GB's default empty account (the behaviour before the setting). Watches that judge accounts wait for
+    // this after a bind; sending the account the watch was set up under keeps it from asking for a factory reset.
     if (supports(AccountRelated.id.toInt(), 0x05) && supports(AccountRelated.id.toInt(), 0x06)) {
       soft("ExtendedAccount") {
         session.request(
-          AccountRelated.SendExtendedAccountToDevice.Request(params, expandCapability(0xac), ""),
+          AccountRelated.SendExtendedAccountToDevice.Request(params, expandCapability(0xac), huaweiAccount ?: ""),
           Timeouts.INIT_MS,
           "ExtendedAccount",
         )
-        events.log(LogDirection.INFO, null, null, null, "ExtendedAccount: acknowledged")
+        events.log(LogDirection.INFO, null, null, null, "ExtendedAccount: acknowledged (account ${if (huaweiAccount != null) "set" else "empty"})")
       }
     }
     if (supports(0x01, DeviceConfig.SettingRelated.id)) {

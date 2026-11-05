@@ -317,6 +317,14 @@ class HuaweiWearModule : Module() {
       runtime().setForceBle(enabled)
     }
 
+    Function("getHuaweiAccount") {
+      runtime().huaweiAccount()
+    }
+
+    AsyncFunction("setHuaweiAccount") { account: String? ->
+      runtime().setHuaweiAccount(account)
+    }
+
     Function("getMorningSummaryEnabled") {
       runtime().morningSummaryEnabled()
     }

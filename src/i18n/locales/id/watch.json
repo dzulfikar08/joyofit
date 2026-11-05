@@ -296,6 +296,28 @@
     "deleteFromPhone": "Hapus dari Ponsel",
     "personalLibrary": "Koleksi pribadi",
     "personalLibraryHint": "Tampilan jam yang disimpan di ponselmu. Simpan favoritmu di sini dan pasang ke jam kapan saja.",
+    "account": {
+      "title": "Akun Huawei",
+      "status": "Akun",
+      "notSet": "Belum terhubung",
+      "signIn": "Hubungkan akun Huawei",
+      "signInAgain": "Hubungkan ulang akun",
+      "remove": "Hapus",
+      "enterManually": "Masukkan ID secara manual",
+      "manualPlaceholder": "ID akun 17 digit",
+      "signInTitle": "Masuk ke Huawei",
+      "signInHint": "Masuk dengan akun Huawei yang dipakai saat menyiapkan jam. JoyoFit hanya membaca ID akun dari halaman ini, tidak pernah kata sandimu.",
+      "savedReconnect": "Tersimpan. Hubungkan ulang jam agar berlaku.",
+      "resetWarning": "Pakai akun Huawei yang sama dengan saat menyiapkan jam. ID yang berbeda bisa membuat jam minta direset ke setelan pabrik. Jika jam pertama kali dipasangkan ke JoyoFit tanpa akun, lupakan jam lalu hubungkan lagi setelah mengatur ini.",
+      "guideTitle": "Kenapa dan caranya",
+      "guide": "Sebagian jam memeriksa akun Huawei mana yang dikirim aplikasi yang terhubung. Saat JoyoFit tidak mengirim apa-apa, jam bisa menolak watch face atau minta direset. Menghubungkan akunmu mengirim ID yang sama dengan yang dipakai Huawei Health.\n\n1. Ketuk Hubungkan akun Huawei dan masuk. JoyoFit mengambil ID akun 17 digit secara otomatis.\n2. Kalau tidak terbaca, ambil ID di komputer: buka Chrome dan masuk di cloud.huawei.com, tekan F12, buka Application > Cookies, salin 17 angka pada userId, lalu tempel di Masukkan ID secara manual.\n3. Hubungkan ulang jam. Kalau jam minta dipulihkan (reset pabrik), ID tidak cocok: batalkan dan periksa lagi.",
+      "invalid": {
+        "empty": "Masukkan ID akunmu.",
+        "non_digit": "ID akun hanya berupa angka.",
+        "too_short": "Terlalu pendek untuk ID akun Huawei.",
+        "too_long": "Terlalu panjang untuk ID akun Huawei."
+      }
+    },
     "updateApp": "Perbarui aplikasi untuk fitur ini",
     "importHwt": "Impor file .hwt",
     "noSaved": "Belum ada tampilan tersimpan",

@@ -12,6 +12,7 @@ import { Segmented } from '@/components/Segmented';
 import { EmptyState, Notice } from '@/components/States';
 import { InstalledFaceCard } from '@/features/watchfaces/InstalledFaceCard';
 import { LibraryFaceCard } from '@/features/watchfaces/LibraryFaceCard';
+import { HuaweiAccountSection } from '@/features/watchfaces/HuaweiAccountSection';
 import { ThemedDialog, type CustomDialogState } from '@/features/watchfaces/ThemedDialog';
 import { shouldWarnUnsigned } from '@/features/watchfaces/unsignedWarning';
 import { WatchfacePreviewModal } from '@/features/watchfaces/WatchfacePreviewModal';
@@ -245,6 +246,8 @@ export function WatchfacesScreen() {
           <Details>{installFromFile ? t('watch:faces.installFromFileHint') : t('watch:faces.personalLibraryHint')}</Details>
         </Section>
       )}
+
+      {canImport || installFromFile ? <HuaweiAccountSection /> : null}
 
       {tab === 'library' && canImport ? (
         <WebFacesSection

@@ -38,11 +38,31 @@ Evidence labels used below: **VERIFIED** (seen on our Fit 4 Pro), **DOCUMENTED**
 - Me7c7, 2026-10-28: "Installation path without signature checks completely removed from 6.1 firmware." Firmware is signed too;
   "Only hope is private key leak or jailbreak of firmware." No Gadgetbridge fix is planned.
 
-**User report (Threads DM, Jeremy, Watch Fit 3, 2026-11-04/05).** His `.hwt` files fail in JoyoFit with the signature message, which
-the app shows only on watch code `100014` (`src/features/watchfaces/installError.ts`), so his Fit 3 enforces signatures. He installs
-them with (1) a modded Huawei Health from a Telegram channel and (2) "GadgetBridge" plus a private Google Doc (not read: it needs a
-signed-in Google session). Route (2) contradicts #6005 on an enforcing watch unless his firmware predates enforcement or the Doc adds
-a step that obtains a Huawei signature; ask for his firmware version and the Doc's steps.
+**User report (Threads DM, Jeremy, Watch Fit 3, 2026-11-04/05).** His `.hwt` files fail in JoyoFit with the "not signed" message and
+install with (1) a modded Huawei Health from a Telegram channel or (2) Gadgetbridge, following a guide (`Guide(EN).docx`, read
+2026-11-05 in a signed-in browser; downloads disabled by its owner).
+
+The guide's Gadgetbridge route has **no signature step**. It copies the Huawei account's numeric `userId` (17 digits, from the
+`userId` cookie of `cloud.huawei.com`), enters it in Gadgetbridge's per-watch *authentication* setting before pairing, then uploads the
+`.hwt` normally. The guide's stated reason: if the phone does not send the account the watch was set up with, the watch asks for a
+factory reset. Gadgetbridge sends that setting only in `1A/05` SendExtendedAccountToDevice (`SendExtendedAccountRequest.java`,
+`PREF_HUAWEI_ACCOUNT`, read 2026-11-05), the packet where JoyoFit sends an empty account (`HuaweiInitializer.kt`).
+
+**Correction to the first reading of this report.** The "not signed" text does not prove his Fit 3 enforces signatures: the install
+treats a face the watch removes after the upload as refused (`WatchfaceManager.kt`, `removedByWatch`), whatever the reason. A plain
+upload working in Gadgetbridge means his watch most likely does **not** enforce signatures (the Fit 3 is not among the watches in
+#6005). What differs from JoyoFit is the account sent in `1A/05` (his ID vs empty) and the install id (JoyoFit's random
+`<nine digits>_<version>`). Which one matters is UNVERIFIED; his firmware version and a JoyoFit support log of a failed install would
+tell.
+
+**Implemented (branch `feat/huawei-account-id`, UNVERIFIED on a watch).** JoyoFit can now send the user's Huawei account id in
+`1A/05` instead of the empty default. `WearSettings.huaweiAccount` (Android) / `WearSettings.huaweiAccount` (iOS) stores it,
+`HuaweiInitializer` sends it, and `HuaweiWear.get/setHuaweiAccount` expose it. The watch-face screen has a "Huawei account" section
+(`HuaweiAccountSection.tsx`): in-app sign-in opens `id1.cloud.huawei.com` in a WebView and reads the `userId` cookie
+(`huaweiAccount.ts`, `extractUserIdFromCookies`), with a manual-entry fallback for when Huawei marks the cookie httpOnly. Default
+empty = the old behaviour. **Risk to re-check on a real watch:** a wrong id, or adding an id to a watch first bound under the empty
+account, can trigger the watch's factory-reset prompt (`1A/06`); the UI warns to re-pair after setting it. Needs a device to confirm it
+(a) does not reset a correctly-matched watch and (b) actually lets an unsigned face install on a non-enforcing watch like the Fit 3.
 
 **The modded Huawei Health (`Huawei+Health+15.1.4.340_HookUtils.apk`, inspected 2026-11-05).** It is an LSPatch repackage: the original
 APK is kept unchanged in `assets/lspatch/origin.apk`, `config.json` sets `sigBypassLevel: 2` and embeds Huawei's original signing
@@ -53,8 +73,9 @@ the install, so Huawei's server still signs it. Nothing in it gives JoyoFit a wa
 stays out of scope per section 2.
 
 **"Let already-signed `.hwt` files through" is not a feature.** No `.hwt` carries a signature; it is issued per install for one account,
-one watch, one face id and version, and the file's hash. A file that installed for someone else arrives unsigned. JoyoFit pairs with an
-empty account (`HuaweiInitializer.kt`, `1A/05` tag `01 = 00`); that only opens the link and plays no part in the face check.
+one watch, one face id and version, and the file's hash. A file that installed for someone else arrives unsigned. On a watch that enforces signatures, sending
+the user's account ID in `1A/05` cannot help, because the signature still has to come from Huawei's server. It may matter on watches
+that do not enforce them (see the user report above).
 
 ## 0. Correction and open question (2026-10-21, after a contributor report)
 

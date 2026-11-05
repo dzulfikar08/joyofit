@@ -60,6 +60,19 @@ internal class WearSettings(context: Context) {
     get() = prefs.getInt(KEY_INTERVAL, DEFAULT_SYNC_INTERVAL_MIN)
     set(value) = prefs.edit().putInt(KEY_INTERVAL, value).apply()
 
+  /**
+   * The user's Huawei account id (the 17-18 digit `userId` of their Huawei account), sent to the watch in 1A/05
+   * SendExtendedAccountToDevice so a watch that was set up under that account keeps its data instead of asking for a factory reset
+   * (Gadgetbridge PREF_HUAWEI_ACCOUNT; the user enters it on the watch-face screen). null or blank = send Gadgetbridge's empty
+   * default, the behaviour before this setting existed. This is only an account id; no signature or token is involved.
+   */
+  var huaweiAccount: String?
+    get() = prefs.getString(KEY_HUAWEI_ACCOUNT, null)?.takeIf { it.isNotBlank() }
+    set(value) = prefs.edit().apply {
+      val clean = value?.trim()
+      if (clean.isNullOrEmpty()) remove(KEY_HUAWEI_ACCOUNT) else putString(KEY_HUAWEI_ACCOUNT, clean)
+    }.apply()
+
   var notificationsEnabled: Boolean
     get() = prefs.getBoolean(KEY_NOTIFICATIONS, false)
     set(value) = prefs.edit().putBoolean(KEY_NOTIFICATIONS, value).apply()
@@ -213,6 +226,7 @@ internal class WearSettings(context: Context) {
     private const val KEY_BACKGROUND = "background_enabled"
     private const val KEY_FORCE_BLE = "force_ble"
     private const val KEY_INTERVAL = "sync_interval_min"
+    private const val KEY_HUAWEI_ACCOUNT = "huawei_account_id"
     private const val KEY_NOTIFICATIONS = "notifications_enabled"
     private const val KEY_MORNING_SUMMARY = "morning_summary_enabled"
     private const val KEY_MORNING_SUMMARY_DAY = "morning_summary_day"

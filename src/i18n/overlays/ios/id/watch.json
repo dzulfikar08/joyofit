@@ -34,7 +34,20 @@
     "signatureRefused": "Jam menolak tampilan ini karena tidak ditandatangani pembuat jam. Coba tampilan lain dari galeri JoyoFit.",
     "installAbout": "Buat tampilan jam di alat desain watch face dari pembuat jam dan ekspor sebagai file .hwt. Buat sesuai ukuran layar jam-mu. Tampilan untuk layar lain ditolak sebelum dikirim.\n\nBelum diketahui apakah jam menerima tampilan yang tidak ditandatangani pembuat jam. Kalau ditolak, kode status persis dari jam ditampilkan di sini dan di log.",
     "installAboutSized": "Buat tampilan jam di alat desain watch face dari pembuat jam dan ekspor sebagai file .hwt. Layar jam ini {{width}} x {{height}} px. Tampilan untuk layar lain ditolak sebelum dikirim.\n\nBelum diketahui apakah jam menerima tampilan yang tidak ditandatangani pembuat jam. Kalau ditolak, kode status persis dari jam ditampilkan di sini dan di log.",
-    "notHwtWarning": "\"{{name}}\" tidak berekstensi .hwt. Pilih file watch face (.hwt) yang valid."
+    "notHwtWarning": "\"{{name}}\" tidak berekstensi .hwt. Pilih file watch face (.hwt) yang valid.",
+    "account": {
+      "title": "Akun jam",
+      "signIn": "Hubungkan akun jam",
+      "signInTitle": "Masuk ke akun jam",
+      "signInHint": "Masuk dengan akun yang dipakai saat menyiapkan jam. JoyoFit hanya membaca ID akun dari halaman ini, tidak pernah kata sandimu.",
+      "resetWarning": "Pakai akun yang sama dengan saat menyiapkan jam. ID yang berbeda bisa membuat jam minta direset ke setelan pabrik. Jika jam pertama kali dipasangkan ke JoyoFit tanpa akun, lupakan jam lalu hubungkan lagi setelah mengatur ini.",
+      "guideTitle": "Kenapa dan caranya",
+      "guide": "Sebagian jam memeriksa akun mana yang dikirim aplikasi yang terhubung. Saat JoyoFit tidak mengirim apa-apa, jam bisa menolak watch face atau minta direset. Menghubungkan akunmu mengirim ID yang sama dengan yang dipakai aplikasi bawaan jam.\n\n1. Ketuk Hubungkan akun jam dan masuk. JoyoFit mengambil ID akun 17 digit secara otomatis.\n2. Kalau tidak terbaca, ambil ID di komputer: buka browser dan masuk di cloud.huawei.com, tekan F12, buka Application > Cookies, salin 17 angka pada userId, lalu tempel di Masukkan ID secara manual.\n3. Hubungkan ulang jam. Kalau jam minta dipulihkan (reset pabrik), ID tidak cocok: batalkan dan periksa lagi.",
+      "invalid": {
+        "too_short": "Terlalu pendek untuk ID akun jam.",
+        "too_long": "Terlalu panjang untuk ID akun jam."
+      }
+    }
   },
   "courses": {
     "gateSet": "Gerbang pembuat jam: sudah diatur",

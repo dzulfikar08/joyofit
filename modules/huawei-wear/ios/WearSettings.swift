@@ -32,6 +32,7 @@ public final class WearSettings: @unchecked Sendable {
         static let lowHrAlert = "low_hr_alert"
         static let stressEnabled = "stress_enabled"
         static let watchLanguage = "watch_language"
+        static let huaweiAccount = "huawei_account_id"
         static let zonesMethod = "hr_zones_method"
         static let zonesMaxHr = "hr_zones_max"
         static let zonesRestingHr = "hr_zones_rest"
@@ -67,6 +68,17 @@ public final class WearSettings: @unchecked Sendable {
     public var syncIntervalMinutes: Int {
         get { defaults.object(forKey: Key.interval) == nil ? WearSettings.defaultSyncIntervalMin : defaults.integer(forKey: Key.interval) }
         set { defaults.set(newValue, forKey: Key.interval) }
+    }
+
+    /// The user's Huawei account id (17-18 digit `userId`), sent to the watch in 1A/05 so a watch set up under that account keeps its
+    /// data instead of asking for a factory reset (Gadgetbridge PREF_HUAWEI_ACCOUNT). nil/blank sends the empty default. Only an
+    /// account id: no signature or token.
+    public var huaweiAccount: String? {
+        get {
+            let value = defaults.string(forKey: Key.huaweiAccount)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            return (value?.isEmpty ?? true) ? nil : value
+        }
+        set { set(newValue?.trimmingCharacters(in: .whitespacesAndNewlines), forKey: Key.huaweiAccount) }
     }
 
     /// Profile and goal as the JS Settings screen stores them; nil until the user saves one.
