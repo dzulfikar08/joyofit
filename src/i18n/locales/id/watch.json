@@ -240,7 +240,9 @@
       "on": "Alarm pintar aktif",
       "edit": "Ubah alarm pintar",
       "set": "Atur alarm pintar"
-    }
+    },
+    "restore_other": "Pulihkan {{count}} alarm",
+    "restoreHint": "Jam ini tidak punya alarm, tapi JoyoFit menyimpan salinan alarm terakhirmu (setelah reset, atau di HP baru). Pasang lagi?"
   },
   "faces": {
     "builtInAuthor": "Bawaan jam",

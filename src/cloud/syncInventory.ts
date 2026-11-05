@@ -13,9 +13,10 @@ import { HR_ZONES_PREF, hrZoneSettingsDocument, storeHrZoneSettings, syncHrZones
 import { DEFAULT_HR_ZONE_SETTINGS, parseHrZoneSettings } from '@/features/hrzones/zones';
 import { bikeSettingsStore, DEFAULT_BIKE_SETTINGS } from '@/features/bikecomputer/settings';
 import { getWheelMm, setWheelMm } from '@/features/sensors/settings';
+import { ALARM_BACKUP_PREF, alarmBackup, parseBackup, storeAlarmBackup } from '@/features/alarms/alarmBackup';
 import { THEME_KEY } from '@/theme/ThemeProvider';
 import { THEMES } from '@/theme/themes';
-import { HuaweiWear, type CycleSwitches, type UserSex } from '@/wear';
+import { HuaweiWear, type CycleSwitches, type HealthSensorsUpdate, type UserSex } from '@/wear';
 
 /**
  * The preferences that follow the account (kind `pref`, see `prefsSync.ts`), and the reason for each one that does not.
@@ -32,6 +33,11 @@ import { HuaweiWear, type CycleSwitches, type UserSex } from '@/wear';
  *  - `weather`         temperature unit and the chosen city's name (`getWeatherStatus` / `setWeatherUnit`, `setWeatherCity`).
  *  - `sleepreport`     the morning sleep report switch (`getSafety().sleepReportEnabled` / `setSleepReportEnabled`).
  *  - `healthyliving`   the Healthy Living switch (`getHealthyLiving().enabled` / `setHealthyLivingEnabled`).
+ *  - `watch.alarms`    a backup of the watch's alarms (kv `joyofit.alarmBackup`, `features/alarms/alarmBackup.ts`), taken only from a
+ *                      watch that has alarms. A pulled copy is never pushed to a watch by itself: the alarms screen offers Restore
+ *                      when the connected watch has none (after a factory reset, or on a new phone).
+ *  - `watch.sensors`   continuous heart rate, SpO2, TruSleep and the high/low heart-rate alerts (`getHealthSensors` /
+ *                      `setHealthSensors`); stored on the phone and sent to the watch on every connect, so a reset watch gets them back.
  *  - `quickreplies`    the watch's quick replies list (kv `joyofit.quickReplies`); absent = the defaults of the app's language.
  *  - `sync.cycle`      kv `cloud.syncCycle`: whether the menstrual log goes to the cloud (`healthSync.ts` owns the switch).
  *
@@ -42,7 +48,8 @@ import { HuaweiWear, type CycleSwitches, type UserSex } from '@/wear';
  *  - Health Connect / Apple Health connection and export state
  *  - Android-only phone features: morning summary notification, notification forwarding and its app list, calls, find my phone,
  *    SOS relay (iOS cannot switch them on, and they act through this phone's permissions and SIM)
- *  - watch-held state: alarms, fall detection, automatic stress, heart-rate sensors and alerts, watch faces, photo face
+ *  - watch-held state: fall detection, automatic stress (turning it on needs a one-minute measurement on the watch; the phone
+ *    re-sends it with its calibration on every connect), watch faces (store faces need Huawei's per-install signature), photo face
  *  - the iOS per-app notification switches and the encoding their test proved (native defaults `watch_notification_filter_*`, `NotificationAppFilter.swift`):
  *    the list is applied by one watch's firmware and the encoding was proven with that watch and phone only, so another phone's choices would be sent
  *    to a watch nobody tested them on
@@ -341,4 +348,50 @@ registerSyncedPref({
     bikeSettingsStore.replaceLayout(value);
   },
   clear: async () => bikeSettingsStore.clearLayout(),
+});
+
+const SENSOR_DEFAULTS: HealthSensorsUpdate = {
+  automaticHeartRate: true,
+  automaticSpo2: true,
+  truSleep: true,
+  highHeartRateAlert: 0,
+  lowHeartRateAlert: 0,
+};
+
+function sensorsOf(source: HealthSensorsUpdate): HealthSensorsUpdate {
+  const { automaticHeartRate, automaticSpo2, truSleep, highHeartRateAlert, lowHeartRateAlert } = source;
+  return { automaticHeartRate, automaticSpo2, truSleep, highHeartRateAlert, lowHeartRateAlert };
+}
+
+registerSyncedPref({
+  key: 'watch.sensors',
+  read: async () => {
+    const picked = sensorsOf(HuaweiWear.getHealthSensors());
+    return stableStringify(picked) === stableStringify(SENSOR_DEFAULTS) ? undefined : picked;
+  },
+  write: async (value) => {
+    const v = object(value);
+    const update = sensorsOf({ ...SENSOR_DEFAULTS, ...(v as Partial<HealthSensorsUpdate>) });
+    const bools = [update.automaticHeartRate, update.automaticSpo2, update.truSleep];
+    if (bools.some((b) => typeof b !== 'boolean') || typeof update.highHeartRateAlert !== 'number' || typeof update.lowHeartRateAlert !== 'number') {
+      throw new Error('not sensor settings');
+    }
+    // Stored on the phone; sent now if a watch is connected, else at the next connect.
+    await HuaweiWear.setHealthSensors(update);
+  },
+  clear: async () => {
+    await HuaweiWear.setHealthSensors(SENSOR_DEFAULTS);
+  },
+});
+
+registerSyncedPref({
+  key: ALARM_BACKUP_PREF,
+  read: async () => alarmBackup() ?? undefined,
+  write: async (value) => {
+    const backup = parseBackup(value);
+    if (!backup) throw new Error('not an alarm backup');
+    // Only the copy: the watch changes when the person taps Restore on the alarms screen.
+    storeAlarmBackup(backup);
+  },
+  clear: async () => storeAlarmBackup(null),
 });

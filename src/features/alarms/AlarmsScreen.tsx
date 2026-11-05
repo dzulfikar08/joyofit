@@ -32,7 +32,7 @@ export function AlarmsScreen() {
   const router = useRouter();
   const { t } = useTranslation(['watch', 'common']);
   const colors = useColors();
-  const { alarms, connected, busy, error, refresh, save } = useAlarms();
+  const { alarms, connected, busy, error, refresh, save, restorable, restore } = useAlarms();
   const [editing, setEditing] = useState<Editing>(null);
 
   const writable = connected && alarms.supported && !busy;
@@ -119,6 +119,13 @@ export function AlarmsScreen() {
       ) : null}
       {connected && !alarms.supported ? <Notice>{t('watch:alarms.unsupported')}</Notice> : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}
+      {restorable && !busy ? (
+        <Notice
+          icon="cloud-download"
+          action={{ label: t('watch:alarms.restore', { count: restorable.event.length }), onPress: () => void restore() }}>
+          {t('watch:alarms.restoreHint')}
+        </Notice>
+      ) : null}
 
       <Section
         title={t('watch:alarms.title')}
