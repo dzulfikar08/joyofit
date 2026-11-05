@@ -1,8 +1,8 @@
 // Port of CameraRemoteController.kt (GB HuaweiSupportProvider camera parts, AsynchronousResponse.handleCameraRemote): the watch's
 // Remote shutter, for the phone's own camera app. At connect the phone announces its camera (01/2A, 0), which makes the watch show the
 // app. Each open, shutter and close from the watch is acknowledged (01/29, 7F = 100000) as Huawei Health does. The shutter itself is not ours: the watch is also a Bluetooth keyboard and each press sends a volume key, which the Camera app
-// takes as its shutter. This controller only answers the watch's open (01/29, 1) with "camera started" (01/2A, 1) and its close (3)
-// with "camera stopped" (2), in native code so it works while JoyoFit is in the background. The events still go to JS as
+// takes as its shutter. Unlike Android, the watch's open (01/29, 1) gets no "camera started" (see onStatus); its close (3) gets
+// "camera stopped" (01/2A, 2). All of it in native code so it works while JoyoFit is in the background. The events still go to JS as
 // `onCameraRemote`, for the log only.
 import Foundation
 #if canImport(HuaweiProtocol)
@@ -62,12 +62,10 @@ public final class CameraRemoteController: LinkObserver, @unchecked Sendable {
             return
         }
         log("Camera remote: the watch sent \(event.rawValue)")
-        let answer: CameraRemote.Setup.Event?
-        switch event {
-        case .openCamera: answer = .cameraStarted
-        case .closeCamera: answer = .cameraStopped
-        case .takePicture: answer = nil
-        }
+        // An open is not answered with "camera started": an iPhone app cannot open the Camera, so the watch is left to tell the person
+        // "Open Camera on your phone first", as with Huawei Health on an iPhone. Answering it made a Band 9 show its shutter at once,
+        // the Android flow, and no picture was taken (2026-11-05). Suspected cause, not yet confirmed on a device.
+        let answer: CameraRemote.Setup.Event? = event == .closeCamera ? .cameraStopped : nil
         Task {
             await self.acknowledge(session: session)
             if let answer { await self.send(answer, session: session) }

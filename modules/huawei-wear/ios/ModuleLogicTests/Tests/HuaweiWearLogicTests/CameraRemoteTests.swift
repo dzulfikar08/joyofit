@@ -84,8 +84,8 @@ final class CameraRemoteTests: XCTestCase {
         XCTAssertTrue(rig.events.actions.isEmpty)
     }
 
-    /// The phone answers open and close itself (no camera screen in JoyoFit; the shutter is a volume key the watch sends as a keyboard).
-    func testOpenAndCloseAreAnsweredNativelyAndTheShutterIsNot() async {
+    /// Only the close is answered: an open gets no "camera started", so the watch asks the person to open the iPhone Camera first.
+    func testOnlyTheCloseIsAnswered() async {
         let rig = Rig(listed: true)
         await rig.controller.linkConnected(rig.source.current!)
         for value: UInt8 in [1, 2, 2, 3, 9] {
@@ -93,7 +93,7 @@ final class CameraRemoteTests: XCTestCase {
             await settle()
         }
         XCTAssertEqual(rig.events.actions, ["open", "shutter", "shutter", "close"], "an unknown value is dropped, like GB")
-        XCTAssertEqual(rig.setups(), [0, 1, 2])
+        XCTAssertEqual(rig.setups(), [0, 2])
         XCTAssertEqual(rig.acks(), [100_000, 100_000, 100_000, 100_000], "every known event is acknowledged, the unknown one is not")
     }
 
