@@ -12,7 +12,7 @@ import nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.CameraRemote
  * The watch's Remote shutter, for the phone's own camera app. At connect the phone announces its camera (01/2A, 0), which makes the
  * watch show the app. The shutter itself is not ours: the watch is also a Bluetooth keyboard ("<name> Consumer Control") and each
  * press sends a volume key (seen on a Watch Fit 4 Pro and a Xiaomi, 2026-11-05: alternating volume down and up), which any camera app
- * takes as its shutter. All this controller does is answer the watch's open (01/29, 1) with "camera started" (01/2A, 1) and its close
+ * takes as its shutter. All this controller does is acknowledge each event (01/29, 7F = 100000, as Huawei Health does) and answer the watch's open (01/29, 1) with "camera started" (01/2A, 1) and its close
  * (3) with "camera stopped" (2), here in native code so it also works while JoyoFit is in the background. The watch's events still go
  * to JS as `onCameraRemote`, for the log only.
  */
@@ -81,8 +81,25 @@ internal class CameraRemoteController(
       CameraRemote.CameraRemoteStatus.Response.Event.CLOSE_CAMERA -> CameraRemote.CameraRemoteSetup.Request.Event.CAMERA_STOPPED
       else -> null
     }
-    if (answer != null) scope.launch { send(session, answer) }
+    scope.launch {
+      acknowledge(session)
+      if (answer != null) send(session, answer)
+    }
     events.cameraRemote(mapOf("action" to action))
+  }
+
+  /**
+   * Every open, shutter and close is acknowledged (01/29, 7F = 100000, GB's `CameraRemoteStatus.Request`), as Huawei Health does
+   * (`sendCameraControlResponse`); without it the watch tells the person to check the Bluetooth connection.
+   */
+  private suspend fun acknowledge(session: HuaweiSession) {
+    try {
+      session.send(CameraRemote.CameraRemoteStatus.Request(session.params), "CameraRemoteStatus ack")
+    } catch (e: CancellationException) {
+      throw e
+    } catch (e: Exception) {
+      error("Camera remote: acknowledgement not sent: ${e.message}")
+    }
   }
 
   private suspend fun send(session: HuaweiSession, event: CameraRemote.CameraRemoteSetup.Request.Event) {

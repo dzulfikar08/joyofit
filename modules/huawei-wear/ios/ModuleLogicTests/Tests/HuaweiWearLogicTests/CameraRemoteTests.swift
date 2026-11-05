@@ -31,6 +31,11 @@ final class CameraRemoteTests: XCTestCase {
             controller = CameraRemoteController(link: source, events: events)
         }
 
+        /// The phone's 01/29 acknowledgements, as the 7F code each carries.
+        func acks() -> [Int] {
+            watch.sent.filter { $0.service == 0x01 && $0.command == 0x29 }.map { Int($0.tlv.int(0x7F, default: -1)) }
+        }
+
         func setups() -> [Int8] {
             watch.sent.filter { $0.service == 0x01 && $0.command == 0x2A }.map { $0.tlv.byte(0x01, default: -1) }
         }
@@ -89,5 +94,14 @@ final class CameraRemoteTests: XCTestCase {
         }
         XCTAssertEqual(rig.events.actions, ["open", "shutter", "shutter", "close"], "an unknown value is dropped, like GB")
         XCTAssertEqual(rig.setups(), [0, 1, 2])
+        XCTAssertEqual(rig.acks(), [100_000, 100_000, 100_000, 100_000], "every known event is acknowledged, the unknown one is not")
+    }
+
+    func testTheAcknowledgementMatchesGadgetbridgeAndHuaweiHealth() {
+        let packet = CameraRemote.Status.ack()
+        XCTAssertEqual(packet.serviceId, 0x01)
+        XCTAssertEqual(packet.commandId, 0x29)
+        XCTAssertTrue(packet.isEncrypted)
+        XCTAssertEqual(packet.tlv?.serialize(), [0x7F, 0x04, 0x00, 0x01, 0x86, 0xA0])
     }
 }

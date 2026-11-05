@@ -1,6 +1,6 @@
 // Port of CameraRemote.java (Gadgetbridge, AGPL-3.0-or-later; see NOTICE): the watch's remote shutter. It shares service 0x01 with
 // DeviceConfig. The phone announces the camera at connect (01/2A, tag 01 = 0); only then does the watch list its Remote shutter app.
-// The watch pushes open, take picture and close (01/29, tag 01 = 1, 2, 3); the phone answers "camera started" (01/2A, 1) and
+// The watch pushes open, take picture and close (01/29, tag 01 = 1, 2, 3); the phone acknowledges each (01/29, tag 7F = 100000) and answers "camera started" (01/2A, 1) and
 // "camera stopped" (01/2A, 2). The picture itself is a volume key the watch sends as a Bluetooth keyboard, not a packet.
 import Foundation
 
@@ -28,6 +28,15 @@ public enum CameraRemote {
 
     public enum Status {
         public static let id: UInt8 = 0x29
+
+        /// The phone's acknowledgement of each open, take picture and close (GB's `CameraRemoteStatus.Request`: tag 7F = 100000, "OK").
+        /// Huawei Health sends it for every 01/29 the watch pushes (`kjg.sendCameraControlResponse`); without it the watch gives up and
+        /// tells the person to check the Bluetooth connection.
+        public static func ack() -> HuaweiPacket {
+            var tlv = HuaweiTLV()
+            tlv.put(0x7F, int: 100_000)
+            return HuaweiPacket(serviceId: CameraRemote.id, commandId: id, tlv: tlv, isEncrypted: true)
+        }
 
         public enum Event: String, Sendable {
             case openCamera = "open"

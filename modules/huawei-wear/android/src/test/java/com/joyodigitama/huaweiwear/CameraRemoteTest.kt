@@ -35,6 +35,13 @@ class CameraRemoteTest {
   }
 
   @Test
+  fun acknowledgementIsTag7fOk() {
+    val out = CameraRemote.CameraRemoteStatus.Request(plain).serialize()
+    assertEquals(1, out.size)
+    assertArrayEquals(frame(0x01, 0x29, byteArrayOf(0x7F, 0x04, 0x00, 0x01, 0x86.toByte(), 0xA0.toByte())), out[0])
+  }
+
+  @Test
   fun watchStatusParsesToTheEvent() {
     val expected = mapOf(
       1 to CameraRemote.CameraRemoteStatus.Response.Event.OPEN_CAMERA,

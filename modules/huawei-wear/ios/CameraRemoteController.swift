@@ -1,6 +1,6 @@
 // Port of CameraRemoteController.kt (GB HuaweiSupportProvider camera parts, AsynchronousResponse.handleCameraRemote): the watch's
 // Remote shutter, for the phone's own camera app. At connect the phone announces its camera (01/2A, 0), which makes the watch show the
-// app. The shutter itself is not ours: the watch is also a Bluetooth keyboard and each press sends a volume key, which the Camera app
+// app. Each open, shutter and close from the watch is acknowledged (01/29, 7F = 100000) as Huawei Health does. The shutter itself is not ours: the watch is also a Bluetooth keyboard and each press sends a volume key, which the Camera app
 // takes as its shutter. This controller only answers the watch's open (01/29, 1) with "camera started" (01/2A, 1) and its close (3)
 // with "camera stopped" (2), in native code so it works while JoyoFit is in the background. The events still go to JS as
 // `onCameraRemote`, for the log only.
@@ -68,8 +68,20 @@ public final class CameraRemoteController: LinkObserver, @unchecked Sendable {
         case .closeCamera: answer = .cameraStopped
         case .takePicture: answer = nil
         }
-        if let answer { Task { await self.send(answer, session: session) } }
+        Task {
+            await self.acknowledge(session: session)
+            if let answer { await self.send(answer, session: session) }
+        }
         events.cameraRemote(["action": event.rawValue])
+    }
+
+    /// Every open, shutter and close is acknowledged (01/29, 7F = 100000), as Huawei Health does; the watch waits for it.
+    private func acknowledge(session: HuaweiSession) async {
+        do {
+            try await session.send(CameraRemote.Status.ack(), label: "CameraRemoteStatus ack")
+        } catch {
+            events.error("Camera remote: acknowledgement not sent: \((error as? WearError)?.message ?? "\(error)")")
+        }
     }
 
     private func send(_ event: CameraRemote.Setup.Event, session: HuaweiSession) async {
