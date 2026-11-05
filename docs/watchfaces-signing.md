@@ -22,6 +22,40 @@ Research of 2026-10-21. Read-only: no code was changed, nothing was sent to Huaw
 Evidence labels used below: **VERIFIED** (seen on our Fit 4 Pro), **DOCUMENTED** (Huawei says so in a page linked here), **REPORTED**
 (users or Gadgetbridge contributors say so; not checked by us), **INFERENCE** (ours).
 
+## 0a. Update 2026-11-05: Gadgetbridge calls it a dead end; a user report; the modded Huawei Health
+
+**Gadgetbridge [#6005](https://codeberg.org/Freeyourgadget/Gadgetbridge/issues/6005)** (read 2026-11-05; #6199, #6098, #5968,
+#6465, #6466 closed as its duplicates). REPORTED by contributors, not checked by us:
+
+- Affects GT 6 / GT 6 Pro (6.1), GT Runner 2, Fit 4, Fit 5, Fit 5 Pro. "188 is the last [GT 6] version that can use old install method."
+- `contentSign` is 384 bytes (RSA-3072) and differs on every install of the same face (probably RSA-PSS). The signed content holds the
+  file hash, so "a modified or custom watchface can't be activated without Huawei's private key". A trial face was removed by the
+  watch after about 5 minutes with no phone connected, so the watch enforces licences on its own.
+- Not region- or account-dependent: a German GT 6 with no Huawei account fails the same way.
+- Replay of a captured response: one contributor thinks it may work for the identical store face (untested); Me7c7 says it fails
+  because server sync data is also checked. A "sleep mode" install is reported to vanish after a restart. Developer account: "heard",
+  unconfirmed.
+- Me7c7, 2026-10-28: "Installation path without signature checks completely removed from 6.1 firmware." Firmware is signed too;
+  "Only hope is private key leak or jailbreak of firmware." No Gadgetbridge fix is planned.
+
+**User report (Threads DM, Jeremy, Watch Fit 3, 2026-11-04/05).** His `.hwt` files fail in JoyoFit with the signature message, which
+the app shows only on watch code `100014` (`src/features/watchfaces/installError.ts`), so his Fit 3 enforces signatures. He installs
+them with (1) a modded Huawei Health from a Telegram channel and (2) "GadgetBridge" plus a private Google Doc (not read: it needs a
+signed-in Google session). Route (2) contradicts #6005 on an enforcing watch unless his firmware predates enforcement or the Doc adds
+a step that obtains a Huawei signature; ask for his firmware version and the Doc's steps.
+
+**The modded Huawei Health (`Huawei+Health+15.1.4.340_HookUtils.apk`, inspected 2026-11-05).** It is an LSPatch repackage: the original
+APK is kept unchanged in `assets/lspatch/origin.apk`, `config.json` sets `sigBypassLevel: 2` and embeds Huawei's original signing
+certificate (so the app still sees Huawei's signature after re-signing), and the Xposed module `cn.wwl.xposed.hook` (DexKit plus an
+obfuscated WebView script `assets/code.js`) adds buttons to Huawei Health's face pages that call its own JS bridge
+(`JsInteraction.sendStartDownload` / `sendStartTryoutDownload` by store `hitopId`, `jumpHwWatchFaceDesigner`). Huawei Health still does
+the install, so Huawei's server still signs it. Nothing in it gives JoyoFit a way to install a local `.hwt` on an enforcing watch, and it
+stays out of scope per section 2.
+
+**"Let already-signed `.hwt` files through" is not a feature.** No `.hwt` carries a signature; it is issued per install for one account,
+one watch, one face id and version, and the file's hash. A file that installed for someone else arrives unsigned. JoyoFit pairs with an
+empty account (`HuaweiInitializer.kt`, `1A/05` tag `01 = 00`); that only opens the link and plays no part in the face check.
+
 ## 0. Correction and open question (2026-10-21, after a contributor report)
 
 **Report.** Contributor David4rr (GitHub @David4rr; merged PRs #3 watchfaces and #15 smart replies) says JoyoFit installs already-signed
