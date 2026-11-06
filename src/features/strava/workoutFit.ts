@@ -6,6 +6,7 @@ import { rideUploadFields } from '@/features/cycling/forStrava';
 import { isEbike, rideProfile } from '@/features/cycling/settings';
 import { buildFit, type BuiltFit } from '@/features/strava/activityFile';
 import { stravaCadenceFields } from '@/features/strava/cadenceFields';
+import { listWorkoutRri } from '@/features/sensors/store';
 import { stravaDevice, type StravaDevice } from '@/features/strava/device';
 import { strengthUploadExtras, type StrengthUploadExtras } from '@/features/strength/share/uploadExtras';
 import { workoutElevation } from '@/features/workouts/analysis/elevation';
@@ -36,6 +37,8 @@ export async function buildWorkoutFit(db: SQLiteDatabase, workout: WorkoutRow, s
   const strength = await strengthUploadExtras(db, workout.start);
   const ride = rideUploadFields(workout, summary, points, rideProfile());
   const device = stravaDevice(watch);
+  // A chest strap's beat-to-beat intervals (phone recordings only), carried as hrv messages for HRV tools.
+  const rri = await listWorkoutRri(db, workout.id);
   const fit = buildFit(
     {
       ...workout,
@@ -55,6 +58,7 @@ export async function buildWorkoutFit(db: SQLiteDatabase, workout: WorkoutRow, s
       ...(strength ? { sets: strength.sets } : {}),
       // The laps the person pressed on the phone; a watch's own laps keep going out as one lap, as before.
       ...(summary.source === 'phone' && summary.laps ? { laps: summary.laps } : {}),
+      ...(rri.length > 0 ? { rri } : {}),
     },
   );
   return { fit, points, summary, strength, device };

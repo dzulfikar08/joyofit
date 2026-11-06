@@ -13,7 +13,7 @@ import { haversineM } from '../workouts/analysis/geo';
 import { SPORT_ROWS, type ManualSport } from '../workouts/manual';
 import { SensorTracker, type SensorReadings } from '../sensors/gatt';
 import { PhoneStepCount } from '../sensors/phoneSteps';
-import { filterRriArtefacts, withinPhysiological } from './rri';
+import { withinPhysiological } from './rri';
 import { HR_COVERAGE_MIN, type EnergyProfile, keytelKcalPerMin, metKcalPerSec } from './energy';
 
 export type RecorderStatus = 'idle' | 'recording' | 'paused' | 'finished';
@@ -90,7 +90,10 @@ export interface RecordedWorkout {
   /** Mean percent of the left pedal while pedalling, when the power meter reports balance. */
   balanceLeftPct: number | null;
   samples: RecordedSample[];
-  /** Filtered beat-to-beat R-R intervals (ms) from a chest strap, for post-session HRV; absent when none were received. */
+  /**
+   * Beat-to-beat R-R intervals (ms) from a chest strap, as received within 250..2000 ms (no artefact correction: the export carries
+   * them raw, the HRV summary filters its own copy); absent when none were received.
+   */
   rri?: number[];
   laps: RecordedLap[];
 }
@@ -643,7 +646,7 @@ export class Recorder {
       balanceLeftPct: this.balances.length > 0 ? Math.round((mean(this.balances) * 10)) / 10 : null,
       samples: s,
       laps: this.laps,
-      rri: this.rri.length > 0 ? filterRriArtefacts(this.rri) : undefined,
+      rri: this.rri.length > 0 ? [...this.rri] : undefined,
     };
   }
 }

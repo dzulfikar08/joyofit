@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 
-import { ensureSensorSchema, listWorkoutSensors, renameSensor, saveSensor, listSensors, updateSensorInfo, removeSensor, sensorLabel } from '../sensors/store';
+import { ensureSensorSchema, listWorkoutRri, listWorkoutSensors, renameSensor, saveSensor, listSensors, updateSensorInfo, removeSensor, sensorLabel } from '../sensors/store';
 import { bytesToHex } from '../sensors/gatt';
 import { appendJournal, clearJournal, ensureRecordingSchema, loadJournal, saveJournalState } from './journal';
 import { Recorder, type RecorderMeta } from './recorder';
@@ -49,6 +49,33 @@ describe('saveRecordedWorkout', () => {
     // the minutes 0, 1, 2 of the session (the start is not minute aligned: up to 4 buckets)
     expect(all('SELECT * FROM step_samples WHERE imported = 1').length).toBeGreaterThanOrEqual(3);
     expect(await listWorkoutSensors(db, id)).toEqual([{ id: 'AA:BB', name: 'Polar H10', kinds: ['hr'] }]);
+  });
+
+  it('keeps a chest strap\'s raw R-R intervals for the export and summarises HRV from a filtered copy', async () => {
+    const { db, all } = openDb();
+    await ensureSensorSchema(db);
+    const r = new Recorder({ sport: 'treadmill', gps: false, wheelCircumferenceM: 2.105, profile });
+    r.start(T0);
+    // One beat per frame, 1/1024 s units: 820 is 800.8 ms; beat 20 is an ectopic 1200 (a 1229-unit interval).
+    const units = (s: number) => (s === 20 ? 1229 : 820 + (s % 2) * 10);
+    for (let s = 0; s <= 40; s++) {
+      const u = units(s);
+      r.sensor('2a37', bytesToHex(new Uint8Array([0x10, 75, u & 0xff, u >> 8])), T0 + s * 1000);
+      r.tick(T0 + s * 1000);
+    }
+    const w = r.finish(T0 + 40 * 1000)!;
+    const id = await saveRecordedWorkout(db, w, [{ id: 'AA:BB', name: 'Polar H10', kinds: ['hr'] }]);
+
+    const stored = await listWorkoutRri(db, id);
+    expect(stored.length).toBeGreaterThanOrEqual(30);
+    // Raw: the ectopic beat is still there, in whole milliseconds.
+    expect(stored).toContain(1200);
+    expect(stored.every((v) => Number.isInteger(v))).toBe(true);
+    const [row] = all<{ summary_json: string }>('SELECT summary_json FROM workouts WHERE id = ?', id);
+    const { hrv } = JSON.parse(row!.summary_json);
+    expect(hrv.beats).toBe(stored.length);
+    // Filtered: without the 1200 ms beat successive differences are about 10 ms, so RMSSD stays far below its ~400 ms jump.
+    expect(hrv.rmssd).toBeLessThan(30);
   });
 
   it('a web game ride keeps the game distance, climb, route and laps', async () => {

@@ -221,6 +221,7 @@ export async function removeOwnRow(db: SQLiteDatabase, start: number): Promise<v
   }
   await db.runAsync('DELETE FROM workout_points WHERE workout_id = ?', row.id);
   await db.runAsync('DELETE FROM workout_sensor WHERE workout_id = ?', row.id);
+  await db.runAsync('DELETE FROM workout_rri WHERE workout_id = ?', row.id);
   await db.runAsync('DELETE FROM workouts WHERE id = ?', row.id);
   await db.runAsync('DELETE FROM cloud_workout WHERE start = ?', start);
 }
