@@ -333,6 +333,8 @@
     "noSavedHint": "Import a .hwt file from your phone storage to build your personal offline collection.",
     "noSavedHintIos": "Faces are sent to the watch straight from a file on iPhone and are not kept here. Use Install from file above to put one on your watch.",
     "installFromFileHint": "Install a .hwt file straight onto your watch. On iPhone the file is sent from the picker and is not saved in this library.",
+    "gbModeLabel": "Compatibility install",
+    "gbModeHint": "For watches that reject unsigned faces. Installs the way Gadgetbridge does. Keep off unless faces are being deleted right after install.",
     "installed": "Installed",
     "installedOnWatch": "Installed on Watch",
     "wrongSize": "Wrong size",

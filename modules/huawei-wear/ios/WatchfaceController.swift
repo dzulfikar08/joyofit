@@ -38,11 +38,13 @@ public final class WatchfaceController: @unchecked Sendable {
     /// `signature` is a Huawei signature response string (Huawei Health sends it in tag 0x08 of the announcement). `fileName` overrides the
     /// random `<id>_<version>` install name; a replayed signature only names the face id and version it was issued for, so both must match
     /// that face.
-    public func install(uri: String, signature: String? = nil, fileName: String? = nil) async throws -> [String: Any] {
+    public func install(uri: String, signature: String? = nil, fileName: String? = nil, gadgetbridge: Bool = false) async throws -> [String: Any] {
         guard link.handle() != nil else { throw notConnected() }
         let bytes = try await Task.detached { try PickedFile.read(uri: uri) }.value
         let package = try WatchfacePackages.parse(bytes)
-        let name = fileName ?? WatchfacePackages.randomName(version: package.description.version)
+        // Gadgetbridge uploads under version 1.0.0 and skips the 27/03 announce; see WatchfaceOps.install(gadgetbridge:).
+        let name = fileName
+            ?? (gadgetbridge ? WatchfacePackages.randomName(version: "1.0.0") : WatchfacePackages.randomName(version: package.description.version))
         if let fileName, fileName.firstIndex(of: "_") == nil || fileName.hasPrefix("_") {
             throw WearError(.invalidArgument, "The install name must be `<id>_<version>`, got '\(fileName)'")
         }
@@ -53,7 +55,7 @@ public final class WatchfaceController: @unchecked Sendable {
         }
         return try await withWatch { ops in
             do {
-                let result = try await ops.install(package, progress: progress, fileName: name, signature: signature)
+                let result = try await ops.install(package, progress: progress, fileName: name, signature: signature, gadgetbridge: gadgetbridge)
                 events.uploadResult(ok: result.listed, fileName: result.fileName, code: result.uploadStatus, message: result.message)
                 return result.toJS()
             } catch let e as WearError {

@@ -58,12 +58,17 @@ export function useWatchfaces() {
 
   /** Installs a watch face from an explicit URI (file://, content://, or http/https URL). */
   const installFromUri = useCallback(
-    async (uri: string, signature?: string, fileName?: string): Promise<WatchfaceInstallResult | null> => {
+    async (
+      uri: string,
+      signature?: string,
+      fileName?: string,
+      gadgetbridge?: boolean,
+    ): Promise<WatchfaceInstallResult | null> => {
       setProgress({ bytes: 0, total: 0 });
       let outcome: WatchfaceInstallResult | null = null;
       await run('install', async () => {
         try {
-          const result = await HuaweiWear.installWatchface(uri, signature, fileName);
+          const result = await HuaweiWear.installWatchface(uri, signature, fileName, gadgetbridge);
           if (result.list) setList(result.list);
           if (result.listed) {
             setNotice(t('watch:faces.installResult', { name: result.name, message: result.message }));
@@ -82,8 +87,11 @@ export function useWatchfaces() {
     [run],
   );
 
-  /** Installs a picked .hwt; `signature` + `fileName` replay a captured Huawei signature (see installWatchface). */
-  const install = useCallback(async (signature?: string, fileName?: string) => {
+  /**
+   * Installs a picked .hwt; `signature` + `fileName` replay a captured Huawei signature (see installWatchface).
+   * `gadgetbridge` uses Gadgetbridge's install path for watches that enforce signatures.
+   */
+  const install = useCallback(async (signature?: string, fileName?: string, gadgetbridge?: boolean) => {
     let picked: DocumentPicker.DocumentPickerResult;
     try {
       picked = await getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
@@ -93,7 +101,7 @@ export function useWatchfaces() {
     }
     if (picked.canceled || picked.assets.length === 0) return;
     const asset = picked.assets[0];
-    await installFromUri(asset.uri, signature, fileName);
+    await installFromUri(asset.uri, signature, fileName, gadgetbridge);
   }, [installFromUri]);
 
   const initialFetchDone = useRef(false);

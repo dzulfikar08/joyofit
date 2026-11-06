@@ -440,8 +440,17 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    * seconds after activation (100014). `signature` sends a captured signature string; `fileName`
    * (`<id>_<version>`) installs under the id and version that signature was issued for instead of a
    * random name.
+   *
+   * `gadgetbridge` installs the way Gadgetbridge does: upload under version `1.0.0` and skip the 27/03
+   * announce (which, on firmware that enforces signatures, triggers the watch's `checkright` licence
+   * lookup that JoyoFit cannot answer). Ignored when `fileName` is given.
    */
-  installWatchface(uri: string, signature?: string, fileName?: string): Promise<WatchfaceInstallResult>;
+  installWatchface(
+    uri: string,
+    signature?: string,
+    fileName?: string,
+    gadgetbridge?: boolean,
+  ): Promise<WatchfaceInstallResult>;
   /** Makes the face with this id active; resolves with the list read afterwards, rejects if the watch did not switch. */
   setActiveWatchface(id: string): Promise<WatchfaceList>;
   /** Deletes the face with this id; resolves with the list read afterwards, rejects if the face is still there. */

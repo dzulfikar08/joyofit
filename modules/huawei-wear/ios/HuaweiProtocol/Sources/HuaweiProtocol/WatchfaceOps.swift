@@ -375,7 +375,8 @@ public final class WatchfaceOps: @unchecked Sendable {
     /// range, announce it with 27/03, upload it as file type 1 under `<id>_<version>`, wait for the watch's 27/05 confirmation, then ask for
     /// the face list to see whether the face arrived. `fileName` must be `<id>_<version>`.
     public func install(
-        _ pkg: WatchfacePackage, progress: @escaping @Sendable (_ bytes: Int, _ total: Int) -> Void, fileName: String? = nil, signature: String? = nil
+        _ pkg: WatchfacePackage, progress: @escaping @Sendable (_ bytes: Int, _ total: Int) -> Void, fileName: String? = nil, signature: String? = nil,
+        gadgetbridge: Bool = false
     ) async throws -> InstallResult {
         try requireService()
         let description = pkg.description
@@ -397,7 +398,16 @@ public final class WatchfaceOps: @unchecked Sendable {
             note("the watch's screen size is unknown; the package is not checked against it")
         }
 
-        let announcement = try await announce(id, version, signature)
+        let announcement: Announcement
+        if gadgetbridge {
+            // Gadgetbridge uploads a face without the 27/03 announce. On firmware that enforces signatures (e.g. a Watch
+            // Fit 3 on 5.0.0.36) the announce triggers the watch's `checkright` licence lookup, which JoyoFit cannot
+            // answer; skipping it, as Gadgetbridge does, avoids that check.
+            note("Gadgetbridge-compatible install: skipping the 27/03 announce, uploading directly")
+            announcement = Announcement(code: nil, needReceive: nil)
+        } else {
+            announcement = try await announce(id, version, signature)
+        }
         var outcome: UploadOutcome?
         if announcement.needReceive == 0 {
             note("the watch reports it has \(id)_\(version) already (needReceive=0); nothing is uploaded")

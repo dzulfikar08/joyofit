@@ -580,8 +580,8 @@ public final class HuaweiWearModule: Module {
             try await wearCall { try await runtime.watchfaces.list() }
         }
 
-        AsyncFunction("installWatchface") { (uri: String, signature: String?, fileName: String?) async throws -> [String: Any] in
-            try await wearCall { try await runtime.watchfaces.install(uri: uri, signature: signature, fileName: fileName) }
+        AsyncFunction("installWatchface") { (uri: String, signature: String?, fileName: String?, gadgetbridge: Bool?) async throws -> [String: Any] in
+            try await wearCall { try await runtime.watchfaces.install(uri: uri, signature: signature, fileName: fileName, gadgetbridge: gadgetbridge ?? false) }
         }
 
         AsyncFunction("setActiveWatchface") { (id: String) async throws -> [String: Any] in

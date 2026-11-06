@@ -332,6 +332,8 @@
     "noSavedHint": "Impor file .hwt dari penyimpanan ponsel untuk mulai mengoleksi secara offline.",
     "noSavedHintIos": "Di iPhone tampilan jam dikirim ke jam langsung dari file dan tidak disimpan di sini. Pakai Pasang dari file di atas untuk memasangnya.",
     "installFromFileHint": "Pasang file .hwt langsung ke jam. Di iPhone file dikirim dari pemilih file dan tidak disimpan di perpustakaan ini.",
+    "gbModeLabel": "Pasang mode kompatibilitas",
+    "gbModeHint": "Untuk jam yang menolak tampilan tanpa tanda tangan. Memasang dengan cara seperti Gadgetbridge. Biarkan nonaktif kecuali tampilan terhapus tepat setelah dipasang.",
     "installed": "Terpasang",
     "installedOnWatch": "Terpasang di Jam",
     "wrongSize": "Ukuran salah",

@@ -440,6 +440,19 @@ final class WatchfaceOpsTests: XCTestCase {
         XCTAssertNotNil(js["list"] as? [String: Any])
     }
 
+    func testGadgetbridgeModeUploadsWithoutTheAnnounce() async throws {
+        let (_, watch, ops, _, _) = setup()
+
+        let result = try await ops.install(hwt(), progress: { _, _ in }, fileName: "123456789_1.0.0", signature: nil, gadgetbridge: true)
+
+        // The file is still uploaded.
+        XCTAssertEqual(try watch.all(0x28, 0x02).first?.tlv?.string(0x01), "123456789_1.0.0")
+        XCTAssertTrue(result.listed)
+        // Only the activation 27/03 (after the watch's confirm), never the pre-upload announce the licence check reacts to.
+        XCTAssertEqual(watch.all(0x27, 0x03).count, 1)
+        XCTAssertTrue(result.active)
+    }
+
     func testInstallRefusesAFaceForAnotherScreenBeforeSendingAnything() async throws {
         let (_, watch, ops, _, _) = setup()
         _ = await expectError(.invalidArgument) { _ = try await ops.install(self.hwt(screen: "HWHD02"), progress: { _, _ in }, fileName: "1_1.0.0") }

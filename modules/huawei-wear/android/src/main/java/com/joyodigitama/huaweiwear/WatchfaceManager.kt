@@ -367,6 +367,7 @@ internal class WatchfaceOps(
     progress: (bytes: Int, total: Int) -> Unit,
     fileName: String = WatchfacePackages.randomName(version = pkg.description.version),
     signature: String? = null,
+    gadgetbridge: Boolean = false,
   ): InstallResult {
     requireService()
     val description = pkg.description
@@ -385,7 +386,15 @@ internal class WatchfaceOps(
       log("the watch's screen size is unknown; the package is not checked against it")
     }
 
-    val announcement = announce(id, version, signature)
+    val announcement = if (gadgetbridge) {
+      // Gadgetbridge uploads a face without the 27/03 announce. On firmware that enforces signatures (e.g. a Watch
+      // Fit 3 on 5.0.0.36), the announce is what makes the watch ask Huawei's server whether the account owns the
+      // face (the `checkright` httpProxy request); skipping it, as Gadgetbridge does, avoids that licence check.
+      log("Gadgetbridge-compatible install: skipping the 27/03 announce, uploading directly")
+      Announcement(null, null)
+    } else {
+      announce(id, version, signature)
+    }
     val outcome = if (announcement.needReceive == 0) {
       log("the watch reports it has ${id}_$version already (needReceive=0); nothing is uploaded")
       null
@@ -643,12 +652,23 @@ internal class WatchfaceController(
    * [signature] is a Huawei `getresourcesign` response string (Huawei Health sends it in tag 0x08 of the
    * announcement). [fileName] overrides the random `<id>_<version>` install name; a replayed signature only
    * names the face id and version it was issued for, so both must match that face.
+   *
+   * [gadgetbridge] installs the way Gadgetbridge does: upload the face under version `1.0.0` and skip the 27/03
+   * announce. On firmware that enforces signatures the announce triggers the watch's `checkright` licence lookup,
+   * which JoyoFit cannot answer; Gadgetbridge's path avoids it. Ignored when an explicit [fileName] is given.
    */
-  suspend fun install(uri: String, signature: String? = null, fileName: String? = null): Map<String, Any?> {
+  suspend fun install(
+    uri: String,
+    signature: String? = null,
+    fileName: String? = null,
+    gadgetbridge: Boolean = false,
+  ): Map<String, Any?> {
     link.handle() ?: throw notConnected()
     val bytes = withContext(Dispatchers.IO) { readUri(uri) }
     val pkg = WatchfacePackages.parse(bytes)
-    val name = fileName ?: WatchfacePackages.randomName(version = pkg.description.version)
+    val name = fileName
+      ?: if (gadgetbridge) WatchfacePackages.randomName(version = "1.0.0")
+      else WatchfacePackages.randomName(version = pkg.description.version)
     if (fileName != null && fileName.indexOf('_') <= 0) {
       throw WearException(ErrorCodes.INVALID_ARGUMENT, "The install name must be `<id>_<version>`, got '$fileName'")
     }
@@ -662,7 +682,7 @@ internal class WatchfaceController(
     }
     return withWatch { ops ->
       try {
-        val result = ops.install(pkg, progress, name, signature)
+        val result = ops.install(pkg, progress, name, signature, gadgetbridge)
         events.uploadResult(result.listed, result.fileName, result.uploadStatus, result.message)
         result.toJs()
       } catch (e: CancellationException) {
