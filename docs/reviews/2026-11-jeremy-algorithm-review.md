@@ -10,15 +10,16 @@ example a recovery curve where a normal day reads green), or measured data where
 
 | ID | Claim | Verdict | Status |
 |---|---|---|---|
-| JURNAL-03 | Riegel pace exponent should be 0.06/1.06 | ✅ Accept | Fixed, PR #77 |
-| BLE-03 | Negative altitude reads as +65526 | ✅ Accept (sign fix only, no clipping) | Fixed, PR #77 (native: needs a build) |
-| BLE-01 | Keep chest-strap R-R intervals | ✅ Accept (feature) | Captured + session HRV stored, PR #77; no screen yet |
+| JURNAL-03 | Riegel pace exponent should be 0.06/1.06 | ✅ Accept | Fixed, PR #77; live by OTA 2026-11-06 |
+| BLE-03 | Negative altitude reads as +65526 | ✅ Accept (sign fix only, no clipping) | Fixed, PR #77; native, reaches devices with the next store build |
+| BLE-01 | Keep chest-strap R-R intervals | ✅ Accept (feature) | Session HRV (#77) and raw R-R in the FIT export (#79); live by OTA 2026-11-06; no screen yet |
 | JURNAL-01 | VO₂max should use resting HR, not daily minimum | Already true | Comment fixed, PR #77 |
 | ALGO-03 | Custom zones should stay display-only | Already true | No change |
 | ALGO-02 | Forward-fill 600 s → 15 s | ❌ Reject | — |
 | ALGO-01 | Recovery sigmoid, z=0 → 82 % | ❌ Reject as written | — |
 | BLE-02 | TruSleep state ranges stored as light sleep | Already fixed | No change |
 | JURNAL-02 | Keytel → "Hiilloskorpi" calories | ❌ Not now | — |
+| (extra) | Raw data export to compare with a gold-standard device | ✅ Accept | R-R in the FIT export + tester guide, PR #79; live by OTA 2026-11-06 |
 
 Base for links: `https://github.com/dzulfikar08/joyofit/blob/5f341186191faea4d9489567ecd793df27d6b29e/`
 (written below as `@master/…`).
@@ -75,6 +76,9 @@ crash-recovery meta [`#L175`](https://github.com/dzulfikar08/joyofit/blob/5f3411
 and the saved workout's `summary_json` gets `hrv` ([`save.ts#L83-L86`](https://github.com/dzulfikar08/joyofit/blob/5f341186191faea4d9489567ecd793df27d6b29e/src/features/record/save.ts#L83-L86),
 [`summary.ts#L76`](https://github.com/dzulfikar08/joyofit/blob/5f341186191faea4d9489567ecd793df27d6b29e/src/features/workouts/summary.ts#L76)).
 **Follow-up:** no screen shows it yet.
+
+**Then (#79).** The raw series (bounds-checked only) is now stored per workout (`workout_rri`) and written into the
+workout's `.fit` as FIT `hrv` messages; the HRV summary is computed from a filtered copy. See the extra item below.
 
 ---
 
@@ -185,3 +189,27 @@ product choice we can make separately (e.g. by shifting the curve), but not with
 needs VO₂max, which here is itself an estimate built on 220 − age (falling back to a hardcoded 35), so the errors
 stack. Watch workouts use the watch's own calories anyway; this only affects phone-recorded sessions. Worth revisiting
 only against measured data (e.g. comparing with the watch's kcal for the same session).
+
+---
+
+## ✅ Extra idea: raw export to compare with a gold-standard device
+
+**Idea (sent after the documents).** Let users who own a reference device (Polar H10 for heart rate, or others) export raw
+data, so JoyoFit's figures can be compared with another system. He expected the data formatting to be the hard part.
+
+**What it means.** One person wears the watch under test and the reference strap in the same session, and the two recordings
+are compared second by second. Every tester in one comparison wears the same watch model. Different people's workouts are
+not compared with each other.
+
+**Done (PR #79, merged `3ce04bf3`, live by OTA 2026-11-06).** No whitelist was needed: every workout could already be exported
+as `.fit`, the format Garmin's SDK, Golden Cheetah and Kubios read. What was missing was the strap's beat-to-beat data:
+- A phone recording with a chest strap stores its R-R intervals as received, dropping only values outside 250–2000 ms
+  ([`sensors/store.ts`, `workout_rri`](https://github.com/dzulfikar08/joyofit/blob/3ce04bf3/src/features/sensors/store.ts)).
+- `buildFit` writes them as FIT `hrv` messages, one interval each, the way Garmin devices carry them
+  ([`activityFile.ts`](https://github.com/dzulfikar08/joyofit/blob/3ce04bf3/src/features/strava/activityFile.ts));
+  a test reads them back with Garmin's SDK.
+- The tester guide: [`docs/hr-validation.md`](https://github.com/dzulfikar08/joyofit/blob/3ce04bf3/docs/hr-validation.md).
+  It covers setup, turning off "Start the band with the run" so the two recordings stay independent, and what to compare.
+
+**Next.** Paired sessions from testers with an H10 are the measured data the second iteration needs, for calories
+(JURNAL-02) and HRV and recovery (ALGO-01). Recordings made before the OTA have no R-R stored.
