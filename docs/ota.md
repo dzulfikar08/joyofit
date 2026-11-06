@@ -202,6 +202,19 @@ Then from master `c880248a` (smoother route colours): groups `ab497b21-d93f-4aa8
 Then from master `73d03142` (Siap ke Strava reminder; published by owner choice although a new notification use is on the "not over the air" list): groups
 `e901743c-077b-40e2-9fd8-7979fef7cadb` android, runtime `b22dd22d...` (embedded in the 59015b77 build, versionCode 1495680/1495667; run 41973721707), `a56cf349-ca90-423d-8257-96ccf25502a0` ios, runtime `36019113...` (run 41973724939).
 
+### Runtimes the 2026-11-05 OTAs used
+
+Android `cb987e8b8ac363beba44e1d31a702071aca28f95` (Release Android run 42046885878, `bc228ea5`), iOS
+`16f66858b2b3f1fa8640e90d8492a4ba53dae733` (the TestFlight build of the same day).
+
+- From master `bce4798e` (#76: Huawei account sign-in fix, alarm and sensor backup): groups `e2fc11d2-5f0d-457a-98f4-a3fbaf47edd1`
+  android (run 42052048326), `49f58450-e135-4157-ac88-13be0800e3b9` ios (run 42053384051).
+- 2026-11-06 from master `3ce04bf3` (#77 JS: Riegel 0.06/1.06, chest-strap R-R kept with session HRV; #79: R-R as FIT `hrv`
+  messages in the export): groups `0ddae752-831e-429f-97e4-6238547b5740` android (run 42148267350),
+  `0b402be1-082d-4c3b-b597-1f0ce54fd7a8` ios (run 42148271772). Master's own fingerprint differs since #77 (Kotlin and Swift
+  `signedBytes`, altitude only; no change to the JS-native contract), so these were published with `runtime_version`; the
+  altitude fix reaches devices with the next store build.
+
 ## When OTA is not enough
 
 Anything that changes the runtimeVersion, or is on the "not over the air" list above, needs a new binary: build through `scripts/build-release.sh` / `scripts/build-ios-mac.sh` / the `Release *` workflows, and from that commit on updates target the new runtime. Binaries that stay on an older runtime keep getting updates from their own branch, see "Which branch publishes to which runtime" (`ota/1.0` for the pre-sensors builds).
