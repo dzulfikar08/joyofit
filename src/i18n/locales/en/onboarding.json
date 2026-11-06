@@ -42,6 +42,7 @@
   "unbind": {
     "title": "Release the watch from Huawei Health",
     "intro": "A Huawei or Honor watch talks to one app at a time. While Huawei Health holds it, the watch refuses JoyoFit.",
+    "accountAndroid": "Signed in to Huawei Health with a HUAWEI ID? Connect the same account here first. JoyoFit then tells the watch it is the same owner, so pairing does not ask you to reset the watch, and you can move it between Huawei Health and JoyoFit later without a reset.",
     "step1": "Open Huawei Health and pull down on its first screen to sync once more. Anything that is only on the watch and not yet in your Huawei account is lost when you unbind.",
     "step2": "Optional: keep your history. Huawei can send everything Huawei Health stored as a ZIP file, which JoyoFit imports on this phone. It can take up to 7 days to arrive, so request it now and import it whenever it comes.",
     "step3": "In Huawei Health, open the watch under Devices and unbind (remove) it. If it is still connected to another phone, disconnect it there too.",
