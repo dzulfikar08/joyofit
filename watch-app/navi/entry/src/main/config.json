@@ -32,14 +32,19 @@
       "customizeData": [
         {
           "name": "supportLists",
-          "value": "com.joyodigitama.joyofit:PLACEHOLDER-JRG440-PHONE-SHA256",
+          "value": "com.joyodigitama.joyofit:5702ADC96D179243217B41840B026B809AB85F9A590E32BEE22752805F43C04A",
           "extra": ""
         }
       ]
     },
     "reqPermissions": [
       {
-        "name": "ohos.permission.VIBRATE"
+        "name": "ohos.permission.VIBRATE",
+        "reason": "Vibrate before each turn",
+        "usedScene": {
+          "ability": [".MainAbility"],
+          "when": "inuse"
+        }
       }
     ],
     "js": [

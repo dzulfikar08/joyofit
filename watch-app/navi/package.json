@@ -2,7 +2,6 @@
   "name": "@joyofit/watch-navi",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
   "description": "JoyoNavi, the HarmonyOS lite-wearable watch app (bundle com.joyodigitama.navi) that shows JoyoFit's turn-by-turn navigation on a Huawei Watch Fit 4 / 4 Pro. Built with hvigor (CLI) or DevEco Studio; this package only holds the image generator and the logic tests.",
   "scripts": {
     "images": "bun tools/images.ts",

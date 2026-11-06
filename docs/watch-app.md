@@ -76,10 +76,10 @@ simulator run or logs, **[REPORT]** third-party field report, **[INFERENCE]** ou
 - **Peer package:** `com.joyodigitama.joyofit` (Android package = iOS bundle id). **Peer fingerprint (phone app):** the
   SHA-256 of the certificate that signs JoyoFit's store build, 64 hex, upper case, no colons, as registered for the
   HUAWEI ID service [DOC](https://developer.huawei.com/consumer/en/doc/connectivity-Guides/send-message-0000001052460491).
-  The watch SDK refuses to send with an empty fingerprint [CODE]. Until JRG-440 it is `PLACEHOLDER-JRG440-PHONE-SHA256`
-  in `common/config.js` and in `config.json` `supportLists` (the pre-HarmonyOS 2 place for the same value). JoyoFit
-  routes JoyoNavi's messages by source package and accepts any fingerprint (agreed with the phone side), so the
-  placeholder already works with JoyoFit; it would not with Huawei Health [INFERENCE].
+  The watch SDK refuses to send with an empty fingerprint [CODE]. Since 2026-11-06 (JRG-440) it is the Play app-signing
+  SHA-256 `5702ADC9…5F43C04A` in `common/config.js` and in `config.json` `supportLists` (the pre-HarmonyOS 2 place for the same value). JoyoFit
+  routes JoyoNavi's messages by source package and accepts any fingerprint (agreed with the phone side), so
+  sideloaded JoyoFit builds (upload key `E4:A5:…`) work with it too [INFERENCE].
 - **Watch app fingerprint (for the phone side):** `com.joyodigitama.navi_<base64 of the public key in the watch signing
   certificate>`, at most 127 characters on lite wearables
   [DOC](https://developer.huawei.com/consumer/en/doc/connectivity-Guides/signature-0000001053969657). Huawei's example
@@ -89,8 +89,10 @@ simulator run or logs, **[REPORT]** third-party field report, **[INFERENCE]** ou
   echo "com.joyodigitama.navi_$(openssl x509 -in debug.cer -noout -pubkey | openssl ec -pubin -outform DER 2>/dev/null | tail -c 65 | openssl base64 -A)"
   ```
 
-  Debug and release certificates differ, so the value changes at release [INFERENCE]. Placeholder on the phone side:
-  `PLACEHOLDER-JRG440-WATCH-FINGERPRINT`.
+  Debug and release certificates differ, so the value changes at release [INFERENCE]. The AGC `.cer` download is a
+  chain (Huawei root, Huawei CA, ours last), so run the line on the last certificate. Debug value since 2026-11-06,
+  in `src/features/watchnav/config.ts`: `com.joyodigitama.navi_BBMPwlw6…uwPw=` (110 characters, starts with `B` as
+  expected) [OBSERVED].
 - **Permissions:** the watch app needs none from Wear Engine; the phone app needs `DEVICE_MANAGER` ("Basic device
   information", includes P2P messages) [DOC](https://developer.huawei.com/consumer/en/doc/connectivity-Guides/applying-wearengine-0000001050777982).
   JoyoFit is the phone side of the link itself and does not use Huawei's phone SDK, so on the JoyoFit path nothing on
@@ -124,8 +126,43 @@ AppGallery Connect; a debug profile lists the watch UDIDs) [DOC](https://develop
    [CODE](https://raw.githubusercontent.com/mixin-ai/harmonyOS-signing/main/SKILL.md) (written for Stage `.app`
    packages; `-signCode 0` vs `1` for a lite haptobin HAP is untested [INFERENCE]).
 
+3. **Linux, what we use (2026-11-06):** `watch-app/navi/tools/build-signed.sh debug`. It copies the project to a temp
+   dir, writes `signingConfigs` there (never in git) and runs hvigor, which signs both the inner haptobin `.bin`
+   (`LegacySignLiteBin`, trailer `hw signed app`) and the `.hap`; signing only the outer `.hap` with `hap-sign-tool`
+   would leave the `.bin` unsigned. hvigor rejects plain passwords ("less than 32"): it only takes DevEco's encrypted
+   form, AES-128-GCM under a work key wrapped by a root key from `<keystore dir>/material/{fd,ac,ce}`
+   (`hvigor-ohos-plugin/src/utils/decipher-util.js`). `tools/signing-material.cjs` creates that folder next to
+   `joyonavi.p12` and prints the encrypted password [OBSERVED: build succeeds, `hap-sign-tool verify-app` passes].
+   hvigor warns "can not sign bin with codesign" (code signing of the bin; whether the watch cares is untested).
+
 A debug certificate lasts **14 days while identity verification is pending, 1 year once verified**
 [DOC](https://developer.huawei.com/consumer/en/doc/app/agc-help-debug-cert-0000002283256797).
+
+### Watch install errors
+
+DevEco Assistant sends the `.bin` to the watch over Huawei Health, and the code it shows comes from the watch's
+lite bundle manager (OpenHarmony `bundlemanager_bundle_framework_lite`, `appexecfwk_errors.h`; the code-to-text
+table is `res/xml/errorinfos.xml` in the Assistant APK). On GT-class watches `GtBundleExtractor::ExtractInstallMsg`
+turns **any** config parse failure into **40 "Invalid configuration file format"**, so 40 alone says nothing about
+which field is wrong. What the Fit 4 Pro on 6.1.0 needed [OBSERVED 2026-11-06]:
+
+- `icon_small.png` next to `icon.png` in `resources/base/media`: `GtBundleParser::ConvertIconResToBundleInfo`
+  requires both `icon(.png).bin` and `icon_small(.png).bin`. Sizes as Huawei's lite sample: 114×114 and 41×41.
+  Missing small icon = error 40.
+- Every `reqPermissions` entry needs `reason` and `usedScene.when` (`inuse` or `always`), else error 46
+  (`SetReqPermission`).
+- Not the cause: target API (`5.1.0(18)` and `4.0.0(10)` both got past the API check), debug-mode JS instead of
+  bytecode (`debuggable` builds always ship JS; release mode skips the `.bin` entirely), the 1.5 MB size, or the
+  "can not sign bin with codesign" warning.
+
+Phone-side debugging: `adb logcat | grep DevecoAssistant` shows `AppManagerReceiver errorCode :N` per watch reply.
+
+Once installed, a **blank screen** came from `"type": "module"` in `watch-app/navi/package.json`: webpack then treats the
+page sources as strict ES modules and leaves Babel's `require("../../common/*.js")` and
+`require("@babel/runtime/...")` calls in `index.js` unbundled. The simulator defines `require`, the watch does not:
+DevEco Assistant > Logs showed `ReferenceError: require is not defined` and the page never rendered [OBSERVED
+2026-11-06]. Keep that field out of the package (check: `grep -c 'require(' ` on the built `index.js` must be 0). That
+Logs tab reads the watch's own log over Huawei Health, so it only works while the watch is paired with Huawei Health.
 
 ## Install paths
 
@@ -163,10 +200,31 @@ the watch back to JoyoFit the way `docs/watch-reference.md` describes, check the
   would need a HUAWEI ID session JoyoFit does not have; Gadgetbridge has no handler either
   [CODE](https://codeberg.org/Freeyourgadget/Gadgetbridge/src/branch/master/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/service/devices/huawei/datasync).
 
-## Owner checklist (the account exists; identity verification pending)
+## Owner checklist
 
-Do them in this order; items marked *after verification* wait for Huawei's approval of the identity. Never send us the
-`.p12`, its passwords or the `.csr`.
+**Status 2026-11-06.** The developer account is verified: account type **Individual** (cannot be changed to enterprise),
+developer ID 2640062000000535040. Individual accounts may apply for only two Wear Engine permissions (basic device
+information and message notification), which covers JoyoNavi. Done in the console:
+
+| Step | Result |
+|---|---|
+| 1 | Verified. The updated AGC Service Agreement and the first-use AGC agreements were accepted. |
+| 2 | Project **JoyoFit**, app ID **6917621054214145175** (HarmonyOS app JoyoNavi, `com.joyodigitama.navi`, category App). |
+| 3 | UDID read with HUAWEI DevEco Assistant 1.2.1.600 on the owner's Xiaomi (Android 16; the APK from Huawei's own AppGallery download, `appgallery.cloud.huawei.com/appdl/C102668469`, installed over adb after turning on Developer options > Install via USB). |
+| 4 | Device **Fit 4 Pro owner**, Sports watch, UDID `3E213F13…63AD6B8A`. |
+| 5 | Key and CSR made with OpenSSL on the Linux box instead of DevEco (EC P-256): `~/.config/joyofit/joyonavi-signing/` holds `joyonavi.p12` (alias `joyonavi`, password in `keystore-password`), `joyonavi.key`, `joyonavi.csr`. Move the password to the password manager; never commit any of it. |
+| 6 | Debug certificate **JoyoNavi debug**, valid to 2027-11-06: `joyonavi-debug.cer` in the same folder (a chain: Huawei root, Huawei CA, then ours). |
+| 7 | Debug profile **JoyoNavi debug** (certificate JoyoNavi debug, the one watch), valid to 2027-11-06: `joyonavi-debug.p7b` in `~/.config/joyofit/joyonavi-signing/`. |
+| 8 | HUAWEI ID applied for product **JoyoFit** (Mobile app, AGC app ID 119686663), package `com.joyodigitama.joyofit`, SHA-256 `57:02:AD:C9:…:43:C0:4A` (Play app-signing key, also read from the Play-installed APK) and `E4:A5:12:CA:…:C8:A9:D2` (upload/sideload key). Status: Submitted. |
+| 9 | Wear Engine applied: Android app JoyoFit, Harmony lightweight smart wearable, own watch app = yes, permission basic device information only. The two Huawei templates as filled are in `docs/huawei-wear-engine/`. Status: submitted, result by email/SMS/console message. |
+| 10 | Placeholders replaced: phone fingerprint `5702ADC96D179243217B41840B026B809AB85F9A590E32BEE22752805F43C04A`, watch fingerprint from the debug certificate (`src/features/watchnav/config.ts`). |
+
+| 11 (install) | Signed debug HAP installed on the Fit 4 Pro (HarmonyOS 6.1.0) with DevEco Assistant, every watch reply code 0 (2026-11-06). The first eight builds failed with "40. Invalid configuration file format"; see "Watch install errors" below. |
+
+Still open: 11 (P2P test with JoyoFit), 12 (release access email, release certificate and profile; the watch
+fingerprint changes with the release certificate).
+
+Original order, for reference. Never send us the `.p12`, its passwords or the `.csr`.
 
 1. **Finish identity verification** (Huawei Developers > Account Center). While it is pending a debug certificate lasts
    14 days instead of a year, and the HUAWEI ID / Wear Engine applications list verification as step 1.
