@@ -30,6 +30,14 @@
     </div>
   </div>
 
+  <!-- Navigating, map view (swipe left from the turn view). `show`, not `if`: the canvas must stay in the tree to be drawn on. -->
+  <div class="screen map-screen" show="{{isNavMap}}">
+    <text class="map-top" if="{{mapTopPlain}}">{{mapTop}}</text>
+    <text class="map-top map-top-warn" if="{{mapTopWarn}}">{{banner}}</text>
+    <canvas ref="map" class="map-canvas"></canvas>
+    <text class="map-wait" if="{{mapWaiting}}">{{lblMapWaiting}}</text>
+  </div>
+
   <!-- Arrived -->
   <div class="screen center" if="{{isArrived}}">
     <image class="idle-arrow" src="/common/images/big_arrive.png"></image>

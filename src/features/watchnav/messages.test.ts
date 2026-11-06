@@ -81,6 +81,6 @@ describe('schema', () => {
     expect(schema.$defs.dir.enum).toEqual([...DIRS]);
     expect(schema['x-joyofit'].maxBytes).toBe(MAX_MESSAGE_BYTES);
     expect(schema.$defs.street.maxLength).toBe(MAX_NAME_CHARS);
-    expect(schema.properties.t.enum).toEqual(['start', 'turn', 'prog', 'off', 'reroute', 'arrive', 'end', 'hb', 'hello', 'pause', 'resume', 'stop']);
+    expect(schema.properties.t.enum).toEqual(['start', 'turn', 'prog', 'off', 'reroute', 'arrive', 'end', 'hb', 'map', 'hello', 'pause', 'resume', 'stop', 'view']);
   });
 });

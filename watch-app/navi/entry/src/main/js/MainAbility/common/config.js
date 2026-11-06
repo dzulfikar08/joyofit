@@ -1,7 +1,7 @@
 // Build-time settings of the watch app. Keep in step with the phone's src/features/watchnav/watchNavConfig.ts and
 // with `module.metaData.customizeData[supportLists]` in entry/src/main/config.json.
 
-export var APP_VERSION = '1.0.0'; // = app.version.name in config.json; sent in `hello`
+export var APP_VERSION = '1.1.0'; // = app.version.name in config.json; sent in `hello`
 
 // The phone app the watch talks to (JoyoFit, Android package = iOS bundle id).
 export var PHONE_PACKAGE = 'com.joyodigitama.joyofit';

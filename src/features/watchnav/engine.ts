@@ -5,13 +5,16 @@
  * (> 40 m for 10 s) and arriving, and throttles what it sends:
  * - `turn` when the instruction changes, when the distance to it first drops to 200 m and to 50 m, and after `off` ends;
  * - `prog` at most every 5 s (only when a number changed), sooner when the distance to the turn changed by 10% (at least 5 m);
- * - `hb` after 30 s without any message.
+ * - `hb` after 30 s without any message;
+ * - `map` only while the watch shows its map view (`view {mode:"map"}`): at once, then when the wearer moved 8% of the view radius, turned
+ *   15 degrees, the instruction or off-route state changed (at most every 3 s), and every 20 s regardless.
  * Pure: time comes in as arguments; the session (`session.ts`) sends what it returns.
  */
 import { haversineM, type RoutePoint } from '@/features/routes/routeModel';
 import { project } from '@/features/bikecomputer/nav';
 
 import type { NavManeuver, NavRoute } from './maneuvers';
+import { buildMapFrame, headingDelta, lineHeadingDeg, planarHeading, pointAtM, toPlanar, type Planar } from './mapview';
 import type { EndReason, PhoneMessage, WatchMessage } from './messages';
 
 export interface NavFix {
@@ -55,6 +58,21 @@ export interface EngineConfig {
   lostAfterMs: number;
   /** A reroute is asked at most this often, ms. */
   rerouteIntervalMs: number;
+  /** `map` frames: not more often than this, ms ... */
+  mapMinIntervalMs: number;
+  /** ... and at least this often while the map is on screen, ms. */
+  mapRefreshMs: number;
+  /** A new frame when the wearer moved this share of the view radius ... */
+  mapMoveRatio: number;
+  /** ... or turned this many degrees. */
+  mapTurnDeg: number;
+  mapMaxPoints: number;
+  /** View radius on foot and on a bike (speed >= `mapRideSpeedMps`), metres. */
+  mapRadiusWalkM: number;
+  mapRadiusRideM: number;
+  mapRideSpeedMps: number;
+  /** The walking heading comes from the last stretch of at least this many metres. */
+  headingMinM: number;
 }
 
 export const ENGINE_DEFAULTS: EngineConfig = {
@@ -75,6 +93,15 @@ export const ENGINE_DEFAULTS: EngineConfig = {
   minSpeedMps: 0.5,
   lostAfterMs: 300_000,
   rerouteIntervalMs: 30_000,
+  mapMinIntervalMs: 3_000,
+  mapRefreshMs: 20_000,
+  mapMoveRatio: 0.08,
+  mapTurnDeg: 15,
+  mapMaxPoints: 45,
+  mapRadiusWalkM: 200,
+  mapRadiusRideM: 450,
+  mapRideSpeedMps: 4,
+  headingMinM: 8,
 };
 
 /** Speeds for the ETA before the wearer moved, m/s (schema `start.etaS`). */
@@ -135,6 +162,16 @@ export class NavEngine {
   private progDist = 0;
   private progKey = '';
 
+  private mapOn = false;
+  private mapAt: number | null = null;
+  private mapPos: Planar | null = null;
+  private mapHeading = 0;
+  private mapKey = '';
+  /** Planar position of the last usable fix, and the heading of the wearer's own movement. */
+  private fixPos: Planar | null = null;
+  private headAnchor: Planar | null = null;
+  private moveHeading: number | null = null;
+
   constructor(route: NavRoute, options: { dest: string; defaultSpeedMps: number; config?: Partial<EngineConfig> }) {
     this.route = route;
     this.dest = options.dest;
@@ -156,29 +193,39 @@ export class NavEngine {
     if (this.ended) return [];
     if (fix.accuracy === null || fix.accuracy <= this.cfg.maxAccuracyM) {
       this.lastFixAt = nowMs;
+      this.trackHeading(fix);
       this.match(fix, nowMs);
     }
     this.trackSpeed(fix);
-    return this.sent(this.step(nowMs), nowMs);
+    return this.sent([...this.step(nowMs), ...this.mapIfDue(nowMs)], nowMs);
   }
 
   /** Called about once a second: off route without new fixes, a lost location, the heartbeat. */
   tick(nowMs: number): PhoneMessage[] {
     if (this.ended) return [];
     if (nowMs - (this.lastFixAt ?? this.startedAt) >= this.cfg.lostAfterMs) return this.stop('error', nowMs);
-    const out = this.step(nowMs);
+    const out = [...this.step(nowMs), ...this.mapIfDue(nowMs)];
     if (out.length === 0 && nowMs - (this.lastSentAt ?? -Infinity) >= this.cfg.hbIntervalMs) out.push({ t: 'hb' });
     return this.sent(out, nowMs);
   }
 
-  /** The watch app's messages: `hello` and `resume` get the whole state again, `pause` silences turns, `stop` ends the session. */
+  /**
+   * The watch app's messages: `hello` and `resume` get the whole state again, `pause` silences turns, `stop` ends the session, `view`
+   * switches the `map` frames on or off. A watch app that just opened (`hello`) shows the turn view.
+   */
   watch(message: WatchMessage, nowMs: number): PhoneMessage[] {
     if (this.ended) return [];
     switch (message.t) {
       case 'hello':
       case 'resume':
         this.paused = false;
-        return this.sent(this.snapshot(nowMs), nowMs);
+        if (message.t === 'hello') this.mapOn = false;
+        this.mapAt = null;
+        return this.sent([...this.snapshot(nowMs), ...this.mapIfDue(nowMs)], nowMs);
+      case 'view':
+        this.mapOn = message.mode === 'map';
+        this.mapAt = null;
+        return this.sent(this.mapIfDue(nowMs), nowMs);
       case 'pause':
         this.paused = true;
         return [];
@@ -230,8 +277,9 @@ export class NavEngine {
     this.turnIndex = -1;
     this.turnBand = -1;
     this.progAt = null;
+    this.mapAt = null;
     if (this.prevFix) this.match(this.prevFix, nowMs);
-    return this.sent(this.step(nowMs), nowMs);
+    return this.sent([...this.step(nowMs), ...this.mapIfDue(nowMs)], nowMs);
   }
 
   /** The part of the line still ahead of the matched position (for a reroute's waypoints). */
@@ -289,6 +337,60 @@ export class NavEngine {
         this.turnIndex = -1;
       }
     }
+  }
+
+  private trackHeading(fix: NavFix): void {
+    const pos = toPlanar(this.route.index, fix.lat, fix.lon);
+    this.fixPos = pos;
+    if (!this.headAnchor) {
+      this.headAnchor = pos;
+      return;
+    }
+    if (Math.hypot(pos.x - this.headAnchor.x, pos.y - this.headAnchor.y) < this.cfg.headingMinM) return;
+    this.moveHeading = planarHeading(this.headAnchor, pos);
+    this.headAnchor = pos;
+  }
+
+  /** Where the map is centred and which way is up: on the route the matched point and the line's direction (steady), off it the fix and the walking direction. */
+  private mapPose(): { pos: Planar; heading: number } {
+    const index = this.route.index;
+    const onLine = this.matched && !this.offRoute;
+    const linePos = pointAtM(index, this.doneM);
+    const lineHeading = lineHeadingDeg(index, this.doneM);
+    if (onLine) return { pos: linePos, heading: lineHeading ?? this.moveHeading ?? 0 };
+    return { pos: this.fixPos ?? linePos, heading: this.moveHeading ?? lineHeading ?? 0 };
+  }
+
+  private mapRadius(): number {
+    const speed = this.movingSpeed ?? this.defaultSpeedMps;
+    return speed >= this.cfg.mapRideSpeedMps ? this.cfg.mapRadiusRideM : this.cfg.mapRadiusWalkM;
+  }
+
+  /** A `map` frame when the watch shows the map and the view changed enough (see the file comment). */
+  private mapIfDue(nowMs: number): PhoneMessage[] {
+    if (!this.mapOn || this.paused || this.ended) return [];
+    const { pos, heading } = this.mapPose();
+    const r = this.mapRadius();
+    const idx = this.currentIndex();
+    const key = `${idx}|${this.offRoute}|${r}`;
+    if (this.mapAt !== null) {
+      const since = nowMs - this.mapAt;
+      if (since < this.cfg.mapMinIntervalMs) return [];
+      const moved = this.mapPos ? Math.hypot(pos.x - this.mapPos.x, pos.y - this.mapPos.y) : Infinity;
+      const due =
+        since >= this.cfg.mapRefreshMs ||
+        moved >= r * this.cfg.mapMoveRatio ||
+        headingDelta(heading, this.mapHeading) >= this.cfg.mapTurnDeg ||
+        key !== this.mapKey;
+      if (!due) return [];
+    }
+    this.mapAt = nowMs;
+    this.mapPos = pos;
+    this.mapHeading = heading;
+    this.mapKey = key;
+    const maneuver = this.route.maneuvers[idx];
+    const turnAtM = maneuver && maneuver.dir !== 'depart' ? maneuver.atM : null;
+    return [buildMapFrame(this.route.index, pos, heading, this.doneM, turnAtM, { r, maxPoints: this.cfg.mapMaxPoints })];
   }
 
   private trackSpeed(fix: NavFix): void {

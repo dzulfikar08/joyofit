@@ -9,6 +9,7 @@ import vibrator from '@system.vibrator';
 import { APP_VERSION, DEMO_AUTOSTART } from '../../common/config.js';
 import { demoScript } from '../../common/demo.js';
 import { present } from '../../common/format.js';
+import { drawMap } from '../../common/mapdraw.js';
 import { openLink } from '../../common/link.js';
 import {
   backToIdle, createState, localPause, localResume, localStop, outgoing, parse, receive, tick
@@ -17,6 +18,8 @@ import { stringsFor } from '../../common/strings.js';
 
 var WATCHDOG_EVERY_MS = 5000;
 var TAP_AFTER_BUTTON_MS = 400; // a button tap must not also count as a tap on the screen behind it
+var MAP_W = 336; // = .map-canvas in index.css
+var MAP_H = 320;
 
 // Module state: one page, one instance.
 var state = createState();
@@ -28,6 +31,8 @@ var watchdog = 0;
 var demo = null; // { steps, i, n, timer } while the demo route runs
 var keepOn = false;
 var lastButtonMs = 0;
+var mapView = false; // the wearer swiped to the map view
+var drawnRev = -1; // the state.mapRev on the canvas
 
 // The lite simulator has neither the brightness nor the vibrator module (calling them throws a TypeError), so both
 // calls are guarded: on the simulator they log and the app carries on.
@@ -89,7 +94,13 @@ export default {
     lblClose: '',
     lblArrived: '',
     lblDone: '',
-    lblDemo: ''
+    lblDemo: '',
+    isNavMap: false,
+    mapTop: '',
+    mapTopPlain: true,
+    mapTopWarn: false,
+    mapWaiting: false,
+    lblMapWaiting: ''
   },
 
   onInit: function () {
@@ -107,6 +118,9 @@ export default {
     this.lblArrived = S.arrived;
     this.lblDone = S.done;
     this.lblDemo = S.demo;
+    this.lblMapWaiting = S.mapWaiting;
+    mapView = false;
+    drawnRev = -1;
     state = createState();
     seq = { n: 0 };
     var self = this;
@@ -167,8 +181,46 @@ export default {
       if (Object.prototype.hasOwnProperty.call(view, k)) this[k] = view[k];
     }
     this.lblPauseResume = state.paused ? S.resume : S.pause;
-    if (!view.isNav) this.overlay = false;
+    if (!view.isNav) {
+      this.overlay = false;
+      mapView = false;
+    }
+    // The turn view and the map view are two screens of the same navigation.
+    this.isNav = view.isNav && !mapView;
+    this.isNavMap = view.isNav && mapView;
+    var top = view.distNum ? view.distNum + ' ' + view.distUnit : '';
+    if (view.actionLine) top = top ? top + ' · ' + view.actionLine : view.actionLine;
+    this.mapTop = view.bannerInfo ? view.banner : top || view.waiting;
+    this.mapTopWarn = view.bannerWarn;
+    this.mapTopPlain = !view.bannerWarn;
+    this.mapWaiting = this.isNavMap && !state.map;
+    if (this.isNavMap && state.mapRev !== drawnRev) this.paintMap();
     setKeepOn(view.isNav);
+  },
+
+  paintMap: function () {
+    try {
+      var canvas = this.$refs.map;
+      if (!canvas) return;
+      drawMap(canvas.getContext('2d'), state.map, MAP_W, MAP_H);
+      drawnRev = state.mapRev;
+    } catch (e) {
+      console.error('navi: map draw failed: ' + e);
+    }
+  },
+
+  setMapView: function (on) {
+    mapView = on;
+    drawnRev = -1;
+    if (!demo) this.sendToPhone('view', { mode: on ? 'map' : 'turn' });
+    this.updateView();
+    // The canvas only gets its size once it is shown: draw again on the next turn of the loop.
+    var self = this;
+    if (on) {
+      setTimeout(function () {
+        if (mapView) self.paintMap();
+      }, 50);
+    }
   },
 
   // ---- input ----
@@ -191,12 +243,21 @@ export default {
     if (state.screen === 'idle' && !demo) this.startDemo();
   },
 
+  // Navigating: left = map view, right = back to the turn view. Right on the turn view (or any other screen) leaves the app.
   onSwipe: function (e) {
-    if (e.direction !== 'right') return;
     if (this.overlay) {
-      this.overlay = false;
+      if (e.direction === 'right') this.overlay = false;
       return;
     }
+    if (state.screen === 'nav' && e.direction === 'left' && !mapView) {
+      this.setMapView(true);
+      return;
+    }
+    if (state.screen === 'nav' && e.direction === 'right' && mapView) {
+      this.setMapView(false);
+      return;
+    }
+    if (e.direction !== 'right') return;
     // Leaving the app does not stop navigation on the phone; opening it again catches up through `hello`.
     app.terminate();
   },

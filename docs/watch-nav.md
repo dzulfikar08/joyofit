@@ -46,6 +46,7 @@ no Petal/Huawei map endpoints.
 | Watch app | `hello` / `resume` → `start`, `turn`, `prog` (+ `off`); `pause` → no `turn`/`prog`/`off`; `stop` → `end {why:"stopped"}`; an exact repeat of the last `n` is dropped (P2P retry) |
 | Lost location | no usable fix for 5 min → `end {why:"error"}` |
 | Phone stop | `end {why:"stopped"}` goes out before the service is unregistered |
+| Map view | only after the watch's `view {mode:"map"}` (until `view {mode:"turn"}`, `hello`, pause or the end): a `map` frame at once, then when the wearer moved 8% of the radius, turned 15°, the instruction or off-route state changed (at most every 3 s), and every 20 s. Frame (`mapview.ts`): the route from 0.6 r behind to 3 r ahead, cut to a box of 1.6 r around the wearer, Douglas-Peucker to ≤ 45 points, whole metres, x right / y ahead. Centre and heading: on the route the matched point and the line's direction over the next 25 m; off it the fix and the walking direction (last ≥ 8 m). r = 200 m, 450 m at ≥ 4 m/s |
 
 Every message is ≤ 1000 UTF-8 bytes: names are cut to 48 characters (`MAX_NAME_CHARS`); the largest possible `turn` is about 510 bytes, and the
 encoder throws rather than send a cut message.
