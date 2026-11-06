@@ -6,8 +6,9 @@ Research of 2026-10-21. Read-only: no code was changed, nothing was sent to Huaw
 
 - A face a user designs (or any `.hwt` Huawei did not sign for that account) is thrown away by the Fit 4 Pro: the upload is
   accepted, activation answers `100014`, the watch deletes the face about 3 s later (**VERIFIED** on the Fit 4 Pro, firmware 6.1.0.117,
-  `protocol/README.md` → *Why a face did not install*). The signature is issued by Huawei's servers per face id, version, Huawei account
-  and watch. Nobody except Huawei can produce it.
+  `protocol/README.md` → *Why a face did not install*). The Watch Fit 3 on HarmonyOS 5.0.0.36 does the same, even with the user's Huawei
+  account sent at connect (REPORTED with a JoyoFit support log, section 0b). The signature is issued by Huawei's servers per face id,
+  version, Huawei account and watch. Nobody except Huawei can produce it.
 - JoyoFit cannot sign, and there is no legitimate way for a JoyoFit server to sign. Do not build anything that fetches, forges, replays
   or strips a signature, and do not point users at a modified Huawei Health (reasons in section 2).
 - **Path (a), what we can build:** keep Photo face (works, no signature involved), and have PT Joyo Digitama register as a Huawei Themes
@@ -21,6 +22,55 @@ Research of 2026-10-21. Read-only: no code was changed, nothing was sent to Huaw
 
 Evidence labels used below: **VERIFIED** (seen on our Fit 4 Pro), **DOCUMENTED** (Huawei says so in a page linked here), **REPORTED**
 (users or Gadgetbridge contributors say so; not checked by us), **INFERENCE** (ours).
+
+## 0b. Update 2026-11-06: the Fit 3 enforces signatures too, and asks the phone for a licence check
+
+**Source.** A JoyoFit support report from Jeremy (Threads DM, 2026-11-06): HUAWEI WATCH FIT 3 (`SLO-B09`, product `Solo-B09S`), software
+`5.0.0.36(C00M07)` (HarmonyOS 5), Xiaomi phone on Android 16, JoyoFit 1.1 (1496954), installing "Hs.NothingV1.O_Fit" v2.3.1 by HoangSon
+(theme `HWHD13`, 480×408, 855 749 bytes). He signed in with his HUAWEI ID in JoyoFit (section 0a, *Implemented*) before trying. REPORTED:
+it is his log, read by us, not our watch.
+
+**What the log shows.**
+
+1. `27/01` WatchfaceParams: capability `0x0d` with **signature = true (bit 8)**. So this firmware enforces signatures. This corrects the
+   guess in section 0a that the Fit 3 "most likely does not enforce" them.
+2. `27/03` announce `311037305_2.3.1` (JoyoFit's random id, no tag `08`): the watch answers status 0, needReceive 1.
+3. **New:** 8 ms later the watch sends DataSync `37/02` event **800100011** from `hw.wearable.httpProxy` (the HTTP-proxy channel,
+   `docs/watch-app.md` → *hw.wearable.httpProxy*). Decoded:
+
+   ```
+   02 path      /servicesupport/theme/v2/service/resource/checkright
+   04 host key  domainThemeCloud
+   05 method    01
+   06 headers   {"x-appid":"10046","x-authtype":"AT","x-clienttraceid":"<ms timestamp>"}
+   07 body      {"watchfaceContentInfo":{"huid":"<64 hex>","hitopId":"311037305","version":"2.3.1",
+                 "deviceId":"<64 hex>","mode":"0","operateType":"0"},
+                 "watchDeviceInfo":{"screen":"408*480","deviceModel":"SLO-B09 5.0.0.36(C00M07)"}}
+   08 cloud type 02, 09 foreground 00, 0a 00, 0b 00
+   ```
+
+   The body has the same fields as the signed content Huawei Health fetches (section 1.1: `huid`, `hitopId`, `version`, `deviceId`).
+   `x-appid 10046` with `x-authtype AT` means Huawei Health's app id and a HUAWEI ID access token, which the phone is expected to add.
+   JoyoFit logs "no handler" for it (`DataSyncService.kt`) and answers nothing.
+4. `28/xx` upload: every chunk delivered, `FileUploadResult` status 1 (accepted).
+5. `27/05` confirm reportType 2, then the activation answers **100014**, then `27/05` reportType 3 (deleted), 3.3 s after the upload ended.
+
+**What it means [INFERENCE].** When the announcement carries no signature, this firmware asks Huawei itself, through the phone, whether
+the account has the right to face `hitopId`. Unanswered, the face is refused. Proxying the call honestly would not help:
+
+- JoyoFit has no HUAWEI ID access token for app id 10046. The in-app sign-in only reads the account's `userId` cookie.
+- The `hitopId` is JoyoFit's random install id, not a store face. Huawei would answer "no right" even with a valid token.
+- Answering "yes" ourselves forges Huawei's licence check, which section 2 rules out. The signed content (RSA, section 1.1) is
+  probably what the watch expects in the answer anyway.
+
+Sending the account in `1A/05` did not change the result on this watch. The watch did put a `huid` in the request, but the log starts
+after the connect handshake, so it does not show what JoyoFit sent in `1A/05`.
+
+**Open question.** His Gadgetbridge route (section 0a) also uses a random `<nine digits>_<version>` id (`getRandomName`) and has no
+httpProxy handler, so on this firmware it should fail the same way. Ask him whether it still works on 5.0.0.36, or only did on older
+firmware. If it really works, a Gadgetbridge log of a successful install is the next thing to read.
+
+**For JoyoFit.** No change. The 100014 message already names the signature when bit 8 is set. Photo face stays the working option.
 
 ## 0a. Update 2026-11-05: Gadgetbridge calls it a dead end; a user report; the modded Huawei Health
 
@@ -53,7 +103,7 @@ treats a face the watch removes after the upload as refused (`WatchfaceManager.k
 upload working in Gadgetbridge means his watch most likely does **not** enforce signatures (the Fit 3 is not among the watches in
 #6005). What differs from JoyoFit is the account sent in `1A/05` (his ID vs empty) and the install id (JoyoFit's random
 `<nine digits>_<version>`). Which one matters is UNVERIFIED; his firmware version and a JoyoFit support log of a failed install would
-tell.
+tell. *Superseded 2026-11-06 (section 0b): his log shows the Fit 3 on 5.0.0.36 does enforce signatures.*
 
 **Implemented (branch `feat/huawei-account-id`, UNVERIFIED on a watch).** JoyoFit can now send the user's Huawei account id in
 `1A/05` instead of the empty default. `WearSettings.huaweiAccount` (Android) / `WearSettings.huaweiAccount` (iOS) stores it,

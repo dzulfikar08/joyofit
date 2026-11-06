@@ -189,7 +189,8 @@ the watch back to JoyoFit the way `docs/watch-reference.md` describes, check the
   on host key `domainHealthdataHicloud`, header `x-version: Wearable-6.1.0.117(SP20C00M05)`, request id `0x2723`, the
   same id as at 21:17:12 and 21:17:42: the watch retrying an unanswered request about every 30 s. Others seen: health
   report queries (`/dataService/v1/healthDatas/...`) and a config poll every 5 min
-  (`/commonAbility/configCenter/getConfigInfo` on `domainHealthCloudCommon`, input-method config). Huawei Health
+  (`/commonAbility/configCenter/getConfigInfo` on `domainHealthCloudCommon`, input-method config). A Watch Fit 3 (5.0.0.36) installing an unsigned face sends
+  `checkright` on `domainThemeCloud`, a licence check for the face (`docs/watchfaces-signing.md` section 0b). Huawei Health
   answers each one with event 800100012 (seen encrypted only, 841 and 1013 bytes) after a logged-in HUAWEI ID request.
 - Does the watch AppGallery depend on it? **No evidence either way.** None of the observed requests targets an app
   market host; Huawei Health's own server list has `com.huawei.agWearAppDistSDK` (`appMarketRequestUrl`,
