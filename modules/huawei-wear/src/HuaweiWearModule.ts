@@ -210,6 +210,12 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   getNotificationAccess(): NotificationAccessStatus;
   setNotificationsEnabled(enabled: boolean): Promise<void>;
   /**
+   * JoyoFit's own alert on the watch (turn alerts during a watch workout), sent as a notification from "JoyoFit". Independent of
+   * notification forwarding and notification access. Resolves true when the watch took it, false without a link or support.
+   * iOS: always false.
+   */
+  sendWatchAlert(title: string, body: string): Promise<boolean>;
+  /**
    * Developer switch: the next connect opens Bluetooth LE GATT (service 0xFE86) instead of the model's own link (RFCOMM for the
    * Fit 4 Pro). Off by default; needs BLUETOOTH_SCAN to find the watch's LE address, else it tries the bonded address.
    */

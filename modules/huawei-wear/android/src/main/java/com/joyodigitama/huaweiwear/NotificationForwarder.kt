@@ -112,12 +112,35 @@ internal class NotificationForwarder(
     scope.launch { remove(spec) }
   }
 
-  private suspend fun send(spec: WatchNotification) {
-    val handle = link.handle() ?: return
+  /**
+   * JoyoFit's own alert on the watch (turn alerts while the watch runs a workout with a route). Not a phone notification: it skips the
+   * own-app filter, the per-app choices and the notification-access switch, and needs only the link and the watch's notification support.
+   * True when the watch took it.
+   */
+  suspend fun sendAlert(title: String, body: String): Boolean {
+    val spec = synchronized(lock) {
+      WatchNotification(
+        id = nextId++,
+        key = "",
+        sourceAppId = ownPackage,
+        sourceName = ALERT_SOURCE_NAME,
+        title = sanitize(title),
+        body = sanitize(body),
+        channelId = null,
+        category = null,
+        whenMs = System.currentTimeMillis(),
+        isEmail = false,
+      )
+    }
+    return send(spec)
+  }
+
+  private suspend fun send(spec: WatchNotification): Boolean {
+    val handle = link.handle() ?: return false
     val state = handle.notificationState
     if (!state.supportsNotificationAlert) {
       events.log(LogDirection.INFO, null, null, null, "Notification from ${spec.sourceAppId} not sent: the watch does not support notifications")
-      return
+      return false
     }
     try {
       val id = synchronized(lock) {
@@ -126,10 +149,12 @@ internal class NotificationForwarder(
       }
       val packet = NotificationPackets.build(handle.session.params, state, spec, id)
       handle.session.request(packet, Timeouts.QUERY_MS, "Notification (${spec.sourceAppId})")
+      return true
     } catch (e: CancellationException) {
       throw e
     } catch (e: Exception) {
       events.log(LogDirection.ERROR, null, null, null, "Sending notification from ${spec.sourceAppId} failed: ${e.message}")
+      return false
     }
   }
 
@@ -292,3 +317,6 @@ internal class NotificationForwarder(
     const val EXTRA_BUILDER_APPLICATION_INFO = "android.appInfo"
   }
 }
+
+/** The sender name the watch shows above JoyoFit's own alerts. */
+private const val ALERT_SOURCE_NAME = "JoyoFit"

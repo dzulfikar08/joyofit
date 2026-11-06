@@ -427,6 +427,15 @@ next failed start says. Huawei Health itself treats a non-100000 answer to its `
 business types are run plan, course and trajectory files only, and the `37/02` linkage events the phone may send are stop, report-status and restart (ExpandCapability 335,
 clear here).
 
+**Huawei Health is refused too (2026-11-06, Fit 4 Pro 6.1.0, Huawei Health 17.0.8.300 bound, phone logcat).** The owner started Outdoor run in
+Huawei Health: `setNewLinkStrategy is true`, then `BTSYNC_HwLinkageServiceManager: setOperator OperatorType:1` (16:38:08.868), the watch's answer
+`handleNotificationOperatorStatus info:123002` and `HWhealthLinkage_: setOperatorCallback setOperator err_code is 123002` 29 ms later, and
+`setHeartRateReportStatus err_code is 100000` at 16:38:28: Huawei Health fell back to a phone workout with the watch's heart rate. So `17/01`
+start is refused for **every** client on this firmware, not a third-party gate; the reading "gated for third-party clients" below is
+superseded. No other start route exists (Huawei Health 17.0.8.300 and Gadgetbridge master re-checked the same day: the HiWear P2P business
+types are plans, courses, trajectories, AI plans and images only; older devices on the "old" link strategy only get the heart-rate report). A
+workout the wearer starts on the watch is followed through `17/03` (`LiveWorkout`), which is what the turn alerts do (`docs/watch-nav.md`).
+
 **Watch-started workout probe (2026-10-22, Fit 4 Pro 6.1.0.117, `adb` probe, plaintext).** The decisive test: Strength training started **on the watch**, then `17/01` sent by the
 phone. `17/03` went from `81 06 02 01 00 03 01 00` (idle) to `81 06 02 01 00 03 01 01` (tag 03 operator 1; no sport or workout-type tag in the answer) with no `17/01` from the phone,
 so the workout was real. 20 s later the probe sent pause, resume and stop, each with JoyoFit's full payload (`81 32 02 01 02 03 01 01 05 01 8C 06 04 <t> 87 12 ... 0C 04 <start> 0D 01 00 0E 01 00`) and

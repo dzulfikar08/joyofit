@@ -103,3 +103,21 @@ go to the watch over Bluetooth only.
 ## Credits
 
 Turn instructions show "data © OpenStreetMap contributors, routing OSRM / FOSSGIS" on the route screen (the FOSSGIS policy asks for attribution).
+
+## Turn alerts during a watch workout (lab, Android)
+
+For wearers who prefer the watch's own route navigation, which draws the route on the watch's offline map (`docs/offline-maps.md`) but
+has no instructions (Huawei's route format carries only the line, `protocol/README.md` "(d) Routes").
+
+- **Arming:** on a route's page, while the lab switch is on, **Turn alerts in the watch workout** arms that route (one at a time,
+  `workoutAlerts.ts`, kv key `joyofit.turnAlerts.route`). The wearer also sends the route to the watch and starts an outdoor run, walk or
+  ride with it there: the phone cannot start the watch's workout (`17/01` is refused, `protocol/README.md` "Workout started from the phone").
+- **Start / stop:** `LiveWorkoutProvider` calls `syncTurnAlerts` with every `LiveWorkout`. An active workout of sport 1 (run), 2 (walk) or
+  3 (ride) with a route armed starts `turnAlertSession` once per workout (not while a JoyoNavi session runs); the workout's end stops it.
+- **Session:** the same `WatchNavSession` and `NavEngine` (OSRM steps, reroute, the phone's GPS), with a different output
+  (`instance.ts` `createAlertNative`): `TurnAlerts` (`alerts.ts`) turns the engine's messages into watch notifications from "JoyoFit"
+  (`HuaweiWear.sendWatchAlert`, Kotlin `NotificationForwarder.sendAlert`): the first turn once even when far, every later turn at the
+  engine's 200 m and 50 m bands (title "200 m · Turn right", body the street), "Off route" once per departure, "You have arrived" with the
+  route's name. Nothing for `prog`, `hb` or `map`, so the workout screen is not covered every few seconds.
+- `sendWatchAlert` is native: binaries before it show "Turn alerts need a newer version of JoyoFit". iOS: resolves false, the switch is hidden.
+  It does not depend on notification forwarding or Android's notification access.
