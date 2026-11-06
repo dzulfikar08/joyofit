@@ -66,6 +66,12 @@ export async function ensureSensorSchema(db: SQLiteDatabase): Promise<void> {
       kinds TEXT NOT NULL,
       PRIMARY KEY (workout_id, sensor_id)
     );
+    -- A chest strap's beat-to-beat intervals of one phone recording (ms, oldest first, JSON array), as the strap sent them within
+    -- 250..2000 ms: the raw series the FIT export carries as hrv messages, for comparison with other devices (docs/hr-validation.md).
+    CREATE TABLE IF NOT EXISTS workout_rri (
+      workout_id INTEGER PRIMARY KEY,
+      rri TEXT NOT NULL
+    );
   `);
 }
 
@@ -214,6 +220,23 @@ export async function insertWorkoutSensors(
       s.name,
       JSON.stringify(s.kinds),
     );
+  }
+}
+
+/** Inside the save transaction: the R-R intervals of workout `workoutId`, whole milliseconds. Nothing is stored for an empty list. */
+export async function insertWorkoutRri(txn: Pick<SQLiteDatabase, 'runAsync'>, workoutId: number, rri: readonly number[]): Promise<void> {
+  if (rri.length === 0) return;
+  await txn.runAsync('INSERT OR REPLACE INTO workout_rri (workout_id, rri) VALUES (?, ?)', workoutId, JSON.stringify(rri.map((v) => Math.round(v))));
+}
+
+/** The stored R-R intervals of a workout (ms, oldest first); empty when it has none or the table does not exist yet. */
+export async function listWorkoutRri(db: Pick<SQLiteDatabase, 'getFirstAsync'>, workoutId: number): Promise<number[]> {
+  try {
+    const row = await db.getFirstAsync<{ rri: string }>('SELECT rri FROM workout_rri WHERE workout_id = ?', workoutId);
+    const parsed: unknown = row ? JSON.parse(row.rri) : [];
+    return Array.isArray(parsed) ? parsed.filter((v): v is number => typeof v === 'number' && v > 0) : [];
+  } catch {
+    return [];
   }
 }
 

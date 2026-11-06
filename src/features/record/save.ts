@@ -1,16 +1,17 @@
 /**
  * Stores a finished phone recording as a normal workout, the way a FIT import does (`imported = 1`, `device` NULL: the native watch
  * writers, Health Connect export and automatic Strava upload only look at watch rows), with its samples in `workout_points`, one HR
- * sample per minute in `step_samples` (what Strain and Trends read) and the sensors that took part in `workout_sensor`.
+ * sample per minute in `step_samples` (what Strain and Trends read), the sensors that took part in `workout_sensor` and a chest
+ * strap's R-R intervals in `workout_rri`.
  */
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { workoutElevation } from '../workouts/analysis/elevation';
 import { SPORT_ROWS } from '../workouts/manual';
 import type { VirtualRide, WorkoutSummary } from '../workouts/summary';
-import { insertWorkoutSensors, type WorkoutSensor } from '../sensors/store';
+import { insertWorkoutRri, insertWorkoutSensors, type WorkoutSensor } from '../sensors/store';
 import type { RecordedSample, RecordedWorkout } from './recorder';
-import { hrvMetrics } from './rri';
+import { filterRriArtefacts, hrvMetrics } from './rri';
 
 export type SaveDb = Pick<SQLiteDatabase, 'getAllAsync' | 'withExclusiveTransactionAsync'>;
 
@@ -81,7 +82,7 @@ export function summaryOf(w: RecordedWorkout, sensors: readonly WorkoutSensor[],
     if (w.movingSec > 0) summary.avgSpeed = virtual.distM / w.movingSec;
   }
   if (w.rri && w.rri.length > 0) {
-    const hrv = hrvMetrics(w.rri);
+    const hrv = hrvMetrics(filterRriArtefacts(w.rri));
     if (hrv) summary.hrv = hrv;
   }
   return summary;
@@ -128,6 +129,7 @@ export async function saveRecordedWorkout(db: SaveDb, w: RecordedWorkout, sensor
       );
     }
     await insertWorkoutSensors(txn, id, sensors);
+    await insertWorkoutRri(txn, id, w.rri ?? []);
   });
   return id;
 }

@@ -367,7 +367,7 @@ function withDistance(samples: Sample[], total: number, pause: WatchPause | null
 }
 
 /** FIT message numbers of the global profile. */
-const MESG = { fileId: 0, session: 18, lap: 19, record: 20, event: 21, deviceInfo: 23, activity: 34, set: 225 } as const;
+const MESG = { fileId: 0, session: 18, lap: 19, record: 20, event: 21, deviceInfo: 23, activity: 34, hrv: 78, set: 225 } as const;
 
 /** FIT enum values used below. */
 const FIT = {
@@ -458,11 +458,14 @@ export interface BuiltFit {
  * `sets` (a strength workout) are written as `set` messages in time order between the last record and the timer stop: the
  * timestamp is the end of the set, `start_time` its start, both clamped to the file's span, `duration` its active time in ms,
  * `weight` kg x 16, `category` one `exercise_category` (a one element uint16 array) and `message_index` the position.
+ * `rri` (beat-to-beat intervals from a chest strap, ms, oldest first) are written as `hrv` messages after the records, one interval
+ * each (field `time`, seconds x 1000, a one element array), the way Garmin devices carry them: Kubios, Golden Cheetah and the FIT SDK
+ * read them back in order. They have no timestamps of their own; the first one is the first beat after the recording started.
  */
 export function buildFit(
   workout: StravaWorkout,
   points: readonly StravaPoint[],
-  options: { utcOffsetSeconds?: number; device?: StravaDevice | null; sets?: readonly FitSet[]; laps?: readonly StravaLap[] } = {},
+  options: { utcOffsetSeconds?: number; device?: StravaDevice | null; sets?: readonly FitSet[]; laps?: readonly StravaLap[]; rri?: readonly number[] } = {},
 ): BuiltFit {
   const samples = collectSamples(workout, points);
   const total = workout.distance > 0 ? workout.distance : 0;
@@ -641,6 +644,12 @@ export function buildFit(
           index,
         ]);
       });
+  }
+
+  if (options.rri && options.rri.length > 0) {
+    const hrv = fit.define(9, MESG.hrv, [{ num: 0, type: 'uint16' }]);
+    // Seconds x 1000 is milliseconds; the encoder rounds and keeps 0xFFFF (65.535 s) as "no value".
+    for (const ms of options.rri) if (ms > 0) fit.write(hrv, [ms]);
   }
 
   event(end, FIT.eventTypeStopAll);

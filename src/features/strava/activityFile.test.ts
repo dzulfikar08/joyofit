@@ -571,3 +571,22 @@ describe('a stored workout', () => {
     expect(Math.abs(seconds - 2169)).toBeLessThanOrEqual(60);
   });
 });
+
+describe('buildFit hrv', () => {
+  const points = [fix(0, -6.2, 120), fix(60, -6.201, 125), fix(120, -6.202, 130)];
+
+  it('carries chest-strap R-R intervals as hrv messages Garmin\'s SDK reads back in order', () => {
+    const built = buildFit(walk, points, { utcOffsetSeconds: 7 * 3600, rri: [812, 798.6, 1203, 0, 640] });
+    const decoded = decodeFit(built.bytes);
+    expect(decoded.errors).toEqual([]);
+    expect(decoded.integrity).toBe(true);
+    const hrv = (decoded.messages as { hrvMesgs?: { time?: number | number[] }[] }).hrvMesgs ?? [];
+    // Seconds; the 0 (no interval) is left out and 798.6 ms rounds to whole milliseconds.
+    expect(hrv.map((m) => (Array.isArray(m.time) ? m.time : [m.time]))).toEqual([[0.812], [0.799], [1.203], [0.64]]);
+  });
+
+  it('writes no hrv message without intervals', () => {
+    const decoded = decodeFit(buildFit(walk, points, { utcOffsetSeconds: 7 * 3600 }).bytes);
+    expect((decoded.messages as { hrvMesgs?: unknown[] }).hrvMesgs).toBeUndefined();
+  });
+});
