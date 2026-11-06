@@ -7,7 +7,9 @@
  *    switches the run to the phone-only route (`route: 'none'`). Continue keeps the watch route, unchanged for watch owners.
  *    The phone-only route hides every watch step and adds `phone`: what works without a watch, the body weight the energy estimate
  *    uses, and the supported watches with the way to ask for yours. Its path is welcome, phone, account, pro, cloud, done.
- * 2. `unbind`: before pairing. The watch holds one phone pairing, so it has to be released in Huawei Health first. This is also the
+ * 2. `unbind`: before pairing. It opens with the HUAWEI ID (Android): the same account the watch was set up with, saved before the first
+ *    connect, keeps the watch from asking for a reset when JoyoFit pairs (1A/05) and lets the owner move it between Huawei Health and
+ *    JoyoFit later without one. The watch holds one phone pairing, so it has to be released in Huawei Health first. This is also the
  *    last point where Huawei Health can still sync once more and where its data export can be requested (the export takes days, so it is
  *    asked for now and imported whenever it arrives).
  * 3. `pair`: scanning starts on arrival (the Bluetooth prompt first), one card per watch found, "Add manually" by model when the scan

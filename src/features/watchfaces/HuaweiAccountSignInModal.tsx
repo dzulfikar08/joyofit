@@ -16,6 +16,14 @@ import { extractUserIdFromCookies } from '@/features/watchfaces/huaweiAccount';
  */
 const SIGN_IN_URL = 'https://cloud.huawei.com/';
 
+/**
+ * A desktop browser identity. With a phone user agent, cloud.huawei.com's own script sends the page to `/wap`, a landing page with no
+ * sign-in at all (seen 2026-11-06 in the app's WebView and in headless Chromium); with a desktop one it stays on the desktop page, whose
+ * sign-in form sets `userId`. The WebView scales that page to the screen.
+ */
+const DESKTOP_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
+
 /** Hosts whose cookies may carry `userId`. */
 const COOKIE_URLS = ['https://cloud.huawei.com/', 'https://id1.cloud.huawei.com/', 'https://id7.cloud.huawei.com/', 'https://huawei.com/'];
 
@@ -100,6 +108,7 @@ export function HuaweiAccountSignInModal({ visible, onClose, onManual, onCapture
         </AppText>
         <WebView
           source={{ uri: SIGN_IN_URL }}
+          userAgent={DESKTOP_USER_AGENT}
           injectedJavaScript={READ_COOKIE_JS}
           onMessage={onMessage}
           onLoadEnd={() => void readNative()}
