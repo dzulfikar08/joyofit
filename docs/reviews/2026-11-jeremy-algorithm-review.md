@@ -4,6 +4,10 @@ Jeremy sent five documents (`051126_JoyoFit.7z`); the one that matters is `5_SPE
 changes ("modules"). Each item below was checked against the code, not against earlier notes. Links point to master at
 `5f341186` (after the fixes landed) unless they say otherwise.
 
+**This is the first iteration.** The rejections below are about the changes as written, not the concerns behind them.
+We will go through the rejected items again with Jeremy: corrected numbers, other ways to reach the same goal (for
+example a recovery curve where a normal day reads green), or measured data where a model is in question.
+
 | ID | Claim | Verdict | Status |
 |---|---|---|---|
 | JURNAL-03 | Riegel pace exponent should be 0.06/1.06 | ✅ Accept | Fixed, PR #77 |
@@ -117,7 +121,9 @@ which duplicates nights. The migration rewrites history (and bumps every row's c
 
 ---
 
-## ❌ Rejected
+## ❌ Rejected (this iteration)
+
+Rejected as specified, open for a second iteration.
 
 ### ALGO-02: forward-fill 600 s → 15 s
 
