@@ -15,6 +15,53 @@ var LEGS = [
   { dir: 'arrive', street: 'Monas', len: 240 }
 ];
 
+// Map frames for the demo, as the phone would send them (map view): the legs laid out as a polyline, heading-up.
+var MAP_R = 200;
+var TURN_DEG = { right: 90, left: -90, slight_left: -35, slight_right: 35, sharp_left: -135, sharp_right: 135, uturn: 180, roundabout: 30 };
+
+function corners() {
+  var x = 0;
+  var y = 0;
+  var h = 0;
+  var out = [{ x: 0, y: 0 }];
+  for (var i = 0; i < LEGS.length; i++) {
+    var rad = (h * Math.PI) / 180;
+    x += LEGS[i].len * Math.sin(rad);
+    y += LEGS[i].len * Math.cos(rad);
+    out.push({ x: x, y: y });
+    h += TURN_DEG[LEGS[i].dir] || 0;
+  }
+  return out;
+}
+
+// The frame for a wearer `walked` metres along the demo route.
+export function demoMap(walked) {
+  var cs = corners();
+  var k = 0;
+  var done = 0;
+  while (k < LEGS.length - 1 && done + LEGS[k].len < walked) {
+    done += LEGS[k].len;
+    k++;
+  }
+  var a = cs[k];
+  var b = cs[k + 1];
+  var f = Math.min(1, (walked - done) / LEGS[k].len);
+  var px = a.x + (b.x - a.x) * f;
+  var py = a.y + (b.y - a.y) * f;
+  var h = Math.atan2(b.x - a.x, b.y - a.y);
+  var sin = Math.sin(h);
+  var cos = Math.cos(h);
+  var p = [];
+  for (var i = 0; i < cs.length; i++) {
+    var dx = cs[i].x - px;
+    var dy = cs[i].y - py;
+    p.push(Math.round(dx * cos - dy * sin), Math.round(dx * sin + dy * cos));
+  }
+  var tdx = b.x - px;
+  var tdy = b.y - py;
+  return { t: 'map', r: MAP_R, p: p, tx: Math.round(tdx * cos - tdy * sin), ty: Math.round(tdx * sin + tdy * cos) };
+}
+
 function turnMsg(i, distM) {
   var leg = LEGS[i];
   var m = { t: 'turn', dir: leg.dir, distM: distM, street: leg.street };
@@ -46,6 +93,7 @@ export function demoScript() {
       var crossed = (before > 200 && dist <= 200) || (before > 50 && dist <= 50);
       if (crossed) push(STEP_MS, turnMsg(i, dist));
       push(crossed ? 100 : STEP_MS, { t: 'prog', distM: dist, remM: rem, etaS: Math.round(rem / SPEED_MPS) });
+      push(0, demoMap(walked));
       // One detour on the long leg, to show the off-route and reroute banners.
       if (i === 1 && dist === 400) {
         push(STEP_MS, { t: 'off' });

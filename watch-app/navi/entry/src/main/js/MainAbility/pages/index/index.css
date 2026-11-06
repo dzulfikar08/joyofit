@@ -176,6 +176,39 @@
   text-overflow: ellipsis;
 }
 
+/* ---- map view: 56 + 320 px fits the 396 px lite layout height ---- */
+
+.map-screen {
+  justify-content: flex-start;
+}
+
+.map-top {
+  width: 92%;
+  height: 56px;
+  font-size: 28px;
+  color: #f5f1e8;
+  text-align: center;
+  text-overflow: ellipsis;
+}
+
+.map-top-warn {
+  color: #ff7b93;
+}
+
+/* MAP_W x MAP_H in index.js */
+.map-canvas {
+  width: 336px;
+  height: 320px;
+}
+
+.map-wait {
+  width: 92%;
+  height: 40px;
+  font-size: 26px;
+  color: #9ba6a8;
+  text-align: center;
+}
+
 /* ---- overlay buttons ---- */
 
 .button {

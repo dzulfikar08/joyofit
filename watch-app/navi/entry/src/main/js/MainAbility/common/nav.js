@@ -37,7 +37,9 @@ export function createState() {
     lastN: 0,
     turnKey: '',
     vibNear: false,
-    vibNow: false
+    vibNow: false,
+    map: null, // the last `map` frame: { r, p: [x0, y0, ...], hasT, tx, ty }
+    mapRev: 0 // +1 per frame, so the page knows when to redraw
   };
 }
 
@@ -103,6 +105,21 @@ function clearSession(s) {
   s.turnKey = '';
   s.vibNear = false;
   s.vibNow = false;
+  s.map = null;
+}
+
+function isInt(x) {
+  return typeof x === 'number' && Math.floor(x) === x;
+}
+
+// A `map` frame, or null when it is malformed (the page keeps the previous one).
+function mapOf(m) {
+  if (!isUint(m.r) || m.r < 1 || !m.p || typeof m.p.length !== 'number' || m.p.length % 2 !== 0) return null;
+  for (var i = 0; i < m.p.length; i++) {
+    if (!isInt(m.p[i])) return null;
+  }
+  var hasT = isInt(m.tx) && isInt(m.ty);
+  return { r: m.r, p: m.p, hasT: hasT, tx: hasT ? m.tx : 0, ty: hasT ? m.ty : 0 };
 }
 
 function enterNav(s) {
@@ -198,6 +215,14 @@ export function receive(s, m, nowMs) {
       return '';
     case 'hb':
       return '';
+    case 'map': {
+      var map = mapOf(m);
+      if (map && s.screen === 'nav') {
+        s.map = map;
+        s.mapRev += 1;
+      }
+      return '';
+    }
     default:
       return ''; // unknown type: ignored, never answered
   }

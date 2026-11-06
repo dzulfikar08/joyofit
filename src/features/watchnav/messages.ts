@@ -9,6 +9,8 @@ export const MAX_MESSAGE_BYTES = 1000;
 /** `street` and `dest` are cut to this many characters (schema `maxLength`). */
 export const MAX_NAME_CHARS = 48;
 const MAX_SEQ = 2_147_483_647;
+/** `map` coordinates stay within +-this many metres (schema), so a frame's size is bounded. */
+export const MAX_COORD_M = 99_999;
 
 export const DIRS = [
   'depart',
@@ -36,14 +38,19 @@ export type PhoneMessage =
   | { t: 'reroute' }
   | { t: 'arrive' }
   | { t: 'end'; why: EndReason }
-  | { t: 'hb' };
+  | { t: 'hb' }
+  | { t: 'map'; r: number; p: number[]; tx?: number; ty?: number };
+
+/** The two views of the watch app's navigation screen; `map` asks the phone for `map` messages. */
+export type WatchView = 'turn' | 'map';
 
 /** Watch -> phone, with its sequence number. */
 export type WatchMessage =
   | { t: 'hello'; n: number; app: string }
   | { t: 'pause'; n: number }
   | { t: 'resume'; n: number }
-  | { t: 'stop'; n: number };
+  | { t: 'stop'; n: number }
+  | { t: 'view'; n: number; mode: WatchView };
 
 /** Cuts `name` to `MAX_NAME_CHARS` characters (code points, so no half emoji), trimmed. */
 export function cutName(name: string): string {
@@ -74,9 +81,22 @@ function normalise(message: PhoneMessage): PhoneMessage {
     }
     case 'prog':
       return { t: 'prog', distM: whole(message.distM), remM: whole(message.remM), etaS: whole(message.etaS) };
+    case 'map': {
+      const map: Extract<PhoneMessage, { t: 'map' }> = { t: 'map', r: whole(message.r), p: message.p.map(coord) };
+      if (message.tx !== undefined && message.ty !== undefined) {
+        map.tx = coord(message.tx);
+        map.ty = coord(message.ty);
+      }
+      return map;
+    }
     default:
       return message;
   }
+}
+
+/** Map coordinates: whole metres, may be negative, within the schema's range. */
+function coord(value: number): number {
+  return Number.isFinite(value) ? Math.max(-MAX_COORD_M, Math.min(MAX_COORD_M, Math.round(value))) : 0;
 }
 
 /**
@@ -124,6 +144,8 @@ export function decodeWatchMessage(json: string): WatchMessage | null {
     case 'resume':
     case 'stop':
       return { t, n };
+    case 'view':
+      return raw.mode === 'map' || raw.mode === 'turn' ? { t, n, mode: raw.mode } : null;
     default:
       return null;
   }

@@ -36,9 +36,12 @@ watch-app/navi/
 |---|---|---|
 | Idle | "Mulai navigasi dari JoyoFit"; "JoyoFit belum tersambung" when the `hello` could not be delivered; the reason of the last end (`stopped` / `error`) | tap: send `hello` again; long press: demo route; swipe right: close the app |
 | Navigating | big arrow per `dir`, distance to the turn, maneuver text (roundabout exit), street, remaining distance + time, next-turn preview when the phone sends `next`; banners "Ponsel terputus" (no message for 90 s, last turn kept), "Menghitung ulang rute…", "Di luar rute", "Dijeda" | tap: overlay with Jeda/Lanjut, Berhenti, Tutup |
+| Navigating, map view | the route around the wearer, heading-up (`common/mapdraw.js` on a `canvas`): route line, green dot at the next maneuver, the wearer's arrow 70% down; on top the distance + maneuver, or the off-route / lost banner. 200 m ahead on foot, 450 m on a bike | swipe left from the turn view; swipe right back to it; tap: overlay |
 | Arrived | "Sampai di tujuan" + destination | tap: back to idle |
 
 - On launch the app sends `hello {app}`; a navigating JoyoFit answers with `start`, the current `turn` and a `prog`.
+- Swiping to the map sends `view {mode:"map"}`; JoyoFit then sends `map` frames (the route already cut, thinned and turned
+  heading-up by the phone, `src/features/watchnav/mapview.ts`) until `view {mode:"turn"}`. The demo route has frames too.
 - Vibration: once `short` when `distM` first drops to <= 200 m and once `long` at <= 50 m, per maneuver (a new
   maneuver = different dir/street/exit, or the distance growing by more than 60 m). No buzz for `depart` or while paused.
 - `n`: an exact repeat of the previous phone `n` is dropped (P2P retry); resets are accepted. Unknown `t` is ignored.

@@ -5,7 +5,8 @@ import {
 } from '../entry/src/main/js/MainAbility/common/nav.js';
 import { distance, duration, present } from '../entry/src/main/js/MainAbility/common/format.js';
 import { stringsFor } from '../entry/src/main/js/MainAbility/common/strings.js';
-import { demoScript } from '../entry/src/main/js/MainAbility/common/demo.js';
+import { demoMap, demoScript } from '../entry/src/main/js/MainAbility/common/demo.js';
+import { drawMap, toCanvas } from '../entry/src/main/js/MainAbility/common/mapdraw.js';
 
 var n = 0;
 function msg(t, fields) {
@@ -216,5 +217,54 @@ describe('page', () => {
       expect(data).toContain('    ' + k + ':');
     });
     expect(page).not.toContain('render:'); // the lite ViewModel hides a page method called render
+  });
+});
+
+describe('map view', () => {
+  test('a map frame is kept while navigating, bumps mapRev, and is dropped when the session ends', () => {
+    var s = navigating();
+    receive(s, msg('map', { r: 200, p: [0, -50, 0, 100, 150, 100], tx: 0, ty: 100 }), 2000);
+    expect(s.map).toEqual({ r: 200, p: [0, -50, 0, 100, 150, 100], hasT: true, tx: 0, ty: 100 });
+    expect(s.mapRev).toBe(1);
+    receive(s, msg('map', { r: 200, p: [0, 1, 2] }), 3000); // odd length: ignored
+    expect(s.mapRev).toBe(1);
+    receive(s, msg('map', { r: 200, p: [] }), 4000); // empty line: kept, nothing to stroke
+    expect(s.map.hasT).toBe(false);
+    receive(s, msg('end', { why: 'stopped' }), 5000);
+    expect(s.map).toBeNull();
+  });
+
+  test('frames outside navigation are ignored', () => {
+    var s = createState();
+    receive(s, msg('map', { r: 200, p: [0, 0, 0, 10] }), 1000);
+    expect(s.map).toBeNull();
+  });
+
+  test('drawMap strokes the line, marks the turn and draws the wearer with lite canvas calls only', () => {
+    var calls = [];
+    var ctx = {};
+    ['fillRect', 'beginPath', 'moveTo', 'lineTo', 'closePath', 'stroke', 'fill', 'arc'].forEach((name) => {
+      ctx[name] = function () {
+        calls.push(name);
+      };
+    });
+    var map = { r: 200, p: [0, -50, 0, 100, 150, 100], hasT: true, tx: 0, ty: 100 };
+    drawMap(ctx, map, 336, 320);
+    expect(calls.filter((c) => c === 'stroke').length).toBe(1);
+    expect(calls.filter((c) => c === 'arc').length).toBe(1);
+    expect(calls.filter((c) => c === 'fill').length).toBe(2);
+    // r metres ahead land 62% of the height above the wearer (who sits 70% down).
+    var top = toCanvas(map, 336, 320, 0, 200);
+    expect(top.x).toBe(168);
+    expect(Math.round(top.y)).toBe(Math.round(320 * 0.7 - 320 * 0.62));
+    drawMap(ctx, null, 336, 320); // no frame yet: background and wearer only
+  });
+
+  test('the demo frame points the first leg up and puts the first turn ahead', () => {
+    var f = demoMap(100);
+    expect(f.r).toBe(200);
+    expect(f.tx).toBe(0);
+    expect(f.ty).toBe(260); // first leg 360 m, 100 m walked
+    expect(demoScript().filter((step) => step.msg.t === 'map').length).toBeGreaterThan(20);
   });
 });

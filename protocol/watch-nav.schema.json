@@ -8,8 +8,8 @@
   "properties": {
     "v": { "const": 1, "description": "Protocol version. A receiver drops a message whose `v` it does not know." },
     "t": {
-      "enum": ["start", "turn", "prog", "off", "reroute", "arrive", "end", "hb", "hello", "pause", "resume", "stop"],
-      "description": "Message type. Phone -> watch: start, turn, prog, off, reroute, arrive, end, hb. Watch -> phone: hello, pause, resume, stop."
+      "enum": ["start", "turn", "prog", "off", "reroute", "arrive", "end", "hb", "map", "hello", "pause", "resume", "stop", "view"],
+      "description": "Message type. Phone -> watch: start, turn, prog, off, reroute, arrive, end, hb, map. Watch -> phone: hello, pause, resume, stop, view."
     },
     "n": {
       "type": "integer",
@@ -27,10 +27,12 @@
     { "$ref": "#/$defs/empty", "properties": { "t": { "const": "arrive" } } },
     { "$ref": "#/$defs/end" },
     { "$ref": "#/$defs/empty", "properties": { "t": { "const": "hb" } } },
+    { "$ref": "#/$defs/map" },
     { "$ref": "#/$defs/hello" },
     { "$ref": "#/$defs/empty", "properties": { "t": { "const": "pause" } } },
     { "$ref": "#/$defs/empty", "properties": { "t": { "const": "resume" } } },
-    { "$ref": "#/$defs/empty", "properties": { "t": { "const": "stop" } } }
+    { "$ref": "#/$defs/empty", "properties": { "t": { "const": "stop" } } },
+    { "$ref": "#/$defs/view" }
   ],
   "$defs": {
     "metres": { "type": "integer", "minimum": 0, "maximum": 10000000 },
@@ -94,6 +96,28 @@
         "t": { "const": "end" },
         "why": { "enum": ["arrived", "stopped", "error"] }
       }
+    },
+    "coord": {
+      "type": "integer",
+      "minimum": -99999,
+      "maximum": 99999,
+      "description": "Metres in the map frame: origin = the wearer, x to the right, y straight ahead (the frame is turned so the direction of travel is up)."
+    },
+    "map": {
+      "description": "Phone -> watch, only while the watch shows its map view (after `view {mode:\"map\"}`, until `view {mode:\"turn\"}` or `hello`): the route around the wearer, already turned heading-up, for the watch to scale and draw. Sent at once, then when the wearer moved 8% of `r`, turned 15 degrees or the instruction changed (at most every 3 s), and at least every 20 s. Not sent while paused.",
+      "required": ["r", "p"],
+      "properties": {
+        "t": { "const": "map" },
+        "r": { "type": "integer", "minimum": 1, "maximum": 5000, "description": "View radius, metres: the watch scales so about `r` metres ahead reach the top of the map. 200 on foot, 450 on a bike." },
+        "p": { "type": "array", "maxItems": 120, "items": { "$ref": "#/$defs/coord" }, "description": "The route line as x0, y0, x1, y1, ...: thinned, from a little behind the wearer to where it leaves the frame; the phone sends at most 45 points. Empty when no part of the route is near." },
+        "tx": { "$ref": "#/$defs/coord", "description": "The current maneuver's position; with `ty`, only when it is inside the frame." },
+        "ty": { "$ref": "#/$defs/coord" }
+      }
+    },
+    "view": {
+      "description": "Watch -> phone when the wearer swipes between the turn view and the map view: `map` starts the `map` messages, `turn` stops them. A watch app that sends `hello` is on the turn view.",
+      "required": ["mode"],
+      "properties": { "t": { "const": "view" }, "mode": { "enum": ["turn", "map"] } }
     },
     "hello": {
       "description": "Watch -> phone when the watch app opens (a lite-wearable app does not run in the background, so the wearer often opens it mid-route). A navigating phone answers with `start`, the current `turn` and a `prog`, then `off` when the wearer is off the route; a phone that is not navigating does not answer (the P2P layer still acknowledges with 0xcf). `resume` is answered the same way.",
