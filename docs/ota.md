@@ -218,6 +218,8 @@ Android `cb987e8b8ac363beba44e1d31a702071aca28f95` (Release Android run 42046885
   `d4399316-ac37-4e15-b9bf-9d5a946f14e5` android, `b73b51b9-fd30-4f89-a0f2-5ca7d680477c` ios (`scripts/ota.sh` locally with
   `--runtime-version`; master's own fingerprint is `ffe11bde...`). The Android runtime was re-read from the owner's Play install
   (`assets/fingerprint` of versionCode 1497039).
+- 2026-11-06 from master `de169e28` (#81: onboarding HUAWEI ID step, Huawei sign-in WebView with a desktop user agent): groups
+  `cb1323bb-add1-4bb8-86b7-422550c5640e` android, `77adc240-337b-4fd1-b439-fa2cb6dbf6b2` ios (same runtimes, `--runtime-version`).
 
 ## When OTA is not enough
 
