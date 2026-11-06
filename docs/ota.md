@@ -214,6 +214,10 @@ Android `cb987e8b8ac363beba44e1d31a702071aca28f95` (Release Android run 42046885
   `0b402be1-082d-4c3b-b597-1f0ce54fd7a8` ios (run 42148271772). Master's own fingerprint differs since #77 (Kotlin and Swift
   `signedBytes`, altitude only; no change to the JS-native contract), so these were published with `runtime_version`; the
   altitude fix reaches devices with the next store build.
+- 2026-11-06 from master `75ff62cc` (#80 JRG-440: real Wear Engine fingerprints for JoyoNavi, watch navigation lab): groups
+  `d4399316-ac37-4e15-b9bf-9d5a946f14e5` android, `b73b51b9-fd30-4f89-a0f2-5ca7d680477c` ios (`scripts/ota.sh` locally with
+  `--runtime-version`; master's own fingerprint is `ffe11bde...`). The Android runtime was re-read from the owner's Play install
+  (`assets/fingerprint` of versionCode 1497039).
 
 ## When OTA is not enough
 
