@@ -12,8 +12,8 @@ internal fun ModuleDefinitionBuilder.watchfaceApi(runtime: () -> WearRuntime) {
     runtime().watchfaces.list()
   }
 
-  AsyncFunction("installWatchface") Coroutine { uri: String, signature: String?, fileName: String? ->
-    runtime().watchfaces.install(uri, signature, fileName)
+  AsyncFunction("installWatchface") Coroutine { uri: String, signature: String?, fileName: String?, gadgetbridge: Boolean? ->
+    runtime().watchfaces.install(uri, signature, fileName, gadgetbridge ?: false)
   }
 
   AsyncFunction("setActiveWatchface") Coroutine { id: String ->

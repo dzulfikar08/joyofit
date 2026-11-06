@@ -66,11 +66,28 @@ the account has the right to face `hitopId`. Unanswered, the face is refused. Pr
 Sending the account in `1A/05` did not change the result on this watch. The watch did put a `huid` in the request, but the log starts
 after the connect handshake, so it does not show what JoyoFit sent in `1A/05`.
 
-**Open question.** His Gadgetbridge route (section 0a) also uses a random `<nine digits>_<version>` id (`getRandomName`) and has no
-httpProxy handler, so on this firmware it should fail the same way. Ask him whether it still works on 5.0.0.36, or only did on older
-firmware. If it really works, a Gadgetbridge log of a successful install is the next thing to read.
+**Gadgetbridge works on this watch (Jeremy, 2026-11-06), so JoyoFit can match it.** He confirmed the Gadgetbridge route installs faces on
+this same Fit 3 and firmware, with his HUAWEI ID set. Reading today's Gadgetbridge source (`master` `be3fcbf` and release `2026.11.0`, both
+read 2026-11-06) against JoyoFit's flow, two things differ:
 
-**For JoyoFit.** No change. The 100014 message already names the signature when bit 8 is set. Photo face stays the working option.
+1. **No pre-upload announce.** Gadgetbridge uploads the file (`0x28`) and only sends a `27/03` `operationActive` *after* the watch's `27/05`
+   confirm. It never sends the `27/03` announce before the upload (`HuaweiSupportProvider.uploadFile` → `SendFileUploadInfo`;
+   `AsynchronousResponse.handleWatchface` sends the operation only on `reportType == 0x02`). JoyoFit sends that announce first, to imitate
+   Huawei Health (`WatchfaceManager.announce`, comment "GB does not send it"). **In Jeremy's log the `checkright` request fires 90 ms after
+   JoyoFit's announce and before the upload starts** — so the announce is what triggers the licence check.
+2. **Version `1.0.0`.** Gadgetbridge always uploads as `<nine random digits>_1.0.0` (`HuaweiWatchfaceManager.getRandomName`). JoyoFit uses the
+   face's own version, e.g. `311037305_2.3.1`, which looks like a store face.
+
+**Shipped (branch `feat/watchface-gb-install`): an opt-in "Compatibility install" that does what Gadgetbridge does.** On a watch that
+reports signature enforcement (`requiresSignature`, 27/01 bit 8) the watch-faces screen shows a toggle; with it on, an install (1) skips the
+`27/03` announce and (2) uploads under version `1.0.0`. `installWatchface(uri, signature?, fileName?, gadgetbridge?)` carries the flag on both
+platforms (`WatchfaceOps.install(gadgetbridge:)` skips the announce; the controller forces the `1.0.0` name). It is off by default and never
+sent to non-enforcing watches. This is not a signature bypass (section 2): JoyoFit forges, replays and strips nothing; it installs a
+user-chosen file the way another open client does, and the file that lands is the one the user picked. **UNVERIFIED on a watch** — Jeremy to
+test; if it still fails, a Gadgetbridge packet log of a working install is the next thing to read.
+
+**For the licence check itself.** Still unanswered by JoyoFit, and it should stay that way: answering `checkright` would need Huawei
+Health's access token (which JoyoFit does not have) or a forged "yes". The compatibility install avoids the check instead of answering it.
 
 ## 0a. Update 2026-11-05: Gadgetbridge calls it a dead end; a user report; the modded Huawei Health
 

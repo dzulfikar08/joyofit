@@ -631,6 +631,26 @@ class WatchfaceTest {
   }
 
   @Test
+  fun gadgetbridgeModeUploadsWithoutTheAnnounce() = runBlocking {
+    val (watch, ops, _) = setup()
+
+    val result = ops.install(
+      WatchfacePackages.parse(hwt()),
+      { _, _ -> },
+      "123456789_1.0.0",
+      signature = null,
+      gadgetbridge = true,
+    )
+
+    // The file is still uploaded.
+    assertEquals("123456789_1.0.0", watch.all(0x28, 0x02).single().tlv!!.getString(0x01))
+    assertTrue(result.listed)
+    // Only the activation 27/03 (after the watch's confirm), never the pre-upload announce the licence check reacts to.
+    assertEquals(1, watch.all(0x27, 0x03).size)
+    assertTrue(result.active)
+  }
+
+  @Test
   fun installRefusesAFaceForAnotherScreenBeforeSendingAnything() = runBlocking {
     val (watch, ops, _) = setup()
     try {

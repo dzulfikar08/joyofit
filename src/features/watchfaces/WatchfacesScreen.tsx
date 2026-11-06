@@ -9,6 +9,7 @@ import { Details } from '@/components/Details';
 import { IconChip } from '@/components/IconChip';
 import { Card, Section, useContentPadding, useRefreshControl } from '@/components/Screen';
 import { Segmented } from '@/components/Segmented';
+import { SwitchRow } from '@/components/SwitchRow';
 import { EmptyState, Notice } from '@/components/States';
 import { InstalledFaceCard } from '@/features/watchfaces/InstalledFaceCard';
 import { LibraryFaceCard } from '@/features/watchfaces/LibraryFaceCard';
@@ -84,6 +85,9 @@ export function WatchfacesScreen() {
   const [installingUrl, setInstallingUrl] = useState<string | null>(null);
   const [previewFace, setPreviewFace] = useState<WatchfaceItem | null>(null);
   const [dialog, setDialog] = useState<CustomDialogState | null>(null);
+  // Gadgetbridge's install path (version 1.0.0, no 27/03 announce) for watches that enforce signatures. Offered only
+  // on such watches, where the normal path is deleted; see docs/watchfaces-signing.md.
+  const [gbMode, setGbMode] = useState(false);
 
   const refreshControl = useRefreshControl({
     refreshing: busy === 'list',
@@ -97,6 +101,9 @@ export function WatchfacesScreen() {
   const installFromFile = entry === 'install';
   const idle = busy === null;
   const installing = busy === 'install';
+  const canUseGbMode = list?.requiresSignature === true && (canImport || installFromFile);
+  // Only ever send the GB flag on watches that enforce signatures; a stale toggle on another watch is ignored.
+  const useGb = canUseGbMode && gbMode;
   const percent =
     progress && progress.total > 0 ? Math.min(100, Math.round((progress.bytes / progress.total) * 100)) : 0;
 
@@ -140,7 +147,7 @@ export function WatchfacesScreen() {
   const installLibraryFace = async (face: WatchfaceItem) => {
     if (!face.downloadUrl) return;
     setInstallingUrl(face.downloadUrl);
-    const outcome = await installFromUri(face.downloadUrl);
+    const outcome = await installFromUri(face.downloadUrl, undefined, undefined, useGb);
     if (outcome) {
       saveToLibrary({
         id: face.id,
@@ -237,12 +244,22 @@ export function WatchfacesScreen() {
                 style={{ flex: 1 }}
                 disabled={!connected || !idle}
                 loading={installing}
-                onPress={() => confirmUnsigned(() => void install())}
+                onPress={() => confirmUnsigned(() => void install(undefined, undefined, useGb))}
               />
             </View>
           ) : (
             <AppText variant="caption">{t('watch:faces.updateApp')}</AppText>
           )}
+          {canUseGbMode ? (
+            <SwitchRow
+              icon="construct-outline"
+              label={t('watch:faces.gbModeLabel')}
+              hint={t('watch:faces.gbModeHint')}
+              value={gbMode}
+              onValueChange={setGbMode}
+              disabled={!idle}
+            />
+          ) : null}
           <Details>{installFromFile ? t('watch:faces.installFromFileHint') : t('watch:faces.personalLibraryHint')}</Details>
         </Section>
       )}
@@ -355,7 +372,7 @@ export function WatchfacesScreen() {
                 onPress: () => void handleImportToMyWatch(),
               }
             : installFromFile
-              ? { label: t('watch:faces.install'), icon: 'document-attach-outline', onPress: () => confirmUnsigned(() => void install()) }
+              ? { label: t('watch:faces.install'), icon: 'document-attach-outline', onPress: () => confirmUnsigned(() => void install(undefined, undefined, useGb)) }
               : undefined
         }
       />
