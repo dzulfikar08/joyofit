@@ -9,6 +9,7 @@ import { t } from '@/i18n';
 import { rememberedWatch } from '@/features/device/rememberedWatch';
 import { isActive } from '@/features/live/liveWorkout';
 import { isStrengthSport } from '@/features/strength/watchLive';
+import { syncTurnAlerts } from '@/features/watchnav/workoutAlerts';
 import { useWatch } from '@/state/WatchProvider';
 import { HuaweiWear, type LiveWorkout } from '@/wear';
 import { OPEN_IN_STACK } from '@/components/navigation';
@@ -40,6 +41,11 @@ export function LiveWorkoutProvider({ children }: { children: ReactNode }) {
   const opened = useRef<number | null>(null);
 
   useEventListener(HuaweiWear, 'onLiveWorkout', setLive);
+
+  // Turn alerts for an armed route follow the watch's outdoor workout (features/watchnav/workoutAlerts.ts).
+  useEffect(() => {
+    void syncTurnAlerts(live);
+  }, [live]);
 
   // A JS reload or a return from the background may have missed events.
   useEffect(() => {

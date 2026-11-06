@@ -18,7 +18,8 @@ export type NavActivity = keyof typeof DEFAULT_SPEED_MPS;
 export const PROFILE_OF: Record<NavActivity, RoutingProfile> = { walk: 'foot', run: 'foot', ride: 'bike' };
 
 export interface WatchNavNative {
-  start(config: WatchNavConfig): Promise<WatchNavStatus>;
+  /** null: no P2P service behind it (turn alerts during a watch workout). */
+  start(config: WatchNavConfig): Promise<WatchNavStatus | null>;
   send(json: string): Promise<boolean>;
   stop(): Promise<void>;
   status(): WatchNavStatus | null;

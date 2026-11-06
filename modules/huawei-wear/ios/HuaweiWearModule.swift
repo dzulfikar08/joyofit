@@ -411,6 +411,7 @@ public final class HuaweiWearModule: Module {
         // Quick replies are Android only (iOS cannot reply to another app's notification): nothing to show, nothing to send.
         Function("getQuickReplies") { () -> [String: Any] in ["supported": false, "slots": 0, "maxLength": 0] }
         AsyncFunction("setQuickReplies") { (_: [String]) async throws -> Bool in false }
+        AsyncFunction("sendWatchAlert") { (_: String, _: String) async throws -> Bool in false }
         Function("getRoutes") { () -> [String: Any] in runtime.p2p.routesStatus() }
 
         // iOS: the fixed list of apps whose notifications the watch can filter (02/0B); see NotificationAppFilter.swift.

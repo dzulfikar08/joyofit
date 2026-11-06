@@ -1,6 +1,6 @@
 import { useCallback, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Linking, StyleSheet, View } from 'react-native';
+import { Linking, Platform, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -17,9 +17,10 @@ import { spacing } from '@/theme';
 import type { WatchNavStatus } from '@/wear';
 
 import type { NavView } from './engine';
-import { readWatchNavStatus, setWatchNavNotification, watchNavSession } from './instance';
+import { readWatchNavStatus, setWatchNavNotification, turnAlertSession, turnAlertsAvailable, watchNavSession } from './instance';
 import type { NavManeuver } from './maneuvers';
 import type { NavActivity, SessionSnapshot } from './session';
+import { getArmedRoute, setArmedRoute, subscribeArmedRoute } from './workoutAlerts';
 
 function useEtaText(): (s: number) => string {
   const { t } = useTranslation('routes');
@@ -58,6 +59,32 @@ function StatusCard({ snap, view }: { snap: SessionSnapshot; view: NavView }) {
       <KeyValue icon="time" label={t('watchNav.eta')} value={etaText(view.etaS)} />
       <KeyValue icon="watch" label={t('watchNav.watchApp')} value={snap.watchAppVersion ? `${watchAppLabel} (${snap.watchAppVersion})` : watchAppLabel} />
       <KeyValue icon="git-branch" label={t('watchNav.source')} value={view.source === 'osrm' ? t('watchNav.sourceOsrm') : t('watchNav.sourceGeometry')} />
+    </View>
+  );
+}
+
+/**
+ * Arms this route for turn alerts during the watch's own workout (`workoutAlerts.ts`): the watch draws the route on its offline map, the
+ * phone sends each turn as a watch alert. Android only (the alerts go through the Android watch link).
+ */
+function TurnAlertsBlock({ route }: { route: SavedRoute }) {
+  const { t } = useTranslation('routes');
+  const armed = useSyncExternalStore(subscribeArmedRoute, getArmedRoute);
+  const alerts = useSyncExternalStore(turnAlertSession.subscribe, turnAlertSession.getSnapshot);
+  if (Platform.OS !== 'android') return null;
+  if (!turnAlertsAvailable()) return <Notice>{t('watchNav.alerts.needsUpdate')}</Notice>;
+  const ours = armed?.routeId === route.id;
+  const running = (alerts.phase === 'planning' || alerts.phase === 'running') && alerts.routeId === route.id;
+  return (
+    <View style={styles.block}>
+      <SwitchRow
+        label={t('watchNav.alerts.title')}
+        hint={t('watchNav.alerts.hint')}
+        value={ours}
+        onValueChange={(on) => setArmedRoute(on ? { routeId: route.id, name: route.name } : null)}
+      />
+      {armed !== null && !ours ? <Notice>{t('watchNav.alerts.otherArmed', { name: armed.name })}</Notice> : null}
+      {running ? <Notice icon="notifications">{t('watchNav.alerts.running')}</Notice> : null}
     </View>
   );
 }
@@ -154,6 +181,8 @@ export function WatchNavSection({ route, points }: { route: SavedRoute; points: 
           <Button label={t('watchNav.start')} icon="navigate" variant="primary" loading={starting} onPress={() => void start()} />
         </>
       ) : null}
+
+      {status?.enabled ? <TurnAlertsBlock route={route} /> : null}
 
       {error !== null ? (
         <Notice

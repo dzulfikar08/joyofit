@@ -308,6 +308,10 @@ class HuaweiWearModule : Module() {
       runtime().setNotificationsEnabled(enabled)
     }
 
+    AsyncFunction("sendWatchAlert") Coroutine { title: String, body: String ->
+      runtime().forwarder.sendAlert(title, body)
+    }
+
     // Developer switch: connect over Bluetooth LE GATT (BleTransport) whatever the model's own link is.
     Function("getForceBle") {
       runtime().forceBle()

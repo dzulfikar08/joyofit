@@ -294,6 +294,17 @@
     },
     "roundaboutExit": "Roundabout, exit {{exit}}",
     "onto": "{{dir}} onto {{street}}",
-    "openWatchApp": "Open JoyoNavi on the watch to see the instructions."
+    "openWatchApp": "Open JoyoNavi on the watch to see the instructions.",
+    "alerts": {
+      "title": "Turn alerts in the watch workout",
+      "hint": "Send this route to the watch, then start an outdoor run, walk or ride with it on the watch. The watch shows the route on its map; JoyoFit follows your position and sends each turn as a short alert (\"200 m · Turn right\") over the workout screen. The phone must stay with you.",
+      "otherArmed": "Turn alerts are set for \"{{name}}\". Switching on here moves them to this route.",
+      "running": "Turn alerts are on for the workout running on the watch.",
+      "needsUpdate": "Turn alerts need a newer version of JoyoFit.",
+      "offRoute": "Off route",
+      "offRouteBody": "Head back to the route",
+      "notificationTitle": "Turn alerts",
+      "notificationText": "Sending turns to the watch workout"
+    }
   }
 }

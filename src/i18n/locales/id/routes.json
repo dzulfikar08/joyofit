@@ -289,6 +289,17 @@
     },
     "roundaboutExit": "Bundaran, keluar ke-{{exit}}",
     "onto": "{{dir}} ke {{street}}",
-    "openWatchApp": "Buka JoyoNavi di jam untuk melihat petunjuknya."
+    "openWatchApp": "Buka JoyoNavi di jam untuk melihat petunjuknya.",
+    "alerts": {
+      "title": "Peringatan belokan saat olahraga di jam",
+      "hint": "Kirim rute ini ke jam, lalu mulai lari, jalan, atau bersepeda luar ruang dengan rute itu di jam. Jam menampilkan rute di petanya; JoyoFit mengikuti posisimu dan mengirim setiap belokan sebagai peringatan singkat (\"200 m · Belok kanan\") di atas layar olahraga. HP harus tetap kamu bawa.",
+      "otherArmed": "Peringatan belokan sedang diatur untuk \"{{name}}\". Menyalakan di sini memindahkannya ke rute ini.",
+      "running": "Peringatan belokan aktif untuk olahraga yang sedang berjalan di jam.",
+      "needsUpdate": "Peringatan belokan butuh JoyoFit versi yang lebih baru.",
+      "offRoute": "Di luar rute",
+      "offRouteBody": "Kembali ke rute",
+      "notificationTitle": "Peringatan belokan",
+      "notificationText": "Mengirim belokan ke olahraga di jam"
+    }
   }
 }
