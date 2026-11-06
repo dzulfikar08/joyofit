@@ -6,8 +6,10 @@ Turn-by-turn on the Huawei Watch Fit 4 Pro (HarmonyOS lite wearable, fw 6.1.0.11
 [`protocol/watch-nav.schema.json`](../protocol/watch-nav.schema.json), wire details: `protocol/README.md`, "P2P (f) Watch navigation".
 
 **Status:** behind the experimental switch **Navigasi di jam (lab)** (Settings → About & advanced → Experimental, off by default). The watch app
-cannot be signed or installed until the Huawei developer account exists (JRG-440), and both fingerprints are placeholders until then, so nothing
-has run against a watch. Clean-room: the design is ours (prior art read for ideas only: tjisse/watchnav, Mobiteka Navigation); no Huawei code,
+has both fingerprints since 2026-11-06 (JRG-440: phone = Play app-signing SHA-256, watch = JoyoNavi debug certificate). On 2026-11-06 the
+debug build ran on the owner's Fit 4 Pro (fw 6.1.0) and its `hello` reached JoyoFit, but the Play build 1.1 still sent the placeholder
+fingerprints and the watch answered every phone → watch message with `0xce` (JoyoFit shows "JoyoNavi connected: No"); the real values reach
+phones with the OTA of this change. Clean-room: the design is ours (prior art read for ideas only: tjisse/watchnav, Mobiteka Navigation); no Huawei code,
 no Petal/Huawei map endpoints.
 
 ## Flow
@@ -48,14 +50,14 @@ no Petal/Huawei map endpoints.
 Every message is ≤ 1000 UTF-8 bytes: names are cut to 48 characters (`MAX_NAME_CHARS`); the largest possible `turn` is about 510 bytes, and the
 encoder throws rather than send a cut message.
 
-## Fingerprints (placeholders until JRG-440)
+## Fingerprints (set 2026-11-06, JRG-440)
 
 Wear Engine checks both ends. Values live in `src/features/watchnav/config.ts` and go to the native side with `startWatchNav`:
 
-| Field | P2P tag (phone → watch) | Where it comes from | Placeholder |
+| Field | P2P tag (phone → watch) | Where it comes from | Value |
 |---|---|---|---|
-| `phoneFingerprint` | `05` (source) | SHA-256 of the certificate that signs the JoyoFit store build, as AppGallery Connect lists it for the phone app (64 hex, upper case, no colons); the watch app carries the same string as its peer fingerprint | `PLACEHOLDER-JRG440-PHONE-SHA256` |
-| `watchFingerprint` | `06` (destination) | the watch app's fingerprint from its AppGallery Connect project: `com.joyodigitama.navi_<base64 public key of the watch app's signing certificate>` (≤ 127 characters) | `PLACEHOLDER-JRG440-WATCH-FINGERPRINT` |
+| `phoneFingerprint` | `05` (source) | SHA-256 of the certificate that signs the JoyoFit store build, as AppGallery Connect lists it for the phone app (64 hex, upper case, no colons); the watch app carries the same string as its peer fingerprint | `5702ADC9…5F43C04A` (Play app-signing key) |
+| `watchFingerprint` | `06` (destination) | the watch app's fingerprint from its AppGallery Connect project: `com.joyodigitama.navi_<base64 public key of the watch app's signing certificate>` (≤ 127 characters) | `com.joyodigitama.navi_BBMPwlw6…uwPw=` (JoyoNavi debug certificate; changes at release) |
 
 The source package is the app's own id (`com.joyodigitama.joyofit`, Android `packageName`, iOS bundle id); the destination is `com.joyodigitama.navi`.
 Pings carry no fingerprints. The native side treats any value starting with `PLACEHOLDER` as unset (`placeholderFingerprints` in `getWatchNav()`,

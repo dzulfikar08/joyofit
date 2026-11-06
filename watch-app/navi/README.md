@@ -60,6 +60,10 @@ hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-dae
 
 `buildMode=release` compiles the page to bytecode (`index.bc`). Signing: `docs/watch-app.md`, "Signing".
 
+Signed build (Linux works: Command Line Tools for Linux 6.0.1.251 in `~/.local/share/harmonyos-cli/`, Temurin JDK 17 in
+`~/.local/share/jdk17/`): `tools/build-signed.sh debug` builds a copy of the project with the signing material from
+`~/.config/joyofit/joyonavi-signing/` and prints the path of the verified `.hap`. Details: `docs/watch-app.md`, "Signing".
+
 ## Simulator
 
 The SDK ships the lite-wearable previewer (`sdk/default/openharmony/previewer/liteWearable/bin/Simulator`). DevEco
