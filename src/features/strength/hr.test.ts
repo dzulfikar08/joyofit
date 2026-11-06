@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 
-import { HR_COVERAGE_MIN, keytelKcalPerMin, REST_KCAL_PER_MIN, type EnergyProfile } from '../record/energy';
+import { HR_COVERAGE_MIN, keytelKcalPerMin, restKcalPerMin, type EnergyProfile } from '../record/energy';
 import { ensureRecordingSchema } from '../record/journal';
 import { openDb } from '../record/testDb';
 import { bytesToHex } from '../sensors/gatt';
@@ -164,7 +164,7 @@ describe('energy', () => {
     const hard = strengthEnergy(samples(120, 160), session(600), profile).kcal;
     expect(hard).toBeGreaterThan(easy);
     // Keytel is negative for a very low reading: the floor is the resting rate (1.2 kcal/min)
-    expect(strengthEnergy(samples(120, 20), session(600), profile).kcal).toBe(Math.round(REST_KCAL_PER_MIN * 10));
+    expect(strengthEnergy(samples(120, 20), session(600), profile).kcal).toBe(Math.round(restKcalPerMin(profile.weightKg) * 10));
   });
 
   it('is more than the MET estimate for a hard session and less for a very easy one', () => {

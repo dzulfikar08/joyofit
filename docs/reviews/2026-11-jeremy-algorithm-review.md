@@ -15,10 +15,10 @@ example a recovery curve where a normal day reads green), or measured data where
 | BLE-01 | Keep chest-strap R-R intervals | ✅ Accept (feature) | Session HRV (#77) and raw R-R in the FIT export (#79); live by OTA 2026-11-06; no screen yet |
 | JURNAL-01 | VO₂max should use resting HR, not daily minimum | Already true | Comment fixed, PR #77 |
 | ALGO-03 | Custom zones should stay display-only | Already true | No change |
-| ALGO-02 | Forward-fill 600 s → 15 s | ❌ Reject | — |
-| ALGO-01 | Recovery sigmoid, z=0 → 82 % | ❌ Reject as written | — |
+| ALGO-02 | Forward-fill 600 s → 15 s | ❌ Reject, confirmed on real data (iteration 2) | No change |
+| ALGO-01 | Recovery sigmoid, z=0 → 82 % | ✅ Goal accepted in iteration 2, with a corrected curve | z=0 → 80 %, bands on ±0.5 SD |
 | BLE-02 | TruSleep state ranges stored as light sleep | Already fixed | No change |
-| JURNAL-02 | Keytel → "Hiilloskorpi" calories | ❌ Not now | — |
+| JURNAL-02 | Keytel → "Hiilloskorpi" calories | ✅ Iteration 2: Keytel's own VO₂max model instead | Uses the watch's VO₂max; weight-scaled rest floor |
 | (extra) | Raw data export to compare with a gold-standard device | ✅ Accept | R-R in the FIT export + tester guide, PR #79; live by OTA 2026-11-06 |
 
 Base for links: `https://github.com/dzulfikar08/joyofit/blob/5f341186191faea4d9489567ecd793df27d6b29e/`
@@ -213,3 +213,66 @@ as `.fit`, the format Garmin's SDK, Golden Cheetah and Kubios read. What was mis
 
 **Next.** Paired sessions from testers with an H10 are the measured data the second iteration needs, for calories
 (JURNAL-02) and HRV and recovery (ALGO-01). Recordings made before the OTA have no R-R stored.
+
+---
+
+## Iteration 2 (6 Nov 2026): the rejected items again
+
+For each rejected item: is there something better than both his proposal and our code? Two of three concerns turned out
+valid even where the proposed fix was not.
+
+### ALGO-01: recovery, his goal was right
+
+Our own comment says about 0.5 SD is the smallest change worth noticing (Plews & Buchheit), but the old mapping
+`50 + 25z` with bands at 67 / 34 put green at z ≥ +0.68 and red at z < −0.64. With HRV spread normally around the
+baseline that is ~25 % green, ~50 % yellow and **~26 % red: one normal day in four flagged red**, and a usual day yellow.
+
+**Change.** A logistic curve fitted so the band edges fall on that half standard deviation: green from z = −0.5, red below
+z = −1.5 (`recoveryPercent` in `src/features/today/recovery.ts`, `99 / (1 + e^(−1.387 (z + 1.033)))`):
+
+| z | Old | New |
+|---|---|---|
+| +1 | 75 % | 93 % |
+| 0 | 50 % (yellow) | **80 % (green)** |
+| −0.5 | 37.5 % | 67 % (green edge) |
+| −1 | 25 % (red) | 51 % (yellow) |
+| −1.5 | 12.5 % | 34 % (red edge) |
+| −2 | 1 % | 20 % |
+
+Expected split: ~69 % green, ~24 % yellow, ~7 % red. A usual day reads about 80 %, close to what Jeremy aimed for (82 %).
+Readiness uses z directly, so it is unaffected. The in-app explanation text (EN and ID) is updated.
+
+### ALGO-02: strain fill, checked on real data, no change
+
+Measured on the owner's Watch Fit 4 Pro (software 6.1.0.117): 8,603 heart-rate readings over 24 days from the cloud copy,
+read-only, max HR 190 assumed (180 and 200 give the same picture):
+
+- Outside workouts, once heart rate is elevated (zone 2 and up, ≥ 60 % of max) the watch reads **every 60 s** (median
+  and 90th percentile both 60 s). A gap over 2 minutes after such a reading happened 8 times in 24 days, and in 6 of them
+  the next reading was still elevated: that load is real.
+- At rest (zone 0) the watch reads every 1–10 minutes. Zone 1 (light activity) is in between: median 60 s, 90th
+  percentile 360 s.
+- A **15 s** fill cuts coverage from 17.8 h to 1.5 h a day and average strain from 4.8 to 0.9.
+- A tighter 120 s fill only for elevated readings (considered as a middle way) would remove ~30 % of all load, almost all of
+  it zone 1 walking-around time between the watch's 2–6-minute readings, which is real activity.
+
+So the phantom load the proposal targets is not present in real data, and the 10-minute fill stays.
+
+### JURNAL-02: calories, Keytel's own fitness model
+
+The same paper (Keytel et al. 2005) publishes a model that includes VO₂max, which it reports as more accurate. In it the
+female weight term is positive, which answers the original concern:
+
+- male `(−95.7735 + 0.634 HR + 0.404 VO₂max + 0.394 kg + 0.271 age) / 4.184` kcal/min
+- female `(−59.3954 + 0.450 HR + 0.380 VO₂max + 0.103 kg + 0.274 age) / 4.184` kcal/min
+
+**Change** (`src/features/record/energy.ts`):
+- The equation uses this model when the **watch** has measured a VO₂max (its own value, from runs; `watchVo2.ts` keeps the
+  latest for the recorder). JoyoFit's own resting-HR estimate is deliberately not used: it rests on 220 − age, so errors
+  would stack, which was the problem with the proposed replacement. Without a watch value, the population model stays.
+- The floor under the equation was a flat 1.2 kcal/min for everyone; it is now 1 MET for the person's weight
+  (`kg / 60` per minute: 1.17 at 70 kg, 1.67 at 100 kg).
+- Applies to phone recordings, strength sessions and rides without power or watch calories. The watch link's phone-side
+  estimate is native code (`LiveWorkoutCodec`) and changes at the next native build.
+
+Next: the paired watch + H10 sessions (`docs/hr-validation.md`) are the measured check for both.

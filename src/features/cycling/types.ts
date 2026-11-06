@@ -14,6 +14,8 @@ export interface RideProfile {
   maxHr: number;
   /** Functional threshold power set by the person, watts; null until set. */
   ftp: number | null;
+  /** The watch's VO2max for the heart-rate energy equation, when it has one. */
+  vo2max?: number | null;
 }
 
 export interface RideSpeed {

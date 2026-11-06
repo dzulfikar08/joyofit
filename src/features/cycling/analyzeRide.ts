@@ -1,5 +1,5 @@
 import { workoutStrain } from '@/features/today/strain';
-import { keytelKcalPerMin, REST_KCAL_PER_MIN, type EnergyProfile } from '@/features/record/energy';
+import { keytelKcalPerMin, restKcalPerMin, type EnergyProfile } from '@/features/record/energy';
 import { elevationProfile, elevationSummary, type ElevationProfile } from '@/features/workouts/analysis/elevation';
 import type { WorkoutSummary } from '@/features/workouts/summary';
 
@@ -286,7 +286,7 @@ function buildCalories(series: RideSeries, workout: RideInput['workout'], power:
     if (!Number.isNaN(series.hr[i]!)) hrCount += 1;
   }
   if (coveredCount === 0) return workout.calories > 0 ? { kcal: Math.round(workout.calories), source: 'device' } : null;
-  const energy: EnergyProfile = { weightKg: profile.weightKg, age: profile.age, sex: profile.sex };
+  const energy: EnergyProfile = { weightKg: profile.weightKg, age: profile.age, sex: profile.sex, vo2max: profile.vo2max };
   let source: CalorieSource;
   let kcal: number;
   if (power && power.basisSec >= COVERAGE_MIN * coveredCount) {
@@ -311,7 +311,7 @@ function buildCalories(series: RideSeries, workout: RideInput['workout'], power:
     let moving = 0;
     for (let i = 0; i < series.n; i++) moving += series.moving[i]!;
     const stopped = Math.max(0, coveredCount - moving);
-    kcal = (met * profile.weightKg * moving) / 3600 + (REST_KCAL_PER_MIN * stopped) / 60;
+    kcal = (met * profile.weightKg * moving) / 3600 + (restKcalPerMin(profile.weightKg) * stopped) / 60;
   }
   return kcal > 0 ? { kcal: Math.round(kcal), source } : null;
 }
