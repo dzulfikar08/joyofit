@@ -36,7 +36,7 @@ export function WatchStatusCard() {
     <View style={[styles.card, { backgroundColor: colors.hero, borderRadius: themeRadius.card }]}>
       <HeroGradient />
       <View style={styles.linkRow} accessible accessibilityLabel={t('watch:device.status.linkA11y', { label })}>
-        <StatusDot color={dotColor} live={isLinkLive(linkState)} />
+        <StatusDot color={dotColor} live={isLinkLive(linkState)} pulse={!isLinkUp(linkState)} />
         <AppText variant="heading" color={colors.heroForeground} style={styles.linkLabel}>
           {label}
         </AppText>

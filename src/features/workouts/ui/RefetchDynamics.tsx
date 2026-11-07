@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { MoreText } from '@/components/MoreText';
 import { Button } from '@/components/Button';
 import { Notice } from '@/components/States';
 import { errorMessage } from '@/format';
@@ -94,9 +95,7 @@ export function RefetchDynamicsBulk() {
 
   return (
     <View style={styles.box}>
-      <AppText variant="caption" muted>
-        {t('refetch.bulkHint')}
-      </AppText>
+      <MoreText muted>{t('refetch.bulkHint')}</MoreText>
       <Button
         label={running ? t('refetch.progress', { done: state.progress.done, total: state.progress.total }) : t('refetch.bulkAction')}
         variant="secondary"

@@ -79,7 +79,9 @@
     "hint": "Automatic follows your phone's language. Your choice applies across the whole app."
   },
   "details": {
-    "title": "Details"
+    "title": "Details",
+    "more": "More",
+    "less": "Less"
   },
   "iosNotYet": "This is not available on iOS yet.",
   "errors": {
