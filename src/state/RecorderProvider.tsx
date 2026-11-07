@@ -8,17 +8,14 @@ import { getLocale, t } from '@/i18n';
 import { afterRecordingSaved } from '@/features/record/afterSave';
 import { bandLink } from '@/features/record/bandLink';
 import { RecordingController, type ControllerTick, type FinishResult, type RecordingSnapshot } from '@/features/record/controller';
-import type { EnergyProfile, Sex } from '@/features/record/energy';
 import { LIVE_URL } from '@/features/record/liveRoute';
 import { sensorHub } from '@/features/sensors/instance';
 import { getWheelMm } from '@/features/sensors/settings';
-import { userWeightKg } from '@/features/strength/profile';
-import { DEFAULT_AGE } from '@/features/workouts/substrate';
+import { userEnergyProfile } from '@/features/strength/profile';
 import type { VirtualRide } from '@/features/workouts/summary';
 import type { ManualSport } from '@/features/workouts/manual';
 import { useSensors } from '@/state/SensorsProvider';
 import { useWatch } from '@/state/WatchProvider';
-import { HuaweiWear } from '@/wear';
 
 export interface RecorderContextValue {
   snapshot: RecordingSnapshot;
@@ -55,14 +52,6 @@ export function useRecorder(): RecorderContextValue {
   const value = useContext(RecorderContext);
   if (!value) throw new Error('useRecorder must be used inside <RecorderProvider>');
   return value;
-}
-
-/** The profile the energy estimate runs on: the saved weight (or the default), age from the birth year, sex. */
-function energyProfile(): EnergyProfile {
-  const profile = HuaweiWear.getUserProfile();
-  const age = profile?.birthYear ? new Date().getFullYear() - profile.birthYear : DEFAULT_AGE;
-  const sex: Sex = profile?.sex === 'male' || profile?.sex === 'female' ? profile.sex : 'unknown';
-  return { weightKg: userWeightKg(), age: Math.min(100, Math.max(10, age)), sex };
 }
 
 /** The notification's buttons and the language it formats the distance in (the notification itself counts the time). */
@@ -107,7 +96,7 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
         stepCounter: () => BleSensors.stepCounterPermission(),
         db,
         now: Date.now,
-        profile: energyProfile,
+        profile: userEnergyProfile,
         wheelCircumferenceM: () => getWheelMm() / 1000,
         sensors: () => savedRef.current,
         band: bandLink,
