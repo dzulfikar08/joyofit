@@ -27,7 +27,7 @@ internal class HuaweiSession(
     val result = CompletableDeferred<HuaweiPacket>()
   }
 
-  private class Subscription(val serviceId: Byte, val commandId: Byte, val label: String, val handler: (HuaweiPacket) -> Unit)
+  private class Subscription(val serviceId: Byte, val commandId: Byte, val label: String, val quiet: Boolean, val handler: (HuaweiPacket) -> Unit)
 
   // Guards [waiters], [closedBy], [received] and [frame]. Also orders ParamsProvider writes made
   // before a request against the read thread's parse of its response.
@@ -91,10 +91,10 @@ internal class HuaweiSession(
    * Sends [packet] without waiting for an answer, for commands whose reply (if any) is picked up by
    * a [subscribe]r, e.g. GB's GetFileBlockRequest, which only starts the watch pushing 0x05 data.
    */
-  suspend fun send(packet: HuaweiPacket, label: String, logFrames: Boolean = true) {
+  suspend fun send(packet: HuaweiPacket, label: String, logFrames: Boolean = true, quiet: Boolean = false) {
     val frames = serialize(packet, label)
     synchronized(lock) { closedBy?.let { throw it } }
-    transmit(packet, frames, label, logFrames)
+    transmit(packet, frames, label, logFrames, quiet)
   }
 
   /** Why the session was closed, or null while it is open. */
@@ -104,10 +104,11 @@ internal class HuaweiSession(
    * Routes complete packets that no pending [request] waits for to [handler] until the returned
    * handle is closed (GB: a Request whose `autoRemoveFromResponseHandler()` is false, e.g. the
    * file download manager's FileDataReceiver). The packet is handed over without `parseTlv()`.
-   * [handler] runs on the read thread under the session lock and must not block.
+   * [handler] runs on the read thread under the session lock and must not block. A [quiet] subscription does not log
+   * each packet (file upload chunk requests: the caller logs a summary instead, so the in-app log keeps the install).
    */
-  fun subscribe(serviceId: Byte, commandId: Byte, label: String, handler: (HuaweiPacket) -> Unit): AutoCloseable {
-    val subscription = Subscription(serviceId, commandId, label, handler)
+  fun subscribe(serviceId: Byte, commandId: Byte, label: String, quiet: Boolean = false, handler: (HuaweiPacket) -> Unit): AutoCloseable {
+    val subscription = Subscription(serviceId, commandId, label, quiet, handler)
     synchronized(lock) { subscriptions.add(subscription) }
     return AutoCloseable { synchronized(lock) { subscriptions.remove(subscription) } }
   }
@@ -122,13 +123,13 @@ internal class HuaweiSession(
     throw WearException(ErrorCodes.PROTOCOL, "$label: request could not be created: ${e.message}", e)
   }
 
-  private suspend fun transmit(packet: HuaweiPacket, frames: List<ByteArray>, label: String, logFrames: Boolean = true) {
+  private suspend fun transmit(packet: HuaweiPacket, frames: List<ByteArray>, label: String, logFrames: Boolean = true, quiet: Boolean = false) {
     try {
       val mtu = params.mtu
       val wire = ArrayList<ByteArray>(frames.size)
       for ((index, f) in frames.withIndex()) {
         // Bulk data (file upload chunks) is logged as one summary line, not as hex per frame.
-        if (logFrames) {
+        if (logFrames && !quiet) {
           events.log(
             LogDirection.TX,
             packet.serviceId.toInt() and 0xFF,
@@ -139,7 +140,7 @@ internal class HuaweiSession(
         }
         splitToMtu(f, mtu, wire)
       }
-      if (!logFrames) {
+      if (!logFrames && !quiet) {
         events.log(
           LogDirection.TX,
           packet.serviceId.toInt() and 0xFF,
@@ -218,7 +219,7 @@ internal class HuaweiSession(
       events.log(LogDirection.RX, service, command, raw.toHex(), "response to ${waiter.label}")
       waiter.result.complete(packet)
     } else if (subscription != null) {
-      events.log(LogDirection.RX, service, command, raw.toHex(), "pushed (${subscription.label})")
+      if (!subscription.quiet) events.log(LogDirection.RX, service, command, raw.toHex(), "pushed (${subscription.label})")
       try {
         subscription.handler(packet)
       } catch (e: Exception) {
