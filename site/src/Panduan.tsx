@@ -1,6 +1,7 @@
 import { ArrowLeft, Check, ChevronDown } from "lucide-react";
 
 import {
+  DISCORD_URL,
   GITHUB_URL,
   IOS_TESTFLIGHT_LIVE,
   IOS_TESTFLIGHT_URL,
@@ -1039,12 +1040,16 @@ function Guide({ lang }: { lang: Lang }) {
         {lang === "id" ? (
           <>
             Masih buntu? <a className={link} href={WATCH_REPORT_FORM_URL} target="_blank" rel="noopener">Kirim laporan jam</a>{" "}
-            atau buka isu di <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>.
+            atau buka isu di <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>. Kamu juga bisa{" "}
+            <a className={link} href={DISCORD_URL} target="_blank" rel="noopener" {...goal("discord_click", "panduan")}>gabung Discord</a>{" "}
+            untuk lapor bug dan diskusi.
           </>
         ) : (
           <>
             Still stuck? <a className={link} href={WATCH_REPORT_FORM_URL} target="_blank" rel="noopener">Send a watch report</a>{" "}
-            or open an issue on <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>.
+            or open an issue on <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>. You can also{" "}
+            <a className={link} href={DISCORD_URL} target="_blank" rel="noopener" {...goal("discord_click", "panduan")}>join our Discord</a>{" "}
+            to report bugs and talk with us.
           </>
         )}
       </p>

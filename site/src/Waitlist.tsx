@@ -17,7 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { CONTACT_EMAIL, IOS_TESTFLIGHT_URL, IPHONE_PATH, PRIVASI_PATH, STRAVA_PATH, WAITLIST_API, cn, goal } from "./lib";
+import { CONTACT_EMAIL, DISCORD_URL, IOS_TESTFLIGHT_URL, IPHONE_PATH, PRIVASI_PATH, STRAVA_PATH, WAITLIST_API, cn, goal } from "./lib";
 import { ButtonLink } from "./ui";
 
 type Kind = "strava" | "iphone";
@@ -407,6 +407,18 @@ export function IphonePage() {
                 Buka TestFlight
               </ButtonLink>
             </div>
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+              <a
+                href={DISCORD_URL}
+                target="_blank"
+                rel="noopener"
+                className="font-semibold text-foreground underline underline-offset-4"
+                {...goal("discord_click", "iphone_page")}
+              >
+                Gabung Discord
+              </a>{" "}
+              untuk lapor bug dan diskusi.
+            </p>
 
             <h2 className="mt-8 text-lg font-extrabold tracking-tight">Batasan yang jujur</h2>
             <div className="mt-3">

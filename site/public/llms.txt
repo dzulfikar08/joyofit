@@ -22,3 +22,4 @@
 ## Sumber
 
 - [Kode di GitHub](https://github.com/dzulfikar08/joyofit)
+- [Discord JoyoDigitama](https://discord.gg/vtud8UYekp): lapor bug, masukan, dan pengumuman rilis JoyoFit, JoyoRogo, dan JoyoArto.

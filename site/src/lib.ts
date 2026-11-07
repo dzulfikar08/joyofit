@@ -19,6 +19,8 @@ export const JOYOROGO_URL = "https://joyorogo.com";
 export const TRAKTEER_URL = "https://trakteer.id/dzulfikar_ats_tsauri";
 export const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.joyodigitama.joyofit";
 export const CONTACT_EMAIL = "dzulfikar.at@gmail.com";
+/** JoyoDigitama Discord (permanent invite): bug report and feedback forums for JoyoFit, JoyoRogo and JoyoArto, plus release announcements. */
+export const DISCORD_URL = "https://discord.gg/vtud8UYekp";
 export const DUKUNG_JAM_PATH = "/dukung-jam";
 export const SELF_HOST_PATH = "/self-host";
 export const JAM_PATH = "/jam";
