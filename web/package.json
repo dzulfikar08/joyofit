@@ -51,7 +51,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.64.0",
+    "@cloudflare/vite-plugin": "^1.67.0",
     "@napi-rs/canvas": "^1.0.11",
     "@playwright/test": "^1.64.0",
     "@tailwindcss/vite": "^4.3.3",
@@ -64,6 +64,6 @@
     "typescript": "^6.0.3",
     "vite": "^8.3.4",
     "vitest": "^5.0.4",
-    "wrangler": "^4.151.0"
+    "wrangler": "^4.158.0"
   }
 }
