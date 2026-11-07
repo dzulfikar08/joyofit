@@ -30,6 +30,10 @@
       },
     },
   },
+  "overrides": {
+    "workerd": "1.20261104.1",
+    "wrangler": "4.158.0",
+  },
   "packages": {
     "@cloudflare/kv-asset-handler": ["@cloudflare/kv-asset-handler@0.5.0", "", {}, "sha512-jxQYkj8dSIzc0cD6cMMNdOc1UVjqSqu8BZdor5s8cGjW2I8BjODt/kWPVdY+u9zj3ms75Q5qaZgnxUad83+eAg=="],
 
