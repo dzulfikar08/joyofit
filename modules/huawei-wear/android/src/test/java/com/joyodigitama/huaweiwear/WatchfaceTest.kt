@@ -34,7 +34,7 @@ class WatchfaceTest {
     return out.toByteArray()
   }
 
-  private fun description(root: String = "HwTheme", screen: String = "HWHD13", bom: Boolean = false): ByteArray {
+  private fun description(root: String = "HwTheme", screen: String = "HWHD13", bom: Boolean = false, version: String = "2.1.0"): ByteArray {
     val xml = """<?xml version="1.0" encoding="UTF-8"?>
 <$root>
   <title>Night Run</title>
@@ -42,7 +42,7 @@ class WatchfaceTest {
   <author>Joyo</author>
   <designer>Joyo</designer>
   <screen>$screen</screen>
-  <version>2.1.0</version>
+  <version>$version</version>
   <font>Roboto</font>
   <font-cn>NotoSans</font-cn>
 </$root>"""
@@ -64,11 +64,17 @@ class WatchfaceTest {
       assertTrue("Preview bytes should not be empty for ${f.name}", preview!!.first.isNotEmpty())
     }
   }
-  private fun hwt(screen: String = "HWHD13", nested: Boolean = true, root: String = "HwTheme", bom: Boolean = false): ByteArray {
+  private fun hwt(
+    screen: String = "HWHD13",
+    nested: Boolean = true,
+    root: String = "HwTheme",
+    bom: Boolean = false,
+    version: String = "2.1.0",
+  ): ByteArray {
     val inner = if (nested) zip("watchface.bin" to binary, "other.txt" to byteArrayOf(1)) else binary
     val entry = if (root == "HnTheme") "com.honor.watchface" else "com.huawei.watchface"
     return zip(
-      "description.xml" to description(root, screen, bom),
+      "description.xml" to description(root, screen, bom, version),
       entry to inner,
       "preview/cover.jpg" to byteArrayOf(9, 9, 9),
     )
@@ -648,6 +654,30 @@ class WatchfaceTest {
     // Only the activation 27/03 (after the watch's confirm), never the pre-upload announce the licence check reacts to.
     assertEquals(1, watch.all(0x27, 0x03).size)
     assertTrue(result.active)
+  }
+
+  @Test
+  fun installRefusesAFaceNewerThanTheWatch() = runBlocking {
+    val (watch, ops, _) = setup()
+    try {
+      ops.install(WatchfacePackages.parse(hwt(version = "2.11.0")), { _, _ -> }, "1_2.11.0")
+      fail("expected a refusal")
+    } catch (e: WearException) {
+      assertEquals(ErrorCodes.INVALID_ARGUMENT, e.errorCode)
+    }
+    assertTrue(watch.all(0x28, 0x02).isEmpty())
+  }
+
+  @Test
+  fun gadgetbridgeModeLeavesTheVersionToTheWatch() = runBlocking {
+    val (watch, ops, events) = setup()
+
+    // Gadgetbridge installs a face whose description.xml says 2.7.1 on a watch that lists up to 2.3 (Watch Fit 3).
+    val result = ops.install(WatchfacePackages.parse(hwt(version = "2.11.0")), { _, _ -> }, "123456789_1.0.0", gadgetbridge = true)
+
+    assertEquals("123456789_1.0.0", watch.all(0x28, 0x02).single().tlv!!.getString(0x01))
+    assertTrue(result.listed)
+    assertTrue(events.logs.any { it.contains("is not checked against the watch") })
   }
 
   @Test

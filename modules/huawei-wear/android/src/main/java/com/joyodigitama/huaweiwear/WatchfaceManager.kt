@@ -381,7 +381,13 @@ internal class WatchfaceOps(
     val screen = readScreen()
     if (screen != null) {
       WatchfacePackages.checkResolution(description, screen.height, screen.width) { log(it) }
-      WatchfacePackages.checkVersion(description, screen.maxVersion, screen.otherVersions) { log(it) }
+      if (gadgetbridge) {
+        // Gadgetbridge does not compare description.xml's <version> with the watch's range, and a Watch Fit 3 that
+        // lists up to 2.3 installs a 2.7.1 face that way; the watch decides.
+        log("Gadgetbridge-compatible install: face version ${description.version} is not checked against the watch's ${screen.maxVersion}")
+      } else {
+        WatchfacePackages.checkVersion(description, screen.maxVersion, screen.otherVersions) { log(it) }
+      }
     } else {
       log("the watch's screen size is unknown; the package is not checked against it")
     }
