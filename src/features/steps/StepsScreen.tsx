@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { MoreText } from '@/components/MoreText';
 import { BarChart, type BarDatum } from '@/components/BarChart';
 import { HiddenTabHeader } from '@/components/HiddenTabHeader';
 import { InfoPill } from '@/components/InfoPill';
@@ -223,9 +224,7 @@ export function StepsScreen() {
           onPress={() => router.push('/settings/profile', OPEN_IN_STACK)}
         />
       </Card>
-      <AppText variant="caption" muted>
-        {t('steps.about')}
-      </AppText>
+      <MoreText muted>{t('steps.about')}</MoreText>
     </Screen>
   );
 }

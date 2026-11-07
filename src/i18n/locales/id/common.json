@@ -77,7 +77,9 @@
     "hint": "Otomatis mengikuti bahasa HP kamu. Pilihan di sini berlaku untuk seluruh aplikasi."
   },
   "details": {
-    "title": "Detail"
+    "title": "Detail",
+    "more": "Selengkapnya",
+    "less": "Ringkas"
   },
   "iosNotYet": "Ini belum tersedia di iOS.",
   "errors": {

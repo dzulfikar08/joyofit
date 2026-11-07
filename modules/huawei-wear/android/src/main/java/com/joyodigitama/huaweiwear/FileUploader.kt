@@ -114,6 +114,7 @@ internal class FileUploader(
     var maxApplyData = 0
     var noEncrypt: Byte = 0
     var chunks = 0
+    var loggedStep = -1
     var started = false
     var resultStatus: Int? = null
     var resultSent = false
@@ -134,7 +135,9 @@ internal class FileUploader(
       FileUpload.FileUploadResult.id,
       FileUpload.FileUploadDeviceResponse.id,
     ).map { command ->
-      session.subscribe(FileUpload.id, command, "file upload ${file.fileName}") { incoming.trySend(it) }
+      // Chunk requests come hundreds of times per face; sendChunk logs every 10% instead of each one.
+      val quiet = command == FileUpload.FileNextChunkParams.id
+      session.subscribe(FileUpload.id, command, "file upload ${file.fileName}", quiet) { incoming.trySend(it) }
     } + session.subscribe(Watchface.id, Watchface.WatchfaceConfirm.id, "watch face confirm ${file.fileName}") { incoming.trySend(it) }
 
     try {
@@ -263,7 +266,14 @@ internal class FileUploader(
     val size = minOf(wanted, total - position)
     state.chunks++
     onProgress(position, total)
-    log("FileNextChunkParams: bytesUploaded=$position nextChunkSize=$wanted (${percent(position, total)}%)")
+    // One line per 10% step (and the first and last chunk), not per chunk: a face is ~500 chunks and the in-app log
+    // holds 500 lines, so per-chunk lines pushed the start of the install out of support reports.
+    val step = percent(position, total) / 10
+    val verbose = state.chunks == 1 || step != state.loggedStep || position + size >= total
+    if (verbose) {
+      state.loggedStep = step
+      log("FileNextChunkParams: bytesUploaded=$position nextChunkSize=$wanted (${percent(position, total)}%, chunk ${state.chunks}; chunks are logged every 10%)")
+    }
     if (size < wanted) log("the watch asked for $wanted bytes at $position but only $size are left; sending $size")
     if (state.maxApplyData > 0 && wanted > state.maxApplyData) {
       log("the watch asked for $wanted bytes, more than its own maxApplyDataSize ${state.maxApplyData}; sending what it asked for, like GB")
@@ -275,6 +285,7 @@ internal class FileUploader(
       ChunkPacket(params, chunk, position, state.unitSize, fileId, encrypted),
       "FileUpload chunk offset=$position size=$size unit=${state.unitSize}${if (encrypted) " encrypted" else ""}",
       logFrames = false,
+      quiet = !verbose,
     )
   }
 

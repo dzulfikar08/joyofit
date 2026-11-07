@@ -14,6 +14,7 @@ import { EmptyState, Notice } from '@/components/States';
 import { InstalledFaceCard } from '@/features/watchfaces/InstalledFaceCard';
 import { LibraryFaceCard } from '@/features/watchfaces/LibraryFaceCard';
 import { HuaweiAccountSection } from '@/features/watchfaces/HuaweiAccountSection';
+import { loadCompatInstall, saveCompatInstall } from '@/features/watchfaces/compatInstall';
 import { ThemedDialog, type CustomDialogState } from '@/features/watchfaces/ThemedDialog';
 import { shouldWarnUnsigned } from '@/features/watchfaces/unsignedWarning';
 import { WatchfacePreviewModal } from '@/features/watchfaces/WatchfacePreviewModal';
@@ -87,7 +88,11 @@ export function WatchfacesScreen() {
   const [dialog, setDialog] = useState<CustomDialogState | null>(null);
   // Gadgetbridge's install path (version 1.0.0, no 27/03 announce) for watches that enforce signatures. Offered only
   // on such watches, where the normal path is deleted; see docs/watchfaces-signing.md.
-  const [gbMode, setGbMode] = useState(false);
+  const [gbMode, setGbModeState] = useState(loadCompatInstall);
+  const setGbMode = (on: boolean) => {
+    setGbModeState(on);
+    saveCompatInstall(on);
+  };
 
   const refreshControl = useRefreshControl({
     refreshing: busy === 'list',

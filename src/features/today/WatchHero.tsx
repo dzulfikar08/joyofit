@@ -64,7 +64,7 @@ export function WatchHero({ linkState, deviceName, steps, goal, heart, nowSec, b
         style={styles.top}
         accessible
         accessibilityLabel={t('hero.linkA11y', { state: linkLabel(linkState) })}>
-        <StatusDot color={dot} live={isLinkLive(linkState)} />
+        <StatusDot color={dot} live={isLinkLive(linkState)} pulse={!up} />
         <AppText variant="bodyStrong" color={colors.heroForeground} style={styles.link}>
           {linkLabel(linkState)}
         </AppText>

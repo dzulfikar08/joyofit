@@ -7,14 +7,19 @@ interface StatusDotProps {
   color: string;
   /** Pulses a soft halo while true: the link is up or being set up. Static when false or under reduced motion. */
   live: boolean;
+  /**
+   * Whether the halo pulses (default: while [live]). Screens that stay open for hours pass false once the link is settled: the
+   * loop redraws the screen at the display's full refresh rate (~120 fps on the Today hero), which made taps lag on slower phones.
+   */
+  pulse?: boolean;
   size?: number;
 }
 
 /** Small link-state dot. The halo is the only thing that moves, 1.8 s per beat, and only while the link is live. */
-export function StatusDot({ color, live, size = 10 }: StatusDotProps) {
+export function StatusDot({ color, live, pulse = live, size = 10 }: StatusDotProps) {
   const reduced = useReducedMotion();
   const [beat] = useState(() => new Animated.Value(0));
-  const pulsing = live && !reduced;
+  const pulsing = live && pulse && !reduced;
 
   useEffect(() => {
     if (!pulsing) {

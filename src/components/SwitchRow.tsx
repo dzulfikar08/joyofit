@@ -2,11 +2,12 @@ import { StyleSheet, Switch, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { IconChip, type IconName } from '@/components/IconChip';
+import { MoreText } from '@/components/MoreText';
 import { HIT, spacing, useColors } from '@/theme';
 
 interface SwitchRowProps {
   label: string;
-  /** One short line under the label: what it does, or why it is unavailable. */
+  /** One short line under the label: what it does, or why it is unavailable. Long hints show their first sentence and "More". */
   hint?: string;
   icon?: IconName;
   value: boolean;
@@ -23,11 +24,7 @@ export function SwitchRow({ label, hint, icon, value, onValueChange, disabled }:
         <AppText variant="bodyStrong" muted={disabled}>
           {label}
         </AppText>
-        {hint ? (
-          <AppText variant="caption" muted>
-            {hint}
-          </AppText>
-        ) : null}
+        {hint ? <MoreText muted>{hint}</MoreText> : null}
       </View>
       <Switch
         accessibilityLabel={label}

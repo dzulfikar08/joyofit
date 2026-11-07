@@ -5,6 +5,7 @@ import { ActivityIndicator, Animated, Easing, StyleSheet, View, type DimensionVa
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { IconChip, type IconName } from '@/components/IconChip';
+import { MoreText } from '@/components/MoreText';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { spacing, useColors, useTheme, type Theme } from '@/theme';
 
@@ -15,10 +16,12 @@ interface NoticeProps {
   children: ReactNode;
   /** One clear next step. */
   action?: { label: string; onPress: () => void };
+  /** Always show the whole text. By default long plain text shows its first sentence and a "More" link (`MoreText`). */
+  full?: boolean;
 }
 
 /** Inline message that names what happened and, when there is one, the next step. */
-export function Notice({ tone = 'info', icon, children, action }: NoticeProps) {
+export function Notice({ tone = 'info', icon, children, action, full }: NoticeProps) {
   const { colors, radius } = useTheme();
   const danger = tone === 'danger';
   const fg = danger ? colors.destructive : colors.mutedForeground;
@@ -33,9 +36,15 @@ export function Notice({ tone = 'info', icon, children, action }: NoticeProps) {
           color={fg}
           style={styles.noticeIcon}
         />
-        <AppText variant="caption" color={danger ? colors.destructive : colors.foreground} selectable style={styles.noticeText}>
-          {children}
-        </AppText>
+        {typeof children === 'string' && !full ? (
+          <MoreText color={danger ? colors.destructive : colors.foreground} selectable style={styles.noticeText}>
+            {children}
+          </MoreText>
+        ) : (
+          <AppText variant="caption" color={danger ? colors.destructive : colors.foreground} selectable style={styles.noticeText}>
+            {children}
+          </AppText>
+        )}
       </View>
       {action ? <Button label={action.label} variant={danger ? 'destructive' : 'ghost'} onPress={action.onPress} /> : null}
     </View>

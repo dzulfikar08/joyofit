@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Linking, Platform, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { MoreText } from '@/components/MoreText';
 import { Button } from '@/components/Button';
 import { KeyValue } from '@/components/KeyValue';
 import { Section } from '@/components/Screen';
@@ -134,9 +135,7 @@ export function WatchNavSection({ route, points }: { route: SavedRoute; points: 
   const running = snap.phase === 'planning' || snap.phase === 'running';
   return (
     <Section title={t('watchNav.title')} icon="navigate-circle" tint="link">
-      <AppText variant="caption" muted>
-        {t('watchNav.explainer')}
-      </AppText>
+      <MoreText muted>{t('watchNav.explainer')}</MoreText>
       {(snap.watch ?? status)?.placeholderFingerprints !== false ? <Notice>{t('watchNav.placeholder')}</Notice> : null}
 
       {running && !ours ? (
