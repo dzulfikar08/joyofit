@@ -47,6 +47,7 @@ import {
   BLOG_PATH,
   CLOUDAGNI_URL,
   CONTACT_EMAIL,
+  DISCORD_URL,
   DUKUNG_JAM_PATH,
   GITHUB_URL,
   HARGA_URL,
@@ -94,7 +95,7 @@ import { TimbanganPage } from "./Timbangan";
 import { isPublicPath } from "./seo";
 import { Testimonials } from "./testimonials-section";
 import { TESTIMONIALS } from "./testimonials";
-import { AndroidMark, ANDROID_ROBOT_CREDIT, AppleMark, ButtonLink, GithubMark, Phone, Ring } from "./ui";
+import { AndroidMark, ANDROID_ROBOT_CREDIT, AppleMark, ButtonLink, DiscordMark, GithubMark, Phone, Ring } from "./ui";
 import { PRO_SUPPORT, PRO_SUPPORT_LINE } from "./support";
 import roadmap from "../../docs/roadmap.json";
 import { IphonePage, StravaPage } from "./Waitlist";
@@ -339,6 +340,17 @@ function Footer() {
           <FooterColumn title="Terbuka">
             <a href={GITHUB_URL} className={link}>
               Kode sumber
+            </a>
+            <a
+              href={DISCORD_URL}
+              className={cn(link, "gap-1.5")}
+              target="_blank"
+              rel="noopener"
+              aria-label="Discord JoyoDigitama: lapor bug dan diskusi (tab baru)"
+              {...goal("discord_click", "footer")}
+            >
+              <DiscordMark className="size-4" />
+              Discord
             </a>
             <a href={PRIVASI_PATH} className={link}>
               Privasi
@@ -1530,6 +1542,16 @@ function RoadmapSection() {
           Ada fitur yang kamu tunggu?{" "}
           <a href={`${GITHUB_URL}/issues`} className="font-semibold text-foreground underline underline-offset-4" target="_blank" rel="noopener">
             Tulis di GitHub
+          </a>{" "}
+          atau ngobrol di{" "}
+          <a
+            href={DISCORD_URL}
+            className="font-semibold text-foreground underline underline-offset-4"
+            target="_blank"
+            rel="noopener"
+            {...goal("discord_click", "roadmap")}
+          >
+            Discord
           </a>
           .
         </p>
@@ -1729,6 +1751,7 @@ function Install() {
                 Pasang di Google Play
               </ButtonLink>
             </div>
+            <DiscordLine location="cara_android" />
           </div>
           <StepList steps={ANDROID_STEPS} />
         </div>
@@ -1770,6 +1793,7 @@ function Install() {
                   </a>
                 </p>
               </div>
+              <DiscordLine location="cara_ios" />
             </div>
             <div>
               <StepList steps={IOS_STEPS} />
@@ -1787,6 +1811,25 @@ function Install() {
         </div>
       )}
     </div>
+  );
+}
+
+/** One line under the install buttons pointing testers to Discord for bug reports and questions. */
+function DiscordLine({ location }: { location: string }) {
+  return (
+    <p className="mt-4 max-w-md text-sm leading-relaxed text-tidur-ink/85">
+      <a
+        href={DISCORD_URL}
+        target="_blank"
+        rel="noopener"
+        className="inline-flex items-center gap-1.5 font-semibold text-tidur-ink underline underline-offset-4"
+        {...goal("discord_click", location)}
+      >
+        <DiscordMark className="size-4" />
+        Gabung Discord
+      </a>{" "}
+      untuk lapor bug dan diskusi.
+    </p>
   );
 }
 
