@@ -1,2 +1,5 @@
 # /keluarga/<code> is one prerendered page (keluarga.html); the code is read in the browser. 200 = rewrite, URL kept.
 /keluarga/* /keluarga 200
+# English guesses for the privacy page (Google tried /privacy and got a 404).
+/privacy /privasi 301
+/privacy-policy /privasi 301
