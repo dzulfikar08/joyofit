@@ -368,6 +368,22 @@
       "sound": "Suara",
       "soundHint": "Suara lewat notifikasi. Bunyi di dalam aplikasi belum ada."
     },
+    "hrSensor": {
+      "title": "Detak jantung untuk komputer sepeda",
+      "enabled": "Ponsel sebagai sensor detak jantung",
+      "hint": "Komputer sepeda menyambungkan ponsel sebagai sensor detak jantung Bluetooth dan menampilkan detak jantung dari jam tanganmu.",
+      "advertising": "Menunggu komputer sepeda. Cari sensor detak jantung Bluetooth di perangkat itu.",
+      "starting": "Memulai…",
+      "sending": "Mengirim ke {{name}}: {{bpm}}",
+      "bpm": "{{value}} bpm",
+      "noReading": "belum ada data dari jam tangan",
+      "battery": "Komputer sepeda juga melihat baterai ponsel: {{value}}%",
+      "permission": "JoyoFit butuh izin Perangkat sekitar untuk menjadi sensor.",
+      "openSettings": "Buka setelan",
+      "failed": "Sensor tidak bisa dimulai. Pastikan Bluetooth menyala.",
+      "unsupported": "Ponsel ini tidak bisa menjadi sensor Bluetooth.",
+      "body": "Di komputer sepeda, tambahkan sensor detak jantung lewat Bluetooth (bukan ANT+) lalu pilih ponsel ini; namanya sama dengan nama Bluetooth ponsel. Jam tangan tetap tersambung ke JoyoFit, dan detak jantungnya dibaca hanya selama komputer sepeda tersambung. Biarkan mode latar belakang menyala agar tetap jalan saat layar mati. Kecepatan dan jarak datang dari GPS komputer sepeda sendiri."
+    },
     "share": {
       "title": "Bagikan lokasi"
     }

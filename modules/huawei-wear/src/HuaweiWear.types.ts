@@ -581,6 +581,31 @@ export interface WatchWorkoutStatus {
   watchOperator: number | null;
 }
 
+/** `getHrSensor` / `setHrSensor`: the phone as a Bluetooth LE heart-rate sensor for a bike computer, relaying the watch's heart rate. */
+export interface HrSensorStatus {
+  /** The phone can advertise as a Bluetooth LE peripheral. */
+  supported: boolean;
+  /** The switch is on (the GATT server may still be down while Bluetooth is off). */
+  enabled: boolean;
+  /** The GATT server is up. */
+  running: boolean;
+  /** Visible to a bike computer's sensor search (stops while one listens). */
+  advertising: boolean;
+  /** Names of the bike computers that read or subscribed. */
+  connected: string[];
+  /** How many of them receive heart rate. */
+  subscribed: number;
+  /** The newest reading from the watch while it is fresh (10 s), else null. */
+  heartRate: number | null;
+  /** Notifications sent since the process started. */
+  sent: number;
+  /** The phone's battery %, as the Battery Service reports it. */
+  phoneBattery: number;
+  error: string | null;
+  /** The Android permission still missing (`android.permission.BLUETOOTH_ADVERTISE` ...), or null. */
+  missingPermission: string | null;
+}
+
 export type HuaweiWearModuleEvents = {
   onStateChange: (event: StateEvent) => void;
   onBattery: (event: BatteryEvent) => void;

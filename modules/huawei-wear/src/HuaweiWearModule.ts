@@ -10,6 +10,7 @@ import type {
   HealthSensorsUpdate,
   HeartRateZonesConfig,
   HeartRateZonesStatus,
+  HrSensorStatus,
   HrvReading,
   HuaweiWearModuleEvents,
   LinkState,
@@ -360,6 +361,14 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
    * background (`onHeartRate` events). Needs a store build; older binaries only have `setLiveHeartRate`, which follows the screen.
    */
   setWorkoutHeartRate(active: boolean): void;
+  /**
+   * The phone as a standard Bluetooth LE heart-rate sensor (Heart Rate + Battery services) that a bike computer pairs as "sensor
+   * Bluetooth"; it relays the watch's realtime heart rate, which is asked for only while a bike computer subscribes. Needs a store
+   * build (gate on `hasNative('setHrSensor')`).
+   */
+  getHrSensor(): HrSensorStatus;
+  /** Turns the sensor on or off. Throws ERR_BLUETOOTH_PERMISSION without BLUETOOTH_CONNECT + BLUETOOTH_ADVERTISE, ERR_UNSUPPORTED without LE advertising. */
+  setHrSensor(enabled: boolean): HrSensorStatus;
 
   /**
    * Makes the watch ring and vibrate (`start` true) or stops it. Needs a connected watch that

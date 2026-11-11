@@ -370,6 +370,22 @@
       "sound": "Sound",
       "soundHint": "Sound through a notification. In-app beeps are not available yet."
     },
+    "hrSensor": {
+      "title": "Heart rate for a bike computer",
+      "enabled": "Phone as a heart-rate sensor",
+      "hint": "A bike computer pairs the phone as a Bluetooth heart-rate sensor and shows your watch's heart rate.",
+      "advertising": "Waiting for a bike computer. Search for a Bluetooth heart-rate sensor on it.",
+      "starting": "Starting…",
+      "sending": "Sending to {{name}}: {{bpm}}",
+      "bpm": "{{value}} bpm",
+      "noReading": "no reading from the watch yet",
+      "battery": "The bike computer also sees the phone's battery: {{value}}%",
+      "permission": "JoyoFit needs the Nearby devices permission to act as a sensor.",
+      "openSettings": "Open settings",
+      "failed": "The sensor could not start. Check that Bluetooth is on.",
+      "unsupported": "This phone cannot act as a Bluetooth sensor.",
+      "body": "On the bike computer, add a heart-rate sensor over Bluetooth (not ANT+) and pick this phone; it shows under the phone's Bluetooth name. The watch keeps its connection to JoyoFit, and its heart rate is read only while the bike computer is connected. Keep background mode on so this keeps working with the screen off. Speed and distance come from the bike computer's own GPS."
+    },
     "share": {
       "title": "Share location"
     }

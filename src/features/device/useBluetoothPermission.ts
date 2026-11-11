@@ -50,6 +50,18 @@ export function useBluetoothPermission(): BluetoothPermission {
   return { status, request };
 }
 
+/** BLUETOOTH_CONNECT + BLUETOOTH_ADVERTISE: the phone as a heart-rate sensor for a bike computer (`setHrSensor`). */
+export async function ensureBluetoothAdvertise(): Promise<Exclude<PermissionStatus, 'checking'>> {
+  if (Platform.OS !== 'android' || Number(Platform.Version) < RUNTIME_BLUETOOTH_API) {
+    return 'granted';
+  }
+  const permissions = [PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT, PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE];
+  const results = await PermissionsAndroid.requestMultiple(permissions);
+  const values = permissions.map((p) => results[p]);
+  if (values.every((r) => r === PermissionsAndroid.RESULTS.GRANTED)) return 'granted';
+  return values.includes(PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) ? 'blocked' : 'denied';
+}
+
 /** BLUETOOTH_SCAN (declared neverForLocation): the Scan nearby devices button and the developer Bluetooth LE mode, which scan for LE addresses. */
 export async function ensureBluetoothScan(): Promise<Exclude<PermissionStatus, 'checking'>> {
   if (Platform.OS !== 'android' || Number(Platform.Version) < RUNTIME_BLUETOOTH_API) {

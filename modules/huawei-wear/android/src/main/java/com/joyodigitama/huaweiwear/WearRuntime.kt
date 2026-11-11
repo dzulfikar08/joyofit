@@ -121,6 +121,7 @@ internal class WearRuntime private constructor(context: Context) {
 
     override fun heartRate(bpm: Int, tsMs: Long) {
       liveWorkout.onHeartRate(bpm)
+      hrSensor.onHeartRate(bpm)
       listeners.forEach { it.heartRate(bpm, tsMs) }
     }
 
@@ -212,6 +213,7 @@ internal class WearRuntime private constructor(context: Context) {
   val bodyMetrics = BodyMetrics(appContext, syncStore, dataSync, events, settings)
   val diet = DietSync(appContext, syncStore, dataSync, events, settings, activityGoals, bodyMetrics)
   val liveWorkout = LiveWorkout(appContext, dataSync, events, settings, liveHeartRate, scope)
+  val hrSensor = HrSensorPeripheral(appContext, liveHeartRate, events, scope)
   val workoutLink = WorkoutLink(appContext, link, events, scope, liveWorkout)
   val watchWorkout = WatchWorkoutControl(link, events, scope).also { liveWorkout.phoneOwned = it::owns }
   val extras = WatchExtras(appContext, syncStore, link, events, scope)

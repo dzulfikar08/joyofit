@@ -33,4 +33,13 @@ internal fun ModuleDefinitionBuilder.watchWorkoutApi(runtime: () -> WearRuntime)
   Function("setWorkoutHeartRate") { active: Boolean ->
     runtime().liveHeartRate.setWorkoutActive(active)
   }
+
+  // The phone as a Bluetooth LE heart-rate sensor for a bike computer, relaying the watch's realtime heart rate ([HrSensorPeripheral]).
+  Function("getHrSensor") {
+    runtime().hrSensor.status()
+  }
+
+  Function("setHrSensor") { enabled: Boolean ->
+    runtime().hrSensor.setEnabled(enabled)
+  }
 }

@@ -24,6 +24,7 @@ import {
   OFF_COURSE_MIN_M,
 } from '../settingsModel';
 import type { AlertConfig, AutoLapConfig, ReminderAlert, RideThemeSetting, ZoneAlert } from '../types';
+import { HrSensorSection } from './HrSensorSection';
 import { LayoutEditor } from './LayoutEditor';
 import { Stepper } from './Stepper';
 import { useBikeLayout, useBikeSettings } from './useBikeSettings';
@@ -287,6 +288,8 @@ export function BikeSettingsScreen() {
         <SwitchRow label={t('settings.alerts.vibrate')} hint={t('settings.alerts.vibrateHint')} value={alerts.vibrate} onValueChange={(vibrate) => setAlerts({ vibrate })} />
         <SwitchRow label={t('settings.alerts.sound')} hint={t('settings.alerts.soundHint')} value={alerts.sound} onValueChange={(sound) => setAlerts({ sound })} />
       </Section>
+
+      <HrSensorSection />
 
       <Section title={t('settings.share.title')} icon="location">
         <ShareSection enabled={settings.liveShare} onEnabledChange={(liveShare) => bikeSettingsStore.set({ liveShare })} />

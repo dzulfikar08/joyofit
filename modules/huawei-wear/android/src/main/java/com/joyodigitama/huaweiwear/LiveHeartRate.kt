@@ -38,17 +38,21 @@ internal class LiveHeartRate(
   @Volatile
   private var workoutWanted = false
 
+  /** A bike computer listens to the phone's heart-rate sensor ([HrSensorPeripheral]); separate from [workoutWanted], which a workout's end clears. */
+  @Volatile
+  private var sensorWanted = false
+
   /** A 1-minute HRV measurement ([HrvSpot]) owns service 0x19 meanwhile; live readings are off and come back after. */
   @Volatile
   private var paused = false
 
-  private val wanted get() = (uiWanted || workoutWanted) && !paused
+  private val wanted get() = (uiWanted || workoutWanted || sensorWanted) && !paused
 
   /** A live workout holds the heart-rate sensor; an HRV measurement must not take it over. */
-  val workoutActive get() = workoutWanted
+  val workoutActive get() = workoutWanted || sensorWanted
 
   /** True while a screen or a live workout asks for live readings (even if an HRV measurement pauses them); a visit to another watch waits. */
-  val inUse get() = uiWanted || workoutWanted
+  val inUse get() = uiWanted || workoutWanted || sensorWanted
 
   /** Switches the live readings off on the watch (when they were on) and keeps them off until [resume]. */
   suspend fun pause() {
@@ -77,6 +81,12 @@ internal class LiveHeartRate(
   /** A live workout starts or ends. */
   fun setWorkoutActive(active: Boolean) {
     workoutWanted = active
+    scope.launch { if (wanted) start() else stop() }
+  }
+
+  /** A bike computer subscribed to the phone's heart-rate sensor, or the last one left. */
+  fun setSensorActive(active: Boolean) {
+    sensorWanted = active
     scope.launch { if (wanted) start() else stop() }
   }
 

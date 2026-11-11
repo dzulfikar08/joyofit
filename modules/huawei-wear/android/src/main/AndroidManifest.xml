@@ -4,6 +4,8 @@
   <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
   <!-- "Scan nearby devices" on the Watch tab and the developer Bluetooth LE mode: list Huawei/Honor watches in range by name or service. It never derives a location from the scan. -->
   <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
+  <!-- Bike computer: the phone advertises itself as a Bluetooth LE heart-rate sensor relaying the watch's heart rate (HrSensorPeripheral). -->
+  <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
