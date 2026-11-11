@@ -172,6 +172,7 @@ final class InertStatusTests: XCTestCase {
             "SafetyStatus": Inert.safety(),
             "SafetyStatus#live": liveSafety,
             "SosRelayTest": Inert.sosRelayTest(),
+            "HrSensorStatus": Inert.hrSensor(),
             // The real satellite-data status: a fresh install, and one that has downloaded, been asked, and delivered.
             "AgpsStatus": runtime.ephemeris.status(),
             "AgpsStatus#populated": populatedAgps,

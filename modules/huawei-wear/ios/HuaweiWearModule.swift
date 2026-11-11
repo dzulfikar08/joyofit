@@ -514,6 +514,9 @@ public final class HuaweiWearModule: Module {
         AsyncFunction("stopWatchWorkout") { () async -> [String: Any] in await runtime.watchWorkout.stop().toJS() }
         // The band's realtime heart rate for a run the phone records (the Run recorder), held like a live workout holds it.
         Function("setWorkoutHeartRate") { (active: Bool) in runtime.watchSettings.liveHeartRate.setWorkoutActive(active) }
+        // The phone as a heart-rate sensor for a bike computer: Android only; `supported: false` here, and the switch stays off.
+        Function("getHrSensor") { () -> [String: Any] in Inert.hrSensor() }
+        Function("setHrSensor") { (_: Bool) -> [String: Any] in Inert.hrSensor() }
 
         // MARK: meals on the watch's calorie card
 

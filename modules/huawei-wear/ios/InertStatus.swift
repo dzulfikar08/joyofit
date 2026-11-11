@@ -50,6 +50,24 @@ public enum Inert {
 
     public static let sosBlocker = "The SOS text message relay is \(unavailable)"
 
+    /// `HrSensorStatus`: the phone as a Bluetooth LE heart-rate sensor for a bike computer is Android only (an iOS app cannot advertise
+    /// the Heart Rate service in the background).
+    public static func hrSensor() -> [String: Any] {
+        [
+            "supported": false,
+            "enabled": false,
+            "running": false,
+            "advertising": false,
+            "connected": [String](),
+            "subscribed": 0,
+            "heartRate": NSNull(),
+            "sent": 0,
+            "phoneBattery": 0,
+            "error": NSNull(),
+            "missingPermission": NSNull(),
+        ]
+    }
+
     /// `SosRelayTest`: what an SOS request would do; sends nothing, to nobody.
     public static func sosRelayTest() -> [String: Any] { ["ready": false, "blockers": [sosBlocker]] }
 

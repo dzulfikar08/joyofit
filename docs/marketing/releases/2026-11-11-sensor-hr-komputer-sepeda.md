@@ -2,7 +2,7 @@
 app: joyofit
 feature: Ponsel sebagai sensor detak jantung
 shipped: 2026-11-11
-available: code
+available: test-build
 tier: free
 post: todo
 atur:
