@@ -1,44 +1,10 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
-import { identitySignature, meMessage } from "../src/feedback";
+import { meMessage } from "../src/feedback";
 import { aturApi, call, postJson, signUp } from "./helpers";
 
 const SECRET = "test-atur-identify-secret";
-
-describe("GET /v1/feedback/identity", () => {
-  it("requires a session", async () => {
-    expect((await call("/v1/feedback/identity", { env: { ATUR_IDENTIFY_SECRET: SECRET } })).status).toBe(401);
-  });
-
-  it("answers 503 when the board secret is not set", async () => {
-    const { cookie } = signUp("nosecret");
-    const response = await call("/v1/feedback/identity", { cookie, env: { ATUR_IDENTIFY_SECRET: undefined } });
-    expect(response.status).toBe(503);
-    expect(await response.json()).toEqual({ error: "feedback_not_configured" });
-  });
-
-  it("signs id and lowercased email the way Atur checks them", async () => {
-    const { user, cookie } = signUp("Ana");
-    const response = await call("/v1/feedback/identity", { cookie, env: { ATUR_IDENTIFY_SECRET: SECRET } });
-    expect(response.status).toBe(200);
-    expect(response.headers.get("cache-control")).toBe("private, no-store");
-    const body = (await response.json()) as { id: string; email: string; name: string | null; signature: string };
-    const email = user.email.toLowerCase();
-    expect(body).toEqual({
-      id: user.id,
-      email,
-      name: user.name,
-      signature: createHmac("sha256", SECRET).update(`${user.id}:${email}`).digest("hex"),
-    });
-  });
-
-  it("lowercases the email before signing", async () => {
-    expect(await identitySignature(SECRET, "u1", "Ana@Example.COM")).toBe(
-      createHmac("sha256", SECRET).update("u1:ana@example.com").digest("hex"),
-    );
-  });
-});
 
 describe("/v1/feedback relay to Atur's signed-in API", () => {
   const ITEM = "0b6f3c2e-1a2b-4c3d-8e9f-0123456789ab";
@@ -97,17 +63,40 @@ describe("/v1/feedback relay to Atur's signed-in API", () => {
     expect(JSON.parse(aturApi.calls[2]!.body!)).toEqual({ body: "Setuju" });
   });
 
+  it("files a report from the page's form, forwarding only the known fields", async () => {
+    const { cookie } = signUp("Lina");
+    aturApi.handler = () => Response.json({ id: "x", sequence_id: 7, url: "u" }, { status: 201 });
+    const res = await postJson(
+      "/v1/feedback/items",
+      { title: "Sinkron macet", description: "Sejak pagi", kind: "bug", context: { url: "https://app.fit.test/issues", app_version: "web", secret: "no" }, extra: 1 },
+      cookie,
+    );
+    expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({ id: "x", sequence_id: 7, url: "u" });
+    expect(aturApi.calls[0]!.url).toBe("https://atur.test/api/feedback/pk_fb_test/me/items");
+    expect(JSON.parse(aturApi.calls[0]!.body!)).toEqual({
+      title: "Sinkron macet",
+      description: "Sejak pagi",
+      kind: "bug",
+      context: { url: "https://app.fit.test/issues", app_version: "web" },
+    });
+    expect((await postJson("/v1/feedback/items", { title: "x", kind: "bug" }, cookie)).status).toBe(400);
+    expect((await postJson("/v1/feedback/items", { title: "Valid", kind: "nope" }, cookie)).status).toBe(400);
+    expect(aturApi.calls).toHaveLength(1);
+  });
+
   it("relays nothing outside the list, and checks comment bodies first", async () => {
     const { cookie } = signUp("Budi");
     aturApi.handler = () => Response.json({});
     for (const [method, path] of [
       ["GET", "/v1/feedback/items"],
+      ["PUT", "/v1/feedback/items"],
       ["GET", "/v1/feedback/items/not-a-uuid"],
       ["POST", "/v1/feedback/board"],
       ["GET", "/v1/feedback/tickets/0"],
       ["GET", "/v1/feedback/tickets/1/../../items"],
       ["GET", "/v1/feedback/me/board"],
-      ["POST", "/v1/feedback/identity"],
+      ["GET", "/v1/feedback/identity"],
     ] as const) {
       expect((await call(path, { method, cookie })).status, `${method} ${path}`).toBe(404);
     }
