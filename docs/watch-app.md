@@ -135,6 +135,19 @@ AppGallery Connect; a debug profile lists the watch UDIDs) [DOC](https://develop
    `joyonavi.p12` and prints the encrypted password [OBSERVED: build succeeds, `hap-sign-tool verify-app` passes].
    hvigor warns "can not sign bin with codesign" (code signing of the bin; whether the watch cares is untested).
 
+### Building in CI (2026-11-12)
+
+The signed `.hap` is built on GitHub's runners by `.github/workflows/watch-app.yml`, so no machine needs the 6.3 GB
+toolkit: on pushes to master and pull requests touching `watch-app/navi/`, or by hand (Actions → Watch app → Run
+workflow, mode debug or release). Download the run's artifact `joyonavi-<mode>-<rev>`, unzip it and install the `.hap`
+as in step 11 of the checklist below. The workflow runs the same `build-signed.sh`. The toolkit comes from a private R2
+bucket through the `joyofit-ci-tools` Worker (`tools/ci-tools-worker/README.md`: a 149 MB trimmed copy of 6.0.1.251,
+since Huawei's download may not be republished), and the keystore, password, `.cer` and `.p7b` from the `watch`
+environment's secrets. A release build needs `JOYONAVI_RELEASE_CER_BASE64` and `JOYONAVI_RELEASE_P7B_BASE64` there
+first. The signing files in `~/.config/joyofit/joyonavi-signing` stay the source of truth: after replacing one (a new
+watch in the debug profile, a renewed certificate), update its secret with `base64 -w0 <file> | gh secret set <NAME>
+--env watch`. A local build still works with the toolkit installed (`HMOS_CLT`).
+
 A debug certificate lasts **14 days while identity verification is pending, 1 year once verified**
 [DOC](https://developer.huawei.com/consumer/en/doc/app/agc-help-debug-cert-0000002283256797).
 

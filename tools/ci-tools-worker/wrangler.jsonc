@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "joyofit-ci-tools",
+  // Same account as joyofit-api (Dzulfikar.at@gmail.com's Account).
+  "account_id": "b7e6f8457bd39fa37a7eea5249799754",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  // Only CI calls it; no custom domain.
+  "workers_dev": true,
+  "r2_buckets": [{ "binding": "TOOLS", "bucket_name": "joyofit-ci-tools" }]
+  // Secret CI_TOOLS_KEY: `bunx wrangler secret put CI_TOOLS_KEY` (README.md).
+}
