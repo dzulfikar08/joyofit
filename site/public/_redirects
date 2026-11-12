@@ -3,3 +3,7 @@
 # English guesses for the privacy page (Google tried /privacy and got a 404).
 /privacy /privasi 301
 /privacy-policy /privasi 301
+# Ideas, bug reports and support: JoyoFit's portal on Atur (board of the FIT project, workspace joyofit).
+/issues https://app.diatur.com/portal/joyofit 302
+/issues/* https://app.diatur.com/portal/joyofit 302
+/feedback https://app.diatur.com/portal/joyofit 302
