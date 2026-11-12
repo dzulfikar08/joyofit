@@ -12,7 +12,7 @@ Command Line Tools for HarmonyOS, used by `.github/workflows/watch-app.yml` (doc
 
 | Key | What |
 |---|---|
-| `hmos-clt/6.0.1.251-linux-x64-lite.tar.zst` | `command-line-tools/` 6.0.1.251 (linux-x64), 149 MB. `sdk/default/{openharmony,hms}/{native,previewer}` keep only their top-level metadata files (hvigor checks the components exist; the lite build reads none of their contents). A signed debug build from it matches one from the full 6.3 GB install except for the signature. SHA-256 `79616815afdd031d84ca739f7f69946415cd515f167e4fb606309b403ab17f30`. |
+| `hmos-clt/6.0.1.251-linux-x64-lite.tar.zst` | `command-line-tools/` 6.0.1.251 (linux-x64), 149 MB. `sdk/default/{openharmony,hms}/{native,previewer}` keep only their top-level metadata files (hvigor checks the components exist; the lite build reads none of their contents). Checked 2026-11-12 against the full 6.3 GB install, and CI's build against a local one: the 52 resource files in the haptobin `.bin` are byte-identical, `app.js` and `index.js` are identical once webpack's module ids are renumbered (the ids come from the random temp build dir, so any two builds differ there), and only the signature trailer and source-map column offsets differ. SHA-256 `79616815afdd031d84ca739f7f69946415cd515f167e4fb606309b403ab17f30`. |
 
 ## Changing it
 
