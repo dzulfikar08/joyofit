@@ -12,7 +12,7 @@
 
 import { type FitFieldDef, type FitFieldType, type FitValue, FitWriter, toFitTime, toSemicircles } from './fitEncoder';
 import { plausibleStepLength } from '../workouts/analysis/stride';
-import { validFix, watchPause, type WatchPause } from '../workouts/pause';
+import { pausedWithin, validFix, watchPauses, type WatchPause } from '../workouts/pause';
 import { movingOf } from '../workouts/times';
 import { FIT_MANUFACTURER_DEVELOPMENT, type StravaDevice } from './device';
 
@@ -312,11 +312,11 @@ function speedDistance(samples: Sample[], total: number): boolean {
  * - without two fixes (treadmill, pool) the distance grows linearly in active time over the whole workout.
  * The first sample is 0 and the last is the total.
  */
-function withDistance(samples: Sample[], total: number, pause: WatchPause | null): void {
+function withDistance(samples: Sample[], total: number, pauses: readonly WatchPause[]): void {
   const first = samples[0];
   const last = samples[samples.length - 1];
   if (!(total > 0) || !first || !last) return;
-  const activeAt = (ts: number) => ts - first.ts - (pause ? Math.max(0, Math.min(ts, pause.end) - pause.start) : 0);
+  const activeAt = (ts: number) => ts - first.ts - pausedWithin(pauses, first.ts, ts);
   const activeTotal = activeAt(last.ts);
   const linear = (s: Sample) => (activeTotal > 0 ? (total * activeAt(s.ts)) / activeTotal : 0);
   const fixes: number[] = [];
@@ -446,10 +446,10 @@ export interface BuiltFit {
 
 /**
  * The FIT activity of one workout: file_id, device_info, a timer start event, one record per sample, a timer stop event
- * (and, when the watch was paused, a stop and start around the pause, see `watchPause`), one lap, one session and the
+ * (and, when the watch was paused, a stop and start around each pause, see `watchPauses`), one lap, one session and the
  * activity. The record timestamps run from the workout's start to its end, the session's
  * `total_elapsed_time` is that span, `total_timer_time` the watch's timer (`movingOf`, the time the app shows; the gap to the
- * elapsed time is a timer stop and start, see `watchPause`, so the file agrees with itself and with the app) and `total_distance` the watch's
+ * elapsed time is timer stops and starts, see `watchPauses`, so the file agrees with itself and with the app) and `total_distance` the watch's
  * distance. Foot sports get the watch's step count as strides (a stride is two steps) and an average cadence of strides
  * per minute over the active time, as Garmin devices write it. `utcOffsetSeconds` is the wearer's offset from UTC at the
  * workout; it defaults to this device's. `device` is the watch that recorded the workout (`stravaDevice`): it becomes
@@ -469,8 +469,8 @@ export function buildFit(
 ): BuiltFit {
   const samples = collectSamples(workout, points);
   const total = workout.distance > 0 ? workout.distance : 0;
-  const pause = watchPause(workout, points);
-  withDistance(samples, total, pause);
+  const pauses = watchPauses(workout, points);
+  withDistance(samples, total, pauses);
   const sport = stravaSport(workout.sportType, workout.ebike);
   // `collectSamples` always has a sample at the start and at the end.
   const start = (samples[0] as Sample).ts;
@@ -588,18 +588,20 @@ export function buildFit(
   if (hasSpeed) recordFields.push({ num: 6, type: 'uint16' }, { num: 73, type: 'uint32' });
   if (hasPower) recordFields.push({ num: 7, type: 'uint16' });
   const record = fit.define(3, MESG.record, recordFields);
-  // The watch's pause, if any, as a timer stop after the last record at or before its start and a timer start before the
+  // The watch's pauses, if any, each as a timer stop after the last record at or before its start and a timer start before the
   // first record at or after its end; Strava takes the moving time of a run from these events when a file has any.
-  let pauseStopped = pause === null;
-  let pauseResumed = pause === null;
+  let nextPause = 0;
+  let stopped = false;
   for (const s of samples) {
-    if (pause && !pauseStopped && s.ts > pause.start) {
-      event(pause.start, FIT.eventTypeStopAll);
-      pauseStopped = true;
-    }
-    if (pause && !pauseResumed && s.ts >= pause.end) {
-      event(pause.end, FIT.eventTypeStart);
-      pauseResumed = true;
+    for (let p = pauses[nextPause]; p; p = pauses[nextPause]) {
+      if (!stopped && s.ts > p.start) {
+        event(p.start, FIT.eventTypeStopAll);
+        stopped = true;
+      }
+      if (!stopped || s.ts < p.end) break;
+      event(p.end, FIT.eventTypeStart);
+      stopped = false;
+      nextPause++;
     }
     const values: FitValue[] = [toFitTime(s.ts)];
     if (fixes.length > 0) values.push(s.lat === null ? null : toSemicircles(s.lat), s.lon === null ? null : toSemicircles(s.lon));
@@ -684,7 +686,7 @@ export function buildFit(
       const inLap = samples.filter((s) => s.ts >= lapStart && s.ts <= lapEnd);
       const lapFixes = inLap.filter((s) => s.lat !== null && s.lon !== null);
       const lapElapsed = lapEnd - lapStart;
-      const lapPause = pause ? Math.max(0, Math.min(lapEnd, pause.end) - Math.max(lapStart, pause.start)) : 0;
+      const lapPause = pausedWithin(pauses, lapStart, lapEnd);
       const lapTimer = Math.max(0, lapElapsed - lapPause);
       const firstSample = inLap[0];
       const lastSample = inLap[inLap.length - 1];
