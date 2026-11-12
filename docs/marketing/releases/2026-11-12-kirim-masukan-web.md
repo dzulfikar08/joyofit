@@ -1,19 +1,19 @@
 ---
 app: joyofit
-feature: Kirim masukan
+feature: Masukan (app.fit.joyorogo.com/issues)
 shipped: 2026-11-12
 available: web
-tier: pro
+tier: free
 post: todo
 atur: JRG-489
 ---
 
-**Apa:** Di JoyoFit Web (app.fit.joyorogo.com), menu akun > Kirim masukan membuka panel untuk melapor masalah, minta bantuan, atau usul ide, langsung dengan akun JoyoFit: tanpa daftar akun lain, tanpa kode email. Laporan bisa disertai tangkapan layar atau berkas. Yang belum masuk JoyoFit Web bisa lewat fit.joyorogo.com/issues.
+**Apa:** Halaman Masukan di JoyoFit Web (app.fit.joyorogo.com/issues), masuk dengan akun JoyoFit, tanpa daftar akun lain atau kode email: lapor masalah atau minta bantuan (bisa dengan tangkapan layar), pantau status laporan dan balasan tim lalu membalasnya, dukung dan komentari ide orang lain, dan lihat ide yang sudah jadi. Terbuka untuk semua akun, tidak hanya Pro.
 
 **Kenapa orang peduli:** Selama ini laporan tercecer di komentar Threads dan DM, tanpa berkas dan tanpa kabar lanjut. Sekarang laporan jadi tiket dengan email sendiri, dan ide bisa dilihat serta di-vote orang lain di portal.
 
-**Angle post:** "Ada yang aneh di datamu? Lapor langsung dari JoyoFit Web, tanpa daftar akun baru: laporanmu jadi tiket yang bisa kamu pantau."
+**Angle post:** "Ada yang aneh di datamu? Lapor di app.fit.joyorogo.com/issues pakai akun JoyoFit-mu, lalu pantau balasan tim di halaman yang sama."
 
-**Bukti visual:** JoyoFit Web, menu akun terbuka dengan baris "Kirim masukan", lalu panel "Laporkan bug" berbahasa Indonesia di atas halaman Latihan.
+**Bukti visual:** halaman /issues: tab Ide dengan tombol dukung, tab Laporanku dengan percakapan tiket (tim dan "Kamu"), di HP dan desktop.
 
-**Jangan klaim:** belum ada di aplikasi ponsel (hanya web); JoyoFit Web hanya untuk akun Pro; melihat tiket sendiri dan vote di portal masih minta kode email sekali; panel hanya Indonesia/Inggris (Melayu tampil Inggris).
+**Jangan klaim:** belum ada di aplikasi ponsel (hanya web; menu dan fitur lain JoyoFit Web tetap Pro); komentar ide tampil tanpa nama; nama status masih bahasa Inggris (Backlog, In Progress, Done); formulir laporan (widget) hanya Indonesia/Inggris.
