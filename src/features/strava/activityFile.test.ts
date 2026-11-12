@@ -144,9 +144,50 @@ describe('buildFit records', () => {
     expect(offsetsOf([hrOnly(20, 91), hrOnly(40, 92)])).toEqual([0, 290, 350, 600]);
     // Empty stretch 10..590: its middle is 300.
     expect(offsetsOf([hrOnly(10, 90), hrOnly(590, 91)])).toEqual([0, 270, 330, 600]);
-    // A 35 s stretch at the very start cannot hold a 60 s pause centred on it, so the pause is moved to start at 0.
+    // A 35 s stretch at the very start cannot hold the 60 s pause: the pause fills it and stops there, the other 25 s are
+    // left out rather than stopping the timer over recorded samples (Strava drops those).
     const dense = Array.from({ length: 113 }, (_, i) => hrOnly(35 + i * 5, 90));
-    expect(offsetsOf(dense)).toEqual([0, 0, 60, 600]);
+    expect(offsetsOf(dense)).toEqual([0, 0, 35, 600]);
+  });
+
+  it('writes one stop and start per pause and never stops the timer over a GPS fix (a trail run with several stops)', () => {
+    // Fixes every 5 s, except three stops: 100..160, 300..340 and 450..470 (120 s), and the watch timer 480 of 600 s. One pause
+    // of 120 s around the longest gap covered the fixes on both sides of it; Strava dropped them and drew a straight line.
+    const stops = [
+      [100, 160],
+      [300, 340],
+      [450, 470],
+    ];
+    const points: StravaPoint[] = [];
+    for (let t = 0; t <= 600; t += 5) if (!stops.some(([a, b]) => t > a! && t < b!)) points.push(fix(t, 10 + t / 100_000, 120));
+    const { records, events, session } = roundTrip({ ...walk, duration: 480 }, points);
+    expect(events.map((e) => [e.eventType, (e.timestamp ?? 0) - FIT_START])).toEqual([
+      [0, 0],
+      [4, 100],
+      [0, 160],
+      [4, 300],
+      [0, 340],
+      [4, 450],
+      [0, 470],
+      [4, 600],
+    ]);
+    const stopped = (t: number) => stops.some(([a, b]) => t > a! && t < b!);
+    expect(offsets(records).filter((t, i) => records[i]!.positionLat !== undefined && stopped(t))).toEqual([]);
+    expect(estimateMovingTime(records, events)).toEqual({ seconds: 480, from: 'timer events' });
+    expect(session?.totalTimerTime).toBe(480);
+  });
+
+  it('leaves out paused time the empty stretches cannot hold instead of covering fixes', () => {
+    // 120 s paused, but the fixes leave only one 60 s gap (100..160) and 5 s steps elsewhere.
+    const points: StravaPoint[] = [];
+    for (let t = 0; t <= 600; t += 5) if (!(t > 100 && t < 160)) points.push(fix(t, 10 + t / 100_000, 120));
+    const { events } = roundTrip({ ...walk, duration: 480 }, points);
+    expect(events.map((e) => [e.eventType, (e.timestamp ?? 0) - FIT_START])).toEqual([
+      [0, 0],
+      [4, 100],
+      [0, 160],
+      [4, 600],
+    ]);
   });
 
   it('writes no pause when the watch reports no timer or a timer as long as the elapsed time', () => {

@@ -255,7 +255,7 @@ function run(input: AnalyzeInput, options: AnalyzeOptions): { analysis: WorkoutA
     cad: grid.cad,
     cumGain: profile?.cumGain ?? null,
     cumLoss: profile?.cumLoss ?? null,
-    pause: grid.pause,
+    pauses: grid.pauses,
   };
   const hasBlocks = (summary.paceBlocks ?? []).some((b) => b.type === 0);
   let splits: AnalysisSplit[];

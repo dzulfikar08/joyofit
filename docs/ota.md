@@ -220,6 +220,13 @@ Android `cb987e8b8ac363beba44e1d31a702071aca28f95` (Release Android run 42046885
   (`assets/fingerprint` of versionCode 1497039).
 - 2026-11-06 from master `de169e28` (#81: onboarding HUAWEI ID step, Huawei sign-in WebView with a desktop user agent): groups
   `cb1323bb-add1-4bb8-86b7-422550c5640e` android, `77adc240-337b-4fd1-b439-fa2cb6dbf6b2` ios (same runtimes, `--runtime-version`).
+- 2026-11-06 from master `6d65fbf0` (#85: JoyoNavi map view): groups `b16b539e-f037-4f1b-b31c-56b7f3655172` android,
+  `0d22135a-b79c-4e68-8cea-3e57b3c8f7ec` ios (same runtimes, `--runtime-version`; recorded 2026-11-12 from `eas update:list`).
+- 2026-11-12 from branch `ota/strava-pauses` = `6d65fbf0` + the cherry-picked #91 fix (Strava file: one timer stop per watch
+  pause, never over a GPS fix), not from master: master has native changes since (#86 turn alerts, `e47639b4` phone as HR
+  sensor, only on the Play alpha) and the #87 `bun.lock` refresh, none in an installed production build. Published locally
+  with `bun install --frozen-lockfile` on that branch: groups `4d5f823e-889f-4e56-a9ae-fb30480cdc90` android,
+  `407a694a-f0ff-441d-badb-7c4d2cd1fe82` ios (same runtimes, `--runtime-version`).
 
 ## When OTA is not enough
 
