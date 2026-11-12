@@ -370,7 +370,7 @@ describe('no GPS', () => {
     expect(a3.splits[5].distM).toBe(300);
     expect(a3.splits[5].sec).toBe(90);
     expect(a3.splits[0].hr).toBe(150);
-    expect(paceBlockSplits(undefined, { stepSec: 1, n: 2, dist: null, hr: null, cad: null, cumGain: null, cumLoss: null, pause: null })).toEqual([]);
+    expect(paceBlockSplits(undefined, { stepSec: 1, n: 2, dist: null, hr: null, cad: null, cumGain: null, cumLoss: null, pauses: [] })).toEqual([]);
   });
 });
 

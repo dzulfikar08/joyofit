@@ -1,4 +1,5 @@
 import type { PaceBlock } from '@/features/workouts/summary';
+import { pausedWithin } from '@/features/workouts/pause';
 
 import { round } from './round';
 import type { AnalysisSplit, SportKind } from './types';
@@ -17,8 +18,8 @@ export interface SplitGrid {
   /** Cumulative hysteresis gain/loss per sample (see `elevationProfile`), null without altitude. */
   cumGain: readonly number[] | null;
   cumLoss: readonly number[] | null;
-  /** The watch's pause, seconds from the start (`Grid.pause`): no split counts it, as Strava leaves out the file's timer stop. */
-  pause: { from: number; to: number } | null;
+  /** The watch's pauses, seconds from the start (`Grid.pauses`): no split counts them, as Strava leaves out the file's timer stops. */
+  pauses: readonly { start: number; end: number }[];
 }
 
 function mean(values: readonly (number | null)[] | null, from: number, to: number): number | null {
@@ -83,8 +84,7 @@ export function kmSplits(g: SplitGrid, kind: SportKind): AnalysisSplit[] {
   const total = dist[dist.length - 1];
   const whole = Math.floor(total / 1000);
   const splits: AnalysisSplit[] = [];
-  const pause = g.pause;
-  const moving = (t0: number, t1: number) => t1 - t0 - (pause ? Math.max(0, Math.min(t1, pause.to) - Math.max(t0, pause.from)) : 0);
+  const moving = (t0: number, t1: number) => t1 - t0 - pausedWithin(g.pauses, t0, t1);
   let tStart = 0;
   for (let k = 1; k <= whole && splits.length < MAX_SPLITS; k++) {
     const tEnd = timeAt(dist, g.stepSec, k * 1000);

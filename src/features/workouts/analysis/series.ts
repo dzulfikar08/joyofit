@@ -1,5 +1,5 @@
 import type { WorkoutPointRow } from '@/db/queries';
-import { watchPause } from '@/features/workouts/pause';
+import { watchPauses } from '@/features/workouts/pause';
 import { movingOf } from '@/features/workouts/times';
 
 import { cleanFixes, haversineM, type CleanFix } from './geo';
@@ -67,8 +67,8 @@ export interface Grid {
   fixes: CleanFix[];
   /** How the fixes' path length maps to the watch's distance; null without GPS or without a watch distance (the path itself is then the distance). */
   watch: WatchDistance | null;
-  /** The watch's pause in seconds from the start (`watchPause`, the stretch the Strava file stops its timer for); null without one. */
-  pause: { from: number; to: number } | null;
+  /** The watch's pauses in seconds from the start (`watchPauses`, the stretches the Strava file stops its timer for), in time order. */
+  pauses: { start: number; end: number }[];
 }
 
 export interface GridInput {
@@ -373,11 +373,10 @@ export function buildGrid(input: GridInput): Grid {
     movingSec: movingOf(elapsedSec, input.duration),
     fixes: hasGps ? fixes : [],
     watch,
-    pause: pauseOf(input),
+    pauses: pausesOf(input),
   };
 }
 
-function pauseOf(input: GridInput): Grid['pause'] {
-  const pause = watchPause(input, input.points);
-  return pause ? { from: pause.start - input.start, to: pause.end - input.start } : null;
+function pausesOf(input: GridInput): Grid['pauses'] {
+  return watchPauses(input, input.points).map((p) => ({ start: p.start - input.start, end: p.end - input.start }));
 }
