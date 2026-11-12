@@ -23,6 +23,9 @@ export type AppEnv = Env & {
   EXPO_PUSH_URL?: string;
   /** Identify secret of the FIT project's Atur feedback board (src/feedback.ts). Unset = `/v1/feedback/identity` answers 503. */
   ATUR_IDENTIFY_SECRET?: string;
+  /** Atur's origin and the FIT board token, for the feedback page's relay (src/feedback.ts, wrangler.jsonc `vars`). */
+  ATUR_ORIGIN?: string;
+  ATUR_BOARD_TOKEN?: string;
 };
 
 export interface AuthUser {
