@@ -9,6 +9,7 @@ import { AuthUnavailableError, requireUser } from "./auth";
 import type { AppContext, AppEnv } from "./env";
 import { family, familyDevice } from "./family/routes";
 import { runScheduled } from "./family/cron";
+import { feedback } from "./feedback";
 import { gear } from "./gear";
 import { imports } from "./imports";
 import { livePage, livePublic, liveSession } from "./live";
@@ -128,6 +129,7 @@ v1.route("/watchfaces", watchfaces);
 v1.route("/studio/projects", studio);
 v1.route("/live", liveSession);
 v1.route("/family", family);
+v1.route("/feedback", feedback);
 app.route("/v1", v1);
 app.route("/strava", stravaPublic);
 
