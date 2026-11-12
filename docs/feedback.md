@@ -3,8 +3,8 @@
 Ideas, bug reports and help requests go to the FIT project's Atur feedback board (workspace `joyofit`, board token
 `pk_fb_3d56898896b544949f03abc0f28256cb`). Two doors:
 
-- **https://fit.joyorogo.com/issues** (and `/feedback`): a redirect to the portal, `https://app.diatur.com/portal/joyofit`
-  (`site/public/_redirects`). Browsing works without signing in; voting and "my requests" ask for a one-time email code.
+- **https://fit.joyorogo.com/issues** (and `/feedback`): a redirect to JoyoFit web's page below (`site/public/_redirects`).
+  Atur's own portal (`https://app.diatur.com/portal/joyofit`) still works for anyone with the link (emailed code).
 - **JoyoFit web** (app.fit.joyorogo.com, JoyoRogo repo `apps/fit`): **`/issues`** (account menu, *Masukan*), a page of
   its own as the signed-in account (no Atur account, no code, no widget): a form to report a problem, ask a question or
   suggest an idea (with screenshots), ideas to vote on and comment, *Laporanku* (the account's tickets with the team's
