@@ -21,6 +21,8 @@ export type AppEnv = Env & {
   EXPO_ACCESS_TOKEN?: string;
   /** Replaces Expo's push endpoint, for a local or staging run that must not reach real devices. Unset in production. */
   EXPO_PUSH_URL?: string;
+  /** Identify secret of the FIT project's Atur feedback board (src/feedback.ts). Unset = `/v1/feedback/identity` answers 503. */
+  ATUR_IDENTIFY_SECRET?: string;
 };
 
 export interface AuthUser {
