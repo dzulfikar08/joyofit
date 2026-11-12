@@ -40,6 +40,12 @@ export const grantApi = {
   handler: null as ((action: string, body: Record<string, unknown>) => Response) | null,
 };
 
+/** Atur's signed-in feedback API (`<origin>/api/feedback/<token>/me/*`): what it saw, and how it answers (per test). */
+export const aturApi = {
+  calls: [] as { url: string; method: string; headers: Headers; body: string | null }[],
+  handler: null as ((url: URL, method: string) => Response | Promise<Response>) | null,
+};
+
 /** Expo Push messages the Worker sent, and how Expo answers (per message `ok`, or a details error such as DeviceNotRegistered). */
 export const expo = {
   sent: [] as { to: string; title: string; body: string; data: Record<string, string> }[],
@@ -110,6 +116,8 @@ beforeEach(() => {
   upstream.accessFailWith = null;
   grantApi.calls = [];
   grantApi.handler = null;
+  aturApi.calls = [];
+  aturApi.handler = null;
   expo.sent = [];
   expo.failWith = null;
   outbox.length = 0;
@@ -120,6 +128,12 @@ beforeEach(() => {
       grantApi.calls.push({ action: grantCall[1], headers: new Headers(init?.headers), body });
       if (!grantApi.handler) throw new Error(`unexpected grant API call: ${String(input)}`);
       return grantApi.handler(grantCall[1], body);
+    }
+    if (String(input).startsWith("https://atur.test/")) {
+      const method = init?.method ?? "GET";
+      aturApi.calls.push({ url: String(input), method, headers: new Headers(init?.headers), body: init?.body ? String(init.body) : null });
+      if (!aturApi.handler) throw new Error(`unexpected Atur call: ${String(input)}`);
+      return aturApi.handler(new URL(String(input)), method);
     }
     if (String(input).endsWith("/internal/joyofit/family/users")) {
       const body = JSON.parse(String(init?.body ?? "{}")) as { userIds: string[] };

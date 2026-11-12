@@ -19,6 +19,10 @@
     // STRAVA_CLIENT_SECRET (the same value JoyoRogo's Worker has) and STRAVA_WEBHOOK_VERIFY_TOKEN are Worker
     // secrets: `bunx wrangler secret put <NAME>`.
     "STRAVA_CLIENT_ID": "287873",
+    // The FIT project's Atur feedback board (docs/feedback.md). The page's calls go to `${ATUR_ORIGIN}/api/feedback/
+    // ${ATUR_BOARD_TOKEN}/me/*`, signed with the ATUR_IDENTIFY_SECRET Worker secret. The token is public (in the widget).
+    "ATUR_ORIGIN": "https://app.diatur.com",
+    "ATUR_BOARD_TOKEN": "pk_fb_3d56898896b544949f03abc0f28256cb",
     // The manual Strava upload in the app (a workaround for everyone while Strava capacity is limited): "on" unless
     // "off". Turn off when Strava grants extended capacity (9,999); turn back on if the slots fill up. docs/strava.md 2a.
     "STRAVA_MANUAL_UPLOAD": "on",
