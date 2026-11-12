@@ -1,39 +1,24 @@
 import { Hono } from "hono";
+import { z } from "zod";
 
 import type { AppContext } from "./env";
 
 /**
- * `GET /v1/feedback/identity`: who the signed-in person is, signed for Atur's feedback widget (docs/feedback.md).
- *
- * The JoyoFit web app loads Atur's widget (`app.diatur.com/widget.js`, board of the FIT project) and passes this to
- * `Atur.identify()`. Atur trusts the email only when `signature = hex(HMAC-SHA256(secret, id + ":" + lowercased email))`
- * with the board's identify secret, so a JoyoFit account files reports and support tickets under its own email without
- * an Atur sign-in. The secret never leaves this Worker. Unset secret = 503 (the widget then asks for an email instead).
- * The rest of this router relays JoyoFit web's feedback page to Atur (below).
+ * JoyoFit web's feedback page (`/issues`, docs/feedback.md) as the signed-in account: the FIT project's Atur board (ideas,
+ * votes, comments), the account's reports and tickets, the changelog, and filing a report or idea from the page's own form.
+ * Every call is relayed to Atur's signed-in API with a short-lived signature made with the board's identify secret
+ * (ATUR_IDENTIFY_SECRET, never sent to a browser). No Atur account, code or widget.
  */
 export const feedback = new Hono<AppContext>();
-
-export function identitySignature(secret: string, id: string, email: string): Promise<string> {
-  return hmacHex(secret, `${id}:${email.toLowerCase()}`);
-}
-
-feedback.get("/identity", async (c) => {
-  const secret = c.env.ATUR_IDENTIFY_SECRET;
-  if (!secret) return c.json({ error: "feedback_not_configured" }, 503);
-  const user = c.get("user");
-  const email = user.email.toLowerCase();
-  const signature = await identitySignature(secret, user.id, email);
-  c.header("cache-control", "private, no-store");
-  return c.json({ id: user.id, email, name: user.name, signature });
-});
 
 /** How long a relayed request's signature is good for (Atur accepts at most 300 s ahead). */
 const ME_TTL_SEC = 120;
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const SEQ = "[1-9][0-9]{0,8}";
 /** The Atur `/me` routes the page may reach, and whether they take a `{ body }` comment. Nothing else is relayed. */
-const ME_ROUTES: readonly { method: "GET" | "POST"; path: RegExp; comment?: true }[] = [
+const ME_ROUTES: readonly { method: "GET" | "POST"; path: RegExp; comment?: true; item?: true }[] = [
   { method: "GET", path: /^board$/ },
+  { method: "POST", path: /^items$/, item: true },
   { method: "GET", path: new RegExp(`^items/${UUID}$`) },
   { method: "POST", path: new RegExp(`^items/${UUID}/votes$`) },
   { method: "POST", path: new RegExp(`^items/${UUID}/comments$`), comment: true },
@@ -43,6 +28,22 @@ const ME_ROUTES: readonly { method: "GET" | "POST"; path: RegExp; comment?: true
   { method: "GET", path: /^changelog$/ },
 ];
 const MAX_COMMENT_CHARS = 4000;
+/** A report or idea from the page's own form; only these fields go to Atur, which checks them again. */
+const itemSchema = z.object({
+  title: z.string().trim().min(3).max(120),
+  description: z.string().max(4000).optional(),
+  kind: z.enum(["idea", "bug", "question"]),
+  attachment_ids: z.array(z.string().uuid()).max(5).optional(),
+  context: z
+    .object({
+      url: z.string().max(1000).optional(),
+      user_agent: z.string().max(500).optional(),
+      viewport: z.string().max(30).optional(),
+      app_version: z.string().max(64).optional(),
+      platform: z.string().max(32).optional(),
+    })
+    .optional(),
+});
 const MAX_COMMENT_BODY_BYTES = 32 * 1024;
 
 export function meMessage(id: string, email: string, expires: number): string {
@@ -50,7 +51,7 @@ export function meMessage(id: string, email: string, expires: number): string {
 }
 
 /**
- * `/v1/feedback/<board|items/..|reports|tickets/..|changelog>`: JoyoFit web's feedback page (`/issues`) reads and writes the
+ * `/v1/feedback/<board|items|items/..|reports|tickets/..|changelog>`: JoyoFit web's feedback page (`/issues`) reads and writes the
  * FIT board as the signed-in account. Each call goes to Atur's signed-in API (`/api/feedback/<token>/me/*`) with a fresh
  * 2-minute signature over `me:<id>:<email>:<expires>`; the browser never holds anything that opens Atur. Atur's answer
  * (status and JSON) comes back as is; Atur unreachable is 502 `feedback_unavailable`.
@@ -64,7 +65,19 @@ feedback.on(["GET", "POST"], "/:path{.+}", async (c) => {
   if (!secret || !origin || !token) return c.json({ error: "feedback_not_configured" }, 503);
 
   let body: string | undefined;
-  if (route.comment) {
+  if (route.item) {
+    const raw = await c.req.text();
+    if (raw.length > MAX_COMMENT_BODY_BYTES) return c.json({ error: "too_large" }, 413);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return c.json({ error: "invalid_body" }, 400);
+    }
+    const item = itemSchema.safeParse(parsed);
+    if (!item.success) return c.json({ error: "invalid_body" }, 400);
+    body = JSON.stringify(item.data);
+  } else if (route.comment) {
     const raw = await c.req.text();
     if (raw.length > MAX_COMMENT_BODY_BYTES) return c.json({ error: "too_large" }, 413);
     let text: unknown;
