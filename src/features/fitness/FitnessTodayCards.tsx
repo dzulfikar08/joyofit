@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -11,6 +11,7 @@ import { Card } from '@/components/Screen';
 import { Skeleton } from '@/components/States';
 import { StatTile } from '@/components/StatTile';
 import { computeDailyFitness } from '@/features/fitness/compute';
+import { rememberWatchVo2 } from '@/features/fitness/watchVo2';
 import { energyWord } from '@/features/fitness/energy';
 import { formatHm, formatRecovery, sourceLabel } from '@/features/fitness/format';
 import { Paragraphs } from '@/features/fitness/Paragraphs';
@@ -30,6 +31,10 @@ export function FitnessTodayCards({ data, availability }: { data: FitnessData | 
   const colors = useColors();
   const router = useRouter();
   const daily = useMemo(() => (data ? computeDailyFitness(data, availability) : null), [data, availability, locale]);
+  // The heart-rate energy of the next recording uses the watch's VO2max (Keytel's fitness model); keep it current.
+  useEffect(() => {
+    if (daily) rememberWatchVo2(daily.vo2);
+  }, [daily]);
 
   if (!daily) return <Skeleton width="100%" height={220} radius="card" />;
 
