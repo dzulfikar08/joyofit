@@ -27,7 +27,9 @@ Data types and levels: [Open Data Overview](https://developer.huawei.com/consume
 
 ## Prerequisites and process
 
-1. **JoyoFit (phone app) released on AppGallery.** It is not today (Play and App Store only).
+1. **JoyoFit (phone app) released on AppGallery.** Submitted 2026-11-13: version 1.1 (versionCode 1507935, the sideload APK from
+   `release-android.yml` run 43364186260, signed with the upload key), all regions except the Chinese mainland, rating 12+. AppGallery's
+   payment rule 6.4 only recommends HUAWEI IAP, so the sideload build's web link for Pro stays.
 2. HUAWEI ID service approved (applied 2026-11-06, status Submitted).
 3. Console > Health Service Kit: agreement, data scopes, "Application Material (for Individual Developers).xlsx". Manual review of
    the test scopes about 10 workdays; test scopes serve only the first 100 users.
