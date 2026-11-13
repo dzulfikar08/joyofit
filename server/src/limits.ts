@@ -87,3 +87,6 @@ export const MAX_STUDIO_PROJECTS_PER_USER = 100;
 export const STUDIO_NAME_MAX = 80;
 /** The longest `thumb` data URL, in characters. */
 export const STUDIO_THUMB_MAX = 16 * 1024;
+
+/** One call to Huawei's OAuth server or Health Kit from the Worker (token exchange, refresh, revoke). */
+export const HUAWEI_HEALTH_TIMEOUT_MS = 15_000;

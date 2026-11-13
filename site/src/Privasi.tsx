@@ -3,8 +3,8 @@ import { ArrowLeft, Check } from "lucide-react";
 import { GITHUB_URL, NON_AFFILIATION, NON_AFFILIATION_EN } from "./lib";
 
 const CONTACT = "dzulfikar@joyorogo.com";
-const UPDATED = "26 Oktober 2026";
-const UPDATED_EN = "26 October 2026";
+const UPDATED = "13 November 2026";
+const UPDATED_EN = "13 November 2026";
 
 function Code({ children }: { children: React.ReactNode }) {
   return <code className="rounded bg-muted px-1.5 py-0.5 text-[0.85em] font-semibold">{children}</code>;
@@ -239,6 +239,25 @@ function Indonesian() {
             "JoyoFit tidak membaca data dari Strava, tidak menampilkan data Strava ke orang lain, dan tidak memakainya untuk analitik, iklan, atau AI.",
             "Tambahan teks fit.joyorogo.com di deskripsi aktivitas mati secara bawaan dan hanya muncul bila kamu menyalakannya.",
             "Putuskan Strava di aplikasi, dan JoyoFit berhenti memakai sambunganmu; token dihapus dan izin dicabut di Strava saat JoyoRogo juga tidak memakainya. Cabut aplikasi di strava.com (Pengaturan, Aplikasi Saya), dan token untuk JoyoFit dan JoyoRogo langsung dihapus. Aktivitas yang sudah ada di Strava tetap milikmu dan diatur di Strava.",
+          ]}
+        />
+      </Block>
+
+      <Block id="huawei-health-kit" title="Sinkron dari Huawei Health lewat HUAWEI ID (uji lab, opsional)">
+        <p>
+          Fitur uji lab, mati secara bawaan (Pengaturan, Tentang &amp; lanjutan, Eksperimental). Bila kamu menyalakannya dan masuk
+          dengan HUAWEI ID, aplikasi JoyoFit membaca data Huawei Health milikmu lewat Huawei Health Service Kit (API cloud resmi
+          Huawei), supaya latihan dan langkah masuk ke JoyoFit tanpa berkas ZIP dari Pusat Privasi. Belum aktif: akses JoyoFit
+          masih menunggu persetujuan Huawei.
+        </p>
+        <List
+          items={[
+            "Yang dibaca, dan hanya itu: (1) catatan olahraga: jenis, waktu mulai dan selesai, waktu aktif, jarak, kalori aktif, langkah, serta detak jantung rata-rata, maksimum, dan minimum; (2) detail selama olahraga: detak jantung, kecepatan, kadens langkah, dan ketinggian; (3) rute GPS olahraga; (4) langkah per menit dan total langkah per hari. Riwayatnya sampai satu tahun sebelum kamu memberi izin.",
+            "Izin (scope) yang diminta: openid, activityrecord.read, activity.read, location.read, step.read, dan historydata.open.year. JoyoFit tidak meminta tidur, detak jantung di luar olahraga, SpO2, stres, berat badan, atau data lain, dan tidak menulis apa pun ke Huawei Health.",
+            "Untuk apa: hanya untuk menampilkan latihan dan langkahmu di JoyoFit dan menghitung analisis yang sama seperti data dari jam (misalnya beban latihan dan zona detak jantung). Tidak untuk iklan, tidak dijual, tidak dibagikan ke pihak lain, dan tidak untuk keperluan medis.",
+            "Di mana disimpan: HP-mu membaca data itu langsung dari server Huawei lewat HTTPS dan menyimpannya di HP ini, ditandai sebagai data impor; data dari jam yang tersambung ke JoyoFit tetap diutamakan. Data Huawei Health tidak melewati dan tidak disimpan di server JoyoFit. Bila kamu memakai sinkron cloud atau Strava, data itu diperlakukan seperti olahraga impor lain (lihat bagian Cloud dan Strava).",
+            "Server JoyoFit (api.fit.joyorogo.com) hanya menyimpan izin masuk dari Huawei (refresh token, terenkripsi AES-GCM), daftar izin yang kamu berikan, dan waktu menyambung, pada akun JoyoRogo-mu. Server memakainya untuk memberi HP token akses yang berlaku satu jam.",
+            "Menghapus: ketuk Putuskan di layar sinkron; JoyoFit mencabut izinnya di akun HUAWEI ID-mu dan menghapus izin yang disimpan server. Kamu juga bisa mencabutnya di HP Huawei (Setelan, HUAWEI ID, Pusat privasi, Kontrol akses akun) atau di aplikasi Huawei Health (Saya, Manajemen privasi, Berbagi data dan otorisasi). Menghapus akun JoyoRogo juga menghapus izin itu. Data yang sudah masuk ke HP dihapus dengan menghapus olahraganya di aplikasi, atau dengan menghapus data JoyoFit di HP (bagian Penghapusan data).",
           ]}
         />
       </Block>
@@ -550,6 +569,7 @@ function Indonesian() {
             "Expo, Google (Firebase Cloud Messaging) dan Apple (APNs): mengantar notifikasi push Keluarga (bagian Notifikasi push).",
             "Apple: Apple Health (menulis, dan membaca satu kali saat impor), Masuk dengan Apple, dan geocoding nama tempat di iPhone.",
             "Strava: tujuan unggahan olahraga bila kamu menyambungkannya (bagian Strava).",
+            "Huawei (Huawei Health Service Kit dan HUAWEI ID): sumber latihan dan langkah bila kamu menyalakan sinkron uji lab dan masuk dengan HUAWEI ID (bagian Sinkron dari Huawei Health).",
             "Penyedia AI pilihanmu (misalnya Anthropic untuk Claude, OpenAI untuk ChatGPT): menerima data yang dibaca saat kamu bertanya, hanya bila kamu menyambungkan koneksi AI (bagian Koneksi AI).",
             "Penyedia AI untuk Joyo AI dengan kunci sendiri (OpenRouter, OpenAI, Anthropic, Google Gemini, atau alamat yang kamu isi): kamu yang memilih dan memakai akunmu sendiri, bukan pemroses data kami; menerima ringkasan datamu dan percakapan hanya setelah kamu memasukkan kunci dan menyetujuinya (bagian Joyo AI dengan kunci sendiri).",
             "RevKlik: statistik pengunjung situs ini (bagian Statistik situs).",
@@ -565,9 +585,10 @@ function Indonesian() {
             "Joyo AI dari JoyoRogo: di pengaturan Joyo AI, matikan Izinkan AI JoyoRogo menerima data-ku untuk mencabut persetujuan; obrolan di HP dihapus dari layar chat atau dengan Hapus semua data Joyo AI.",
             "Joyo AI (kunci sendiri): di pengaturan Joyo AI kamu bisa menghapus kunci, catatan dan percakapan, atau semuanya; Hapus dari HP ini saat keluar akun juga menghapus semuanya (lihat bagian Joyo AI dengan kunci sendiri). Data yang sudah sampai ke penyedia dihapus di akunmu di penyedia itu.",
             "Di Health Connect (Android) atau Apple Health (iPhone): hapus data yang ditulis JoyoFit lewat aplikasi Health Connect atau aplikasi Kesehatan.",
+            "Sinkron dari Huawei Health (uji lab): ketuk Putuskan di layar sinkron, atau cabut izin JoyoFit di HUAWEI ID atau di aplikasi Huawei Health; izin yang disimpan server JoyoFit dihapus saat kamu memutus atau menghapus akun (lihat bagian Sinkron dari Huawei Health).",
             "Di Strava: Putuskan Strava di aplikasi, atau cabut aplikasi di strava.com; token dihapus dari server JoyoRogo saat itu juga (bila JoyoRogo masih memakai sambungan yang sama, izin di Strava baru dicabut saat keduanya diputus).",
             "Daftar tunggu Strava atau iPhone: email ke alamat kontak di halaman ini dengan subjek Hapus daftar tunggu JoyoFit (lihat bagian Daftar undangan).",
-            "Akun dan cloud: di aplikasi, Settings, Health Connect and cloud (di iPhone: Apple Health and cloud), bagian Sinkron cloud, ketuk Delete JoyoRogo account lalu konfirmasi. Ini langsung menghapus data cloud JoyoFit-mu (langkah, tidur, jam, berkas impor, token Strava), pengaturan, template, rute, dan data kesehatan yang ikut akun, olahraga di cloud, tautan dan ringkasan Keluarga, token push, dan akun JoyoRogo-mu beserta datanya di JoyoRogo, termasuk postingan, komentar, dan kudos. Akun JoyoRogo dipakai bersama, jadi akun itu juga hilang di JoyoRogo. Akun yang masuk dengan Apple diminta konfirmasi Apple dulu, lalu izin Masuk dengan Apple dicabut. Data di HP-mu tidak ikut terhapus.",
+            "Akun dan cloud: di aplikasi, Settings, Health Connect and cloud (di iPhone: Apple Health and cloud), bagian Sinkron cloud, ketuk Delete JoyoRogo account lalu konfirmasi. Ini langsung menghapus data cloud JoyoFit-mu (langkah, tidur, jam, berkas impor, token Strava, izin HUAWEI ID), pengaturan, template, rute, dan data kesehatan yang ikut akun, olahraga di cloud, tautan dan ringkasan Keluarga, token push, dan akun JoyoRogo-mu beserta datanya di JoyoRogo, termasuk postingan, komentar, dan kudos. Akun JoyoRogo dipakai bersama, jadi akun itu juga hilang di JoyoRogo. Akun yang masuk dengan Apple diminta konfirmasi Apple dulu, lalu izin Masuk dengan Apple dicabut. Data di HP-mu tidak ikut terhapus.",
             "Hanya data cloud: di aplikasi, Settings, Health Connect and cloud (di iPhone: Apple Health and cloud), bagian Sinkron cloud, ketuk Delete cloud data. Olahraga, langkah, tidur, pengaturan, template, rute, dan data kesehatan (termasuk siklus) di cloud terhapus dan sinkron otomatis dimatikan, jadi tidak ada yang diunggah lagi sampai kamu menyalakannya kembali. Akun, postingan, Keluarga, dan data di HP-mu tetap ada.",
             "Postingan dan komentar Social: hapus satu per satu di joyorogo.com lewat menu postingan atau komentar, atau hapus semuanya sekaligus dengan Hapus semua data saya di halaman Profil joyorogo.com (akunnya tetap ada). Menghapus akun JoyoRogo juga menghapusnya.",
             "Token push: keluar dari akun JoyoRogo di JoyoFit menghapus token push HP itu dari server, dan menghapus akun menghapus semua tokenmu (lihat Notifikasi push). Mematikan notifikasi JoyoFit di pengaturan sistem menghentikan pemberitahuan.",
@@ -793,6 +814,25 @@ function English() {
           is not using it either. Revoke the app on strava.com (Settings, My Apps) and the tokens for both JoyoFit and
           JoyoRogo are deleted immediately; activities already on Strava stay yours and are managed on Strava.
         </p>
+      </Block>
+
+      <Block id="huawei-health-kit-en" title="Sync from Huawei Health with HUAWEI ID (lab, optional)">
+        <p>
+          A lab feature, off by default (Settings, About &amp; advanced, Experimental). If you turn it on and sign in with HUAWEI ID,
+          the JoyoFit app reads your Huawei Health data through Huawei Health Service Kit (Huawei&apos;s official cloud API), so
+          workouts and steps reach JoyoFit without the Privacy Centre ZIP. Not active yet: JoyoFit&apos;s access is still waiting
+          for Huawei&apos;s approval.
+        </p>
+        <List
+          items={[
+            "What is read, and nothing else: (1) exercise records: type, start and end time, active time, distance, active calories, steps, and average, maximum and minimum heart rate; (2) details during the workout: heart rate, speed, step cadence and altitude; (3) the workout's GPS route; (4) steps per minute and total steps per day. History goes back up to one year before you give permission.",
+            "Permissions (scopes) asked for: openid, activityrecord.read, activity.read, location.read, step.read and historydata.open.year. JoyoFit does not ask for sleep, heart rate outside workouts, SpO2, stress, weight or any other data, and writes nothing to Huawei Health.",
+            "Why: only to show your workouts and steps in JoyoFit and to work out the same analysis as for watch data (for example training load and heart rate zones). Not for ads, not sold, not shared with anyone else, and not for medical use.",
+            "Where it is kept: your phone reads the data straight from Huawei's servers over HTTPS and keeps it on this phone, marked as imported; data from a watch connected to JoyoFit always wins. Huawei Health data does not pass through and is not stored on the JoyoFit server. If you use cloud sync or Strava, it is treated like other imported workouts (see the Cloud and Strava sections).",
+            "The JoyoFit server (api.fit.joyorogo.com) keeps only the sign-in permission from Huawei (a refresh token, AES-GCM encrypted), the list of permissions you gave and when you connected, with your JoyoRogo account. It uses them to give the phone an access token valid for one hour.",
+            "Deleting: tap Disconnect on the sync screen; JoyoFit withdraws its permission on your HUAWEI ID account and deletes the permission the server keeps. You can also withdraw it on a Huawei phone (Settings, HUAWEI ID, Privacy centre, Control account access) or in the Huawei Health app (Me, Privacy management, Data sharing and authorisation). Deleting your JoyoRogo account also deletes it. Data already on the phone is deleted by deleting the workout in the app, or by clearing JoyoFit's data on the phone (see Deleting your data).",
+          ]}
+        />
       </Block>
 
       <Block id="koneksi-ai-en" title="AI connection (optional, Pro)">
@@ -1075,7 +1115,7 @@ function English() {
       <Block title="Third parties">
         <p>
           Open-Meteo (weather), Broadcom (satellite-assist data), IGS and BKG (public broadcast satellite data fetched by JoyoFit&apos;s server for the HW_AGNSS and HW_PGNSS_PRED experiments; the phone does not contact them), CODE at the University of Bern (public satellite orbit predictions fetched by JoyoFit&apos;s server for the HW_PGNSS_PRED experiment; the phone does not contact it), OpenStreetMap contributors (ODbL; map data for the offline-map experiment, built by JoyoFit from Geofabrik extracts; the phone does not contact OpenStreetMap or Geofabrik), FOSSGIS e.V. (OSRM) and Nominatim (OpenStreetMap) (route paths and place search for Loop from home, turns and new routes for the watch navigation experiment), Cloudflare (hosting of the cloud and this
-          site, and, through Cloudflare Workers AI (Cloudflare, Inc.), the recipient of your messages and data summary if you agree to Joyo AI from JoyoRogo; see that section), JoyoRogo, Google and Apple (sign-in), Apple (Apple Health write and one-time import read, and place-name geocoding on iPhone), Strava (upload destination when you connect it), the AI provider you choose, for example Anthropic for Claude or OpenAI for ChatGPT (receives the data read while you ask questions, only if you connect the AI connection), the AI provider you choose for Joyo AI with your own key (OpenRouter, OpenAI, Anthropic, Google Gemini or an address you enter; your choice and your own account, not our data processor; receives your data summary and conversation only after you enter a key and consent), Expo, Google (Firebase Cloud Messaging) and Apple (APNs) (delivery of Keluarga push notifications), RevKlik (visitor
+          site, and, through Cloudflare Workers AI (Cloudflare, Inc.), the recipient of your messages and data summary if you agree to Joyo AI from JoyoRogo; see that section), JoyoRogo, Google and Apple (sign-in), Apple (Apple Health write and one-time import read, and place-name geocoding on iPhone), Strava (upload destination when you connect it), Huawei (Huawei Health Service Kit and HUAWEI ID: source of workouts and steps when you turn on the lab sync and sign in with HUAWEI ID), the AI provider you choose, for example Anthropic for Claude or OpenAI for ChatGPT (receives the data read while you ask questions, only if you connect the AI connection), the AI provider you choose for Joyo AI with your own key (OpenRouter, OpenAI, Anthropic, Google Gemini or an address you enter; your choice and your own account, not our data processor; receives your data summary and conversation only after you enter a key and consent), Expo, Google (Firebase Cloud Messaging) and Apple (APNs) (delivery of Keluarga push notifications), RevKlik (visitor
           statistics for this site). No ads and no sale of data. Data is not used for advertising or
           ad profiling. Everything the app and this site send over the internet uses HTTPS (TLS).
         </p>
@@ -1088,9 +1128,10 @@ function English() {
             "Joyo AI from JoyoRogo: in the Joyo AI settings, turn off Allow JoyoRogo's AI to receive my data to withdraw your agreement; chats on the phone are deleted from the chat screen or with Delete all Joyo AI data.",
             "Joyo AI (own key): in the Joyo AI settings you can delete the keys, the notes and conversation, or everything; Hapus dari HP ini when you sign out also deletes everything (see the Joyo AI with your own key section). Data that has already reached the provider is deleted in your account with that provider.",
             "In Health Connect (Android) or Apple Health (iPhone): delete what JoyoFit wrote in the Health Connect or Health app.",
+            "Sync from Huawei Health (lab): tap Disconnect on the sync screen, or withdraw JoyoFit's permission in HUAWEI ID or in the Huawei Health app; the permission the JoyoFit server keeps is deleted when you disconnect or delete your account (see Sync from Huawei Health).",
             "Strava: Disconnect Strava in the app, or revoke the app on strava.com; the tokens are deleted from the JoyoRogo server at once (if JoyoRogo still uses the same connection, the access on Strava is revoked when both are disconnected).",
             "Strava or iPhone waitlist: email the contact address on this page with the subject Hapus daftar tunggu JoyoFit (see the invite lists section).",
-            "Account and cloud: in the app, Settings, Health Connect and cloud (Apple Health and cloud on iPhone), Sinkron cloud section, tap Delete JoyoRogo account and confirm. It immediately deletes your JoyoFit cloud data (steps, sleep, devices, imported files, Strava tokens), the settings, templates, routes and health data that follow your account, your cloud workouts, your Keluarga links and summaries, your push tokens, and your JoyoRogo account with its JoyoRogo data, including posts, comments and kudos. The JoyoRogo account is shared, so it is gone in JoyoRogo as well. An account that signs in with Apple asks you to confirm with Apple first, and the Sign in with Apple grant is revoked. Data on your phone is not deleted.",
+            "Account and cloud: in the app, Settings, Health Connect and cloud (Apple Health and cloud on iPhone), Sinkron cloud section, tap Delete JoyoRogo account and confirm. It immediately deletes your JoyoFit cloud data (steps, sleep, devices, imported files, Strava tokens, HUAWEI ID permission), the settings, templates, routes and health data that follow your account, your cloud workouts, your Keluarga links and summaries, your push tokens, and your JoyoRogo account with its JoyoRogo data, including posts, comments and kudos. The JoyoRogo account is shared, so it is gone in JoyoRogo as well. An account that signs in with Apple asks you to confirm with Apple first, and the Sign in with Apple grant is revoked. Data on your phone is not deleted.",
             "Cloud data only: in the app, Settings, Health Connect and cloud (Apple Health and cloud on iPhone), Sinkron cloud section, tap Delete cloud data. It wipes your workouts, steps, sleep, settings, templates, routes and health data (including cycle data) from the cloud and turns automatic sync off, so nothing is uploaded again until you switch it back on. Your account, posts, Keluarga and the data on your phone stay.",
             "Social posts and comments: delete them one by one on joyorogo.com from the post or comment menu, or delete all of them at once with Hapus semua data saya on the joyorogo.com Profil page (the account stays). Deleting your JoyoRogo account removes them too.",
             "Push token: signing out of your JoyoRogo account in JoyoFit deletes that phone's push token from the server, and deleting the account deletes all your tokens (see Push notifications). Turning off JoyoFit notifications in system settings stops the notifications.",
