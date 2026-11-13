@@ -19,6 +19,10 @@
     // STRAVA_CLIENT_SECRET (the same value JoyoRogo's Worker has) and STRAVA_WEBHOOK_VERIFY_TOKEN are Worker
     // secrets: `bunx wrangler secret put <NAME>`.
     "STRAVA_CLIENT_ID": "287873",
+    // Huawei Health Service Kit (lab, docs/huawei-health-kit.md "Sync from the cloud API"): the JoyoFit app's HUAWEI ID
+    // client ID (= App ID in AppGallery Connect, public). Empty = not configured: the routes answer 503 and the app says so.
+    // Its HUAWEI_HEALTH_CLIENT_SECRET and HUAWEI_HEALTH_TOKEN_KEY are Worker secrets: `bunx wrangler secret put <NAME>`.
+    "HUAWEI_HEALTH_CLIENT_ID": "",
     // The FIT project's Atur feedback board (docs/feedback.md). The page's calls go to `${ATUR_ORIGIN}/api/feedback/
     // ${ATUR_BOARD_TOKEN}/me/*`, signed with the ATUR_IDENTIFY_SECRET Worker secret. The token is public (in the widget).
     "ATUR_ORIGIN": "https://app.diatur.com",
