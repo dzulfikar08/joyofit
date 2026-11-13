@@ -7,9 +7,10 @@
  *    switches the run to the phone-only route (`route: 'none'`). Continue keeps the watch route, unchanged for watch owners.
  *    The phone-only route hides every watch step and adds `phone`: what works without a watch, the body weight the energy estimate
  *    uses, and the supported watches with the way to ask for yours. Its path is welcome, phone, account, pro, cloud, done.
- * 2. `unbind`: before pairing. It opens with the HUAWEI ID (Android): the same account the watch was set up with, saved before the first
- *    connect, keeps the watch from asking for a reset when JoyoFit pairs (1A/05) and lets the owner move it between Huawei Health and
- *    JoyoFit later without one. The watch holds one phone pairing, so it has to be released in Huawei Health first. This is also the
+ * 2. `unbind`: before pairing. It opens with the HUAWEI ID (Android and iOS, iOS in brand-free words): the same account the watch was
+ *    set up with, saved before the first connect, keeps the watch from asking for a reset when JoyoFit pairs (1A/05) and lets the owner
+ *    move it between Huawei Health and JoyoFit later without one. Continue waits until the ID is saved or the person says they use none
+ *    (`huaweiIdPending`); Later still skips the whole step. The watch holds one phone pairing, so it has to be released in Huawei Health first. This is also the
  *    last point where Huawei Health can still sync once more and where its data export can be requested (the export takes days, so it is
  *    asked for now and imported whenever it arrives).
  * 3. `pair`: scanning starts on arrival (the Bluetooth prompt first), one card per watch found, "Add manually" by model when the scan
@@ -227,12 +228,14 @@ export interface Footer {
 export interface FooterFacts {
   linkState: string;
   signedIn: boolean;
+  /** Unbind step: the HUAWEI ID can be connected here and the person has neither connected one nor said they use none. */
+  huaweiIdPending?: boolean;
 }
 
 /**
  * The buttons under each step. Back and a skip exist everywhere but mid-pairing (see `navigationLocked`). Two steps hold Continue back
  * until it means something: pairing until the watch is linked, and the account step until someone is signed in; until then "Later" is the
- * way on. The cloud step offers sign-in or skip when nobody is signed in. Labels are read in the current language at call time.
+ * way on. The unbind step greys Continue out until the HUAWEI ID is connected or declined (`huaweiIdPending`). The cloud step offers sign-in or skip when nobody is signed in. Labels are read in the current language at call time.
  */
 export function footerFor(step: StepId, facts: FooterFacts): Footer {
   const label = {
@@ -247,6 +250,8 @@ export function footerFor(step: StepId, facts: FooterFacts): Footer {
       return { primary: t('onboarding:footer.getStarted'), primaryDisabled: false, skip: t('onboarding:footer.skipSetup'), back: false };
     case 'phone':
       return { primary: label.continue, primaryDisabled: false, skip: null, back: true };
+    case 'unbind':
+      return { primary: label.continue, primaryDisabled: facts.huaweiIdPending === true, skip: label.later, back: true };
     case 'pair':
       return linkUp
         ? { primary: label.continue, primaryDisabled: false, skip: null, back: true }

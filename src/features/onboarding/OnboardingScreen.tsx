@@ -16,7 +16,7 @@ import { PairStep } from '@/features/onboarding/steps/PairStep';
 import { PhoneStep } from '@/features/onboarding/steps/PhoneStep';
 import { BackgroundStep, HealthStep, NotificationsStep, WeatherStep } from '@/features/onboarding/steps/PermissionSteps';
 import { ProStep } from '@/features/onboarding/steps/ProStep';
-import { UnbindStep } from '@/features/onboarding/steps/UnbindStep';
+import { UnbindStep, useHuaweiIdChoice, type HuaweiIdChoice } from '@/features/onboarding/steps/UnbindStep';
 import { WelcomeStep } from '@/features/onboarding/steps/WelcomeStep';
 import { useFirstSync } from '@/features/onboarding/useFirstSync';
 import { useCloud } from '@/state/CloudProvider';
@@ -24,10 +24,10 @@ import { useOnboarding } from '@/state/OnboardingProvider';
 import { useWatch } from '@/state/WatchProvider';
 import { spacing, useColors } from '@/theme';
 
-const BODIES: Record<StepId, () => ReactElement> = {
+const BODIES: Record<StepId, (huaweiId: HuaweiIdChoice) => ReactElement> = {
   welcome: () => <WelcomeStep />,
   phone: () => <PhoneStep />,
-  unbind: () => <UnbindStep />,
+  unbind: (huaweiId) => <UnbindStep huaweiId={huaweiId} />,
   pair: () => <PairStep />,
   notifications: () => <NotificationsStep />,
   health: () => <HealthStep />,
@@ -56,6 +56,8 @@ export function OnboardingScreen() {
   // Scrolled content ends in a hard edge under the progress bar; a hairline there says it continues above.
   const [scrolledStep, setScrolledStep] = useState<StepId | null>(null);
   const firstSync = useFirstSync(state ? firstSyncStarts(state, ctx) : false);
+  // Kept here, not in the step, so going Back and forth keeps the answer and the footer can hold Continue back.
+  const huaweiId = useHuaweiIdChoice();
 
   // Finished or left: go to Today. A run opened from Settings arrives here already active.
   const status = state?.status;
@@ -68,7 +70,7 @@ export function OnboardingScreen() {
   const step = currentStep(state, ctx);
   const scrolled = scrolledStep === step;
   const { index, total } = progress(state, ctx);
-  const footer = footerFor(step, { linkState: watch.linkState, signedIn: cloud.signedIn });
+  const footer = footerFor(step, { linkState: watch.linkState, signedIn: cloud.signedIn, huaweiIdPending: huaweiId.pending });
   const hasButtons = footer.primary !== null || footer.skip !== null || footer.back;
 
   return (
@@ -86,7 +88,7 @@ export function OnboardingScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <FadeIn style={styles.body} distance={10}>
-          {BODIES[step]()}
+          {BODIES[step](huaweiId)}
         </FadeIn>
       </ScrollView>
       {hasButtons ? (
