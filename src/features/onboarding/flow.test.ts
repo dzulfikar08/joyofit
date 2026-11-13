@@ -429,6 +429,13 @@ describe('footer buttons', () => {
     expect(footerFor('pair', { linkState: 'connected', signedIn: false })).toMatchObject({ primary: 'Lanjut', skip: null });
   });
 
+  test('the unbind step greys Continue out until the HUAWEI ID is connected or declined; Nanti always works', () => {
+    expect(footerFor('unbind', { ...idle, huaweiIdPending: true })).toEqual({ primary: 'Lanjut', primaryDisabled: true, skip: 'Nanti', back: true });
+    expect(footerFor('unbind', { ...idle, huaweiIdPending: false })).toMatchObject({ primary: 'Lanjut', primaryDisabled: false });
+    // A build without the native account call never asks.
+    expect(footerFor('unbind', idle)).toMatchObject({ primaryDisabled: false });
+  });
+
   test('the account step continues only when signed in, otherwise Later', () => {
     expect(footerFor('account', idle)).toMatchObject({ primary: null, skip: 'Nanti' });
     expect(footerFor('account', { linkState: 'disconnected', signedIn: true })).toMatchObject({ primary: 'Lanjut', skip: null });

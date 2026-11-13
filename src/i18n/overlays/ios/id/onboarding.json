@@ -10,7 +10,11 @@
     "step2": "Opsional: simpan riwayatmu. Pembuat jam bisa mengirim semua yang tersimpan di aplikasi resmi jammu sebagai file ZIP, yang diimpor JoyoFit di HP ini. File itu bisa butuh sampai 7 hari, jadi minta sekarang dan impor kapan pun sudah datang.",
     "step3": "Di aplikasi resmi jammu, buka jam di bagian Perangkat lalu lepas (hapus) pasangannya. Kalau jam masih terhubung ke HP lain, putuskan di sana juga.",
     "showImport": "Minta atau impor riwayat dari aplikasi jam saya",
-    "note": "Tidak yakin pasangan sudah terlepas? Lanjut saja: saat dipasangkan akan ketahuan kalau jam masih menolak. Impor nanti tetap bisa dari Lainnya, Impor dari aplikasi jam."
+    "note": "Tidak yakin pasangan sudah terlepas? Lanjut saja: saat dipasangkan akan ketahuan kalau jam masih menolak. Impor nanti tetap bisa dari Lainnya, Impor dari aplikasi jam.",
+    "account": "Jammu dipasang lewat aplikasi bawaannya dengan akun? Hubungkan akun yang sama di sini dulu. JoyoFit lalu memberi tahu jam bahwa pemiliknya sama, jadi saat dipasangkan jam tidak meminta reset, dan nanti jam bisa dipindah antara aplikasi itu dan JoyoFit tanpa reset.",
+    "accountNone": "Saya tidak pakai akun jam",
+    "accountSkipped": "Tanpa akun jam. JoyoFit tidak mengirim akun, jadi jam yang pernah dipasang di aplikasi bawaannya bisa minta reset saat dipasangkan: ketuk Batal di jam kalau itu muncul. Akun bisa dihubungkan nanti di Jam, Tampilan jam.",
+    "accountUndo": "Hubungkan akun jam saja"
   },
   "pair": {
     "help": "Pastikan pasangannya sudah dilepas dari aplikasi yang dulu kamu pakai untuk memasangkannya dan jam tidak terhubung ke HP atau aplikasi lain, jam menyala dan dekat, lalu coba Hubungkan lagi. Kalau masih menolak setelah jam dihidupkan ulang, reset jam dari Pengaturan di jam adalah jalan terakhir. Reset menghapus data yang tersimpan di jam (latihan dan hari yang belum pernah disinkronkan), jadi sinkronkan dulu kalau bisa, dan jangan mulai dari sini.",

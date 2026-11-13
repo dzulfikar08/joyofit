@@ -10,7 +10,11 @@
     "step2": "Optional: keep your history. The watch maker can send everything your watch's own app stored as a ZIP file, which JoyoFit imports on this phone. It can take up to 7 days to arrive, so request it now and import it whenever it comes.",
     "step3": "In your watch's own app, open the watch under Devices and unbind (remove) it. If it is still connected to another phone, disconnect it there too.",
     "showImport": "Request or import my history from the watch's app",
-    "note": "Not sure the unbind worked? Go on: pairing tells you if the watch still refuses. Importing later is always possible from More, Import from your watch's app."
+    "note": "Not sure the unbind worked? Go on: pairing tells you if the watch still refuses. Importing later is always possible from More, Import from your watch's app.",
+    "account": "Set up your watch in its own app with an account? Connect the same account here first. JoyoFit then tells the watch it is the same owner, so pairing does not ask you to reset the watch, and you can move it between that app and JoyoFit later without a reset.",
+    "accountNone": "I don't use a watch account",
+    "accountSkipped": "No watch account. JoyoFit sends no account, so a watch that was set up in its own app may ask to be reset when it pairs: tap Cancel on the watch if it does. You can connect the account later under Watch, Watch faces.",
+    "accountUndo": "Connect a watch account after all"
   },
   "pair": {
     "help": "Check that it is unbound from the app you paired it with before and not connected to another phone or app, that it is awake and close, and try Connect again. If it still refuses after a restart of the watch, a reset of the watch from its own Settings is the last resort. A reset erases the data stored on the watch (workouts and days that were never synced), so sync first if you can, and do not start here.",

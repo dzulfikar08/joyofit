@@ -27,7 +27,7 @@ function maskAccount(id: string): string {
  * Lets the user attach their Huawei account id so JoyoFit sends it to the watch at connect (like Gadgetbridge's authentication field).
  * In-app sign-in reads the `userId` cookie; a manual field is the fallback (and the only path when Huawei marks the cookie httpOnly).
  */
-export function HuaweiAccountSection() {
+export function HuaweiAccountSection({ onChange }: { onChange?: (id: string | null) => void } = {}) {
   const { t } = useTranslation(['watch', 'common']);
   const supported = hasNative('getHuaweiAccount');
   const [account, setAccount] = useState<string | null>(() => (supported ? HuaweiWear.getHuaweiAccount() : null));
@@ -47,6 +47,7 @@ export function HuaweiAccountSection() {
     await HuaweiWear.setHuaweiAccount(id);
     setAccount(id);
     setSaved(true);
+    onChange?.(id);
   };
 
   /**

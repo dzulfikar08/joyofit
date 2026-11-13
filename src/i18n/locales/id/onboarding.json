@@ -42,7 +42,11 @@
   "unbind": {
     "title": "Lepas jam dari Huawei Health",
     "intro": "Jam Huawei atau Honor hanya bicara dengan satu aplikasi. Selama Huawei Health memegangnya, jam menolak JoyoFit.",
-    "accountAndroid": "Masuk ke Huawei Health dengan HUAWEI ID? Hubungkan akun yang sama di sini dulu. JoyoFit lalu memberi tahu jam bahwa pemiliknya sama, jadi saat dipasangkan jam tidak meminta reset, dan nanti jam bisa dipindah antara Huawei Health dan JoyoFit tanpa reset.",
+    "account": "Masuk ke Huawei Health dengan HUAWEI ID? Hubungkan akun yang sama di sini dulu. JoyoFit lalu memberi tahu jam bahwa pemiliknya sama, jadi saat dipasangkan jam tidak meminta reset, dan nanti jam bisa dipindah antara Huawei Health dan JoyoFit tanpa reset.",
+    "accountNone": "Saya tidak pakai HUAWEI ID",
+    "accountChoose": "Hubungkan akunnya atau pilih tidak pakai untuk lanjut.",
+    "accountSkipped": "Tanpa HUAWEI ID. JoyoFit tidak mengirim akun, jadi jam yang pernah dipasang di Huawei Health bisa minta reset saat dipasangkan: ketuk Batal di jam kalau itu muncul. Akun bisa dihubungkan nanti di Jam, Tampilan jam.",
+    "accountUndo": "Hubungkan HUAWEI ID saja",
     "step1": "Buka Huawei Health dan tarik layar pertamanya ke bawah untuk sinkron sekali lagi. Data yang hanya ada di jam dan belum masuk ke akun Huawei hilang saat kamu melepas pasangan.",
     "step2": "Opsional: simpan riwayatmu. Huawei bisa mengirim semua yang tersimpan di Huawei Health sebagai file ZIP, yang diimpor JoyoFit di HP ini. File itu bisa butuh sampai 7 hari, jadi minta sekarang dan impor kapan pun sudah datang.",
     "step3": "Di Huawei Health, buka jam di bagian Perangkat lalu lepas (hapus) pasangannya. Kalau jam masih terhubung ke HP lain, putuskan di sana juga.",
