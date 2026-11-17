@@ -7,6 +7,17 @@ export type AppleIapProduct = {
   displayPrice: string;
   /** Numeric price in the storefront currency (Swift Decimal, e.g. "29000"). */
   price: string;
+  /**
+   * The product's introductory offer, when it has one; absent on a binary built before these fields existed. `introPaymentMode`:
+   * "freeTrial" | "payAsYouGo" | "payUpFront" | "unknown". The period is `introPeriodValue` `introPeriodUnit`s ("day" | "week" |
+   * "month" | "year"), repeated `introPeriodCount` times. `introEligible` "true" | "false": whether this Apple ID still qualifies
+   * (StoreKit's isEligibleForIntroOffer for the subscription group); StoreKit applies the offer at purchase only then.
+   */
+  introPaymentMode?: string;
+  introPeriodUnit?: string;
+  introPeriodValue?: string;
+  introPeriodCount?: string;
+  introEligible?: string;
 };
 
 export type AppleUnfinished = {

@@ -33,10 +33,13 @@
       "yearly": "Yearly",
       "perMonth": "{{price}} per month",
       "perYear": "{{price}} per year",
+      "perYearTrial": "Free for {{days}} days, then {{price}}/year. Cancel at least 24 hours before the trial ends to avoid being charged.",
+      "perYearTrialPlay": "Free for {{days}} days, then {{price}}/year. Cancel any time before the trial ends to avoid being charged.",
       "save": "Save {{percent}}%",
       "missing": "Not available right now"
     },
     "buy": "Subscribe",
+    "buyTrial": "Start {{days}}-day free trial",
     "restore": "Restore purchases",
     "manage": "Manage subscription",
     "signIn": {

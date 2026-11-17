@@ -12,6 +12,12 @@ export const PRO_PRODUCT_IDS = {
 
 export type ProPlan = keyof typeof PRO_PRODUCT_IDS;
 
+/**
+ * Plans sold with a free trial for new subscribers (approved for the yearly plan only): a Google Play free-trial offer on the plan's base
+ * plan, an App Store introductory offer (free trial) on its product. The app shows a trial only when the store says it applies.
+ */
+export const TRIAL_PLANS: readonly ProPlan[] = ['yearly'];
+
 export const PRIVACY_URL = 'https://fit.joyorogo.com/privasi';
 
 /** Why a purchase could not be credited; each has a sentence in `pro:error.<reason>`. */
@@ -38,10 +44,14 @@ export class BillingError extends Error {
   }
 }
 
-/** A plan's product as the store shows it. `price` is the numeric amount in the storefront currency, for the yearly saving. */
+/**
+ * A plan's product as the store shows it. `price` is the numeric amount in the storefront currency, for the yearly saving.
+ * `trialDays`: the free trial this account gets before the first charge, in days; null when there is none (or it cannot be confirmed).
+ */
 export interface StoreProduct {
   displayPrice: string;
   price: string;
+  trialDays: number | null;
 }
 
 export type StoreProducts = Record<ProPlan, StoreProduct | null>;

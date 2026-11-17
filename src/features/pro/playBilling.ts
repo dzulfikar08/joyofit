@@ -41,7 +41,7 @@ function connect(api: Iap): Promise<unknown> {
   return connection;
 }
 
-/** The base-plan offer of each plan; null while Play does not list it (not created or not active yet, no network, Play missing). */
+/** The offer each plan is sold with (the free-trial offer where the account is eligible, else the base plan); null while Play does not list it (not created or not active yet, no network, Play missing). */
 async function loadOffers(api: Iap): Promise<Record<ProPlan, PlayPlanOffer | null>> {
   await connect(api);
   const products = ((await api.fetchProducts({ skus: Object.values(PRO_PRODUCT_IDS), type: 'subs' })) ?? []) as ExpoIap.ProductSubscription[];
@@ -56,7 +56,7 @@ async function loadProducts(): Promise<StoreProducts> {
   if (!iap) return { monthly: null, yearly: null };
   try {
     const offers = await loadOffers(iap);
-    const show = (offer: PlayPlanOffer | null) => (offer ? { displayPrice: offer.displayPrice, price: offer.price } : null);
+    const show = (offer: PlayPlanOffer | null) => (offer ? { displayPrice: offer.displayPrice, price: offer.price, trialDays: offer.trialDays } : null);
     return { monthly: show(offers.monthly), yearly: show(offers.yearly) };
   } catch (error) {
     cloudLog(`Play products failed: ${errorMessage(error)}`, 'error');

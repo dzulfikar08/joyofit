@@ -33,10 +33,13 @@
       "yearly": "Tahunan",
       "perMonth": "{{price}} per bulan",
       "perYear": "{{price}} per tahun",
+      "perYearTrial": "Gratis {{days}} hari, lalu {{price}}/tahun. Batalkan paling lambat 24 jam sebelum masa coba habis agar tidak ditagih.",
+      "perYearTrialPlay": "Gratis {{days}} hari, lalu {{price}}/tahun. Batalkan kapan saja sebelum masa coba habis agar tidak ditagih.",
       "save": "Hemat {{percent}}%",
       "missing": "Belum tersedia sekarang"
     },
     "buy": "Berlangganan",
+    "buyTrial": "Mulai gratis {{days}} hari",
     "restore": "Pulihkan pembelian",
     "manage": "Kelola langganan",
     "signIn": {

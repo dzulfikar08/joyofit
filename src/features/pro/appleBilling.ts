@@ -6,19 +6,24 @@ import { cloudLog } from '@/cloud/log';
 import { errorMessage } from '@/format';
 
 import { appleIap } from '../../../modules/apple-iap';
-import { APPLE_TERMS_URL, appleAccountToken, postSignedTransaction } from './appleBillingCore';
-import { BillingError, PRO_PRODUCT_IDS, type ProBilling, type ProPlan, type PurchaseOutcome, type StoreProducts } from './billingCore';
+import { APPLE_TERMS_URL, appleAccountToken, appleStoreProduct, postSignedTransaction } from './appleBillingCore';
+import { BillingError, PRO_PRODUCT_IDS, TRIAL_PLANS, type ProBilling, type ProPlan, type PurchaseOutcome, type StoreProducts } from './billingCore';
 
 /** Apple's own subscription page, for a phone where the native management sheet cannot open. */
 const APPLE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
 
-/** StoreKit's products with the storefront's own price text; a plan is null while its product is not available (not set up, no network). */
+/**
+ * StoreKit's products with the storefront's own price text, and the free trial StoreKit will apply on its own at purchase (yearly, an
+ * eligible Apple ID); a plan is null while its product is not available (not set up, no network).
+ */
 async function loadProducts(): Promise<StoreProducts> {
   if (!appleIap) return { monthly: null, yearly: null };
-  const [monthly, yearly] = await Promise.all([
-    appleIap.getProduct(PRO_PRODUCT_IDS.monthly).catch(() => null),
-    appleIap.getProduct(PRO_PRODUCT_IDS.yearly).catch(() => null),
-  ]);
+  const api = appleIap;
+  const load = async (plan: ProPlan) => {
+    const product = await api.getProduct(PRO_PRODUCT_IDS[plan]).catch(() => null);
+    return product ? appleStoreProduct(product, TRIAL_PLANS.includes(plan)) : null;
+  };
+  const [monthly, yearly] = await Promise.all([load('monthly'), load('yearly')]);
   return { monthly, yearly };
 }
 
