@@ -23,15 +23,15 @@
   },
   "chip": {
     "own": "{{model}}, own key",
-    "rogo": "JoyoRogo Pro",
-    "rogoUsed": "JoyoRogo Pro, {{used}}/{{cap}}",
+    "rogo": "Joyo Pro",
+    "rogoUsed": "Joyo Pro, {{used}}/{{cap}}",
     "ownOff": "Own key not ready",
     "open": "Open Joyo AI settings. Now: {{engine}}"
   },
   "chat": {
     "usageToday": "Today: {{tokens}} tokens, {{calls}} of {{ceiling}} calls",
     "ownTitle": "Or use your own key",
-    "ownBody": "Free from JoyoFit, no JoyoRogo Pro needed. You add a key from the AI provider you choose (OpenRouter, OpenAI, Anthropic, Gemini) and only pay them for what you use.",
+    "ownBody": "Free from JoyoFit, no Joyo Pro needed. You add a key from the AI provider you choose (OpenRouter, OpenAI, Anthropic, Gemini) and only pay them for what you use.",
     "ownCta": "Set up your own key",
     "signIn": "Sign in",
     "noFood": "You are not signed in to JoyoRogo, so food and weight are not connected. Answers leave food out.",
@@ -189,7 +189,7 @@
     },
     "minor": {
       "title": "Not available under 18",
-      "body": "Chat with your own key is only for people 18 or older, because your body data goes to an outside provider. The JoyoRogo engine stays available through JoyoRogo Pro."
+      "body": "Chat with your own key is only for people 18 or older, because your body data goes to an outside provider. The JoyoRogo engine stays available through Joyo Pro."
     }
   },
   "notes": {
@@ -299,11 +299,11 @@
   "prefs": {
     "engine": {
       "title": "Engine",
-      "rogo": "JoyoRogo Pro",
+      "rogo": "Joyo Pro",
       "rogoUsed": "{{used}} of {{cap}} messages today",
       "rogoPro": "Answered by JoyoRogo's AI, with a daily message limit",
       "rogoSignedOut": "Needs a JoyoRogo sign-in and a Pro subscription",
-      "rogoFree": "Needs JoyoRogo Pro",
+      "rogoFree": "Needs Joyo Pro",
       "rogoChecking": "Checking your account...",
       "own": "Own key",
       "ownNone": "Not set up",
@@ -404,7 +404,7 @@
     "own": "Own key: {{provider}}, {{model}}",
     "ownCheck": "Own key, {{provider}}, needs a check",
     "minor": "Not available under 18",
-    "pro": "JoyoRogo Pro",
+    "pro": "Joyo Pro",
     "none": "Not set up"
   },
   "ask": {
@@ -414,7 +414,7 @@
   },
   "hosted": {
     "title": "Joyo AI sends your data to a server",
-    "intro": "Joyo AI on JoyoRogo Pro answers on a server, not on your phone. Before anything is sent, please read where it goes and agree.",
+    "intro": "Joyo AI on Joyo Pro answers on a server, not on your phone. Before anything is sent, please read where it goes and agree.",
     "toTitle": "Who gets your data",
     "to": "JoyoRogo's server (PT Joyo Digitama Solusi) and Cloudflare Workers AI (Cloudflare, Inc.), which runs the AI model. Your phone sends it to JoyoRogo's server, which passes it on to Cloudflare Workers AI to get the answer.",
     "lead": "Every time you send a message, JoyoFit sends:",
@@ -447,7 +447,7 @@
       "title": "Data sent to JoyoRogo's AI",
       "label": "Allow JoyoRogo's AI to receive my data",
       "on": "On: your messages and the data listed in the agreement go to JoyoRogo's server and Cloudflare Workers AI when you ask.",
-      "off": "Off: nothing is sent and the JoyoRogo Pro chat stays closed. Turn on to read what is sent and agree.",
+      "off": "Off: nothing is sent and the Joyo Pro chat stays closed. Turn on to read what is sent and agree.",
       "review": "What is sent and who gets it"
     }
   }
