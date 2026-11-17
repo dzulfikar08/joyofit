@@ -32,6 +32,8 @@ internal class HealthMetricsStore(
     val device = deviceAddress()
     db.beginTransaction()
     try {
+      // The watch reports stress itself now: the scores taken from its stress file would count the same measurements twice.
+      if (device != null && rows.any { it.type == RriStressStore.TYPE }) db.execSQL(WatchSql.DELETE_RRI_EMOTION, arrayOf(device))
       val statement = db.compileStatement(WatchSql.UPSERT_HEALTH_METRIC)
       try {
         for (r in rows) {
