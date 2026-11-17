@@ -8,7 +8,7 @@ import {
   NON_AFFILIATION,
   NON_AFFILIATION_EN,
   STRAVA_PATH,
-  PLAY_STORE_URL,
+  playStoreUrl,
   WATCH_REPORT_FORM_URL,
   goal,
 } from "./lib";
@@ -300,7 +300,7 @@ function Install({ lang }: { lang: Lang }) {
         }
       />
       <div className="flex flex-wrap gap-3 pt-1">
-        <ButtonLink href={PLAY_STORE_URL} target="_blank" rel="noopener" {...goal("play_store_click", "panduan")}>
+        <ButtonLink href={playStoreUrl("panduan")} target="_blank" rel="noopener" {...goal("play_store_click", "panduan")}>
           {id ? "Pasang di Google Play" : "Install on Google Play"}
         </ButtonLink>
       </div>

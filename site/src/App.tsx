@@ -66,7 +66,7 @@ import {
   SELF_HOST_PATH,
   STRAVA_PATH,
   STUDIO_URL,
-  PLAY_STORE_URL,
+  playStoreUrl,
   TIMBANGAN_PATH,
   TRAKTEER_URL,
   WATCH_REPORTS_URL,
@@ -427,7 +427,7 @@ function Hero() {
           <p className={cn(platform === "ios" && "order-1")}>
             <span className="font-bold text-foreground">Android:</span> tersedia di{" "}
             <a
-              href={PLAY_STORE_URL}
+              href={playStoreUrl("hero-text")}
               target="_blank"
               rel="noopener"
               className="font-semibold text-foreground underline underline-offset-4"
@@ -1763,7 +1763,7 @@ function Install() {
               .
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <ButtonLink href={PLAY_STORE_URL} target="_blank" rel="noopener" {...goal("play_store_click", "cara")}>
+              <ButtonLink href={playStoreUrl("cara")} target="_blank" rel="noopener" {...goal("play_store_click", "cara")}>
                 <AndroidMark />
                 Pasang di Google Play
               </ButtonLink>
@@ -1858,7 +1858,7 @@ function PlatformButtons({ location, className, buttonClassName }: { location: s
       <ButtonLink
         size="lg"
         className={cn(platform === "ios" && "order-last", buttonClassName)}
-        href={PLAY_STORE_URL}
+        href={playStoreUrl(location)}
         target="_blank"
         rel="noopener"
         {...goal("play_store_click", location)}
