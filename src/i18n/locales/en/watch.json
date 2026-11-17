@@ -67,7 +67,8 @@
       "noWatchIos": "Watch not found. If it is still connected to another phone, disconnect it there first. Make sure the watch is on and close to this phone, then tap Refresh.",
       "noWatchScan": "No watch found nearby. If it is still connected to another phone or app (Huawei Health, or JoyoFit on another phone), disconnect it there first. Make sure the watch is on and close to this phone, then scan again.",
       "notPaired": "Android has no Bluetooth pairing with this watch (it was removed, or the watch refused to pair again). Open Android's Bluetooth settings and pair the watch, then tap Try again. If the watch does not show up there, remove this phone once in the watch's own Bluetooth settings. JoyoFit deletes nothing.",
-      "bondRemovedIos": "The watch no longer has a Bluetooth pairing with this iPhone (it was reset, or paired with another phone), but the iPhone still keeps the old one, so it refuses the watch. Open Settings > Bluetooth, tap the (i) icon next to the watch, choose Forget This Device, then tap Retry and accept the pairing request."
+      "bondRemovedIos": "The watch no longer has a Bluetooth pairing with this iPhone (it was reset, or paired with another phone), but the iPhone still keeps the old one, so it refuses the watch. Open Settings > Bluetooth, tap the (i) icon next to the watch, choose Forget This Device, then tap Retry and accept the pairing request.",
+      "noHuaweiService": "This device does not offer the Huawei connection that JoyoFit uses. It is most likely a band or watch that uses another maker's protocol (some HONOR CHOICE models do), and JoyoFit cannot connect to it. If it is a Huawei or HONOR watch that worked before, restart it and tap Retry."
     },
     "silent": {
       "short": "The watch connected over Bluetooth but does not answer. What to try is under More, Watch.",

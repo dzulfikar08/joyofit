@@ -31,6 +31,12 @@ export const NOT_PAIRED = 'ERR_NOT_PAIRED';
  */
 export const BOND_REMOVED_MARKER = 'removed its Bluetooth pairing with this iPhone';
 
+/**
+ * The device has no Huawei service (FE86 with FE01/FE02): Kotlin and Swift `BleTransport` both say "has no Huawei GATT
+ * characteristics". Usually a band that talks another maker's protocol (HONOR CHOICE Band, JRG-485), not a busy watch.
+ */
+export const NO_HUAWEI_SERVICE_MARKER = 'has no Huawei GATT characteristics';
+
 function isBondRemoved(e: unknown): boolean {
   return errorCode(e) === 'ERR_CONNECT_FAILED' && errorMessage(e).includes(BOND_REMOVED_MARKER);
 }
@@ -80,6 +86,9 @@ export function describeConnectFailure(e: unknown): ConnectFailure {
   if (code === BIND_CONFIRMATION) return { kind: 'bind', lost: isLostBinding(e) };
   if (code === NOT_PAIRED) return { kind: 'unpaired', message: t('watch:device.hint.notPaired') };
   if (isBondRemoved(e)) return { kind: 'unpaired', message: t('watch:device.hint.bondRemovedIos') };
+  if (code === 'ERR_CONNECT_FAILED' && errorMessage(e).includes(NO_HUAWEI_SERVICE_MARKER)) {
+    return { kind: 'unreachable', message: t('watch:device.hint.noHuaweiService') };
+  }
   if (isSilentWatch(e)) return { kind: 'silent', message: t('watch:device.silent.short') };
   if (code !== null && UNREACHABLE_CODES[code]) return { kind: 'unreachable', message: watchBusyHint() };
   return { kind: 'other', message: errorMessage(e) };

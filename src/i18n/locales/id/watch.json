@@ -67,7 +67,8 @@
       "noWatchIos": "Jam tidak ditemukan. Kalau jam masih terhubung ke HP lain, putuskan dulu di sana. Pastikan jam menyala dan dekat dengan HP ini, lalu ketuk Segarkan.",
       "noWatchScan": "Tidak ada jam di sekitar. Kalau jam masih terhubung ke HP atau aplikasi lain (Huawei Health, atau JoyoFit di HP lain), putuskan dulu di sana. Pastikan jam menyala dan dekat dengan HP ini, lalu cari lagi.",
       "notPaired": "Android tidak punya pairing Bluetooth dengan jam ini (terhapus, atau jam menolak dipasangkan lagi). Buka pengaturan Bluetooth Android dan pasangkan jamnya, lalu ketuk Coba lagi. Kalau jam tidak muncul di sana, lepas HP ini sekali di pengaturan Bluetooth jam. JoyoFit tidak menghapus apa pun.",
-      "bondRemovedIos": "Jam sudah tidak punya pairing Bluetooth dengan iPhone ini (jam direset, atau dipasangkan ke HP lain), tapi iPhone masih menyimpan pairing lama, jadi iPhone menolak jam. Buka Pengaturan > Bluetooth, ketuk ikon (i) di samping jam, pilih Lupakan Perangkat Ini, lalu ketuk Coba lagi dan terima permintaan pairing."
+      "bondRemovedIos": "Jam sudah tidak punya pairing Bluetooth dengan iPhone ini (jam direset, atau dipasangkan ke HP lain), tapi iPhone masih menyimpan pairing lama, jadi iPhone menolak jam. Buka Pengaturan > Bluetooth, ketuk ikon (i) di samping jam, pilih Lupakan Perangkat Ini, lalu ketuk Coba lagi dan terima permintaan pairing.",
+      "noHuaweiService": "Perangkat ini tidak menyediakan koneksi Huawei yang dipakai JoyoFit. Kemungkinan besar ini band atau jam yang memakai protokol produsen lain (beberapa model HONOR CHOICE begitu), dan JoyoFit tidak bisa terhubung ke sana. Kalau ini jam Huawei atau HONOR yang sebelumnya bisa, mulai ulang jamnya lalu ketuk Coba lagi."
     },
     "silent": {
       "short": "Jam tersambung lewat Bluetooth tapi tidak menjawab. Langkah perbaikannya ada di Lainnya, Jam.",
