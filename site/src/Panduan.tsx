@@ -740,7 +740,7 @@ function SetupGuide({ lang }: { lang: Lang }) {
                 </>,
                 "Notifications, Health Connect (Apple Health di iPhone), dan Weather: izin opsional.",
                 "Background (hanya Android): jaga jam tetap tersambung di latar belakang.",
-                "JoyoRogo: masuk dengan akun JoyoRogo untuk cloud, Strava, dan Social. Lalu JoyoRogo Pro, hanya informasi dan tidak menghalangi langkah berikutnya.",
+                "JoyoRogo: masuk dengan akun JoyoRogo untuk cloud, Strava, dan Social. Lalu Joyo Pro, hanya informasi dan tidak menghalangi langkah berikutnya.",
                 <>
                   <B>JoyoRogo Cloud</B>: cadangan semua workout beserta analisisnya, bisa dilihat di joyorogo.com/jam dan dipulihkan di HP baru.
                   Untuk akun Pro; akun Free tetap menyimpan workout di HP. Bisa dilewati.
@@ -765,7 +765,7 @@ function SetupGuide({ lang }: { lang: Lang }) {
                 </>,
                 "Notifications, Health Connect (Apple Health on iPhone), and Weather: optional permissions.",
                 "Background (Android only): keep the watch connected in the background.",
-                "JoyoRogo: sign in with your JoyoRogo account for the cloud, Strava and Social. Then JoyoRogo Pro, information only, which never blocks the next step.",
+                "JoyoRogo: sign in with your JoyoRogo account for the cloud, Strava and Social. Then Joyo Pro, information only, which never blocks the next step.",
                 <>
                   <B>JoyoRogo Cloud</B>: a backup of every workout with its analysis, viewable at joyorogo.com/jam and restorable on a
                   new phone. For Pro accounts; Free accounts keep workouts on the phone. Can be skipped.
@@ -894,12 +894,12 @@ function SocialGuide({ lang }: { lang: Lang }) {
         {id ? (
           <>
             <B>Yang gratis dan yang Pro.</B> Membagikan latihan gratis. Melihat grafik detak jantung dan rute di postingan orang
-            lain adalah fitur JoyoRogo Pro; milikmu sendiri selalu bisa kamu lihat.
+            lain adalah fitur Joyo Pro; milikmu sendiri selalu bisa kamu lihat.
           </>
         ) : (
           <>
             <B>Free and Pro.</B> Sharing a workout is free. Seeing the heart-rate chart and route on someone else's post is a
-            JoyoRogo Pro feature; your own are always visible to you.
+            Joyo Pro feature; your own are always visible to you.
           </>
         )}
       </p>
@@ -950,8 +950,8 @@ function CoachGuide({ lang }: { lang: Lang }) {
     <>
       <p>
         {id
-          ? "Coach adalah fitur JoyoRogo Pro. Buka dari kartu Saran hari ini di layar Hari Ini, atau lewat Coach. Kamu perlu masuk dengan akun JoyoRogo."
-          : "Coach is a JoyoRogo Pro feature. Open it from the Today's suggestion card on the Today screen. You need to be signed in with your JoyoRogo account."}
+          ? "Coach adalah fitur Joyo Pro. Buka dari kartu Saran hari ini di layar Hari Ini, atau lewat Coach. Kamu perlu masuk dengan akun JoyoRogo."
+          : "Coach is a Joyo Pro feature. Open it from the Today's suggestion card on the Today screen. You need to be signed in with your JoyoRogo account."}
       </p>
       <ul className="list-disc space-y-1 pl-5">
         <li>

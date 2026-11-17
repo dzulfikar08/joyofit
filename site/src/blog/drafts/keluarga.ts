@@ -45,7 +45,7 @@ export const keluarga: Post = {
     { kind: "h2", text: "Pemberitahuan" },
     {
       kind: "p",
-      text: "Yang gratis: pemberitahuan kalau tidak ada sinkron dalam waktu yang kamu atur, supaya kamu tahu ponsel atau jamnya diam. JoyoRogo Pro menambah aturan lain (misalnya detak istirahat yang lebih tinggi dari biasanya, belum ada langkah sampai siang, tidur sangat pendek), memantau lebih dari satu orang, dan riwayat lebih panjang. Bahasanya netral dan bukan diagnosis.",
+      text: "Yang gratis: pemberitahuan kalau tidak ada sinkron dalam waktu yang kamu atur, supaya kamu tahu ponsel atau jamnya diam. Joyo Pro menambah aturan lain (misalnya detak istirahat yang lebih tinggi dari biasanya, belum ada langkah sampai siang, tidur sangat pendek), memantau lebih dari satu orang, dan riwayat lebih panjang. Bahasanya netral dan bukan diagnosis.",
     },
   ],
   more: [

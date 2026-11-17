@@ -10,7 +10,7 @@ export const joyofitRide: Post = {
   body: [
     {
       kind: "p",
-      text: "JoyoFit Ride adalah permainan sepeda indoor di browser. Kamu mengayuh sepeda statis atau sepeda di rol, sensor kadens membaca putaran pedalmu, dan pesepeda 3D di layar bergerak sesuai kayuhanmu. Layarnya besar, sensornya dari HP. Buka di [fit.joyorogo.com/ride](/ride) atau [app.fit.joyorogo.com/ride](https://app.fit.joyorogo.com/ride). Gratis, tanpa JoyoRogo Pro.",
+      text: "JoyoFit Ride adalah permainan sepeda indoor di browser. Kamu mengayuh sepeda statis atau sepeda di rol, sensor kadens membaca putaran pedalmu, dan pesepeda 3D di layar bergerak sesuai kayuhanmu. Layarnya besar, sensornya dari HP. Buka di [fit.joyorogo.com/ride](/ride) atau [app.fit.joyorogo.com/ride](https://app.fit.joyorogo.com/ride). Gratis, tanpa Joyo Pro.",
     },
     { kind: "h2", text: "Yang kamu butuhkan" },
     {

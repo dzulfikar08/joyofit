@@ -1,4 +1,4 @@
-/** Priority support for JoyoRogo Pro: one handle and one promise. Change the account here (and in `src/features/pro/support.ts` of the app). */
+/** Priority support for Joyo Pro: one handle and one promise. Change the account here (and in `src/features/pro/support.ts` of the app). */
 export const PRO_SUPPORT = {
   handle: "@dzulfikar.at",
   url: "https://www.threads.com/@dzulfikar.at",
