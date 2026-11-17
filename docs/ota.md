@@ -230,6 +230,13 @@ Android `cb987e8b8ac363beba44e1d31a702071aca28f95` (Release Android run 42046885
 - 2026-11-17 from branch `ota/strava-pauses` + the cherry-picked #102 fix (`28d6d0b1`: pauses also where the GPS fixes stand
   still, FIT-156), published locally with `--runtime-version`: groups `86b39ef8-9db3-475d-a8ae-453024f285e5` android,
   `332d5b6b-8d80-48db-b4a0-84a5258eb872` ios (same runtimes).
+- 2026-11-17 from branch `ota/watch-reports` = `ota/strava-pauses` (`28d6d0b1`) + the JS-only parts of #104, cherry-picked:
+  `e2b17f9f` (Watch tab: a device without the Huawei service gets its own hint, JRG-485; the iOS "forget the watch" lines of
+  the same file were left out, they need the Swift change), `f8eba496` (its iOS wording) and `9736c99d` (heart rate day: why
+  resting rate is empty, JRG-487/488). Published locally with `bun install --frozen-lockfile` and `--runtime-version`: groups
+  `19997c2d-3a24-45e9-b996-a9e34d742306` android, `fb4a3f88-923e-44ec-8053-467652f6f9f1` ios (same runtimes). The native
+  parts of #104 (iOS stale pairing in `BleTransport.swift`, 0A file blocks in Java and Swift, Band 11 Pro stress in Kotlin) wait
+  for the next store build.
 
 ## When OTA is not enough
 
