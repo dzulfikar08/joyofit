@@ -227,6 +227,9 @@ Android `cb987e8b8ac363beba44e1d31a702071aca28f95` (Release Android run 42046885
   sensor, only on the Play alpha) and the #87 `bun.lock` refresh, none in an installed production build. Published locally
   with `bun install --frozen-lockfile` on that branch: groups `4d5f823e-889f-4e56-a9ae-fb30480cdc90` android,
   `407a694a-f0ff-441d-badb-7c4d2cd1fe82` ios (same runtimes, `--runtime-version`).
+- 2026-11-17 from branch `ota/strava-pauses` + the cherry-picked #102 fix (`28d6d0b1`: pauses also where the GPS fixes stand
+  still, FIT-156), published locally with `--runtime-version`: groups `86b39ef8-9db3-475d-a8ae-453024f285e5` android,
+  `332d5b6b-8d80-48db-b4a0-84a5258eb872` ios (same runtimes).
 
 ## When OTA is not enough
 
