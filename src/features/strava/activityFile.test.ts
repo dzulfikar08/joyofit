@@ -190,6 +190,27 @@ describe('buildFit records', () => {
     ]);
   });
 
+  it('puts what the empty stretches cannot hold where the fixes stand still, never over fixes that move', () => {
+    // A ride logging fixes every second: moving at about 5.5 m/s, but standing on one spot 200..300 (GPS wandering 3 m) and a
+    // 60 s gap 400..460. The watch timer says 160 s paused: 60 s in the gap, 100 s at the stop (a 237 km ride lost 2:48 there).
+    const points: StravaPoint[] = [];
+    let lat = 10;
+    for (let t = 0; t <= 600; t++) {
+      if (t > 400 && t < 460) continue;
+      if (t <= 200 || t > 300) lat += 0.00005;
+      points.push(fix(t, lat + (t >= 200 && t <= 300 ? (t % 3) * 0.00001 : 0), 120));
+    }
+    const { records, events, session } = roundTrip({ ...walk, sportType: 3, duration: 440 }, points);
+    const at = events.map((e) => [e.eventType, (e.timestamp ?? 0) - FIT_START] as const);
+    expect(at.map(([type]) => type)).toEqual([0, 4, 0, 4, 0, 4]);
+    // The stop's run of fixes starts a few seconds early (the last metres before it are inside the 20 m radius).
+    expect(Math.abs(at[1]![1] - 200)).toBeLessThanOrEqual(5);
+    expect(at[2]![1] - at[1]![1]).toBe(100);
+    expect(at.slice(3).map(([, t]) => t)).toEqual([400, 460, 600]);
+    expect(estimateMovingTime(records, events)).toEqual({ seconds: 440, from: 'timer events' });
+    expect(session?.totalTimerTime).toBe(440);
+  });
+
   it('writes no pause when the watch reports no timer or a timer as long as the elapsed time', () => {
     expect(roundTrip({ ...walk, duration: 600 }, [hrOnly(100, 90)]).events.length).toBe(2);
     expect(roundTrip({ ...walk, duration: 0 }, [hrOnly(100, 90)]).events.length).toBe(2);
