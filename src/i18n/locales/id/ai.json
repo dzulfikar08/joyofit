@@ -411,7 +411,7 @@
     "title": "Joyo AI mengirim datamu ke server",
     "intro": "Joyo AI di JoyoRogo Pro menjawab di server, bukan di ponselmu. Sebelum ada yang dikirim, baca dulu ke mana datanya pergi, lalu setujui.",
     "toTitle": "Siapa yang menerima datamu",
-    "to": "Server JoyoRogo (PT Joyo Digitama Solusi) dan Cloudflare Workers AI (Cloudflare, Inc.), yang menjalankan model AI. Ponselmu mengirimnya ke server JoyoRogo, lalu server meneruskannya ke Cloudflare Workers AI untuk mendapat jawaban.",
+    "to": "Server JoyoRogo (PT Joyo Digitama Solusi) dan Cloudflare Workers AI (Cloudflare, Inc.), yang menjalankan model AI Gemma dari Google. Ponselmu mengirimnya ke server JoyoRogo, lalu server meneruskannya ke Cloudflare Workers AI untuk mendapat jawaban.",
     "lead": "Setiap kamu mengirim pesan, JoyoFit mengirim:",
     "data": {
       "chat": "Pesanmu: yang kamu ketik dan pesan sebelumnya di chat ini (12 terakhir), serta tanggal dan jam pertanyaanmu.",

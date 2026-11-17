@@ -507,9 +507,14 @@ export const rogo = {
   importMeals: (meals: RogoImportMeal[]) => rogoCall<RogoImportResult>('food/importHistory', { meals }),
   /** Past days of water in glasses (`water.importHistory`, at most 100 a call); a day with a count is never written over. */
   importWater: (days: { date: string; glasses: number }[]) => rogoCall<RogoImportResult>('water/importHistory', { days }),
-  /** Writes one item to the diary (a meal the watch quick-logged). Not repeated on failure (it would write the meal twice), but given the reads' deadline so a slow answer is not cut off while JoyoRogo is still saving it. */
+  /**
+   * Writes one item to the diary (a meal the watch quick-logged). Not repeated on failure (it would write the meal twice), but given the
+   * reads' deadline so a slow answer is not cut off while JoyoRogo is still saving it. The macros are sent as 0 on purpose: a `manual`
+   * or `copy` row with kcal and no macro at all makes JoyoRogo's `food.add` estimate them with Workers AI, and a meal from the watch
+   * must not reach an AI service without the person's consent (Apple 5.1.1(i), 5.1.2(i)). Totals count a missing macro as 0 g anyway.
+   */
   addFood: (input: { date: string; meal: RogoMeal; name: string; kcal: number }) =>
-    rogoCall<RogoFoodItem>('food/add', { ...input, source: 'manual' }, { timeoutMs: SLOW_OK_MS }),
+    rogoCall<RogoFoodItem>('food/add', { ...input, protein: 0, carbs: 0, fat: 0, source: 'manual' }, { timeoutMs: SLOW_OK_MS }),
   /** Stores the day's Recovery / Strain / Sleep and body metrics (sleep hours, resting HR, HRV, VO2max, training status, recovery time) for JoyoRogo's diary and its AI connector. JoyoRogo answers 404 until it is deployed with the `fitness` router. */
   pushScores: (days: RogoScoreDay[]) => rogoCall<{ saved: number }>('fitness/upsertScores', { days }),
   /** Wawasan tidur: the server consent switch and the nightly sleep rows (JoyoRogo computes and shows the findings). Status and push treat a JoyoRogo without the router (404/405) as a typed outcome. */
