@@ -165,6 +165,10 @@ On iOS the Fit 4 Pro talks BLE GATT, service `FE86`, write char `FE01` (write wi
 | 6 | "All on" (CN UI) or turn a second app off, then screenshot the screen | whether HH sends the changed entry only or the whole list |
 | 7 | Stop the trace | |
 
+**Reading it without Wireshark.** `bun scripts/hh-notif-capture.ts hh-notif.pklg` (or the `.pcap`) rebuilds the Huawei frames from the
+ATT writes and notifications and prints each 0x02 frame with its time, direction, `7E` length and the GCM plaintext length; `--all` lists every
+service, for the case where no 02/0B shows up. Note the clock time of each toggle so it can be matched to the printed seconds.
+
 **What to look for.** Wireshark filter on the export: `btatt.value[0:1] == 5a && (btatt.value[4:2] == 02:0b || btatt.value[5:2] == 02:0b)` (unsliced: service at byte 4; sliced first fragment: byte 5). Then for each frame read the `7E` length and compute `plaintext = len - 16` (GCM):
 
 | One-app 02/0B plaintext | Meaning |
