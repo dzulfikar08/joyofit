@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
 import { defineConfig, type Plugin } from "vite";
 
+import { fetchJoyoPrice } from "./src/joyo-price.ts";
 import { headTags, normalizePath } from "./src/seo.ts";
 
 /**
@@ -39,7 +40,9 @@ function rideRoute(): Plugin {
   };
 }
 
-export default defineConfig({
+export default defineConfig(async () => ({
+  // Joyo Pro price for the page, read from api.joyorogo.com at build time (src/joyo-price.ts), so it follows the ladder.
+  define: { __JOYO_PRICE__: JSON.stringify(await fetchJoyoPrice()) },
   plugins: [tailwindcss(), react(), devSeoHead(), rideRoute()],
   server: {
     // The game imports the phone app's protocol and physics (src/features/ride) so there is one copy of each.
@@ -55,4 +58,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

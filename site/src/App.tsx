@@ -100,8 +100,8 @@ import { PRO_SUPPORT, PRO_SUPPORT_LINE } from "./support";
 import roadmap from "../../docs/roadmap.json";
 import { IphonePage, StravaPage } from "./Waitlist";
 
-/** Harga JoyoRogo Pro, sama dengan joyorogo.com/harga (api.joyorogo.com/api/config). */
-const PRICE = { monthly: "Rp29.000", yearly: "Rp199.000", next: "Rp49.000", slots: 60 };
+/** Harga Joyo Pro, dibaca dari api.joyorogo.com/api/config saat build (src/joyo-price.ts), sama dengan joyorogo.com/harga. */
+const PRICE = __JOYO_PRICE__;
 
 const FACTS = [
   { value: `${JAM_BISA_DICOBA} model`, label: "jam dan band kompatibel bisa dicoba", href: "/jam" },
@@ -844,7 +844,7 @@ const SOCIAL_POINTS: { Icon: LucideIcon; title: string; body: string }[] = [
   {
     Icon: Lock,
     title: "Detail itu fitur Pro",
-    body: "Grafik detak jantung dan rute di postingan orang lain butuh JoyoRogo Pro. Milikmu selalu bisa kamu lihat, dan membagikannya gratis.",
+    body: "Grafik detak jantung dan rute di postingan orang lain butuh Joyo Pro. Milikmu selalu bisa kamu lihat, dan membagikannya gratis.",
   },
 ];
 
@@ -876,7 +876,7 @@ function CoachSection() {
     <section id="coach" data-section="coach" className="scroll-mt-16 border-t border-border/70 py-20 md:py-28">
       <div className="mx-auto w-full max-w-6xl px-4 md:px-6">
         <div className="max-w-2xl">
-          <p className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Baru, untuk JoyoRogo Pro</p>
+          <p className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Baru, untuk Joyo Pro</p>
           <SectionTitle>Coach: tahu harus latihan apa hari ini</SectionTitle>
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
             Coach membaca pemulihanmu dan memberi saran latihan hari ini, lengkap dengan rencana lari dan latihan kekuatan. Tanpa jam, kamu menjawab satu pertanyaan, &quot;badanmu terasa bagaimana hari ini&quot;, sebagai pengganti kesiapan. Rencanamu tersimpan di akun JoyoRogo dan ikut ke ponsel lain.
@@ -1007,7 +1007,7 @@ function WebSection() {
       <div className="mx-auto w-full max-w-6xl px-4 md:px-6">
         <div className="max-w-2xl">
           <p className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-            Untuk JoyoRogo Pro
+            Untuk Joyo Pro
           </p>
           <SectionTitle>JoyoFit Web: analisis latihan di browser</SectionTitle>
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
@@ -1039,7 +1039,7 @@ function WebSection() {
             <span className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Lock className="size-5" aria-hidden />
             </span>
-            <h3 className="mt-4 text-lg font-extrabold tracking-tight">Perlu JoyoRogo Pro</h3>
+            <h3 className="mt-4 text-lg font-extrabold tracking-tight">Perlu Joyo Pro</h3>
             <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-muted-foreground">
               Masuk dengan akun JoyoRogo yang sama dengan di aplikasi. Pro mulai {PRICE.monthly} per bulan atau{" "}
               {PRICE.yearly} per tahun.
@@ -1149,7 +1149,7 @@ function RideSection() {
               <a href={RIDE_WEB_URL} className="font-semibold text-foreground underline underline-offset-4">
                 app.fit.joyorogo.com/ride
               </a>
-              . Memainkannya tidak butuh JoyoRogo Pro.
+              . Memainkannya tidak butuh Joyo Pro.
             </p>
           </div>
           <Screenshot
@@ -1216,7 +1216,7 @@ const SEND_POINTS: { Icon: LucideIcon; title: string; body: string; href?: strin
   {
     Icon: Footprints,
     title: "Sepatu dan sepeda",
-    body: "Catat jarak seumur pakai per sepatu atau sepeda, atur bawaan per olahraga, dan dapat pengingat pensiun di 90 dan 100 persen jarak yang kamu tetapkan. Bisa ditautkan ke sepatu dan sepeda di Strava. Salinan cloud-nya fitur JoyoRogo Pro.",
+    body: "Catat jarak seumur pakai per sepatu atau sepeda, atur bawaan per olahraga, dan dapat pengingat pensiun di 90 dan 100 persen jarak yang kamu tetapkan. Bisa ditautkan ke sepatu dan sepeda di Strava. Salinan cloud-nya fitur Joyo Pro.",
   },
   {
     Icon: ListChecks,
@@ -1344,7 +1344,7 @@ function StrengthSection() {
           <p className="mt-8 text-[0.9375rem] leading-relaxed text-muted-foreground">
             Sesi selesai bisa dikirim ke Strava, dan kalorinya masuk ke JoyoRogo. Riwayat beban yang disalin ke cloud adalah fitur{" "}
             <a href={HARGA_URL} className="font-semibold text-foreground underline underline-offset-4" {...goal("founder_cta_click", "strength")}>
-              JoyoRogo Pro
+              Joyo Pro
             </a>
             ; mencatat dan melihat riwayat di HP tetap gratis. Pencatat latihan beban pindah ke sini dari JoyoRogo; riwayat lamamu bisa diimpor.
           </p>
@@ -1973,22 +1973,25 @@ function Options() {
             </div>
           </section>
 
-          {/* 3. JoyoFit Cloud via JoyoRogo Pro */}
+          {/* 3. JoyoFit Cloud via Joyo Pro */}
           <section className="flex flex-col rounded-[1.75rem] bg-makan-soft p-6">
             <div className="flex items-center justify-between gap-2">
               <h3 className="font-bold text-makan-ink">JoyoFit Cloud</h3>
               <span className="inline-flex h-6 items-center rounded-full bg-card px-2.5 text-xs font-bold text-makan-ink">
-                JoyoRogo Pro
+                Joyo Pro
               </span>
             </div>
             <p className="mt-3 text-4xl font-extrabold tracking-tight tabular-nums">{PRICE.monthly}</p>
             <p className="text-sm text-muted-foreground">per bulan</p>
             <p className="mt-0.5 text-xs font-semibold text-makan-ink">
-              Harga perkenalan untuk {PRICE.slots} pembeli pertama, lalu {PRICE.next}/bulan. Atau {PRICE.yearly}/tahun (~Rp16.600/bulan).
+              {PRICE.next && PRICE.slots
+                ? `Harga perkenalan untuk ${PRICE.slots} pembeli pertama, lalu ${PRICE.next}/bulan. `
+                : ""}
+              Atau {PRICE.yearly}/tahun (setara {PRICE.yearlyPerMonth}/bulan).
             </p>
             <ul className="mt-5 space-y-2.5 text-sm">
               {[
-                "Satu paket JoyoRogo Pro untuk JoyoRogo dan JoyoFit",
+                "Satu Joyo Pro untuk JoyoRogo, JoyoFit, dan JoyoArto",
                 "Cadangan cloud latihan, tidur, perlengkapan, dan riwayat beban",
                 "Coach dan Tanya coach, Joyo AI, serta Koneksi AI",
                 "Proyek Studio di cloud dan unggah tampilan jam dari web",
@@ -2005,7 +2008,7 @@ function Options() {
             </ul>
             <div className="mt-auto pt-6">
               <ButtonLink className="w-full" href={HARGA_URL} {...goal("founder_cta_click", "cara")}>
-                Ambil JoyoRogo Pro
+                Ambil Joyo Pro
               </ButtonLink>
               <p className="mt-2 text-center text-xs text-muted-foreground">
                 Harga dan paket mengikuti joyorogo.com/harga. Dukungan lewat{" "}
