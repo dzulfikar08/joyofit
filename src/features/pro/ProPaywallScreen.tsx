@@ -131,6 +131,13 @@ function Paywall() {
   }, [cloud, t, failed, suffix]);
 
   const chosen = products?.[plan] ?? null;
+  const yearly = products?.yearly ?? null;
+  /** The store's free-trial disclosure in its own wording; the plain yearly price when there is no trial. */
+  const yearlyPrice = yearly
+    ? yearly.trialDays
+      ? t(`paywall.plan.perYearTrial${suffix}`, { days: yearly.trialDays, price: yearly.displayPrice })
+      : t('paywall.plan.perYear', { price: yearly.displayPrice })
+    : null;
   const saving = products?.monthly && products.yearly ? yearlySavingPercent(products.monthly.price, products.yearly.price) : null;
   const unlocks = ['coach', 'cloud', 'koneksi', 'family'] as const;
 
@@ -217,7 +224,7 @@ function Paywall() {
           <View style={styles.plans} accessibilityRole="radiogroup">
             <PlanOption
               title={t('paywall.plan.yearly')}
-              price={products?.yearly ? t('paywall.plan.perYear', { price: products.yearly.displayPrice }) : null}
+              price={yearlyPrice}
               missing={products ? t('paywall.plan.missing') : '\u2026'}
               badge={saving ? t('paywall.plan.save', { percent: saving }) : null}
               selected={plan === 'yearly'}
@@ -233,7 +240,14 @@ function Paywall() {
               onSelect={() => setPlan('monthly')}
             />
           </View>
-          <Button label={t('paywall.buy')} variant="primary" icon="card-outline" onPress={() => void buy()} loading={busy === 'buy'} disabled={chosen === null || busy !== null} />
+          <Button
+            label={chosen?.trialDays ? t('paywall.buyTrial', { days: chosen.trialDays }) : t('paywall.buy')}
+            variant="primary"
+            icon="card-outline"
+            onPress={() => void buy()}
+            loading={busy === 'buy'}
+            disabled={chosen === null || busy !== null}
+          />
           <Button label={t('paywall.restore')} variant="secondary" onPress={() => void restore()} loading={busy === 'restore'} disabled={busy !== null} />
           <AppText variant="caption" muted>
             {t(`paywall.disclosure${suffix}`)}

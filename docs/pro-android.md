@@ -42,6 +42,17 @@ Matching JoyoRogo's prices per region (read on 2026-11-02 with the Android Publi
 
 The other regions: open JoyoRogo's `pro` subscription in Play Console and copy each base plan's price table (it is the same list).
 
+## Free trial (yearly only)
+
+Approved 2026-11-17: 7 days free on the yearly plan, new subscribers only. In Play Console it is an offer on base plan `yearly` of
+`com.joyodigitama.joyofit.pro.yearly`: eligibility "New customer acquisition, never had this subscription", one phase "Free trial" of 7 days,
+any offer id (`yearly-trial-7d` suggested; the app does not read it). Monthly gets no offer.
+
+`pickPlanOffer` (`src/features/pro/playBillingCore.ts`) sells the yearly plan with a listed offer of that base plan whose phases are exactly a free
+first phase counted in days or weeks (`P7D`, `P1W`) and then the recurring price; Play lists an offer only to an account eligible for it, so a listed
+trial is one Play applies. Its offer token goes to the purchase and its length becomes `trialDays`, which the paywall discloses on the yearly row
+("Gratis 7 hari, lalu Rp199.000/tahun. ...", the price from Play) and on the button. No such offer listed: the plain base plan and today's text.
+
 ## Pieces
 
 | Piece | File |

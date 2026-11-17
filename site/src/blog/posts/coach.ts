@@ -33,7 +33,7 @@ export const coach: Post = {
     { kind: "h2", text: "Pro dan data" },
     {
       kind: "p",
-      text: "Coach adalah fitur JoyoRogo Pro. Rencanamu disimpan di akun JoyoRogo dan ikut ke ponsel lain. Pesan Tanya coach dan ringkasan datamu dikirim ke AI JoyoRogo untuk dijawab, dan tidak disimpan di server; obrolan hanya tersimpan di ponselmu.",
+      text: "Coach adalah fitur Joyo Pro. Rencanamu disimpan di akun JoyoRogo dan ikut ke ponsel lain. Pesan Tanya coach dan ringkasan datamu dikirim ke AI JoyoRogo untuk dijawab, dan tidak disimpan di server; obrolan hanya tersimpan di ponselmu.",
     },
     {
       kind: "note",

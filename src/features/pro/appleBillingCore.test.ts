@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { applyLocale } from '@/i18n';
 
-import { appleAccountToken, postSignedTransaction } from './appleBillingCore';
+import { appleAccountToken, appleStoreProduct, appleTrialDays, postSignedTransaction, type AppleProductLike } from './appleBillingCore';
 import { BillingError } from './billingCore';
 
 describe('appleAccountToken', () => {
@@ -86,5 +86,40 @@ describe('postSignedTransaction', () => {
       }
     }
     await applyLocale('id');
+  });
+});
+
+describe('appleTrialDays', () => {
+  const yearly: AppleProductLike = {
+    displayPrice: 'Rp199.000',
+    price: '199000',
+    introPaymentMode: 'freeTrial',
+    introPeriodUnit: 'day',
+    introPeriodValue: '7',
+    introPeriodCount: '1',
+    introEligible: 'true',
+  };
+
+  test('an eligible Apple ID gets the free trial, in days', () => {
+    expect(appleTrialDays(yearly)).toBe(7);
+    expect(appleTrialDays({ ...yearly, introPeriodUnit: 'week', introPeriodValue: '1' })).toBe(7);
+    expect(appleTrialDays({ ...yearly, introPeriodUnit: 'week', introPeriodValue: '2' })).toBe(14);
+    expect(appleTrialDays({ ...yearly, introPeriodValue: '1', introPeriodCount: '3' })).toBe(3);
+  });
+
+  test('no trial when not eligible, eligibility unknown (older binary), a paid intro offer, or a month-long trial', () => {
+    expect(appleTrialDays({ ...yearly, introEligible: 'false' })).toBeNull();
+    expect(appleTrialDays({ ...yearly, introEligible: undefined })).toBeNull();
+    expect(appleTrialDays({ displayPrice: 'Rp199.000', price: '199000' })).toBeNull();
+    expect(appleTrialDays({ ...yearly, introPaymentMode: 'payUpFront' })).toBeNull();
+    expect(appleTrialDays({ ...yearly, introPaymentMode: 'payAsYouGo' })).toBeNull();
+    expect(appleTrialDays({ ...yearly, introPeriodUnit: 'month', introPeriodValue: '1' })).toBeNull();
+    expect(appleTrialDays({ ...yearly, introPeriodValue: '0' })).toBeNull();
+    expect(appleTrialDays({ ...yearly, introPeriodValue: 'x' })).toBeNull();
+  });
+
+  test('appleStoreProduct keeps the price and shows the trial only on a plan that has one', () => {
+    expect(appleStoreProduct(yearly, true)).toEqual({ displayPrice: 'Rp199.000', price: '199000', trialDays: 7 });
+    expect(appleStoreProduct(yearly, false)).toEqual({ displayPrice: 'Rp199.000', price: '199000', trialDays: null });
   });
 });

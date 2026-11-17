@@ -18,6 +18,18 @@ App Store Connect, JoyoFit's own app record (bundle `com.joyodigitama.joyofit`),
 The ids live in `PRO_PRODUCT_IDS` (`src/features/pro/appleBillingCore.ts`); JoyoRogo's server holds the same two ids and the JoyoFit bundle id. The
 prices shown in the app are StoreKit's `displayPrice`, never written in the app, and only on the paywall.
 
+## Free trial (yearly only)
+
+Approved 2026-11-17: 7 days free on the yearly plan, new subscribers only. In App Store Connect it is an introductory offer on
+`com.joyodigitama.joyofit.pro.yearly`: type Free, duration 1 week, all territories. Monthly gets no offer. Apple gives an introductory offer once
+per subscription group, so someone who already had either plan is not eligible.
+
+`AppleIap.getProduct` also returns the product's introductory offer (payment mode, period) and
+`Product.SubscriptionInfo.isEligibleForIntroOffer(for: groupID)`; `appleTrialDays` (`src/features/pro/appleBillingCore.ts`) turns that into
+`trialDays` only for an eligible free trial counted in days or weeks, and the paywall discloses it. StoreKit applies the offer by itself at purchase.
+A binary built before these fields existed reports no trial (eligibility unknown), so it never promises one. This copy of the module now differs from
+JoyoRogo's `apps/native/modules/apple-iap`.
+
 ## Pieces
 
 | Piece | File |

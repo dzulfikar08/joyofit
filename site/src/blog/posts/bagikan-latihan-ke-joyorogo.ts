@@ -4,7 +4,7 @@ export const bagikanLatihan: Post = {
   slug: "bagikan-latihan-ke-joyorogo",
   title: "Bagikan latihan dari jam ke JoyoRogo",
   description:
-    "Dari layar latihan di JoyoFit, ketuk Share to JoyoRogo untuk memposting latihan ke grup atau publik. Detak jantung dan rute ikut kalau kamu mau. Melihatnya di postingan orang lain butuh JoyoRogo Pro.",
+    "Dari layar latihan di JoyoFit, ketuk Share to JoyoRogo untuk memposting latihan ke grup atau publik. Detak jantung dan rute ikut kalau kamu mau. Melihatnya di postingan orang lain butuh Joyo Pro.",
   date: "2026-10-18",
   tag: "Social",
   body: [
@@ -28,11 +28,11 @@ export const bagikanLatihan: Post = {
     { kind: "h2", text: "Siapa yang bisa melihat detailnya" },
     {
       kind: "p",
-      text: "Postingan selalu menampilkan angka ringkasnya. Grafik detak jantung dan rute di postingan orang lain adalah fitur JoyoRogo Pro, dan JoyoRogo yang menentukan siapa yang boleh melihatnya. Milikmu sendiri selalu bisa kamu lihat, dan membagikannya tetap gratis. Kalau kamu belum Pro, JoyoFit menampilkan kartu penjelasan di tempat grafiknya.",
+      text: "Postingan selalu menampilkan angka ringkasnya. Grafik detak jantung dan rute di postingan orang lain adalah fitur Joyo Pro, dan JoyoRogo yang menentukan siapa yang boleh melihatnya. Milikmu sendiri selalu bisa kamu lihat, dan membagikannya tetap gratis. Kalau kamu belum Pro, JoyoFit menampilkan kartu penjelasan di tempat grafiknya.",
     },
     {
       kind: "p",
-      text: "Harga dan paket JoyoRogo Pro ada di [joyorogo.com/harga](https://joyorogo.com/harga).",
+      text: "Harga dan paket Joyo Pro ada di [joyorogo.com/harga](https://joyorogo.com/harga).",
     },
     {
       kind: "note",

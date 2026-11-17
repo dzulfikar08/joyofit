@@ -1,6 +1,6 @@
 import { sha256 } from '@noble/hashes/sha2.js';
 
-import { BillingError } from './billingCore';
+import { BillingError, type StoreProduct } from './billingCore';
 
 /** Apple's standard licensed-application EULA: JoyoFit has no custom one, so this is its Terms of Use. */
 export const APPLE_TERMS_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
@@ -49,4 +49,36 @@ export async function postSignedTransaction(args: {
   if (response.status === 404) throw new BillingError('unavailable', false);
   if (response.status === 409) throw new BillingError('processing', false);
   if (!response.ok) throw new BillingError('failed', false);
+}
+
+/** The fields of `AppleIap.getProduct` (modules/apple-iap) that describe the price and the introductory offer. */
+export interface AppleProductLike {
+  displayPrice: string;
+  price: string;
+  introPaymentMode?: string;
+  introPeriodUnit?: string;
+  introPeriodValue?: string;
+  introPeriodCount?: string;
+  introEligible?: string;
+}
+
+const DAYS_PER_UNIT: Record<string, number> = { day: 1, week: 7 };
+
+/**
+ * Days of free trial StoreKit will apply when this Apple ID buys the product: its introductory offer is a free trial counted in days or
+ * weeks, and StoreKit said the Apple ID is eligible. Null otherwise, including when eligibility is unknown (an older binary without
+ * these fields), so the paywall never promises a trial that would not apply.
+ */
+export function appleTrialDays(product: AppleProductLike): number | null {
+  if (product.introPaymentMode !== 'freeTrial' || product.introEligible !== 'true') return null;
+  const perUnit = DAYS_PER_UNIT[product.introPeriodUnit ?? ''];
+  const value = Number(product.introPeriodValue);
+  const count = Number(product.introPeriodCount ?? '1');
+  if (!perUnit || !Number.isInteger(value) || value <= 0 || !Number.isInteger(count) || count <= 0) return null;
+  return perUnit * value * count;
+}
+
+/** The paywall's view of a StoreKit product; a trial only on the plans that have one. */
+export function appleStoreProduct(product: AppleProductLike, withTrial: boolean): StoreProduct {
+  return { displayPrice: product.displayPrice, price: product.price, trialDays: withTrial ? appleTrialDays(product) : null };
 }
