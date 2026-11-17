@@ -279,13 +279,17 @@ final class SleepPacketsTests: XCTestCase {
                 guard case TLVError.missingTag = e else { return XCTFail("\(name): \(e)") }
             }
         }
-        // 0x0A: data that is a valid TLV without the cipher elements is a MissingTagException that GB does not catch.
-        for name in ["0A data that is a valid TLV without the cipher elements", "0A data that is a valid TLV with only a cipher element", "0A empty body"] {
+        // 0x0A: data that is a valid TLV without the cipher elements is unencrypted data (GB threw MissingTagException and lost the
+        // whole file: HONOR Watch ES rrisqi_data.bin, JRG-487/488).
+        for name in ["0A data that is a valid TLV without the cipher elements", "0A data that is a valid TLV with only a cipher element"] {
             let (p, params) = try block(name)
-            XCTAssertThrowsError(try FileDownloadService0A.BlockResponse(packet: p, params: params), name) { e in
-                guard case TLVError.missingTag = e else { return XCTFail("\(name): \(e)") }
-            }
+            let r = try FileDownloadService0A.BlockResponse(packet: p, params: params)
+            if case .notTLV? = r.decodeError {} else { XCTFail("\(name): expected notTLV, got \(String(describing: r.decodeError))") }
+            XCTAssertEqual(r.data, [0x01, 0x42], name)
         }
+        // An empty body has no packet number to read.
+        let (empty, emptyParams) = try block("0A empty body")
+        XCTAssertThrowsError(try FileDownloadService0A.BlockResponse(packet: empty, params: emptyParams))
         // ...but a CryptoException or an unparsable body is taken as unencrypted data.
         let (p, params) = try block("0A data that is a valid TLV with iv and a block of zeros")
         let r = try FileDownloadService0A.BlockResponse(packet: p, params: params)
