@@ -1,7 +1,8 @@
 /**
  * Joyo Pro price shown on fit.joyorogo.com. It follows the buyer ladder on joyorogo.com/harga, so the build reads
- * api.joyorogo.com/api/config (vite.config.ts) instead of a number typed into the page; the browser cannot fetch it
- * itself (the API's CORS list does not include fit.joyorogo.com).
+ * api.joyorogo.com/api/config (vite.config.ts) instead of a number typed into the page, and the page asks again in the
+ * browser (useJoyoPrice in App.tsx) so a ladder step shows without a rebuild. Until the API allows this origin, or when
+ * the request fails, the page keeps the price from the build.
  */
 export type JoyoPrice = {
   /** "Rp29.000": monthly price for the next buyer. */
@@ -50,16 +51,20 @@ export function priceFromConfig(config: ConfigLike): JoyoPrice | null {
   };
 }
 
-/** Reads the live price at build time; any failure (offline build, API down) falls back to FALLBACK_PRICE. */
-export async function fetchJoyoPrice(
-  url = "https://api.joyorogo.com/api/config",
-  fetcher: typeof fetch = fetch,
-): Promise<JoyoPrice> {
+export const CONFIG_URL = "https://api.joyorogo.com/api/config";
+
+/** The live price, or null on any failure (offline, API down, CORS refused, unusable answer). */
+export async function fetchLivePrice(url = CONFIG_URL, fetcher: typeof fetch = fetch): Promise<JoyoPrice | null> {
   try {
     const res = await fetcher(url, { signal: AbortSignal.timeout(5_000) });
-    if (!res.ok) return FALLBACK_PRICE;
-    return priceFromConfig((await res.json()) as ConfigLike) ?? FALLBACK_PRICE;
+    if (!res.ok) return null;
+    return priceFromConfig((await res.json()) as ConfigLike);
   } catch {
-    return FALLBACK_PRICE;
+    return null;
   }
+}
+
+/** Reads the live price at build time; any failure (offline build, API down) falls back to FALLBACK_PRICE. */
+export async function fetchJoyoPrice(url = CONFIG_URL, fetcher: typeof fetch = fetch): Promise<JoyoPrice> {
+  return (await fetchLivePrice(url, fetcher)) ?? FALLBACK_PRICE;
 }

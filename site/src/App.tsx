@@ -76,6 +76,7 @@ import {
   goal,
   cn,
 } from "./lib";
+import { fetchLivePrice, type JoyoPrice } from "./joyo-price";
 import { usePlatform } from "./platform";
 import {
   JAM_BELUM_PAKE,
@@ -101,7 +102,22 @@ import roadmap from "../../docs/roadmap.json";
 import { IphonePage, StravaPage } from "./Waitlist";
 
 /** Harga Joyo Pro, dibaca dari api.joyorogo.com/api/config saat build (src/joyo-price.ts), sama dengan joyorogo.com/harga. */
-const PRICE = __JOYO_PRICE__;
+const BUILD_PRICE = __JOYO_PRICE__;
+
+/** The build's price first (prerendered HTML matches it), then the live one when the browser can read it. */
+function useJoyoPrice(): JoyoPrice {
+  const [price, setPrice] = useState<JoyoPrice>(BUILD_PRICE);
+  useEffect(() => {
+    let live = true;
+    void fetchLivePrice().then((fresh) => {
+      if (live && fresh) setPrice(fresh);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+  return price;
+}
 
 const FACTS = [
   { value: `${JAM_BISA_DICOBA} model`, label: "jam dan band kompatibel bisa dicoba", href: "/jam" },
@@ -1002,6 +1018,7 @@ const WEB_POINTS: { Icon: LucideIcon; title: string; body: string }[] = [
 ];
 
 function WebSection() {
+  const price = useJoyoPrice();
   return (
     <section id="web" data-section="web" className="scroll-mt-16 border-t border-border/70 py-20 md:py-28">
       <div className="mx-auto w-full max-w-6xl px-4 md:px-6">
@@ -1041,8 +1058,8 @@ function WebSection() {
             </span>
             <h3 className="mt-4 text-lg font-extrabold tracking-tight">Perlu Joyo Pro</h3>
             <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-muted-foreground">
-              Masuk dengan akun JoyoRogo yang sama dengan di aplikasi. Pro mulai {PRICE.monthly} per bulan atau{" "}
-              {PRICE.yearly} per tahun.
+              Masuk dengan akun JoyoRogo yang sama dengan di aplikasi. Pro mulai {price.monthly} per bulan atau{" "}
+              {price.yearly} per tahun.
             </p>
             <a
               href={HARGA_URL}
@@ -1887,6 +1904,7 @@ function ClosingButtons() {
 }
 
 function Options() {
+  const price = useJoyoPrice();
   return (
     <section id="cara" data-section="options" className="scroll-mt-16 border-t border-border/70 py-20 md:py-24">
       <div className="mx-auto w-full max-w-6xl px-4 md:px-6">
@@ -1981,13 +1999,13 @@ function Options() {
                 Joyo Pro
               </span>
             </div>
-            <p className="mt-3 text-4xl font-extrabold tracking-tight tabular-nums">{PRICE.monthly}</p>
+            <p className="mt-3 text-4xl font-extrabold tracking-tight tabular-nums">{price.monthly}</p>
             <p className="text-sm text-muted-foreground">per bulan</p>
             <p className="mt-0.5 text-xs font-semibold text-makan-ink">
-              {PRICE.next && PRICE.slots
-                ? `Harga perkenalan untuk ${PRICE.slots} pembeli pertama, lalu ${PRICE.next}/bulan. `
+              {price.next && price.slots
+                ? `Harga perkenalan untuk ${price.slots} pembeli pertama, lalu ${price.next}/bulan. `
                 : ""}
-              Atau {PRICE.yearly}/tahun (setara {PRICE.yearlyPerMonth}/bulan).
+              Atau {price.yearly}/tahun (setara {price.yearlyPerMonth}/bulan).
             </p>
             <ul className="mt-5 space-y-2.5 text-sm">
               {[
