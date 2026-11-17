@@ -237,6 +237,21 @@ encoding. Details and the safety rules are in `docs/ios.md` (Per-app notificatio
 - Still open until a TestFlight run: bit 161 on the Fit 4 Pro (logged), whether the watch replies to 02/0B at all (the answer code is logged), and
   every encoding question above. The result line goes to the support report.
 
+## 7c. First results from testers (support reports, 2026-11-12/13)
+
+Three "Uji filter" runs from JoyoFit 1.1 (202611051423) on iOS 27, all ending `none` (no candidate hid the message):
+
+| Report | Watch, firmware | App tested | Tried | Watch's answer to each 02/0B |
+|---|---|---|---|---|
+| JRG-490 | Band 11 Pro, 6.0.0.130(SP3C00M03) | `net.whatsapp.WhatsApp` | A=shown, B=shown | 100000 (OK) |
+| JRG-491 | Watch Fit 4, 6.1.0.117(SP20C00M05) | `net.whatsapp.WhatsApp` | A=shown, B=shown | 100000 (OK) |
+| JRG-492 | Watch Fit 4, 6.1.0.117(SP20C00M05) | `com.burbn.instagram` | A=shown, B=shown | 100000 (OK) |
+
+What this settles: bit 161 is set on both models (`gate161=yes`), and the watch accepts 02/0B and answers OK. On these two models, sending the bundle id
+does not filter, with either polarity. C1/C2 were not tried because WhatsApp and Instagram have no known Huawei catalogue number. Next: a run with
+Messages (the one app with a number, `appid` 1) to test C1/C2. Without that, the HH iOS capture in section 4 is the remaining way to learn the id
+string. 02/0B is still not listed in SupportedCommands on either model (02: 01 04 06 08), only gated by bit 161.
+
 ## 8. Confidence summary
 
 | Claim | Level |
