@@ -7,7 +7,8 @@
   "device": {
     "hint": {
       "busy": "Could not connect to the watch. If it is still connected to another phone or app (your watch's own app, or JoyoFit on another phone), disconnect it there first. Keep the watch awake and close to this phone, then tap Retry.",
-      "noWatchScan": "No watch found nearby. If it is still connected to another phone or app (your watch's own app, or JoyoFit on another phone), disconnect it there first. Make sure the watch is on and close to this phone, then scan again."
+      "noWatchScan": "No watch found nearby. If it is still connected to another phone or app (your watch's own app, or JoyoFit on another phone), disconnect it there first. Make sure the watch is on and close to this phone, then scan again.",
+      "noHuaweiService": "This device does not offer the connection that JoyoFit uses. It is most likely a band or watch that uses another protocol, and JoyoFit cannot connect to it. If this watch worked with JoyoFit before, restart it and tap Retry."
     },
     "silent": {
       "step": {
