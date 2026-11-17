@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { AppState, Linking, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { Button } from '@/components/Button';
 import { BikeMap } from '@/features/bikecomputer/map/BikeMap';
 import { ridePalette } from '@/features/bikecomputer/map/ridePalette';
 import { useBikeMapStyle } from '@/features/bikecomputer/map/useBikeMapStyle';
+import { ensureLocation, locationState } from '@/features/sensors/permissions';
 import { GpsLine } from '@/features/record/ui/GpsLine';
 import type { FixInfo } from '@/features/record/ui/format';
 import { spacing, useTheme } from '@/theme';
@@ -35,6 +37,25 @@ export function LiveRunMap({ position, trail, fix }: LiveRunMapProps) {
   const { colors, scheme, radius } = useTheme();
   const overlay = useOverlayRoute();
   const [follow, setFollow] = useState(true);
+  const [locState, setLocState] = useState<'granted' | 'blocked' | 'unknown'>('granted');
+
+  useEffect(() => {
+    let live = true;
+    const check = () => {
+      void locationState().then((s) => {
+        if (live) setLocState(s);
+      });
+    };
+    check();
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') check();
+    });
+    return () => {
+      live = false;
+      sub.remove();
+    };
+  }, []);
+
   const variant = scheme === 'dark' ? 'night' : 'day';
   // The last place stays on the map while the GPS looks again.
   const [shown, setShown] = useState(position);
@@ -58,6 +79,30 @@ export function LiveRunMap({ position, trail, fix }: LiveRunMapProps) {
           colors={{ route: colors.link, routeCasing: ground, puck: colors.primary, offCourse: colors.destructive, track: colors.primary }}
           onFollowChange={setFollow}
         />
+      ) : locState !== 'granted' ? (
+        <View
+          accessible
+          accessibilityLabel={t('live.map.needsLocation')}
+          style={[styles.waiting, { backgroundColor: colors.muted, borderRadius: radius.tile }]}>
+          <Ionicons name="location-outline" size={32} color={colors.warning} />
+          <AppText variant="caption" muted style={styles.waitingText}>
+            {t('live.map.needsLocation')}
+          </AppText>
+          <Button
+            label={locState === 'blocked' ? t('live.map.openSettings') : t('live.map.allowLocation')}
+            variant="secondary"
+            onPress={() => {
+              if (locState === 'blocked') {
+                void Linking.openSettings();
+              } else {
+                void ensureLocation().then((ans) => {
+                  if (ans === 'granted') setLocState('granted');
+                  else if (ans === 'blocked') setLocState('blocked');
+                });
+              }
+            }}
+          />
+        </View>
       ) : (
         <View
           accessible

@@ -65,18 +65,30 @@ public final class ConnectedGpsStore: @unchecked Sendable {
     public static let maxSessions = 20
     public static let retentionSec: Int64 = 7 * 86_400
 
-    public static let shared = ConnectedGpsStore()
+    public static let shared: ConnectedGpsStore = {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+        let url = base?.appendingPathComponent("connected_gps_tracks.json")
+        return ConnectedGpsStore(storageURL: url)
+    }()
 
     private let lock = NSLock()
+    private let storageURL: URL?
     private var sessions: [ConnectedGpsSession] = []
 
-    public init() {}
-
-    public func clear() {
-        lock.locked { sessions.removeAll() }
+    public init(storageURL: URL? = nil) {
+        self.storageURL = storageURL
+        loadFromDisk()
     }
 
-    public func upsert(_ session: ConnectedGpsSession) {
+    public func clear() {
+        lock.locked {
+            sessions.removeAll()
+            if let url = storageURL { try? FileManager.default.removeItem(at: url) }
+        }
+    }
+
+    public func upsert(_ session: ConnectedGpsSession, persist: Bool = true) {
         guard session.points.count >= 2, session.startSec > 0 else { return }
         if WorkoutSportTypes.isIndoor(session.sportType) { return }
         lock.locked {
@@ -88,6 +100,95 @@ public final class ConnectedGpsStore: @unchecked Sendable {
             while sessions.count > Self.maxSessions {
                 sessions.removeFirst()
             }
+            if persist { saveToDiskLocked() }
+        }
+    }
+
+    private func saveToDiskLocked() {
+        guard let url = storageURL else { return }
+        do {
+            var arr: [[String: Any]] = []
+            for s in sessions {
+                var ptsArr: [[String: Any]] = []
+                for p in s.points {
+                    var po: [String: Any] = ["t": p.timeMs, "lat": p.latitude, "lon": p.longitude]
+                    if let alt = p.altitude, alt.isFinite { po["alt"] = alt }
+                    if let acc = p.accuracy, acc.isFinite { po["acc"] = acc }
+                    if let spd = p.speed, spd.isFinite { po["spd"] = spd }
+                    ptsArr.append(po)
+                }
+                var obj: [String: Any] = [
+                    "id": s.id,
+                    "startSec": s.startSec,
+                    "endSec": s.endSec,
+                    "distanceM": s.distanceM,
+                    "riseM": s.riseM,
+                    "points": ptsArr
+                ]
+                if let sport = s.sportType { obj["sportType"] = sport }
+                arr.append(obj)
+            }
+            let data = try JSONSerialization.data(withJSONObject: arr, options: [])
+            let dir = url.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            try data.write(to: url, options: .atomic)
+        } catch {
+            // Silently ignore disk write errors
+        }
+    }
+
+    private func loadFromDisk() {
+        guard let url = storageURL, FileManager.default.fileExists(atPath: url.path) else { return }
+        do {
+            let data = try Data(contentsOf: url)
+            guard let arr = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return }
+            var loaded: [ConnectedGpsSession] = []
+            for obj in arr.prefix(Self.maxSessions) {
+                guard let id = obj["id"] as? String,
+                      let startSec = (obj["startSec"] as? NSNumber)?.int64Value,
+                      let endSec = (obj["endSec"] as? NSNumber)?.int64Value,
+                      let ptsArr = obj["points"] as? [[String: Any]]
+                else { continue }
+                var pts: [WorkoutLinkWire.Fix] = []
+                for p in ptsArr.prefix(TrackAccumulator.maxTrackPoints) {
+                    guard let lat = (p["lat"] as? NSNumber)?.doubleValue,
+                          let lon = (p["lon"] as? NSNumber)?.doubleValue,
+                          lat.isFinite, lon.isFinite
+                    else { continue }
+                    let t = (p["t"] as? NSNumber)?.int64Value ?? 0
+                    let alt = (p["alt"] as? NSNumber)?.doubleValue
+                    let acc = (p["acc"] as? NSNumber)?.doubleValue
+                    let spd = (p["spd"] as? NSNumber)?.doubleValue
+                    pts.append(WorkoutLinkWire.Fix(
+                        latitude: lat,
+                        longitude: lon,
+                        timeMs: t,
+                        speed: spd,
+                        altitude: alt,
+                        bearing: nil,
+                        accuracy: acc
+                    ))
+                }
+                if pts.count >= 2 {
+                    let sport = (obj["sportType"] as? NSNumber)?.intValue
+                    let dist = (obj["distanceM"] as? NSNumber)?.doubleValue ?? 0.0
+                    let rise = (obj["riseM"] as? NSNumber)?.doubleValue ?? 0.0
+                    loaded.append(ConnectedGpsSession(
+                        id: id,
+                        startSec: startSec,
+                        endSec: endSec,
+                        sportType: sport,
+                        distanceM: dist,
+                        riseM: rise,
+                        points: pts
+                    ))
+                }
+            }
+            lock.locked {
+                self.sessions = loaded
+            }
+        } catch {
+            // Silently ignore corrupted cache
         }
     }
 

@@ -293,6 +293,9 @@ internal class WorkoutLink(
       log("Workout link: the watch asks for the phone's GPS, but JoyoFit has no precise location permission")
       return false
     }
+    if (WatchService.isActive) {
+      runCatching { WatchService.start(appContext) }
+    }
     val manager = appContext.getSystemService(LocationManager::class.java) ?: return false
     val fused = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && LocationManager.FUSED_PROVIDER in manager.allProviders
     // An object, not a lambda: before Android 11 the other callbacks are abstract, and a provider change would crash a lambda.

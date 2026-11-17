@@ -3,8 +3,8 @@
 //  - Phone GPS (GB `AsynchronousResponse.handleGpsRequest`, `SendGpsDataRequest`): answer `18/02 {7F: 100000}`, read the watch's wanted fields
 //    once (`18/01`), then stream every phone fix good enough for a track (`TrackAccumulator.maxAccuracyM`) as `18/03 81{82{...}}` until `{01: 0}`.
 //    The location updates themselves run until the live session ends (`PhoneGpsSession`): the watch withdraws its request once its own GPS has
-//    a fix, and the phone's track (`LiveWorkout.onLocation`) is the only distance and pace there is. On iOS the stream is CoreLocation with
-//    when-in-use authorization and no background location, so fixes flow while the app is in the foreground.
+//    a fix, and the phone's track (`LiveWorkout.onLocation`) is the only distance and pace there is. On iOS the stream uses CoreLocation with
+//    the declared `location` background mode, so fixes flow even when the app is backgrounded or the screen is locked.
 //  - Live numbers (as Huawei Health does): open the realtime report with `17/12 {01: 1}`; the watch pushes `17/11`, decoded into `LiveWorkout`.
 //  - The `17/03` status poll (`WatchPhase`): the only signal an indoor workout gives, and the one that tells GO from the GO screen. Every 2 s while
 //    a session waits for GO, 5 s while one is followed, 30 s otherwise (`LiveWorkout.pollEveryMs`); a GPS request, its withdrawal or the watch's

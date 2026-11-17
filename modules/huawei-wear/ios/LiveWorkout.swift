@@ -109,6 +109,7 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
     private var screenClosedAtMs: Int64 = 0
     /// When the watch last said its workout screen opened (`18/08 {01: 1}`): a GPS request after that is no straggler of an ended session.
     private var screenOpenedAtMs: Int64 = 0
+    private var lastPersistedTrackMs: Int64 = 0
 
     /// Called once each time a session ends, never with `lock` held: the phone's location updates for it stop (`WorkoutLink`,
     /// `PhoneGpsSession.sessionEnded`).
@@ -725,8 +726,8 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
     }
 
     private func publish(force: Bool) {
-        guard let (payload, status, justEnded, needsGps, connectedTrack) = lock.locked({
-            () -> ([String: Any], Status, Bool, Bool, ConnectedGpsSession?)? in
+        guard let (payload, status, justEnded, needsGps, connectedTrack, shouldPersist) = lock.locked({
+            () -> ([String: Any], Status, Bool, Bool, ConnectedGpsSession?, Bool)? in
             guard var s = session else { return nil }
             let justEnded = s.status == .ended && !s.endReported
             if justEnded {
@@ -734,10 +735,14 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
                 session = s
             }
             let activeOutdoor = s.status != .ended && !WorkoutSportTypes.isIndoor(s.sportType)
-            return (toJS(s), s.status, justEnded, activeOutdoor, toConnectedGpsSession(s))
+            let track = toConnectedGpsSession(s)
+            let nowWall = nowMs()
+            let shouldPersist = justEnded || (track != nil && nowWall - lastPersistedTrackMs >= 30_000)
+            if shouldPersist && track != nil { lastPersistedTrackMs = nowWall }
+            return (toJS(s), s.status, justEnded, activeOutdoor, track, shouldPersist)
         }) else { return }
         if needsGps { onNeedsGps() }
-        if let connectedTrack { ConnectedGpsStore.shared.upsert(connectedTrack) }
+        if let connectedTrack { ConnectedGpsStore.shared.upsert(connectedTrack, persist: shouldPersist) }
         events.liveWorkout(payload)
         if justEnded {
             onEnded()
