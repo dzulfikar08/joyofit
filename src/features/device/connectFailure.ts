@@ -22,6 +22,12 @@ export const BIND_CONFIRMATION = 'ERR_BIND_CONFIRMATION';
 /** Android: a Classic watch could not be reached while Android has no Bluetooth pairing with it (nothing was removed or reset). */
 export const NOT_PAIRED = 'ERR_NOT_PAIRED';
 
+/**
+ * The device has no Huawei service (FE86 with FE01/FE02): Kotlin and Swift `BleTransport` both say "has no Huawei GATT
+ * characteristics". Usually a band that talks another maker's protocol (HONOR CHOICE Band, JRG-485), not a busy watch.
+ */
+export const NO_HUAWEI_SERVICE_MARKER = 'has no Huawei GATT characteristics';
+
 /** The one place that tells the person what usually blocks a connect: the watch's single link is held elsewhere. */
 export const watchBusyHint = () => t('watch:device.hint.busy');
 
@@ -66,6 +72,9 @@ export function describeConnectFailure(e: unknown): ConnectFailure {
   const code = errorCode(e);
   if (code === BIND_CONFIRMATION) return { kind: 'bind', lost: isLostBinding(e) };
   if (code === NOT_PAIRED) return { kind: 'unpaired', message: t('watch:device.hint.notPaired') };
+  if (code === 'ERR_CONNECT_FAILED' && errorMessage(e).includes(NO_HUAWEI_SERVICE_MARKER)) {
+    return { kind: 'unreachable', message: t('watch:device.hint.noHuaweiService') };
+  }
   if (isSilentWatch(e)) return { kind: 'silent', message: t('watch:device.silent.short') };
   if (code !== null && UNREACHABLE_CODES[code]) return { kind: 'unreachable', message: watchBusyHint() };
   return { kind: 'other', message: errorMessage(e) };

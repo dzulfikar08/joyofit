@@ -45,6 +45,17 @@ describe('describeConnectFailure', () => {
     }
   });
 
+  it('says a device without the Huawei service speaks another protocol, not that another phone holds it (JRG-485)', () => {
+    // Kotlin and Swift BleTransport, HONOR CHOICE Band.
+    const noService =
+      'The watch has no Huawei GATT characteristics (read 0000fe02-0000-1000-8000-00805f9b34fb is missing); services found: ' +
+      '00001801-0000-1000-8000-00805f9b34fb, 0000ffd0-0000-1000-8000-00805f9b34fb';
+    const failure = describeConnectFailure(coded('ERR_CONNECT_FAILED', noService));
+    expect(failure.kind).toBe('unreachable');
+    expect(failure).not.toEqual({ kind: 'unreachable', message: watchBusyHint() });
+    expect(failure).toEqual({ kind: 'unreachable', message: expect.stringContaining('protokol produsen lain') });
+  });
+
   it('keeps the plain message for Bluetooth and support errors', () => {
     expect(describeConnectFailure(coded('ERR_BLUETOOTH_OFF', 'Bluetooth is turned off'))).toEqual({
       kind: 'other',
