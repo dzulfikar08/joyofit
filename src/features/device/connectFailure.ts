@@ -12,7 +12,10 @@ export type ConnectFailure =
   | { kind: 'silent'; message: string }
   /** The watch could not be reached or refused the link: say what to check, offer Retry. */
   | { kind: 'unreachable'; message: string }
-  /** Android has no Bluetooth pairing with the Classic watch any more: say so and what to do; Retry asks Android to pair again. */
+  /**
+   * The phone's Bluetooth pairing with the watch is gone or stale: say so and what to do. Android has none with the Classic watch any more
+   * (Retry asks Android to pair again); or iOS keeps keys the watch deleted (Retry after Forget This Device).
+   */
   | { kind: 'unpaired'; message: string }
   /** Anything else (Bluetooth off, not allowed, unsupported model, ...): the plain message. */
   | { kind: 'other'; message: string };
@@ -21,6 +24,16 @@ export const BIND_CONFIRMATION = 'ERR_BIND_CONFIRMATION';
 
 /** Android: a Classic watch could not be reached while Android has no Bluetooth pairing with it (nothing was removed or reset). */
 export const NOT_PAIRED = 'ERR_NOT_PAIRED';
+
+/**
+ * iOS: the watch deleted its Bluetooth bond (reset, or paired with another phone) and iOS refuses the link with its old keys
+ * (`CBError.peerRemovedPairingInformation`). Swift's `BondRemoved.message` carries these words; only Forget This Device fixes it (JRG-494).
+ */
+export const BOND_REMOVED_MARKER = 'removed its Bluetooth pairing with this iPhone';
+
+function isBondRemoved(e: unknown): boolean {
+  return errorCode(e) === 'ERR_CONNECT_FAILED' && errorMessage(e).includes(BOND_REMOVED_MARKER);
+}
 
 /** The one place that tells the person what usually blocks a connect: the watch's single link is held elsewhere. */
 export const watchBusyHint = () => t('watch:device.hint.busy');
@@ -66,6 +79,7 @@ export function describeConnectFailure(e: unknown): ConnectFailure {
   const code = errorCode(e);
   if (code === BIND_CONFIRMATION) return { kind: 'bind', lost: isLostBinding(e) };
   if (code === NOT_PAIRED) return { kind: 'unpaired', message: t('watch:device.hint.notPaired') };
+  if (isBondRemoved(e)) return { kind: 'unpaired', message: t('watch:device.hint.bondRemovedIos') };
   if (isSilentWatch(e)) return { kind: 'silent', message: t('watch:device.silent.short') };
   if (code !== null && UNREACHABLE_CODES[code]) return { kind: 'unreachable', message: watchBusyHint() };
   return { kind: 'other', message: errorMessage(e) };

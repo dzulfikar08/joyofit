@@ -372,6 +372,25 @@ public final class BleCentral: NSObject, CBCentralManagerDelegate, BluetoothGate
     }
 }
 
+/// iOS refuses the link with `CBError.peerRemovedPairingInformation` when the watch deleted its Bluetooth bond (a reset, or a pairing with
+/// another phone) while iOS still holds the old keys. No retry or scan gets past it: only Forget This Device in Settings > Bluetooth does
+/// (JRG-494..496, Watch GT 5 on iOS 27). The JS side (`connectFailure.ts`) recognises the failure by `marker`.
+enum BondRemoved {
+    static let marker = "removed its Bluetooth pairing with this iPhone"
+    static let message =
+        "The watch \(marker) (it was reset, or paired with another phone), but iOS still keeps the old pairing: " +
+        "forget the watch in Settings > Bluetooth, then connect again"
+
+    static func isCause(_ error: Error?) -> Bool {
+        (error as? CBError)?.code == .peerRemovedPairingInformation
+    }
+
+    /// A connect failure built from `isCause`.
+    static func isFailure(_ error: Error) -> Bool {
+        isCause((error as? WearError)?.underlying)
+    }
+}
+
 // MARK: transport
 
 public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate, @unchecked Sendable {
@@ -635,6 +654,10 @@ public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate,
                 return known
             } catch let e as WearError where e.code == .disconnected && closed {
                 throw e
+            } catch let e as WearError where BondRemoved.isFailure(e) {
+                // A scan finds the same peripheral and iOS refuses it the same way.
+                step("direct reconnect failed (\(e)); not scanning, iOS has to forget the watch first")
+                throw e
             } catch {
                 step("direct reconnect failed (\(error)); scanning for the watch")
                 try await disconnectAndWait(known)
@@ -717,7 +740,7 @@ public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate,
                 step("GATT link up on attempt \(attempt)")
                 return
             } catch {
-                if closed || last || error is CancellationError { throw error }
+                if closed || last || error is CancellationError || BondRemoved.isFailure(error) { throw error }
                 step("GATT attempt \(attempt) failed (\(error)); trying again in \(BleTransport.retryDelayMs) ms")
                 await onQueue { self.cancelOurselves(target) }
                 try await Task.sleep(nanoseconds: UInt64(BleTransport.retryDelayMs) * 1_000_000)
@@ -946,6 +969,10 @@ public final class BleTransport: NSObject, WatchTransport, CBPeripheralDelegate,
 
     func didFailToConnect(_ error: Error?) {
         step("GATT connection failed: \(error?.localizedDescription ?? "no error")")
+        if BondRemoved.isCause(error) {
+            finish(.connect, .failure(WearError(.connectFailed, BondRemoved.message, underlying: error)))
+            return
+        }
         finish(.connect, .failure(WearError(.connectFailed, "Bluetooth LE connect failed: \(error?.localizedDescription ?? "unknown error")", underlying: error)))
     }
 
