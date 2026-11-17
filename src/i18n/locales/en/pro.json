@@ -10,7 +10,7 @@
       "coach-today": "Get today's training advice from your watch data, plus run and strength plans.",
       "cloud": "Back up every workout to the cloud with its route and analysis, then restore it on a new phone. Right now your workouts live on this phone only.",
       "workout": "See other people's heart-rate charts and routes. Your own are always free to view, and sharing them is free too.",
-      "koneksi": "Let Claude, ChatGPT or another AI app read your data and answer questions about your training and sleep. You can connect now; an AI app only reads your data once Pro is active.",
+      "koneksi": "Let Claude, ChatGPT or another AI app read your data and answer questions about your training and sleep. With Pro, you first see what an AI app can read and who receives it, and nothing is shared until you agree.",
       "onboarding": "Daily advice, cloud backup of every workout and Joyo AI on the JoyoRogo engine are part of JoyoRogo Pro. JoyoFit works fully without it.",
       "onboarding-cloud": "Back up every workout to the cloud with its route and analysis, then restore it on a new phone. Right now your workouts live on this phone only.",
       "family": "Monitoring up to 5 people, all notifications (heart rate, steps, sleep, blood oxygen), email, and up to 90 days of history are part of JoyoRogo Pro. Only the person monitoring subscribes: the people you monitor are never charged. The \"Not synced\" notification stays free."
@@ -23,7 +23,7 @@
     "unlocks": {
       "coach": "Coach: daily training advice, run and strength plans, and the Joyo AI chat on the JoyoRogo engine, from your watch data.",
       "cloud": "Cloud backup of every workout with its route and analysis, restored on a new phone.",
-      "koneksi": "Koneksi AI: let Claude, ChatGPT or another AI app read your data and answer questions about it.",
+      "koneksi": "Koneksi AI: after you agree to what is shared and with whom, let Claude, ChatGPT or another AI app read your data and answer questions about it.",
       "family": "Keluarga: monitor up to 5 people with all notifications and up to 90 days of history. The people you monitor are never charged."
     },
     "sameAccount": "This is the same JoyoRogo Pro that works in the JoyoRogo app and on the JoyoRogo website. It belongs to your JoyoRogo account, so it follows you across all of them.",

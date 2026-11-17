@@ -34,6 +34,11 @@ export interface AiSettings {
   consents: Partial<Record<ProviderId, ConsentRecord>>;
   /** Null until the person agreed (or after they withdrew): nothing goes to the hosted engine then. */
   hostedConsent: HostedConsentRecord | null;
+  /**
+   * The yes of this phone to showing the AI connector address (Claude, ChatGPT or another MCP app reading the JoyoRogo account); see
+   * `features/koneksi/consent.ts`. Null until the person agreed (or after they withdrew): the address stays hidden then.
+   */
+  connectorConsent: HostedConsentRecord | null;
   insightDaily: boolean;
   insightWeekly: boolean;
   /** Ask thinking models to answer without long reasoning: faster and cheaper, sometimes less thorough. */
@@ -58,6 +63,7 @@ export const DEFAULT_SETTINGS: AiSettings = {
   keySaved: {},
   consents: {},
   hostedConsent: null,
+  connectorConsent: null,
   insightDaily: false,
   insightWeekly: false,
   fastMode: true,
@@ -68,6 +74,9 @@ export const DEFAULT_SETTINGS: AiSettings = {
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const isProvider = (v: unknown): v is ProviderId => typeof v === 'string' && (PROVIDER_IDS as readonly string[]).includes(v);
+
+const parseConsentStamp = (v: unknown): HostedConsentRecord | null =>
+  isObject(v) && typeof v.version === 'number' && Number.isFinite(v.version) && typeof v.at === 'number' ? { version: v.version, at: v.at } : null;
 
 /** Builds settings from stored JSON, keeping every field that is valid and falling back per field, so one bad value never loses the rest. */
 export function parseSettings(value: unknown): AiSettings {
@@ -84,9 +93,8 @@ export function parseSettings(value: unknown): AiSettings {
       }
     }
   }
-  const hosted = value.hostedConsent;
-  const hostedConsent: HostedConsentRecord | null =
-    isObject(hosted) && typeof hosted.version === 'number' && Number.isFinite(hosted.version) && typeof hosted.at === 'number' ? { version: hosted.version, at: hosted.at } : null;
+  const hostedConsent = parseConsentStamp(value.hostedConsent);
+  const connectorConsent = parseConsentStamp(value.connectorConsent);
   const ceiling = typeof value.dailyCeiling === 'number' && Number.isFinite(value.dailyCeiling) ? Math.round(value.dailyCeiling) : DEFAULT_CEILING;
   return {
     engine: value.engine === 'byok' ? 'byok' : 'rogo',
@@ -96,6 +104,7 @@ export function parseSettings(value: unknown): AiSettings {
     keySaved,
     consents,
     hostedConsent,
+    connectorConsent,
     insightDaily: value.insightDaily === true,
     insightWeekly: value.insightWeekly === true,
     // On unless the person turned it off: a thinking model that thinks for 30 s is the usual cause of a slow answer.

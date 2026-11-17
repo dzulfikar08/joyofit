@@ -416,7 +416,7 @@
     "title": "Joyo AI sends your data to a server",
     "intro": "Joyo AI on JoyoRogo Pro answers on a server, not on your phone. Before anything is sent, please read where it goes and agree.",
     "toTitle": "Who gets your data",
-    "to": "JoyoRogo's server (PT Joyo Digitama Solusi) and Cloudflare Workers AI (Cloudflare, Inc.), which runs the AI model. Your phone sends it to JoyoRogo's server, which passes it on to Cloudflare Workers AI to get the answer.",
+    "to": "JoyoRogo's server (PT Joyo Digitama Solusi) and Cloudflare Workers AI (Cloudflare, Inc.), which runs the AI model, Google's Gemma. Your phone sends it to JoyoRogo's server, which passes it on to Cloudflare Workers AI to get the answer.",
     "lead": "Every time you send a message, JoyoFit sends:",
     "data": {
       "chat": "Your messages: what you type and the earlier messages of this chat (the last 12), and the date and time of your question.",

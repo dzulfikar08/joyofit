@@ -3,8 +3,8 @@ import { ArrowLeft, Check } from "lucide-react";
 import { GITHUB_URL, NON_AFFILIATION, NON_AFFILIATION_EN } from "./lib";
 
 const CONTACT = "dzulfikar@joyorogo.com";
-const UPDATED = "26 Oktober 2026";
-const UPDATED_EN = "26 October 2026";
+const UPDATED = "17 November 2026";
+const UPDATED_EN = "17 November 2026";
 
 function Code({ children }: { children: React.ReactNode }) {
   return <code className="rounded bg-muted px-1.5 py-0.5 text-[0.85em] font-semibold">{children}</code>;
@@ -246,15 +246,18 @@ function Indonesian() {
       <Block id="koneksi-ai" title="Koneksi AI (opsional, Pro)">
         <p>
           Dengan koneksi AI opsional, kamu bisa menyambungkan Claude, ChatGPT, atau aplikasi MCP lain ke akun
-          JoyoRogo-mu. Koneksinya dibuat di aplikasi AI itu, lewat halaman izin di joyorogo.com. Sesudah kamu setuju, data
-          JoyoRogo dan JoyoFit-mu dikirim ke penyedia AI yang kamu pilih:
+          JoyoRogo-mu. Di JoyoFit, alamat penyambungnya baru ditampilkan setelah kamu menyetujui layar persetujuan di
+          Pengaturan, Hubungkan ChatGPT atau Claude, yang menyebut data yang bisa dibaca dan siapa penerimanya. Koneksinya
+          lalu dibuat di aplikasi AI itu, lewat halaman izin di joyorogo.com. Sesudah kamu setuju, data JoyoRogo dan
+          JoyoFit-mu dikirim ke penyedia AI yang kamu pilih:
         </p>
         <List
           items={[
+            "Penerima: Anthropic (Claude), OpenAI (ChatGPT), atau perusahaan di balik aplikasi AI lain yang kamu sambungkan. Data hanya sampai ke mereka setelah persetujuan di aplikasi yang menyebut mereka, dan atas pilihanmu sendiri: kamu yang memilih aplikasi mana yang disambungkan. Mereka bukan pemroses data kami.",
             "Yang bisa dibaca, sesuai izin yang kamu setujui: catatan makan, berat badan, olahraga dari jam, metrik tidur dan pemulihan (tidur, detak jantung istirahat, HRV, VO2max, status latihan, waktu pemulihan), dan profil serta targetmu.",
             "Dikirim hanya saat kamu mengajukan pertanyaan di akunmu sendiri di aplikasi AI itu. Aksesnya hanya-baca: aplikasi AI tidak bisa mengubah atau menghapus apa pun, dan hanya akun Pro yang bisa memakainya.",
-            "Kamu bisa memutuskan koneksi kapan saja di Pengaturan, Koneksi AI (atau di joyorogo.com). Putus berlaku seketika: aplikasi itu langsung tidak bisa membaca apa pun lagi.",
-            "JoyoRogo menyimpan catatan audit tentang apa yang dibaca (nama alat dan rentang tanggalnya, bukan isi datanya) selama 90 hari, dan kamu bisa melihatnya di layar Koneksi AI.",
+            "Kamu bisa memutuskan koneksi kapan saja di Pengaturan, Hubungkan ChatGPT atau Claude (atau di joyorogo.com). Putus berlaku seketika: aplikasi itu langsung tidak bisa membaca apa pun lagi. Mencabut persetujuan di layar yang sama menyembunyikan alamatnya lagi dan memutus semua aplikasi yang tersambung.",
+            "JoyoRogo menyimpan catatan audit tentang apa yang dibaca (nama alat dan rentang tanggalnya, bukan isi datanya) selama 90 hari, dan kamu bisa melihatnya di layar Hubungkan ChatGPT atau Claude.",
             "Rute GPS dan data Strava tidak pernah dibagikan lewat koneksi ini.",
             "Setelah data sampai ke penyedia AI, aturan privasi penyedia itu yang berlaku, bukan aturan JoyoFit atau JoyoRogo. Baca aturannya sebelum menyambungkan.",
           ]}
@@ -458,6 +461,7 @@ function Indonesian() {
         <List
           items={[
             "Penerima: server JoyoRogo (PT Joyo Digitama Solusi), yang meneruskan permintaan ke Cloudflare Workers AI (Cloudflare, Inc.). Cloudflare Workers AI menjalankan model AI (saat ini @cf/google/gemma-4-26b-a4b-it) dan mengembalikan jawabannya. Tidak ada penyedia AI lain pada mesin ini.",
+            "Cloudflare memproses data ini sebagai pemroses data kami, berdasarkan ketentuan pemrosesan datanya, dan memberikan perlindungan data pribadi yang sama atau setara dengan kebijakan ini: isinya tidak disimpan setelah jawaban dibuat dan tidak dipakai untuk melatih model AI.",
             "Yang dikirim setiap kali kamu mengirim pesan: pesanmu dan pesan sebelumnya di chat itu (12 terakhir), serta tanggal dan jam pertanyaan; metrik dari HP: kesiapan, beban latihan, HRV (terbaru dan dasar), strain, detak jantung istirahat, VO2max, lama tidur semalam dan utang tidur, saran coach hari ini beserta alasannya, rencana latihan (tujuan, level, minggu, sesi yang selesai dan berikutnya), dan sampai 10 latihan dalam 14 hari terakhir (waktu mulai, olahraga, menit, km, detak jantung rata-rata). Dari akun JoyoRogo-mu, server menambahkan profil (usia, jenis kelamin, tinggi, berat, tujuan, mode hamil atau menyusui bila kamu mengaturnya, target makan harian, perkiraan kalori yang terbakar) dan kalori serta protein dari catatan makanmu (hari ini dan rata-rata 7 hari).",
             "Tidak pernah dikirim: namamu, email, lokasi GPS dan rute, foto, ID perangkat, detak jantung per menit, data siklus haid, dan data Strava.",
             "Untuk apa: hanya untuk menulis jawaban atas pertanyaanmu, dan untuk menghitung batas pesan harian. Tidak untuk iklan dan tidak dijual.",
@@ -485,6 +489,7 @@ function Indonesian() {
             "Tidak pernah dikirim: data siklus haid, mode hamil atau menyusui, nama, email, rute GPS, foto, ID perangkat, detak jantung per menit, dan data Strava.",
             "Kuncinya disimpan di penyimpanan aman di HP-mu. Kunci tidak dikirim ke server JoyoRogo atau JoyoFit, tidak ikut sinkron cloud, dan tidak dicatat di log. Uji koneksi hanya mengirim satu pesan pendek tanpa data kesehatan. Di HP baru kamu memasukkan kunci lagi.",
             "Server JoyoRogo dan JoyoFit tidak menerima kunci, percakapan, catatan coach, atau ringkasan data dari mesin kunci sendiri. Semua itu, beserta pengaturan dan persetujuanmu, hanya ada di HP-mu. Untuk membaca catatan makan dan berat dari akun JoyoRogo-mu, HP memakai sambungan akunmu yang biasa, hanya membaca.",
+            "Data hanya sampai ke penyedia ini setelah persetujuan di aplikasi yang menyebut nama penyedia itu, dan atas pilihanmu sendiri.",
             "Setelah data sampai ke penyedia pilihanmu, aturan penyedia itu yang berlaku (penyimpanan, pemakaian untuk melatih model, batas usia), bukan aturan JoyoFit atau JoyoRogo. Penyedia itu pilihanmu dan memakai akunmu sendiri, bukan pemroses data kami. Baca aturannya sebelum menyambungkan, dan biaya pemakaian dari penyedia kamu tanggung sendiri.",
             "Gemini: layar penyiapan memperingatkan bahwa pada tier gratis, Google memakai isi yang diterimanya untuk memperbaiki produknya. Cek aturan Google untuk jenis akun yang kamu pakai.",
             "Tidak untuk di bawah 18 tahun: mesin kunci sendiri mati bila usia di profil HP atau profil JoyoRogo-mu di bawah 18. Bila usia belum diisi, kamu menyatakan berusia 18 tahun ke atas saat menyetujui.",
@@ -545,12 +550,12 @@ function Indonesian() {
             "CODE (Institut Astronomi, Universitas Bern): prediksi orbit satelit publik yang diambil server JoyoFit untuk eksperimen HW_PGNSS_PRED (bagian Lokasi). HP tidak menghubungi mereka.",
             "Kontributor OpenStreetMap (ODbL): data peta untuk eksperimen peta offline, dibuat oleh JoyoFit dari ekstrak Geofabrik (bagian Lokasi). HP tidak menghubungi OpenStreetMap atau Geofabrik.",
             "FOSSGIS e.V. (OSRM) dan Nominatim (OpenStreetMap): jalur rute dan pencarian tempat untuk Loop dari rumah, serta belokan dan rute baru untuk eksperimen navigasi di jam (bagian Loop dari rumah).",
-            "Cloudflare: tempat cloud JoyoFit dan situs ini berjalan, dan, lewat Cloudflare Workers AI (Cloudflare, Inc.), penerima pesan dan ringkasan datamu bila kamu menyetujui Joyo AI dari JoyoRogo (bagian Joyo AI dari JoyoRogo).",
+            "Cloudflare: tempat cloud JoyoFit dan situs ini berjalan, dan, lewat Cloudflare Workers AI (Cloudflare, Inc.), penerima pesan dan ringkasan datamu bila kamu menyetujui Joyo AI dari JoyoRogo (bagian Joyo AI dari JoyoRogo). Cloudflare adalah pemroses data kami dan memberikan perlindungan data pribadi yang sama atau setara dengan kebijakan ini.",
             "JoyoRogo, Google dan Apple: login dan layanan JoyoRogo (bagian Cloud dan Masuk dengan Apple).",
             "Expo, Google (Firebase Cloud Messaging) dan Apple (APNs): mengantar notifikasi push Keluarga (bagian Notifikasi push).",
             "Apple: Apple Health (menulis, dan membaca satu kali saat impor), Masuk dengan Apple, dan geocoding nama tempat di iPhone.",
             "Strava: tujuan unggahan olahraga bila kamu menyambungkannya (bagian Strava).",
-            "Penyedia AI pilihanmu (misalnya Anthropic untuk Claude, OpenAI untuk ChatGPT): menerima data yang dibaca saat kamu bertanya, hanya bila kamu menyambungkan koneksi AI (bagian Koneksi AI).",
+            "Penyedia AI pilihanmu (misalnya Anthropic untuk Claude, OpenAI untuk ChatGPT): menerima data yang dibaca saat kamu bertanya, hanya setelah persetujuan di aplikasi yang menyebut penerimanya dan bila kamu menyambungkan koneksi AI atas pilihanmu (bagian Koneksi AI).",
             "Penyedia AI untuk Joyo AI dengan kunci sendiri (OpenRouter, OpenAI, Anthropic, Google Gemini, atau alamat yang kamu isi): kamu yang memilih dan memakai akunmu sendiri, bukan pemroses data kami; menerima ringkasan datamu dan percakapan hanya setelah kamu memasukkan kunci dan menyetujuinya (bagian Joyo AI dengan kunci sendiri).",
             "RevKlik: statistik pengunjung situs ini (bagian Statistik situs).",
           ]}
@@ -798,15 +803,18 @@ function English() {
       <Block id="koneksi-ai-en" title="AI connection (optional, Pro)">
         <p>
           With the optional AI connection you can connect Claude, ChatGPT or another MCP app to your JoyoRogo
-          account. The connection is made in that AI app, through a consent page on joyorogo.com. Once you agree,
-          your JoyoRogo and JoyoFit data is sent to the AI provider you chose:
+          account. In JoyoFit, the connector address is shown only after you agree on the consent screen in Settings,
+          Connect ChatGPT or Claude, which names the data that can be read and who receives it. The connection is then made
+          in that AI app, through a consent page on joyorogo.com. Once you agree, your JoyoRogo and JoyoFit data is sent
+          to the AI provider you chose:
         </p>
         <List
           items={[
+            "Recipients: Anthropic (Claude), OpenAI (ChatGPT), or the company behind the other AI app you connect. Data reaches them only after the in-app consent that names them, and at your own choice: you pick which app to connect. They are not our data processors.",
             "What can be read, per the permissions you agree to: your food diary, weight, workouts from the watch, sleep and recovery metrics (sleep, resting heart rate, HRV, VO2max, training status, recovery time), and your profile and targets.",
             "It is sent only when you ask a question in your own account in that AI app. Access is read-only: the AI app cannot change or delete anything, and only a Pro account can use it.",
-            "You can disconnect at any time in Settings, Koneksi AI (or on joyorogo.com). Disconnecting is immediate: that app cannot read anything any more.",
-            "JoyoRogo keeps an audit log of what was read (the tool name and the date range, not the data itself) for 90 days, and you can see it in the Koneksi AI screen.",
+            "You can disconnect at any time in Settings, Connect ChatGPT or Claude (or on joyorogo.com). Disconnecting is immediate: that app cannot read anything any more. Withdrawing your agreement on the same screen hides the address again and disconnects every connected app.",
+            "JoyoRogo keeps an audit log of what was read (the tool name and the date range, not the data itself) for 90 days, and you can see it in the Connect ChatGPT or Claude screen.",
             "GPS routes and Strava data are never shared through this connection.",
             "Once the data reaches the AI provider, the provider's own privacy terms apply, not JoyoFit's or JoyoRogo's. Read them before you connect.",
           ]}
@@ -1026,6 +1034,7 @@ function English() {
         <List
           items={[
             "Recipients: JoyoRogo's server (PT Joyo Digitama Solusi), which passes the request on to Cloudflare Workers AI (Cloudflare, Inc.). Cloudflare Workers AI runs the AI model (currently @cf/google/gemma-4-26b-a4b-it) and returns the answer. There is no other AI provider on this engine.",
+            "Cloudflare processes this data as our data processor under its data processing terms, and provides the same or equal protection of personal data as this policy: the content is not retained after the answer is made and is not used to train AI models.",
             "What is sent each time you send a message: your message and the earlier messages of that chat (the last 12), and the date and time of the question; metrics from the phone: readiness, training load, HRV (recent and baseline), strain, resting heart rate, VO2max, how long you slept last night and your sleep debt, today's coach suggestion with its reason, your training plan (goal, level, week, sessions done and next), and up to 10 workouts from the last 14 days (start time, sport, minutes, km, average heart rate). From your JoyoRogo account the server adds your profile (age, sex, height, weight, goal, pregnancy or breastfeeding mode if you set one, daily eating target, estimated calorie burn) and the calories and protein from your food log (today and the 7-day average).",
             "Never sent: your name, email, GPS location and routes, photos, device IDs, per-minute heart rate, menstrual cycle data and Strava data.",
             "Purpose: only to write the answer to your question and to count the daily message limit. Not for advertising and not sold.",
@@ -1053,6 +1062,7 @@ function English() {
             "Never sent: menstrual cycle data, pregnancy or breastfeeding mode, name, email, GPS routes, photos, device IDs, per-minute heart rate, and Strava data.",
             "The key is kept in secure storage on your phone. It is not sent to the JoyoRogo or JoyoFit servers, is not part of cloud sync, and is not written to logs. The connection test sends one short message with no health data. On a new phone you enter the key again.",
             "The JoyoRogo and JoyoFit servers do not receive the key, the conversation, the coach notes or the data summary from the own-key engine. All of that, with your settings and consent, exists only on your phone. To read your food log and weight from your JoyoRogo account, the phone uses your usual account connection, read only.",
+            "Data reaches this provider only after the in-app consent that names it, and at your own choice.",
             "Once data reaches the provider you chose, that provider's terms apply (storage, use for training models, age limits), not JoyoFit's or JoyoRogo's. The provider is your choice and uses your own account; it is not our data processor. Read its terms before you connect, and the usage costs from the provider are yours.",
             "Gemini: the setup screen warns that on the free tier, Google uses the content it receives to improve its products. Check Google's terms for the kind of account you use.",
             "Not for under 18: the own-key engine is off when the age in your phone profile or your JoyoRogo profile is under 18. If no age is set, you confirm you are 18 or older when you consent.",
@@ -1075,7 +1085,7 @@ function English() {
       <Block title="Third parties">
         <p>
           Open-Meteo (weather), Broadcom (satellite-assist data), IGS and BKG (public broadcast satellite data fetched by JoyoFit&apos;s server for the HW_AGNSS and HW_PGNSS_PRED experiments; the phone does not contact them), CODE at the University of Bern (public satellite orbit predictions fetched by JoyoFit&apos;s server for the HW_PGNSS_PRED experiment; the phone does not contact it), OpenStreetMap contributors (ODbL; map data for the offline-map experiment, built by JoyoFit from Geofabrik extracts; the phone does not contact OpenStreetMap or Geofabrik), FOSSGIS e.V. (OSRM) and Nominatim (OpenStreetMap) (route paths and place search for Loop from home, turns and new routes for the watch navigation experiment), Cloudflare (hosting of the cloud and this
-          site, and, through Cloudflare Workers AI (Cloudflare, Inc.), the recipient of your messages and data summary if you agree to Joyo AI from JoyoRogo; see that section), JoyoRogo, Google and Apple (sign-in), Apple (Apple Health write and one-time import read, and place-name geocoding on iPhone), Strava (upload destination when you connect it), the AI provider you choose, for example Anthropic for Claude or OpenAI for ChatGPT (receives the data read while you ask questions, only if you connect the AI connection), the AI provider you choose for Joyo AI with your own key (OpenRouter, OpenAI, Anthropic, Google Gemini or an address you enter; your choice and your own account, not our data processor; receives your data summary and conversation only after you enter a key and consent), Expo, Google (Firebase Cloud Messaging) and Apple (APNs) (delivery of Keluarga push notifications), RevKlik (visitor
+          site, and, through Cloudflare Workers AI (Cloudflare, Inc.), the recipient of your messages and data summary if you agree to Joyo AI from JoyoRogo; see that section; Cloudflare is our data processor and provides the same or equal protection of personal data as this policy), JoyoRogo, Google and Apple (sign-in), Apple (Apple Health write and one-time import read, and place-name geocoding on iPhone), Strava (upload destination when you connect it), the AI provider you choose, for example Anthropic for Claude or OpenAI for ChatGPT (receives the data read while you ask questions, only after the in-app consent that names the recipients and if you choose to connect the AI connection), the AI provider you choose for Joyo AI with your own key (OpenRouter, OpenAI, Anthropic, Google Gemini or an address you enter; your choice and your own account, not our data processor; receives your data summary and conversation only after you enter a key and consent), Expo, Google (Firebase Cloud Messaging) and Apple (APNs) (delivery of Keluarga push notifications), RevKlik (visitor
           statistics for this site). No ads and no sale of data. Data is not used for advertising or
           ad profiling. Everything the app and this site send over the internet uses HTTPS (TLS).
         </p>
