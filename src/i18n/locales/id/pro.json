@@ -5,19 +5,19 @@
     "later": "Nanti",
     "openFailed": "Tautannya tidak bisa dibuka. Cari JoyoRogo di toko aplikasi.",
     "moment": {
-      "coach-chat": "Joyo AI dengan mesin JoyoRogo menjawab soal latihan dan tidurmu dari data jam kamu. Mesin ini bagian dari JoyoRogo Pro; kunci API sendiri tetap gratis.",
+      "coach-chat": "Joyo AI dengan mesin JoyoRogo menjawab soal latihan dan tidurmu dari data jam kamu. Mesin ini bagian dari Joyo Pro; kunci API sendiri tetap gratis.",
       "coach": "Saran latihan harian, rencana lari dan latihan kekuatan, dan chat Joyo AI, semuanya dari data jam kamu. Rencanamu tersimpan di akun JoyoRogo.",
       "coach-today": "Dapat saran latihan untuk hari ini dari data jam kamu, plus rencana lari dan latihan kekuatan.",
       "cloud": "Cadangkan setiap latihan ke cloud, lengkap dengan rute dan analisisnya, lalu pulihkan di HP baru. Sekarang latihanmu hanya ada di ponsel ini.",
       "workout": "Lihat grafik detak jantung dan rute latihan orang lain. Punyamu sendiri selalu bisa dilihat gratis, dan membagikannya juga gratis.",
       "koneksi": "Biarkan Claude, ChatGPT, atau aplikasi AI lain membaca datamu dan menjawab soal latihan dan tidurmu. Dengan Pro, kamu lebih dulu melihat apa yang bisa dibaca aplikasi AI dan siapa penerimanya, dan tidak ada yang dibagikan sebelum kamu setuju.",
-      "onboarding": "Saran harian, cadangan cloud setiap latihan, dan Joyo AI dengan mesin JoyoRogo adalah bagian dari JoyoRogo Pro. JoyoFit tetap berfungsi penuh tanpanya.",
+      "onboarding": "Saran harian, cadangan cloud setiap latihan, dan Joyo AI dengan mesin JoyoRogo adalah bagian dari Joyo Pro. JoyoFit tetap berfungsi penuh tanpanya.",
       "onboarding-cloud": "Cadangkan setiap latihan ke cloud, lengkap dengan rute dan analisisnya, lalu pulihkan di HP baru. Sekarang latihanmu hanya ada di ponsel ini.",
-      "family": "Memantau sampai 5 orang, semua pemberitahuan (detak jantung, langkah, tidur, kadar oksigen), email, dan riwayat sampai 90 hari ada di JoyoRogo Pro. Yang berlangganan hanya yang memantau: orang yang kamu pantau tidak pernah dikenai biaya. Pemberitahuan \"Belum sinkron\" tetap gratis."
+      "family": "Memantau sampai 5 orang, semua pemberitahuan (detak jantung, langkah, tidur, kadar oksigen), email, dan riwayat sampai 90 hari ada di Joyo Pro. Yang berlangganan hanya yang memantau: orang yang kamu pantau tidak pernah dikenai biaya. Pemberitahuan \"Belum sinkron\" tetap gratis."
     }
   },
   "paywall": {
-    "title": "JoyoRogo Pro",
+    "title": "Joyo Pro",
     "intro": "Pro menambah bagian JoyoFit yang berjalan di server JoyoRogo. Semua yang lain di JoyoFit tetap gratis.",
     "unlocksTitle": "Yang dibuka Pro di JoyoFit",
     "unlocks": {
@@ -26,7 +26,7 @@
       "koneksi": "Koneksi AI: setelah kamu menyetujui apa yang dibagikan dan ke siapa, biarkan Claude, ChatGPT, atau aplikasi AI lain membaca datamu dan menjawab pertanyaan tentangnya.",
       "family": "Keluarga: pantau sampai 5 orang dengan semua pemberitahuan dan riwayat sampai 90 hari. Orang yang kamu pantau tidak pernah dikenai biaya."
     },
-    "sameAccount": "Ini JoyoRogo Pro yang sama dengan yang berlaku di aplikasi JoyoRogo dan di situs JoyoRogo. Pro milik akun JoyoRogo kamu, jadi ikut ke semuanya.",
+    "sameAccount": "Ini Joyo Pro yang sama dengan yang berlaku di aplikasi JoyoRogo dan di situs JoyoRogo. Pro milik akun JoyoRogo kamu, jadi ikut ke semuanya.",
     "plansTitle": "Pilih paket",
     "plan": {
       "monthly": "Bulanan",
@@ -44,7 +44,7 @@
       "body": "Pro terikat ke akun JoyoRogo kamu dan dipakai bersama oleh JoyoFit, aplikasi JoyoRogo, dan situsnya. Masuk dengan akun JoyoRogo untuk berlangganan atau memulihkan pembelian."
     },
     "active": {
-      "title": "JoyoRogo Pro aktif",
+      "title": "Joyo Pro aktif",
       "body": "Pro menyala untuk akun JoyoRogo kamu: di JoyoFit, di aplikasi JoyoRogo, dan di situsnya."
     },
     "activated": "Pro menyala. Layar-layarmu sedang terbuka.",

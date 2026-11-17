@@ -91,7 +91,7 @@
     "sessionRejectedShort": "Sesi JoyoRogo ditolak. Masuk lagi.",
     "serverAnswered": "Server cloud menjawab {{status}}.",
     "serverAnsweredCode": "Server cloud menjawab {{status}} ({{code}}).",
-    "cloudLocked": "Cadangan cloud adalah bagian dari JoyoRogo Pro.",
+    "cloudLocked": "Cadangan cloud adalah bagian dari Joyo Pro.",
     "rogoAnswered": "JoyoRogo menjawab {{status}}.",
     "rogoSlow": "JoyoRogo lambat merespons, coba lagi.",
     "rogoUnreachable": "JoyoRogo tidak terjangkau. Cek koneksi internetmu, lalu coba lagi.",
@@ -116,7 +116,7 @@
     "slotsFull": "Slot Strava penuh. Lihat Lainnya, Strava."
   },
   "cloudLine": {
-    "stays": "Cloud: tetap di HP ini (JoyoRogo Pro menyinkronkannya)",
+    "stays": "Cloud: tetap di HP ini (Joyo Pro menyinkronkannya)",
     "notUploaded": "Cloud: belum diunggah (sekitar {{size}})",
     "inCloud": "Cloud: sudah di cloud ({{size}})",
     "inCloudStale": "Cloud: sudah di cloud ({{size}}), pembaruan menunggu (sekitar {{estimate}})"

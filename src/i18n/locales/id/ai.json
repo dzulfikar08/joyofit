@@ -23,15 +23,15 @@
   },
   "chip": {
     "own": "{{model}}, kunci sendiri",
-    "rogo": "JoyoRogo Pro",
-    "rogoUsed": "JoyoRogo Pro, {{used}}/{{cap}}",
+    "rogo": "Joyo Pro",
+    "rogoUsed": "Joyo Pro, {{used}}/{{cap}}",
     "ownOff": "Kunci sendiri belum siap",
     "open": "Buka pengaturan Joyo AI. Sekarang: {{engine}}"
   },
   "chat": {
     "usageToday": "Hari ini: {{tokens}} token, {{calls}} dari {{ceiling}} panggilan",
     "ownTitle": "Atau pakai kunci sendiri",
-    "ownBody": "Gratis dari JoyoFit, tanpa JoyoRogo Pro. Kamu memasang kunci dari penyedia AI pilihanmu (OpenRouter, OpenAI, Anthropic, Gemini) dan hanya membayar pemakaian ke mereka.",
+    "ownBody": "Gratis dari JoyoFit, tanpa Joyo Pro. Kamu memasang kunci dari penyedia AI pilihanmu (OpenRouter, OpenAI, Anthropic, Gemini) dan hanya membayar pemakaian ke mereka.",
     "ownCta": "Atur kunci sendiri",
     "signIn": "Masuk",
     "noFood": "Kamu belum masuk ke JoyoRogo, jadi makan dan berat badan tidak tersambung. Jawaban tidak memakai data makan.",
@@ -185,7 +185,7 @@
     },
     "minor": {
       "title": "Belum tersedia di bawah 18 tahun",
-      "body": "Chat dengan kunci sendiri hanya untuk usia 18 tahun ke atas, karena data tubuhmu dikirim ke penyedia luar. Mesin JoyoRogo tetap tersedia lewat JoyoRogo Pro."
+      "body": "Chat dengan kunci sendiri hanya untuk usia 18 tahun ke atas, karena data tubuhmu dikirim ke penyedia luar. Mesin JoyoRogo tetap tersedia lewat Joyo Pro."
     }
   },
   "notes": {
@@ -294,11 +294,11 @@
   "prefs": {
     "engine": {
       "title": "Mesin",
-      "rogo": "JoyoRogo Pro",
+      "rogo": "Joyo Pro",
       "rogoUsed": "{{used}} dari {{cap}} pesan hari ini",
       "rogoPro": "Dijawab oleh AI JoyoRogo, dengan batas pesan harian",
       "rogoSignedOut": "Perlu masuk ke JoyoRogo dan berlangganan Pro",
-      "rogoFree": "Perlu JoyoRogo Pro",
+      "rogoFree": "Perlu Joyo Pro",
       "rogoChecking": "Memeriksa akunmu...",
       "own": "Kunci sendiri",
       "ownNone": "Belum diatur",
@@ -399,7 +399,7 @@
     "own": "Kunci sendiri: {{provider}}, {{model}}",
     "ownCheck": "Kunci sendiri, {{provider}}, perlu dicek",
     "minor": "Tidak tersedia di bawah 18 tahun",
-    "pro": "JoyoRogo Pro",
+    "pro": "Joyo Pro",
     "none": "Belum diatur"
   },
   "ask": {
@@ -409,7 +409,7 @@
   },
   "hosted": {
     "title": "Joyo AI mengirim datamu ke server",
-    "intro": "Joyo AI di JoyoRogo Pro menjawab di server, bukan di ponselmu. Sebelum ada yang dikirim, baca dulu ke mana datanya pergi, lalu setujui.",
+    "intro": "Joyo AI di Joyo Pro menjawab di server, bukan di ponselmu. Sebelum ada yang dikirim, baca dulu ke mana datanya pergi, lalu setujui.",
     "toTitle": "Siapa yang menerima datamu",
     "to": "Server JoyoRogo (PT Joyo Digitama Solusi) dan Cloudflare Workers AI (Cloudflare, Inc.), yang menjalankan model AI Gemma dari Google. Ponselmu mengirimnya ke server JoyoRogo, lalu server meneruskannya ke Cloudflare Workers AI untuk mendapat jawaban.",
     "lead": "Setiap kamu mengirim pesan, JoyoFit mengirim:",
@@ -442,7 +442,7 @@
       "title": "Data yang dikirim ke AI JoyoRogo",
       "label": "Izinkan AI JoyoRogo menerima data-ku",
       "on": "Aktif: pesanmu dan data yang tercantum di persetujuan dikirim ke server JoyoRogo dan Cloudflare Workers AI saat kamu bertanya.",
-      "off": "Mati: tidak ada yang dikirim dan chat JoyoRogo Pro tetap tertutup. Nyalakan untuk membaca apa yang dikirim dan menyetujuinya.",
+      "off": "Mati: tidak ada yang dikirim dan chat Joyo Pro tetap tertutup. Nyalakan untuk membaca apa yang dikirim dan menyetujuinya.",
       "review": "Apa yang dikirim dan siapa penerimanya"
     }
   }

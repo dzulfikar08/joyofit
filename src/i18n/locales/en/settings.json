@@ -190,7 +190,7 @@
       "nothing": "Nothing"
     },
     "title": "Cloud sync",
-    "manageSubscription": "Manage JoyoRogo Pro subscription",
+    "manageSubscription": "Manage Joyo Pro subscription",
     "notConfigured": "No cloud server URL in this build. Deploy server/, set EXPO_PUBLIC_JOYOFIT_CLOUD_URL, rebuild.",
     "uploading": "Uploading {{done}} of {{total}}",
     "refused_one": "{{n}} workout could not be uploaded. It is tried again tomorrow, or sooner after an app update.",
@@ -218,7 +218,7 @@
     "mobileMessage": "Wi-Fi only is on and this phone is not on Wi-Fi. Syncing now can use a lot of mobile data when workouts are waiting.",
     "wipeTitle": "Delete cloud data?",
     "wipeMessage": "Removes your workouts, steps and sleep from the cloud. This phone's data and your account stay, and automatic sync is turned off so nothing is uploaded again until you turn it back on.",
-    "details": "Cloud sync is part of JoyoRogo Pro. With a Pro account every workout is uploaded to your JoyoRogo account as one compressed file: its GPS track, heart rate, speed, cadence and power, and the analysis the app shows, so it survives a lost phone, shows on the JoyoRogo web and restores onto a new phone after you sign in. Steps, heart rate, SpO2, sleep and the watch's Bluetooth address go to the JoyoFit cloud with the same account. Without Pro nothing is uploaded and your workouts stay on this phone. While you are signed in the app also reads from the cloud: it downloads workouts this phone does not have, and removes the ones you deleted from the cloud elsewhere. JoyoFit also exchanges meals, weight and daily scores with JoyoRogo. With Pro, the settings that follow the account (profile, goals, theme, language, weather, cycle calendar), sticker templates, saved routes, HRV, sleep scores, health metrics and cycle data follow your account too, so several phones show the same thing; cycle data can be switched off with the Sync cycle data switch, which deletes its copy in the cloud. Watch pairing, the watch key and each phone's own settings do not sync. Delete cloud data removes your workouts, steps, sleep and the data that follows the account from the cloud and keeps this phone's data and your account; Delete JoyoRogo account removes the account and everything else (details at fit.joyorogo.com/privasi).",
+    "details": "Cloud sync is part of Joyo Pro. With a Pro account every workout is uploaded to your JoyoRogo account as one compressed file: its GPS track, heart rate, speed, cadence and power, and the analysis the app shows, so it survives a lost phone, shows on the JoyoRogo web and restores onto a new phone after you sign in. Steps, heart rate, SpO2, sleep and the watch's Bluetooth address go to the JoyoFit cloud with the same account. Without Pro nothing is uploaded and your workouts stay on this phone. While you are signed in the app also reads from the cloud: it downloads workouts this phone does not have, and removes the ones you deleted from the cloud elsewhere. JoyoFit also exchanges meals, weight and daily scores with JoyoRogo. With Pro, the settings that follow the account (profile, goals, theme, language, weather, cycle calendar), sticker templates, saved routes, HRV, sleep scores, health metrics and cycle data follow your account too, so several phones show the same thing; cycle data can be switched off with the Sync cycle data switch, which deletes its copy in the cloud. Watch pairing, the watch key and each phone's own settings do not sync. Delete cloud data removes your workouts, steps, sleep and the data that follows the account from the cloud and keeps this phone's data and your account; Delete JoyoRogo account removes the account and everything else (details at fit.joyorogo.com/privasi).",
     "support": {
       "body": "Priority support: send a DM on Threads and say the email of your JoyoRogo account. Pro DMs are answered within 1 working day.",
       "open": "DM {{handle}} on Threads",
@@ -504,7 +504,7 @@
       "chooseAnother": "Choose another import file",
       "apply": "Import this file",
       "accountTitle": "Uploaded from the web",
-      "accountHint": "A file you uploaded from the web (JoyoRogo Pro). It is removed from the server once this phone has applied it; if applying fails it stays, so you can try again.",
+      "accountHint": "A file you uploaded from the web (Joyo Pro). It is removed from the server once this phone has applied it; if applying fails it stays, so you can try again.",
       "signedOut": "Sign in to JoyoRogo to see files you uploaded from the web.",
       "loading": "Looking for uploaded files",
       "empty": "Nothing uploaded yet.",
