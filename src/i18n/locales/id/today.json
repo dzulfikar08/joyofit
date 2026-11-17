@@ -338,6 +338,7 @@
     "avg": "Rata-rata",
     "max": "Tertinggi",
     "resting": "Istirahat",
+    "restingNotShared": "Jammu belum mengirim detak jantung istirahat dalam dua minggu terakhir. Beberapa jam menghitungnya tapi menyimpannya di jam saja, jadi JoyoFit tidak bisa menampilkannya.",
     "hint": "Sentuh dan geser grafik untuk melihat jam dan bpm",
     "readoutAvg": "rata-rata",
     "readoutMax": "tertinggi",

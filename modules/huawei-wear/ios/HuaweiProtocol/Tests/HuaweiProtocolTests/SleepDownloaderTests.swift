@@ -485,25 +485,21 @@ final class SleepDownloaderTests: XCTestCase {
         XCTAssertEqual(data, content)
     }
 
-    /// A body that parses as a TLV without the cipher elements is a MissingTagException GB does not catch.
-    func testOldSyncDataThatLooksLikeTlvFails() async throws {
+    /// A raw body that happens to parse as a TLV without the cipher elements is file data. GB threw MissingTagException and
+    /// lost the whole file (HONOR Watch ES rrisqi_data.bin, "Missing tag: 7e", JRG-487/488).
+    func testOldSyncDataThatLooksLikeTlvIsTakenAsData() async throws {
         let h = SleepFilesHarness()
-        _ = h.oldSyncServer(["sleep_state.bin": [1, 2, 3]], listing: ["sleep_state.bin"])
+        _ = h.oldSyncServer(["sleep_state.bin": [0x01, 0x42]], listing: ["sleep_state.bin"])
         let base = h.watch.responder
         h.watch.responder = { r in
             if r.service == 0x0a && r.command == 0x04 {
-                return [SleepFilesFakeWatch.frame(service: 0x0a, command: 0x05, body: [0x41, 0x01, 0x42])]
+                // Packet number 0, then the data: as TLV it reads tag 00, length 01, value 42, with no 7E.
+                return [SleepFilesFakeWatch.frame(service: 0x0a, command: 0x05, body: [0x00, 0x01, 0x42])]
             }
             return base(r)
         }
-        do {
-            _ = try await downloader(h).download(.sleepState(newSync: false, start: 1, end: 2))
-            XCTFail("expected an error")
-        } catch let e as WearError {
-            XCTAssertEqual(e.code, .protocolError)
-            XCTAssertTrue(e.message.contains("failed to parse file data"), e.message)
-            XCTAssertTrue(e.isParseFailure)
-        }
+        let data = try await downloader(h).download(.sleepState(newSync: false, start: 1, end: 2))
+        XCTAssertEqual(data, [0x01, 0x42])
     }
 
     func testOldSyncUndecryptableBlockIsLoggedAndTakenAsData() async throws {

@@ -455,7 +455,8 @@ public enum FileDownloadService0A {
 
     /// Why a 0x0A data block could not be taken as encrypted (`BlockResponse.e`).
     public enum BlockDecodeError: Error, Equatable, CustomStringConvertible {
-        /// The body did not parse as TLV (Java ArrayIndexOutOfBoundsException): the data is not encrypted.
+        /// The body did not parse as TLV (Java ArrayIndexOutOfBoundsException), or parsed without the cipher elements (Java
+        /// MissingTagException): the data is not encrypted.
         case notTLV(String)
         /// It parsed as TLV but could not be decrypted (Java `CryptoException`).
         case crypto(String)
@@ -481,8 +482,9 @@ public enum FileDownloadService0A {
             guard var payload = packet.payload else { throw fileDataNoPayload }
             var offset = 0
             var decodeError: BlockDecodeError?
-            // Try to decrypt the TLV, otherwise assume the data is not encrypted. A TLV without the cipher elements is a
-            // MissingTagException, which is not caught (the whole block fails to parse), as in GB.
+            // Try to decrypt the TLV, otherwise assume the data is not encrypted. A TLV without the cipher elements is not encrypted
+            // either: GB let that MissingTagException fail the whole file, the JoyoFit Java takes it as raw data like this (HONOR Watch
+            // ES rrisqi_data.bin, "Missing tag: 7e", JRG-487/488).
             do {
                 let tlv: HuaweiTLV
                 do {
@@ -494,6 +496,8 @@ public enum FileDownloadService0A {
                     payload = try tlv.fileDownloadDecryptRaw(params: params)
                 } catch PacketError.crypto(let message) {
                     throw BlockDecodeError.crypto(message)
+                } catch TLVError.missingTag(let tag) {
+                    throw BlockDecodeError.notTLV("Missing tag: \(String(tag, radix: 16))")
                 }
                 offset = 0
             } catch let e as BlockDecodeError {
