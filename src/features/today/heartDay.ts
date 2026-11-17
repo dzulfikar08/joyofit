@@ -122,3 +122,14 @@ export function heartDaySeries(day: HeartDay): AnalysisSeries {
 export function bucketStart(day: Pick<HeartDay, 'dayStart' | 'bucketSec'>, bucket: number): number {
   return day.dayStart + bucket * day.bucketSec;
 }
+
+/** How far back a resting heart rate counts as "the watch sends one" (a day without one is then just a day it has none yet). */
+export const RESTING_LOOKBACK_DAYS = 14;
+
+/**
+ * Whether to explain an empty resting rate: the day has readings, no resting rate, and the watch sent none in the last
+ * `RESTING_LOOKBACK_DAYS` either, so it most likely keeps it to itself (HONOR Watch ES, JRG-487/488).
+ */
+export function restingNotShared(hasReadings: boolean, resting: number | null, restingRecently: boolean): boolean {
+  return hasReadings && resting === null && !restingRecently;
+}
