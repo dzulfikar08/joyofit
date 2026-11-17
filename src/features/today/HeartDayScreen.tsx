@@ -9,7 +9,7 @@ import { HiddenTabHeader } from '@/components/HiddenTabHeader';
 import { Metric } from '@/components/Metric';
 import { Card, Screen } from '@/components/Screen';
 import { Notice, Skeleton } from '@/components/States';
-import { heartDaySeries, bucketStart, type HeartDay } from '@/features/today/heartDay';
+import { heartDaySeries, bucketStart, restingNotShared, type HeartDay } from '@/features/today/heartDay';
 import { loadHeartDay, type HeartDayData } from '@/features/today/heartDayQuery';
 import { startOfLocalDay } from '@/features/today/stats';
 import { addDays } from '@/features/trends/series';
@@ -197,17 +197,25 @@ function DayStats({ data }: { data: HeartDayData }) {
     { key: 'max', label: t('heartDay.max'), value: stats ? String(stats.max) : '--' },
     { key: 'resting', label: t('heartDay.resting'), value: data.resting !== null ? String(data.resting) : '--' },
   ];
+  const noResting = restingNotShared(stats !== null, data.resting, data.restingRecently);
   return (
-    <View style={styles.statsRow}>
-      {cells.map((c) => (
-        <View key={c.key} style={styles.statCell} accessible accessibilityLabel={`${c.label}: ${c.value}${c.value === '--' ? '' : ' bpm'}`}>
-          <Metric value={c.value} size="md" color={c.key === 'max' && stats ? colors.heartText : undefined} />
-          <AppText variant="caption" muted numberOfLines={1}>
-            {c.label}
-          </AppText>
-        </View>
-      ))}
-    </View>
+    <>
+      <View style={styles.statsRow}>
+        {cells.map((c) => (
+          <View key={c.key} style={styles.statCell} accessible accessibilityLabel={`${c.label}: ${c.value}${c.value === '--' ? '' : ' bpm'}`}>
+            <Metric value={c.value} size="md" color={c.key === 'max' && stats ? colors.heartText : undefined} />
+            <AppText variant="caption" muted numberOfLines={1}>
+              {c.label}
+            </AppText>
+          </View>
+        ))}
+      </View>
+      {noResting ? (
+        <AppText variant="caption" muted style={styles.restingNote}>
+          {t('heartDay.restingNotShared')}
+        </AppText>
+      ) : null}
+    </>
   );
 }
 
@@ -333,6 +341,7 @@ const styles = StyleSheet.create({
   navDisabled: { opacity: 0.3 },
   dayLabel: { flex: 1, alignItems: 'center' },
   statsRow: { flexDirection: 'row', gap: spacing.sm },
+  restingNote: { marginTop: spacing.sm },
   statCell: { flex: 1, minWidth: 0 },
   readoutLine: { flexDirection: 'row', alignItems: 'center' },
   readoutFlex: { flex: 1, minWidth: 0 },
