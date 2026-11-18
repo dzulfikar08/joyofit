@@ -1,5 +1,5 @@
 import { HostedConsentError, hasHostedConsent } from './hostedConsent';
-import type { AiSettings } from './settings';
+import type { AiSettings, HostedConsentRecord } from './settings';
 
 /**
  * The one door to the hosted Joyo AI. Wraps the function that really sends a chat turn (JoyoRogo's `coach/chat`) so that it cannot run
@@ -12,4 +12,13 @@ export function guardHosted<Args extends unknown[], R>(settings: { get(): Pick<A
     if (!hasHostedConsent(settings.get())) throw new HostedConsentError();
     return send(...args);
   };
+}
+
+/**
+ * The body of one `coach/chat` request (JoyoRogo `coachChatInputSchema`). `aiConsent` is the yes this phone recorded (version of the
+ * data list and when), sent so JoyoRogo's server can check it too: today's server does not read it (its zod object strips unknown
+ * fields), so it is harmless before that server change exists. A request without a yes never gets this far: `guardHosted` refuses it.
+ */
+export function chatRequestBody<Turn, Snapshot>(messages: readonly Turn[], snapshot: Snapshot, locale: string, consent: HostedConsentRecord | null) {
+  return { messages, snapshot, locale, aiConsent: consent ? { version: consent.version, at: consent.at } : null };
 }

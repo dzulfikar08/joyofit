@@ -89,10 +89,10 @@ Watch sync and every screen in the video work without an account. Signing in wit
 IN-APP PURCHASE: JoyoRogo Pro is sold in JoyoFit as auto-renewable subscriptions (com.joyodigitama.joyofit.pro.monthly and .yearly, group "JoyoRogo Pro"). Path: sign in on Today's Coach card (Sign in with Apple), then Upgrade to Pro on that card. The Pro screen shows both plans with Apple's prices, Restore, the renewal terms, Terms of Use and Privacy Policy. Pro belongs to the JoyoRogo account, so it is also honoured when bought in our JoyoRogo app (id6823222101, same developer), on Google Play or on joyorogo.com; JoyoFit never links to a purchase outside the App Store. A Sandbox purchase ends in the normal "Pro is on" state.
 
 AI FEATURES AND CONSENT (5.1.1(i), 5.1.2(i)). Every way JoyoFit can share personal data with an AI service is optional, off by default, and asks first: a consent screen lists exactly what is sent, names who receives it, links to the privacy policy, and has Agree / Not now. Without Agree nothing is sent. There are three paths:
-1. Joyo AI chat, hosted engine (Pro). Path: Coach > Joyo AI. The consent screen replaces the chat input. Recipients: JoyoRogo's server (PT Joyo Digitama Solusi) and Cloudflare Workers AI (Cloudflare, Inc.), which runs Google's Gemma model; Cloudflare is our data processor and does not keep the content or train on it. Withdraw: Settings > Joyo AI > "Allow JoyoRogo's AI to receive my data". Policy: https://fit.joyorogo.com/privasi#joyo-ai-hosted-en
+1. Joyo AI chat, hosted engine (Pro). Path: Today, sparkle button "Ask Joyo AI" (or Coach > Joyo AI). Before any chat, a full-screen consent asks "Allow Joyo AI to send your data to Cloudflare Workers AI?" (no chat or input field until Allow; Not now leaves). Recipients: JoyoRogo's server (PT Joyo Digitama Solusi) and Cloudflare Workers AI (Cloudflare, Inc.), which runs Google's open Gemma 4 model; Google gets nothing. Cloudflare is our data processor, keeps no content, does not train on it. Policy: https://fit.joyorogo.com/privasi#ai-data-en
 2. Joyo AI with the user's own key (free). Path: Settings > Joyo AI > own key. Nothing is sent until the user enters a key for a provider they pick (OpenRouter, OpenAI, Anthropic, Google Gemini or a custom address), the connection test passes, and they tick the consent that names that provider and lists the data. Withdraw: Settings > Joyo AI > Delete key. Policy: https://fit.joyorogo.com/privasi#joyo-ai-en
 3. AI connection to ChatGPT or Claude (Pro). Path: Settings > Connect ChatGPT or Claude. The connector address and Copy button stay hidden until the user agrees to a consent card that lists the data an AI app can read (profile and targets, food log, body weight, workouts, sleep and recovery), names the recipients (Anthropic for Claude, OpenAI for ChatGPT, or the company behind another AI app the user connects), and says the data is read only when that AI app asks, through the user's JoyoRogo account, read-only. Buttons: "Agree and show address" / "Not now". Withdraw on the same screen ("Withdraw my agreement"): the address is hidden again and every connected app is disconnected; single apps can be disconnected there too. Free accounts see only the upgrade card, never the address. Policy: https://fit.joyorogo.com/privasi#koneksi-ai-en
-No other feature sends personal data to an AI service: meals logged on the watch are saved to the diary without any AI estimate.
+Every consent is listed in Settings > AI and your data, where each can be withdrawn. No other feature sends personal data to an AI service: meals logged on the watch are saved to the diary without any AI estimate.
 
 Demo account with Pro: <TBD>
 
@@ -423,3 +423,35 @@ Dzulfikar Ats Tsauri
 1. Deploy the site (`cd site && bun run deploy`) so the privacy-policy section and its anchors exist; open https://fit.joyorogo.com/privasi#joyo-ai-hosted-en to check.
 2. Ship the JS (OTA, `docs/ota.md`) to TestFlight 1.1 (202610281818), or a new build if the review needs one; it contains no native change. The iOS "Take photo" camera prompt (`stickers/photo.ts`) is not tried on a device [INFERENCE]: check it once.
 3. Replace the App Review notes in App Store Connect with the block at the top of this file; send the reply above with the resubmission.
+
+## Review 2026-11-17: 5.1.1(i), 5.1.2(i) again on 1.1 (202611031140), second fix 2026-11-18
+
+Build 202611031140 (Release iOS run 41628968710, master `6d257947`) already had the hosted consent card; Apple rejected it again
+with the same text. PR #101 (2026-11-17) added the connector consent and stopped the watch-meal macro estimate. This change makes the
+hosted consent impossible to miss and puts every AI consent in one place, the way JoyoArto answered the identical rejection:
+
+- **Full-screen consent before the chat.** `chatGate` (`src/features/ai/aiPrivacy.ts`) returns `rogoConsent` for Pro on the hosted
+  engine without a current yes; `JoyoAiChat` then renders `HostedConsentGate` instead of the whole chat (no history, no input field):
+  the question "Allow Joyo AI to send your data to Cloudflare Workers AI?", the recipients (JoyoRogo's server, PT Joyo Digitama Solusi;
+  Cloudflare Workers AI, Cloudflare, Inc., running Gemma 4 26B, an open model made by Google, which receives nothing), the data list,
+  what is never sent, purpose and retention, the privacy link, and **Allow** / **Not now** pinned at the bottom.
+- **Settings, Coach & AI, AI and your data** (`/settings/ai-consent`): the hosted engine, every own-key provider with a yes and the
+  ChatGPT or Claude connector, each with its date and a withdraw.
+- **Privacy policy:** new sections `#ai-data` / `#ai-data-en` (every AI path, what is sent, how it is collected, every use, recipients,
+  equal protection by Cloudflare as processor, never sent, where to withdraw); the hosted sections name the model and Allow.
+- **Wire:** `coach/chat` now also carries `aiConsent: { version, at }`. JoyoRogo ignores it today; enforcing it is a joyorogo change.
+- Tests: `src/features/ai/aiPrivacy.test.ts`.
+
+How a reviewer reaches the consent (Pro is needed for the hosted engine; a Sandbox purchase gives it):
+
+1. Today: sign in (Sign in with Apple), Upgrade to Pro, buy a plan in the Sandbox.
+2. Today, the sparkle button at the top right ("Ask Joyo AI"), or Coach, row Joyo AI. The full-screen consent opens before any chat.
+   Not now goes back and nothing is sent; Allow opens the chat.
+3. Review or withdraw: Settings, Coach & AI, **AI and your data**.
+
+Without Pro the same sparkle button opens "Set up your own key", where the provider-specific consent (named provider, data list,
+18+ box) must be ticked before anything is sent.
+
+Owner checklist: deploy the site (`cd site && bun run deploy`) before resubmitting so `#ai-data-en` exists; ship the JS (OTA or a new
+build; no native change); the App Review notes block above is longer than Apple's 4,000 characters (5,573 before this change) and has
+to be shortened when pasted; the demo account line is still `<TBD>`.

@@ -105,6 +105,8 @@ export default function SettingsScreen() {
         tint: 'link',
         onPress: () => router.navigate(joyoAiDestination({ settings: ai.settings, access: ai.access, coachAccess }), OPEN_JOYO_AI),
       },
+      // Every AI recipient and the person's yes or no, with withdraw (Apple 5.1.1(i), 5.1.2(i)): one tap from Settings.
+      { key: 'ai-privacy', title: ta('screens.consent'), subtitle: ta('privacy.hubSubtitle'), icon: 'shield-checkmark', tint: 'link', onPress: go('/settings/ai-consent') },
     ],
   };
 
