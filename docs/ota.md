@@ -237,6 +237,12 @@ Android `cb987e8b8ac363beba44e1d31a702071aca28f95` (Release Android run 42046885
   `19997c2d-3a24-45e9-b996-a9e34d742306` android, `fb4a3f88-923e-44ec-8053-467652f6f9f1` ios (same runtimes). The native
   parts of #104 (iOS stale pairing in `BleTransport.swift`, 0A file blocks in Java and Swift, Band 11 Pro stress in Kotlin) wait
   for the next store build.
+- 2026-11-17 from branch `ota/joyo-pro-copy` = `ota/watch-reports` (`5f5de12e`) + the copy commit of #105 (`687048b3`: JoyoRogo
+  Pro is Joyo Pro in the app strings, onboarding Pro step), cherry-picked. The conflict in `pro.json` kept the base's `koneksi`
+  lines (the consent wording of #101 needs its screens) with only the name changed. The trial commit (`1d7b5158`) is not in it:
+  payments and the iOS module go with the store build. Published locally with `bun install --frozen-lockfile` and
+  `--runtime-version`: groups `64fb6dd0-4b0d-45ac-83f4-d30e70de95f7` android, `41deb755-c6d3-4e30-a396-916a346c3a44` ios (same
+  runtimes). The next OTA from another branch must include `687048b3` too, or the old name comes back.
 
 ## When OTA is not enough
 

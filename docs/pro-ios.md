@@ -24,6 +24,11 @@ Approved 2026-11-17: 7 days free on the yearly plan, new subscribers only. In Ap
 `com.joyodigitama.joyofit.pro.yearly`: type Free, duration 1 week, all territories. Monthly gets no offer. Apple gives an introductory offer once
 per subscription group, so someone who already had either plan is not eligible.
 
+**Created 2026-11-17** through the App Store Connect API (key `BUU2CPKLGM`): 175 introductory offers on subscription `6828094623`,
+one per territory, `FREE_TRIAL`, `ONE_WEEK`, 1 period, start 2026-11-17, no end. The subscriptions are still `READY_TO_SUBMIT`, so the
+offer goes live with the first approved submission. StoreKit applies it at purchase in any build, so a build without the disclosure must
+never reach the App Store: submit a build made after `1d7b5158`.
+
 `AppleIap.getProduct` also returns the product's introductory offer (payment mode, period) and
 `Product.SubscriptionInfo.isEligibleForIntroOffer(for: groupID)`; `appleTrialDays` (`src/features/pro/appleBillingCore.ts`) turns that into
 `trialDays` only for an eligible free trial counted in days or weeks, and the paywall discloses it. StoreKit applies the offer by itself at purchase.

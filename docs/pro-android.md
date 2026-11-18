@@ -48,6 +48,10 @@ Approved 2026-11-17: 7 days free on the yearly plan, new subscribers only. In Pl
 `com.joyodigitama.joyofit.pro.yearly`: eligibility "New customer acquisition, never had this subscription", one phase "Free trial" of 7 days,
 any offer id (`yearly-trial-7d` suggested; the app does not read it). Monthly gets no offer.
 
+**Created and active 2026-11-17:** offer `yearly-trial-7d` on base plan `yearly` (175 countries / regions, new customer acquisition,
+never had this subscription, Free trial 7 days). Builds before the trial commit ignore it: they sell the base plan with the fewest phases.
+The yearly base plan keeps a 14-day grace period and a 46-day account hold.
+
 `pickPlanOffer` (`src/features/pro/playBillingCore.ts`) sells the yearly plan with a listed offer of that base plan whose phases are exactly a free
 first phase counted in days or weeks (`P7D`, `P1W`) and then the recurring price; Play lists an offer only to an account eligible for it, so a listed
 trial is one Play applies. Its offer token goes to the purchase and its length becomes `trialDays`, which the paywall discloses on the yearly row
