@@ -75,7 +75,7 @@ function strokeProps(stroke: Stroke | undefined, defs: PaintDefs) {
     stroke: paint.value,
     strokeOpacity: paint.opacity,
     strokeWidth: stroke.width,
-    strokeDasharray: stroke.dash ? `${stroke.dash[0]} ${stroke.dash[1]}` : undefined,
+    strokeDasharray: stroke.dash ? stroke.dash : undefined,
     strokeLinecap: stroke.cap ?? 'round',
     strokeLinejoin: stroke.join ?? 'round',
   } as const;
@@ -137,8 +137,8 @@ export function drawNode(node: SceneNode, key: string, env: DrawEnv): ReactNode 
       if (!node.transform) return path;
       const { x, y, scale } = node.transform;
       return (
-        <G key={key} translate={`${x}, ${y}`}>
-          <G scale={scale}>{path}</G>
+        <G key={key} transform={`translate(${x} ${y}) scale(${scale})`}>
+          {path}
         </G>
       );
     }

@@ -89,6 +89,8 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "patchedDependencies": {
-    "expo-document-picker@57.0.3": "patches/expo-document-picker@57.0.3.patch"
+    "expo-document-picker@57.0.3": "patches/expo-document-picker@57.0.3.patch",
+    "react-native-svg@15.15.4": "patches/react-native-svg@15.15.4.patch",
+    "react-native-view-shot@5.1.0": "patches/react-native-view-shot@5.1.0.patch"
   }
 }

@@ -4,7 +4,6 @@
  * so memory is two frame files at most; the encoder writes the H.264 stream as it goes.
  */
 import { Directory, File, Paths } from 'expo-file-system';
-import { Platform } from 'react-native';
 
 import ReplayEncoder from '../../../modules/replay-encoder';
 import {
@@ -38,10 +37,11 @@ export interface EncodedVideo {
 }
 
 /**
- * What view-shot is asked for per frame. Android hands its raw pixels to the encoder with no PNG round trip (the `.raw` file
- * the encoder reads); iOS has no raw format, so a high-quality JPEG, which H.264 then recompresses anyway.
+ * What view-shot is asked for per frame. High-quality JPEG (quality: 0.95) on both Android and iOS,
+ * which FrameLoader (Android) and AVAssetWriter (iOS) decode efficiently with bitmap pooling,
+ * avoiding raw uncompressed buffer overflows and massive flash writes.
  */
-export const FRAME_FORMAT = Platform.OS === 'android' ? 'raw' : 'jpg';
+export const FRAME_FORMAT = 'jpg';
 
 export interface EncodeOptions {
   totalSec: number;

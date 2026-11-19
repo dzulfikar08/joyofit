@@ -116,7 +116,18 @@ export function createSceneBuilder(ctx: BuildContext): SceneBuilder {
     return ICONS[name].map((d) => ({ k: 'path', d, fill, transform: { x: cx - size / 2, y: cy - size / 2, scale } }));
   };
 
-  const group = (children: SceneNode[], opacity?: number): SceneNode => ({ k: 'group', children, ...(opacity !== undefined && opacity < 1 ? { opacity } : {}) });
+  function applyOpacity(node: SceneNode, opacity: number): SceneNode {
+    if (opacity >= 1) return node;
+    if (node.k === 'group') {
+      return { ...node, children: node.children.map((child) => applyOpacity(child, opacity)) };
+    }
+    return { ...node, opacity: (node.opacity ?? 1) * opacity };
+  }
+
+  const group = (children: SceneNode[], opacity?: number): SceneNode => {
+    const flattened = opacity !== undefined && opacity < 1 ? children.map((c) => applyOpacity(c, opacity)) : children;
+    return { k: 'group', children: flattened };
+  };
 
   // ---- static pieces ------------------------------------------------------------------------------------------
   const bg: SceneNode = { k: 'rect', x: 0, y: 0, w: W, h: H, fill: theme.bg };
@@ -177,17 +188,33 @@ export function createSceneBuilder(ctx: BuildContext): SceneBuilder {
   const polyline = (pts: readonly (readonly [number, number])[]) => pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${r1(x)} ${r1(y)}`).join('');
   const areaD = altPts ? `${polyline(altPts)}L${CHART.x + CHART.w} ${chartBottom}L${CHART.x} ${chartBottom}Z` : null;
   const lineD = linePts ? polyline(linePts) : null;
-  const clip = (p: number) => ({ x: 0, y: CHART.y - 20, w: CHART.x + CHART.w * p, h: CHART.h + 40 });
   const baseline: SceneNode = { k: 'rect', x: CHART.x, y: chartBottom, w: CHART.w, h: 3, rx: 1.5, fill: theme.line };
   const chartGhost: SceneNode[] = [
     ...(areaD ? [{ k: 'path', d: areaD, fill: `${theme.fg}14` } as SceneNode] : []),
     ...(lineD ? [{ k: 'path', d: lineD, stroke: { color: `${theme.fg}33`, width: 5, cap: 'round', join: 'round' } } as SceneNode] : []),
   ];
   const lineColor = chart.lineKind === 'hr' ? theme.hr : chart.lineKind === 'speed' ? theme.speed : theme.accent;
-  const chartPlayed: SceneNode[] = [
-    ...(areaD ? [{ k: 'path', d: areaD, fill: `${theme.height}40` } as SceneNode] : []),
-    ...(lineD ? [{ k: 'path', d: lineD, stroke: { color: lineColor, width: 6, cap: 'round', join: 'round' } } as SceneNode] : []),
-  ];
+  const slicePts = (pts: readonly (readonly [number, number])[], p: number): readonly (readonly [number, number])[] => {
+    if (pts.length === 0) return [];
+    if (p >= 1) return pts;
+    const f = p * (pts.length - 1);
+    const i = Math.min(pts.length - 2, Math.floor(f));
+    const interY = pts[i]![1] + (pts[i + 1]![1] - pts[i]![1]) * (f - i);
+    const interX = CHART.x + CHART.w * p;
+    return [...pts.slice(0, i + 1), [interX, interY] as const];
+  };
+  const playedNodes = (p: number): SceneNode[] => {
+    if (p <= 0.001) return [];
+    const curAlt = altPts ? slicePts(altPts, p) : null;
+    const curLine = linePts ? slicePts(linePts, p) : null;
+    const x = CHART.x + CHART.w * p;
+    const playedArea = curAlt ? `${polyline(curAlt)}L${r1(x)} ${chartBottom}L${CHART.x} ${chartBottom}Z` : null;
+    const playedLine = curLine ? polyline(curLine) : null;
+    return [
+      ...(playedArea ? [{ k: 'path', d: playedArea, fill: `${theme.height}40` } as SceneNode] : []),
+      ...(playedLine ? [{ k: 'path', d: playedLine, stroke: { color: lineColor, width: 6, cap: 'round', join: 'round' } } as SceneNode] : []),
+    ];
+  };
   const cursorY = (p: number): number => {
     const pts = linePts ?? altPts;
     if (!pts) return chartBottom;
@@ -327,7 +354,7 @@ export function createSceneBuilder(ctx: BuildContext): SceneBuilder {
     return [
       baseline,
       group(chartGhost),
-      { k: 'group', children: chartPlayed, clip: clip(p) },
+      ...playedNodes(p),
       { k: 'rect', x: x - 2, y: chartTop, w: 4, h: chartBottom - chartTop, rx: 2, fill: `${theme.fg}80` },
       { k: 'ellipse', cx: x, cy: cursorY(p), rx: 11, ry: 11, fill: theme.accent, stroke: { color: theme.bg, width: 4 } },
     ];
