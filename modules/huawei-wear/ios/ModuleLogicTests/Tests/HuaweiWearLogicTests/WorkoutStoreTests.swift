@@ -105,7 +105,7 @@ final class WorkoutStoreTests: XCTestCase {
         )
     }
 
-    private func rows<T>(_ store: SyncStore, _ sql: String, _ bindings: [SQLiteBinding] = [], _ map: @escaping (SQLiteStatement) -> T) throws -> [T] {
+    private func rows<T>(_ store: SyncStore, _ sql: String, _ bindings: [SQLValue] = [], _ map: @escaping (SQLiteStatement) -> T) throws -> [T] {
         try store.read { try $0.query(sql, bindings, map) }
     }
 
