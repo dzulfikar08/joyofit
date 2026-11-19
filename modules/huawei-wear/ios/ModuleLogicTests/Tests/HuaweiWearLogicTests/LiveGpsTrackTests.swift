@@ -19,6 +19,23 @@ final class LiveGpsTrackTests: XCTestCase {
         XCTAssertEqual(track.distanceM, 80, accuracy: 0.5)
     }
 
+    func testPreparingAndPausedFixesDoNotAddDistance() {
+        var track = TrackAccumulator()
+        // PREPARING: 10 fixes with running = false, keep = true -> 0 m, points kept
+        for s in 0...10 { track.add(fix(s, Double(s) * 5), running: false, keep: true) }
+        XCTAssertEqual(track.distanceM, 0, accuracy: 0.001)
+        XCTAssertFalse(track.points.isEmpty)
+
+        // RUNNING 1 km: 200 fixes at 5 m/s -> ~1000 m
+        for s in 11...211 { track.add(fix(s, 50 + Double(s - 10) * 5), running: true, keep: true) }
+        XCTAssertEqual(track.distanceM, 1000, accuracy: 2.0)
+
+        // PAUSED 400 m: 80 fixes with running = false, keep = true -> distance unchanged
+        let beforePause = track.distanceM
+        for s in 212...292 { track.add(fix(s, 1055 + Double(s - 211) * 5), running: false, keep: true) }
+        XCTAssertEqual(track.distanceM, beforePause, accuracy: 0.001)
+    }
+
     func testJitterOnTheSpotAddsNothing() {
         var track = TrackAccumulator()
         for s in 0...30 { track.add(fix(s, s % 2 == 0 ? 0 : 1.5)) }
@@ -185,5 +202,27 @@ final class LiveGpsTrackTests: XCTestCase {
         gps.session.watchAsks()
         XCTAssertEqual(gps.starts, 2)
         XCTAssertTrue(gps.session.isTracking)
+    }
+
+    func testTrackAccumulatorRetainsTrajectoryPointsAndSessionNeedsGpsStartsTrackingWithoutFeeding() {
+        var acc = TrackAccumulator()
+        XCTAssertTrue(acc.add(WorkoutLinkWire.Fix(timeMs: 1_000, latitude: -6.2000, longitude: 106.8000, altitude: 10, accuracy: 5, speed: 3, bearing: nil)))
+        // Jitter (< 3 m) does not duplicate trajectory point
+        XCTAssertTrue(acc.add(WorkoutLinkWire.Fix(timeMs: 2_000, latitude: -6.200001, longitude: 106.800001, altitude: 10, accuracy: 5, speed: 3, bearing: nil)))
+        XCTAssertEqual(acc.points.count, 1)
+        // Real step (>= 3 m) records second trajectory point
+        XCTAssertTrue(acc.add(WorkoutLinkWire.Fix(timeMs: 5_000, latitude: -6.2001, longitude: 106.8001, altitude: 14, accuracy: 5, speed: 3, bearing: nil)))
+        XCTAssertEqual(acc.points.count, 2)
+        XCTAssertEqual(acc.trailCoordinates(), [[106.8000, -6.2000], [106.8001, -6.2001]])
+        // Invalid coordinates are rejected
+        XCTAssertFalse(acc.add(WorkoutLinkWire.Fix(timeMs: 6_000, latitude: .nan, longitude: 106.8, altitude: nil, accuracy: 5, speed: 3, bearing: nil)))
+        XCTAssertFalse(acc.add(WorkoutLinkWire.Fix(timeMs: 7_000, latitude: 95.0, longitude: 106.8, altitude: nil, accuracy: 5, speed: 3, bearing: nil)))
+        XCTAssertEqual(acc.points.count, 2)
+
+        let gps = FakeLocation()
+        gps.session.sessionNeedsGps()
+        XCTAssertTrue(gps.session.isTracking)
+        XCTAssertFalse(gps.session.feeding)
+        XCTAssertEqual(gps.starts, 1)
     }
 }

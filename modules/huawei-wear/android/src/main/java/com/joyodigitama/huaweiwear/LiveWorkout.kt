@@ -154,8 +154,19 @@ internal class LiveWorkout(
   @Volatile
   var onEnded: () -> Unit = {}
 
+  /** Called when an active outdoor live session needs phone GPS tracking started ([PhoneGpsSession.sessionNeedsGps]). */
+  @Volatile
+  var onNeedsGps: () -> Unit = {}
+
+  /** Called when a session with a phone Connected GPS route ends so stored workouts can be backfilled or synced. */
+  @Volatile
+  var onTrackCompleted: (ConnectedGpsSession) -> Unit = {}
+
   /** The ended session [onEnded] was already called for. */
   private var endReported: Session? = null
+  private var lastPersistedTrackMs = 0L
+  /** When the last push carried the whole [SessionTrack] trail; between those, JS draws the new positions itself. */
+  private var lastTrailSentMs = 0L
 
   private val appContext = context.applicationContext
   private val lock = Any()
@@ -370,7 +381,12 @@ internal class LiveWorkout(
         }
         phase != WatchPhase.IDLE && s != null -> {
           if (workoutType != null && s.sportType == null) s.sportType = workoutType
-          if (s.source != Source.WATCH) {
+          if (s.source == Source.WATCH) {
+            if (s.endSuspected) {
+              s.endSuspected = false
+              changed = true
+            }
+          } else {
             if (running) s.confirmed = true
             val want = LiveWorkoutPolicy.statusTarget(s.status, phase)
             if (want != null && s.status != want) {
@@ -463,33 +479,55 @@ internal class LiveWorkout(
     }
     log("Live workout: the watch asked for the phone's GPS; following its heart rate (timer waits for the watch to start the workout)")
     liveHeartRate.setWorkoutActive(true)
-    watchdog?.cancel()
+    startWatchdog()
+    publish(force = true)
+    return askStatus
+  }
+
+  private fun startWatchdog() {
+    if (watchdog?.isActive == true) return
     watchdog = scope.launch {
       while (isActive) {
         delay(15_000L)
         var verdict = LiveWorkoutPolicy.Verdict.KEEP
+        var isGpsSource = false
         synchronized(lock) {
           val s = session
-          if (s != null && s.source == Source.GPS && s.status != Status.ENDED) {
+          if (s != null && s.status != Status.ENDED) {
             val now = System.currentTimeMillis()
-            verdict = LiveWorkoutPolicy.silenceVerdict(s.status == Status.PREPARING, now - s.lastGpsAtMs, now - lastStatusAtMs)
+            isGpsSource = s.source == Source.GPS
+            verdict = when (s.source) {
+              Source.GPS -> LiveWorkoutPolicy.silenceVerdict(s.status == Status.PREPARING, now - s.lastGpsAtMs, now - lastStatusAtMs)
+              Source.WATCH -> LiveWorkoutPolicy.watchSilenceVerdict(
+                msSinceFrame = now - s.updatedAtMs,
+                msSinceStatus = now - lastStatusAtMs,
+                statusAnswered = lastStatusAtMs != 0L,
+                isPaused = s.status == Status.PAUSED,
+              )
+              else -> LiveWorkoutPolicy.Verdict.KEEP
+            }
             if (verdict == LiveWorkoutPolicy.Verdict.SUSPECT) {
               if (s.endSuspected) verdict = LiveWorkoutPolicy.Verdict.KEEP else s.endSuspected = true
             }
           }
         }
         when (verdict) {
-          LiveWorkoutPolicy.Verdict.END -> end("the watch stopped asking for GPS and does not answer the status poll")
+          LiveWorkoutPolicy.Verdict.END -> {
+            val reason = when {
+              isGpsSource -> "the watch stopped asking for GPS and does not answer the status poll"
+              lastStatusAtMs != 0L -> "the watch stopped sending data and does not answer the status poll"
+              else -> "the watch stopped sending data"
+            }
+            end(reason)
+          }
           LiveWorkoutPolicy.Verdict.SUSPECT -> {
-            log("Live workout: the watch stopped asking for GPS and does not answer the status poll; asking the user")
+            log("Live workout: the watch went quiet; asking the user")
             publish(force = true)
           }
           LiveWorkoutPolicy.Verdict.KEEP -> Unit
         }
       }
     }
-    publish(force = true)
-    return askStatus
   }
 
   /** A `17/11` realtime report ([WorkoutReport]); operator type 1 running, 2 paused, 3 resumed, 4 stopped. */
@@ -530,9 +568,13 @@ internal class LiveWorkout(
     var started = false
     synchronized(lock) {
       val s = session?.takeIf { it.status != Status.ENDED } ?: return
+      val keepForMap = s.gpsRequested || s.source == Source.GPS || s.status == Status.RUNNING
+      val counts = s.status == Status.RUNNING
       val silentWatch = lastStatusAtMs == 0L && !reportsSeen && s.source != Source.WATCH
-      val moving = s.phoneTrack.onFix(fix, running = s.status == Status.RUNNING, motionStarts = s.status == Status.PREPARING && silentWatch)
-      if (moving) {
+      val moving = s.phoneTrack.onFix(fix, running = counts, keep = keepForMap, motionStarts = s.status == Status.PREPARING && silentWatch)
+      val hasMovement = (fix.speedMps != null && fix.speedMps >= 0.4f && (fix.accuracyM == null || fix.accuracyM <= TrackAccumulator.MAX_ACCURACY_M))
+      val shouldStart = s.status == Status.PREPARING && (moving || (silentWatch && s.gpsRequested && hasMovement))
+      if (shouldStart) {
         setStatus(s, Status.RUNNING, System.currentTimeMillis())
         started = true
       }
@@ -588,6 +630,7 @@ internal class LiveWorkout(
     if (s.status == status) return
     // The stretch before a pause (or the pre-start walk) and the one after it are not joined into one step of the phone's track.
     if (status == Status.RUNNING) s.phoneTrack.startStretch(now)
+    if (status == Status.PAUSED) s.phoneTrack.pause()
     if (s.source != Source.WATCH) {
       when (status) {
         Status.RUNNING -> {
@@ -620,10 +663,11 @@ internal class LiveWorkout(
       if (status == Status.PAUSED) s.clock.pause(now)
       s.metrics = s.metrics.copy(durationSec = 0)
     }
+    startWatchdog()
     return s
   }
 
-  private fun toJs(s: Session): Map<String, Any?> {
+  private fun toJs(s: Session, includeTrail: Boolean = true): Map<String, Any?> {
     val m = s.metrics
     val located = s.phoneTrack.location
     val track = s.phoneTrack.track
@@ -631,7 +675,7 @@ internal class LiveWorkout(
       Source.WATCH, Source.MANUAL -> true
       else -> s.confirmed
     }
-    return mapOf(
+    val out = mapOf(
       "id" to s.id.toDouble(),
       "status" to s.status.wire,
       "source" to s.source.wire,
@@ -669,17 +713,54 @@ internal class LiveWorkout(
       "gpsRiseM" to if (located != null) track.riseM else null,
       "gpsPaceSecPerKm" to track.paceSecPerKm,
     )
+    // The trail is up to 500 points: sent every few seconds, not on every push (JS keeps the last one when it is absent).
+    return if (includeTrail) out + ("trail" to track.trailCoordinates()) else out
+  }
+
+  private fun toConnectedGpsSession(s: Session): ConnectedGpsSession? {
+    val pts = s.phoneTrack.track.points
+    if (pts.size < 2 || WorkoutSportTypes.isIndoor(s.sportType)) return null
+    val firstSec = pts.first().timeMs / 1000L
+    val lastSec = pts.last().timeMs / 1000L
+    val endSec = maxOf((s.endedAtMs ?: s.updatedAtMs) / 1000L, lastSec)
+    val durSec = (s.metrics.durationSec ?: 0).coerceAtLeast(0).toLong()
+    val startFromDur = if (durSec > 0L) endSec - durSec else firstSec
+    val startSec = minOf(firstSec, startFromDur, s.id / 1000L).coerceAtLeast(1L)
+    return ConnectedGpsSession(
+      id = s.id.toString(),
+      startSec = startSec,
+      endSec = maxOf(startSec, endSec),
+      sportType = s.sportType,
+      distanceM = s.phoneTrack.track.distanceM,
+      riseM = s.phoneTrack.track.riseM,
+      points = pts,
+    )
   }
 
   private fun publish(force: Boolean) {
+    val nowWall = System.currentTimeMillis()
     val (payload, s, justEnded) = synchronized(lock) {
       val s = session ?: return
       val justEnded = s.status == Status.ENDED && endReported !== s
       if (justEnded) endReported = s
-      Triple(toJs(s), s, justEnded)
+      val includeTrail = force || s.status == Status.ENDED || nowWall - lastTrailSentMs >= TRAIL_EVERY_MS
+      if (includeTrail) lastTrailSentMs = nowWall
+      Triple(toJs(s, includeTrail), s, justEnded)
     }
+    val (needsGps, connectedTrack, persistTrack) = synchronized(lock) {
+      val needsGps = s.status != Status.ENDED && (s.gpsRequested || s.source == Source.GPS || WorkoutSportTypes.isOutdoor(s.sportType))
+      val shouldPersist = justEnded || (nowWall - lastPersistedTrackMs >= 30_000L)
+      val track = if (shouldPersist) toConnectedGpsSession(s) else null
+      if (track != null) lastPersistedTrackMs = nowWall
+      Triple(needsGps, track, track != null)
+    }
+    if (needsGps) onNeedsGps()
+    if (connectedTrack != null) ConnectedGpsStore.shared.upsert(connectedTrack, persist = persistTrack)
     events.liveWorkout(payload)
-    if (justEnded) onEnded()
+    if (justEnded) {
+      onEnded()
+      if (connectedTrack != null) onTrackCompleted(connectedTrack)
+    }
     val now = SystemClock.elapsedRealtime()
     if (!force && s.status == notifiedStatus && now - notifiedAtMs < NOTIFY_EVERY_MS) return
     notifiedAtMs = now
@@ -759,6 +840,8 @@ internal class LiveWorkout(
     const val CHANNEL_ID = "watch_live_workout"
     const val NOTIFICATION_ID = 4103
     const val DEEP_LINK = "joyofit://workout-live"
+    /** How often a push carries the whole trail (forced pushes and the end always do). */
+    const val TRAIL_EVERY_MS = 5_000L
     const val NOTIFY_EVERY_MS = 5_000L
 
     /** Age used for the maximum heart rate when no profile is saved (220 - 35 = 185 bpm). */

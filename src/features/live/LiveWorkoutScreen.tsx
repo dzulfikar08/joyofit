@@ -1,7 +1,7 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { Redirect, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Linking, StyleSheet, View } from 'react-native';
+import { Redirect, useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { BackHandler, Linking, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { AppText } from '@/components/AppText';
@@ -62,10 +62,33 @@ export function LiveWorkoutScreen() {
   // The metronome belongs to the workout: it stops when the workout is over or gone.
   useStopMetronomeWhen(session === null || session.state === 'ended');
 
+  const handleBack = useCallback(() => {
+    if (live?.status === 'ended') {
+      HuaweiWear.dismissLiveWorkout();
+      router.replace('/workouts');
+      return;
+    }
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/');
+    }
+  }, [live?.status, router]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        handleBack();
+        return true;
+      });
+      return () => sub.remove();
+    }, [handleBack]),
+  );
+
   if (!session || !live) {
     return (
       <Screen>
-        <HiddenTabHeader title={t('live.title')} />
+        <HiddenTabHeader title={t('live.title')} onBack={handleBack} />
         <EmptyState
           icon="walk"
           title={t('live.emptyTitle')}
@@ -84,11 +107,11 @@ export function LiveWorkoutScreen() {
   const title = kind !== null && kind !== 'other' ? t(`live.sport.${kind}`) : live.sportName ? sportLabel(live.sportName) : t('live.title');
   // Only a workout whose sport nobody knows can be a strength one; a GPS sport never is.
   const offerStrength = active && live.sportType === null && kind === null && !session.gpsSport;
-  const endPrompt = live.status !== 'ended' && live.source !== 'watch' && suspected && !kept;
+  const endPrompt = live.status !== 'ended' && suspected && !kept;
 
   return (
     <Screen>
-      <HiddenTabHeader title={title} />
+      <HiddenTabHeader title={title} onBack={handleBack} />
       {offerStrength ? (
         <Button label={t('live.logStrength')} icon="barbell" onPress={() => router.push('/strength/watch-pick', OPEN_IN_STACK)} />
       ) : null}
@@ -102,7 +125,7 @@ export function LiveWorkoutScreen() {
           <Button label={t('live.endPrompt.keep')} onPress={() => setKept(true)} />
         </Card>
       ) : null}
-      <LiveBody session={session} title={title} />
+      <LiveBody key={session.id} session={session} title={title} />
       {live.status === 'ended' ? (
         <Button
           label={t('common:actions.done')}
@@ -115,16 +138,15 @@ export function LiveWorkoutScreen() {
         />
       ) : live.source === 'manual' ? (
         <Button label={t('live.finish')} icon="stop" onPress={() => HuaweiWear.finishLiveWorkout()} />
-      ) : live.source !== 'watch' ? (
-        // The watch takes no stop from the phone (every 17/01 is refused with 123002 on the Fit 4 Pro, docs/live-run.md): the workout
-        // ends on the watch, and the phone can only stop following it.
+      ) : (
+        // The workout ends on the watch, but the user can always stop following on the phone.
         <>
           <AppText variant="caption" muted>
             {t('live.finishOnWatch')}
           </AppText>
           <Button label={t('live.stopFollowing')} onPress={() => HuaweiWear.finishLiveWorkout()} />
         </>
-      ) : null}
+      )}
     </Screen>
   );
 }
@@ -139,7 +161,7 @@ function LiveBody({ session, title }: { session: LiveSession; title: string }) {
   const location = session.location;
   const kind: FieldSportKind = session.sportKind ?? 'other';
   const [layout] = useRunLayout(kind);
-  const trail = useTrail(location);
+  const trail = useTrail(location, live.trail);
   const metronome = useMetronome();
   const phase = livePhase(live);
   const extras = useLiveExtras(session, nowMs);
@@ -147,7 +169,7 @@ function LiveBody({ session, title }: { session: LiveSession; title: string }) {
   const [stepsRefused, setStepsRefused] = useState(false);
   const active = session.state !== 'ended';
   const statusColor = live.status === 'running' ? colors.link : live.status === 'paused' ? colors.warning : colors.mutedForeground;
-  const showMap = session.gpsSport || location !== null || (session.sportKind !== null && session.sportKind !== 'other');
+  const showMap = session.gpsSport || location !== null || trail.length > 0 || (session.sportKind !== null && session.sportKind !== 'other');
 
   // The screen stays on while the metronome beats: a timer of a sleeping app may be throttled (see `metronome.ts`).
   const hold = active && metronome.enabled;

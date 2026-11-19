@@ -345,6 +345,16 @@ public enum WorkoutLinkWire {
             self.accuracy = accuracy
         }
 
+        public init(timeMs: Int64, latitude: Double, longitude: Double, altitude: Double? = nil, accuracy: Double? = nil, speed: Double? = nil, bearing: Double? = nil) {
+            self.latitude = latitude
+            self.longitude = longitude
+            self.timeMs = timeMs
+            self.speed = speed
+            self.altitude = altitude
+            self.bearing = bearing
+            self.accuracy = accuracy
+        }
+
         /// Metres to `other` (haversine on the WGS84 mean radius; Android's `Location.distanceTo` is the ellipsoidal figure, the two differ by under 0.5%).
         public func distance(to other: Fix) -> Double {
             let r = 6_371_008.8

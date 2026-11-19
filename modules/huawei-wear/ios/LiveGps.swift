@@ -43,9 +43,11 @@ public struct TrackAccumulator: Sendable {
     public static let speedMinSpanMs: Int64 = 3_000
     /// Below this (about 1:00:00 per km) the person is standing and no pace is shown.
     public static let minPaceSpeedMps = 0.28
+    public static let maxTrackPoints = 10_800
 
     public private(set) var distanceM = 0.0
     public private(set) var riseM = 0.0
+    public private(set) var points: [WorkoutLinkWire.Fix] = []
 
     private var last: WorkoutLinkWire.Fix?
     private var smoothedAlt: Double?
@@ -74,12 +76,23 @@ public struct TrackAccumulator: Sendable {
         window.removeAll()
     }
 
-    /// Takes a fix of the running workout; false when it was dropped.
+    /// Takes a fix of the running workout; false when it was dropped. `running` controls whether distance/climb/speed count; `keep` controls whether it is kept in points.
     @discardableResult
-    public mutating func add(_ fix: WorkoutLinkWire.Fix) -> Bool {
+    public mutating func add(_ fix: WorkoutLinkWire.Fix, running: Bool = true, keep: Bool = true) -> Bool {
+        if !fix.latitude.isFinite || !fix.longitude.isFinite || !(-90.0...90.0).contains(fix.latitude) || !(-180.0...180.0).contains(fix.longitude) {
+            return false
+        }
         if let accuracy = fix.accuracy, accuracy > Self.maxAccuracyM { return false }
+        if !running {
+            gap()
+            if keep {
+                recordPoint(fix)
+            }
+            return true
+        }
         guard let prev = last else {
             last = fix
+            if keep { recordPoint(fix) }
             window.append((fix.timeMs, distanceM))
             takeAltitude(fix)
             return true
@@ -97,9 +110,36 @@ public struct TrackAccumulator: Sendable {
         }
         distanceM += step
         last = fix
+        if keep { recordPoint(fix) }
         window.append((fix.timeMs, distanceM))
         trim(fix.timeMs)
         return true
+    }
+
+    /// GeoJSON `[lon, lat]` coordinates for the live map trail, downsampled to at most `maxPoints`.
+    public func trailCoordinates(maxPoints: Int = 500) -> [[Double]] {
+        let n = points.count
+        if n == 0 || maxPoints <= 0 { return [] }
+        if n <= maxPoints { return points.map { [$0.longitude, $0.latitude] } }
+        if maxPoints == 1, let p = points.last { return [[p.longitude, p.latitude]] }
+        return (0 ..< maxPoints).map { i in
+            let idx = (i * (n - 1)) / (maxPoints - 1)
+            let p = points[idx]
+            return [p.longitude, p.latitude]
+        }
+    }
+
+    private mutating func recordPoint(_ fix: WorkoutLinkWire.Fix) {
+        if let prevKept = points.last, fix.timeMs <= prevKept.timeMs { return }
+        if points.count >= Self.maxTrackPoints {
+            var compacted: [WorkoutLinkWire.Fix] = []
+            compacted.reserveCapacity((points.count + 1) / 2)
+            for i in stride(from: 0, to: points.count, by: 2) {
+                compacted.append(points[i])
+            }
+            points = compacted
+        }
+        points.append(fix)
     }
 
     private mutating func trim(_ nowMs: Int64) {
@@ -107,7 +147,7 @@ public struct TrackAccumulator: Sendable {
     }
 
     private mutating func takeAltitude(_ fix: WorkoutLinkWire.Fix) {
-        guard let alt = fix.altitude else { return }
+        guard let alt = fix.altitude, alt.isFinite else { return }
         let smooth = smoothedAlt.map { $0 + Self.altAlpha * (alt - $0) } ?? alt
         smoothedAlt = smooth
         guard let ref = referenceAlt else {
@@ -162,16 +202,20 @@ public struct SessionTrack: Sendable {
 
     public init() {}
 
-    /// Takes a fix. `running`: the session runs, so the fix counts. `motionStarts`: the session prepares for a watch that gives no sign of its
+    /// Takes a fix. `running`: the session runs, so the fix counts. `keep`: kept for the map. `motionStarts`: the session prepares for a watch that gives no sign of its
     /// start, so movement is the start. Returns true when this fix completes that movement (`MotionStart`): the caller starts the session, which
     /// calls `startStretch`.
-    public mutating func onFix(_ fix: WorkoutLinkWire.Fix, running: Bool, motionStarts: Bool) -> Bool {
-        location = fix
-        if running {
-            track.add(fix)
-            return false
+    public mutating func onFix(_ fix: WorkoutLinkWire.Fix, running: Bool, keep: Bool = true, motionStarts: Bool) -> Bool {
+        if fix.latitude.isFinite, fix.longitude.isFinite, (-90.0...90.0).contains(fix.latitude), (-180.0...180.0).contains(fix.longitude) {
+            location = fix
         }
+        track.add(fix, running: running, keep: keep)
         return motionStarts && motion.onFix(speedMps: fix.speed, accuracyM: fix.accuracy)
+    }
+
+    /// The workout was paused: marks a gap so subsequent running fixes do not bridge distance across the pause.
+    public mutating func pause() {
+        track.gap()
     }
 
     /// The session runs, from preparing or again after a pause: nothing from before is joined to what follows. The newest fix, when it is at
@@ -196,12 +240,15 @@ public struct SessionTrack: Sendable {
 /// `start` returns false when the updates cannot run (no permission): the watch's next request tries again. `feeding` has a lock of its own,
 /// so a fix delivered on the main thread never waits for a start or a stop.
 public final class PhoneGpsSession: @unchecked Sendable {
+    public static let retryBackoffMs: Int64 = 60_000
+
     private let lock = NSLock()
     private let feedLock = NSLock()
     private let start: () -> Bool
     private let stop: () -> Void
     private var tracking = false
     private var _feeding = false
+    private var lastFailedStartMs: Int64 = 0
 
     public init(start: @escaping () -> Bool, stop: @escaping () -> Void) {
         self.start = start
@@ -218,7 +265,23 @@ public final class PhoneGpsSession: @unchecked Sendable {
     public func watchAsks() {
         lock.locked {
             setFeeding(true)
-            if !tracking { tracking = start() }
+            if !tracking {
+                tracking = start()
+                if !tracking { lastFailedStartMs = Int64(Date().timeIntervalSince1970 * 1000) }
+            }
+        }
+    }
+
+    /// Starts phone GPS tracking for an active outdoor live workout even when the wearable has not sent `18/02` (for example a Huawei Band
+    /// whose workout was discovered via `17/03`, `17/11`, or `37/02`, or started from the phone). Does not turn on the `18/03` feed unless
+    /// the watch explicitly asked via `watchAsks`.
+    public func sessionNeedsGps(nowMs: Int64 = Int64(Date().timeIntervalSince1970 * 1000)) {
+        lock.locked {
+            if !tracking {
+                if nowMs - lastFailedStartMs < Self.retryBackoffMs { return }
+                tracking = start()
+                if !tracking { lastFailedStartMs = nowMs }
+            }
         }
     }
 
@@ -247,6 +310,7 @@ public final class PhoneGpsSession: @unchecked Sendable {
 
     /// Callers hold `lock`.
     private func stopTracking() {
+        lastFailedStartMs = 0
         if !tracking { return }
         tracking = false
         stop()

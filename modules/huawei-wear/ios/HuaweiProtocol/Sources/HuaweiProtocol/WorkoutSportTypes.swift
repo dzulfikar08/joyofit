@@ -144,4 +144,31 @@ public enum WorkoutSportTypes {
 
     /// Free diving and scuba: the "elevation loss" is the maximum depth.
     public static func isDiving(_ kind: String) -> Bool { kind == "FREE_DIVING" || kind == "SCUBA_DIVING" }
+
+    private static let indoorKinds: Set<String> = [
+        "INDOOR_RUNNING", "POOL_SWIM", "INDOOR_CYCLING", "INDOOR_WALKING", "JUMP_ROPING",
+        "APNEA_TRAINING", "APNEA_TEST", "PINGPONG", "BADMINTON", "ELLIPTICAL_TRAINER",
+        "ROWING_MACHINE", "STEPPER", "YOGA", "PILATES", "AEROBICS", "STRENGTH_TRAINING",
+        "SPINNING", "AIR_WALKER", "HIIT", "CROSSFIT", "FUNCTIONAL_TRAINING", "PHYSICAL_TRAINING",
+        "TAEKWONDO", "BOXING", "FREE_SPARRING", "KARATE", "FENCING", "BELLY_DANCE",
+        "JAZZ_DANCE", "LATIN_DANCE", "BALLET", "CORE_TRAINING", "BODY_COMBAT", "KENDO",
+        "HORIZONTAL_BAR", "PARALLEL_BARS", "STREET_DANCE", "MARTIAL_ARTS", "PLAZA_DANCING",
+        "TAI_CHI", "DANCE", "HULA_HOOP", "DARTS", "ARCHERY", "SWING", "STAIRS",
+        "BILLIARD_POOL", "BOWLING", "SQUASH", "CURLING", "BUNGEE_JUMPING", "ESPORTS",
+    ]
+
+    /// Indoor, pool, or stationary activities where a phone GPS route should not be attached.
+    public static func isIndoorKind(_ kind: String) -> Bool { indoorKinds.contains(kind) }
+
+    /// True when `type` is a known indoor/stationary sport; false when nil, unknown, or outdoor.
+    public static func isIndoor(_ type: Int?) -> Bool {
+        guard let type else { return false }
+        return isIndoorKind(kind(type))
+    }
+
+    /// True when `type` is a known outdoor sport (running, walking, cycling, hiking, etc.); false when nil, unknown, or indoor.
+    public static func isOutdoor(_ type: Int?) -> Bool {
+        guard let type, sport(type) != nil else { return false }
+        return !isIndoor(type)
+    }
 }

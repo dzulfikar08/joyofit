@@ -447,7 +447,7 @@ final class LiveWorkoutTests: XCTestCase {
             "id", "status", "source", "sportType", "sportName", "updatedAt", "endedAt", "durationSec", "heartRate", "heartRateZone", "maxHeartRate",
             "distanceM", "calories", "activeCalories", "speedKmh", "paceSecPerKm", "stepRate", "steps", "cadence", "altitudeM", "riseM", "descentM",
             "aerobicTe", "anaerobicTe", "fatGrams", "carbGrams", "fatShare", "endSuspected", "clockConfirmed", "gpsRequested", "location", "locationAt",
-            "gpsDistanceM", "gpsRiseM", "gpsPaceSecPerKm",
+            "gpsDistanceM", "gpsRiseM", "gpsPaceSecPerKm", "trail",
         ]
         XCTAssertEqual(keys, expected)
         XCTAssertTrue(r.live.snapshot()!["heartRate"] is NSNull)

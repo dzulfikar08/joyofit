@@ -39,6 +39,9 @@ internal class WorkoutStore(private val store: SyncStore, private val address: S
     WorkoutWriter(AndroidWatchDb(store.db()), address).mergeDynamics(start, dynamics)
   }
 
+  fun backfillConnectedGps(session: ConnectedGpsSession): Int =
+    ConnectedGpsMerger.backfillStored(AndroidWatchDb(store.db()), address, session)
+
   companion object {
     /** 2000-01-01 00:00:00 UTC; GB's own fallback (2022-06-10) is an app-imposed limit this app does not keep. */
     const val DEFAULT_START_SEC = 946684800L
@@ -46,7 +49,11 @@ internal class WorkoutStore(private val store: SyncStore, private val address: S
 }
 
 /** The workout statements of one watch on one [WatchDb]; [WorkoutStore] is the Android wrapper. */
-internal class WorkoutWriter(private val db: WatchDb, private val address: String) {
+internal class WorkoutWriter(
+  private val db: WatchDb,
+  private val address: String,
+  private val gpsStore: ConnectedGpsStore = ConnectedGpsStore.shared,
+) {
   /** True when a complete copy with this start and end is stored, or this watch's copy was dropped for another watch's. */
   fun isComplete(start: Long, end: Long): Boolean =
     db.query(WatchSql.SELECT_WORKOUT_DONE, start, end, start, end, address).isNotEmpty()
@@ -55,9 +62,14 @@ internal class WorkoutWriter(private val db: WatchDb, private val address: Strin
    * Stores the workout and its points, replacing an earlier copy with the same start. True if it is new or was incomplete;
    * false when it was already complete, or when another watch's copy of the same session is kept instead (then this one is
    * only noted in `workout_shadow`).
+   *
+   * When [rawRecord] has no GPS points of its own (for example a Huawei Band without built-in GNSS), attaches a matching
+   * phone Connected GPS trajectory from [gpsStore] after duplicate resolution and before persistence.
    */
-  fun save(record: WorkoutRecord): Boolean = db.transaction {
-    if (!resolveDuplicates(record)) return@transaction false
+  fun save(rawRecord: WorkoutRecord): Boolean = db.transaction {
+    if (!resolveDuplicates(rawRecord)) return@transaction false
+    val record = ConnectedGpsMerger.merge(rawRecord, gpsStore)
+    val hasPhoneGps = record.points.size > rawRecord.points.size || record.summaryJson.contains("\"gpsSource\":\"phone\"")
     val wasComplete = db.query(WatchSql.SELECT_WORKOUT_COMPLETE, record.start).firstOrNull()?.let { (it[0] as Long) == 1L }
     db.exec(
       WatchSql.UPSERT_WORKOUT,
@@ -75,6 +87,7 @@ internal class WorkoutWriter(private val db: WatchDb, private val address: Strin
       record.summaryJson,
       if (record.complete) 1 else 0,
       address,
+      if (hasPhoneGps) 1 else 0,
     )
     val id = db.query(WatchSql.SELECT_WORKOUT_ID, record.start).first()[0] as Long
     db.exec(WatchSql.DELETE_WORKOUT_POINTS, id)

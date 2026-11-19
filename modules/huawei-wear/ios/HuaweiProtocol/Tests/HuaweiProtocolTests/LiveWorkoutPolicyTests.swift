@@ -82,6 +82,35 @@ final class LiveWorkoutPolicyTests: XCTestCase {
         XCTAssertEqual(P.silenceVerdict(preparing: false, msSinceGps: 301_000, msSinceStatus: stale), .end)
     }
 
+    func testWatchSilenceVerdictPromptsThenEnds() {
+        let freshStatus: Int64 = 10_000
+        let staleStatus: Int64 = P.statusStaleMs + 1000
+        // Frames silent for 90 s with poll RUNNING (answering recently) -> KEEP
+        XCTAssertEqual(
+            P.watchSilenceVerdict(msSinceFrame: 90_000, msSinceStatus: freshStatus, statusAnswered: true, isPaused: false),
+            .keep
+        )
+        // Frames silent for 26 s with stale/unanswered poll -> SUSPECT
+        XCTAssertEqual(
+            P.watchSilenceVerdict(msSinceFrame: 26_000, msSinceStatus: staleStatus, statusAnswered: true, isPaused: false),
+            .suspect
+        )
+        // Frames silent for 301 s with poll silent -> END
+        XCTAssertEqual(
+            P.watchSilenceVerdict(msSinceFrame: 301_000, msSinceStatus: staleStatus, statusAnswered: true, isPaused: false),
+            .end
+        )
+        // PAUSED -> never END even after 400 s
+        XCTAssertEqual(
+            P.watchSilenceVerdict(msSinceFrame: 400_000, msSinceStatus: staleStatus, statusAnswered: true, isPaused: true),
+            .suspect
+        )
+        XCTAssertEqual(
+            P.watchSilenceVerdict(msSinceFrame: 10_000, msSinceStatus: staleStatus, statusAnswered: false, isPaused: false),
+            .keep
+        )
+    }
+
     func testAPreparingSessionWithNothingToWaitForIsDropped() {
         let stale = P.statusStaleMs + 1
         XCTAssertEqual(P.silenceVerdict(preparing: true, msSinceGps: 61_000, msSinceStatus: stale), .end)

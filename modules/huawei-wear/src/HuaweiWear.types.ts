@@ -544,6 +544,8 @@ export interface LiveWorkout {
   gpsDistanceM?: number | null;
   gpsRiseM?: number | null;
   gpsPaceSecPerKm?: number | null;
+  /** GeoJSON `[lon, lat]` coordinates recorded by the phone's Connected GPS during this session. */
+  trail?: [number, number][];
 }
 
 /** Huawei sport code of strength training (Gadgetbridge's sport table; `WorkoutSportTypes.kt`). */

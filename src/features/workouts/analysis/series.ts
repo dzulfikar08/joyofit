@@ -33,8 +33,8 @@ const MAX_PACE_SEC_KM = 1800;
 /** A gap between fixes still draws a line when it is short in time or in distance. */
 const TRACK_GAP_SEC = 30;
 const TRACK_GAP_M = 40;
-/** Smallest GPS track (metres) that counts as a recording; a few stray fixes in a gym do not. */
-const MIN_GPS_DISTANCE_M = 50;
+/** Smallest GPS track (metres) that counts as a recording; a few stray fixes in a room do not. */
+const MIN_GPS_DISTANCE_M = 20;
 /** Under this ground speed (m/s) a stretch has no pace. */
 const MIN_MOVING_SPEED_MS = 0.5;
 const ALT_SMOOTH_SEC = 15;

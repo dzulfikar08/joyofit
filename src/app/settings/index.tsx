@@ -12,6 +12,7 @@ import { Avatar } from '@/components/Avatar';
 import { IconChip, type IconName } from '@/components/IconChip';
 import { groupedRowStyle, NavRow } from '@/components/NavRow';
 import { PageHeader, useContentPadding } from '@/components/Screen';
+import { GpsAssistNotice } from '@/features/device/GpsAssistNotice';
 import { showsWatchUi } from '@/features/device/presence';
 import { useWatchPresence } from '@/features/device/useWatchPresence';
 import { linkLabel } from '@/features/device/linkState';
@@ -208,7 +209,12 @@ export default function SettingsScreen() {
       contentContainerStyle={padding}
       stickySectionHeadersEnabled={false}
       showsVerticalScrollIndicator={false}
-      ListHeaderComponent={<PageHeader title={t('index.title')} />}
+      ListHeaderComponent={
+        <View style={styles.header}>
+          <PageHeader title={t('index.title')} />
+          <GpsAssistNotice />
+        </View>
+      }
       ListFooterComponent={<>{dialogs}</>}
       renderSectionHeader={({ section }) =>
         section.title ? (
@@ -237,6 +243,7 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
+  header: { gap: spacing.sm },
   groupTitle: { paddingTop: spacing.lg, paddingBottom: spacing.sm },
   groupGap: { height: spacing.lg },
 });

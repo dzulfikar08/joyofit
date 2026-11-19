@@ -1,0 +1,167 @@
+name: Build Release APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: "Target architecture (arm64-v8a for modern phones, or universal)"
+        type: choice
+        options:
+          - arm64-v8a
+          - "arm64-v8a,armeabi-v7a"
+        default: arm64-v8a
+      publish_release:
+        description: "Publish to GitHub Releases for direct APK download"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Free runner disk space
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/node_modules/.cache "$AGENT_TOOLSDIRECTORY/CodeQL"
+
+      - name: Setup Java 17
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Distrust eMudhra in the JDK (CVE-2026-91403)
+        run: |
+          store="$RUNNER_TEMP/cacerts"
+          cp -L "$JAVA_HOME/lib/security/cacerts" "$store" && chmod 600 "$store"
+          for alias in $("$JAVA_HOME/bin/keytool" -list -keystore "$store" -storepass changeit | grep -i emsign | cut -d, -f1); do
+            "$JAVA_HOME/bin/keytool" -delete -keystore "$store" -storepass changeit -alias "$alias" || true
+          done
+          echo "JAVA_TOOL_OPTIONS=-Djavax.net.ssl.trustStore=$store -Djavax.net.ssl.trustStorePassword=changeit" >> "$GITHUB_ENV"
+
+      - name: Setup Node 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+
+      - name: Cache bun packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-read-only: false
+
+      - name: Gradle JVM settings
+        run: |
+          mkdir -p ~/.gradle
+          cat >> ~/.gradle/gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g -XX:+UseParallelGC
+          org.gradle.parallel=true
+          org.gradle.caching=true
+          EOF
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile || bun install
+
+      - name: Validate Release Keystore Secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          missing=()
+          [ -z "$KEYSTORE_BASE64" ] && missing+=("ANDROID_KEYSTORE_BASE64")
+          [ -z "$STORE_PASSWORD" ] && missing+=("ANDROID_KEYSTORE_PASSWORD")
+          [ -z "$KEY_ALIAS" ] && missing+=("ANDROID_KEY_ALIAS")
+          [ -z "$KEY_PASSWORD" ] && missing+=("ANDROID_KEY_PASSWORD")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing required Android signing secrets: ${missing[*]}"
+            echo "Refusing to build release APK with throwaway key (causes package conflict on install)."
+            echo "Configure these GitHub Secrets to guarantee permanent signature stability."
+            exit 1
+          fi
+
+      - name: Setup Release Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          umask 077
+          mkdir -p keystore
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > keystore/joyofit-release.jks
+          # Verify keystore integrity and alias fail-fast before Gradle
+          keytool -list -keystore keystore/joyofit-release.jks -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" > /dev/null || {
+            echo "::error::Keystore verification failed: alias '$KEY_ALIAS' not found or invalid password."
+            exit 1
+          }
+          {
+            echo "storeFile=../../keystore/joyofit-release.jks"
+            echo "storePassword=$STORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > keystore/keystore.properties
+
+      - name: Build Sideload Release APK
+        env:
+          ARCHS: ${{ inputs.arch || 'arm64-v8a' }}
+        run: |
+          scripts/build-release.sh
+          for f in dist/*.apk; do
+            if [ -f "$f" ]; then
+              ls -la "$f"
+              sha256sum "$f" | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "APK_FILE=$f" >> "$GITHUB_ENV"
+            fi
+          done
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: joyofit-release-apk
+          path: dist/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        if: inputs.publish_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_SHA: ${{ github.sha }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          VERSION_CODE="$(echo "$APK_FILE" | grep -oE '[0-9]+' | tail -1)"
+          TAG="v1.1-${VERSION_CODE}"
+          gh release create "$TAG" "$APK_FILE" \
+            --title "JoyoFit 1.1 (${VERSION_CODE})" \
+            --notes "Automated release APK build from commit \`${COMMIT_SHA}\` on branch \`${REF_NAME}\`."
+
+      - name: Clean Keystore Artifacts
+        if: always()
+        run: |
+          if [ -d keystore ]; then
+            rm -rf keystore
+          fi

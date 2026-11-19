@@ -193,6 +193,16 @@ public final class WearRuntime: @unchecked Sendable {
         watchWorkout = WatchWorkoutControl(link: link, events: fanOut)
         linkObservers.add(watchWorkout)
         liveWorkout.phoneOwned = { [watchWorkout] in watchWorkout?.owns() ?? false }
+        liveWorkout.onTrackCompleted = { [weak self] track in
+            Task.detached(priority: .utility) { [weak self] in
+                guard let self else { return }
+                _ = try? WorkoutStore(self.syncStore, address: self.settings.watchAddress ?? "").backfillConnectedGps(track)
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                guard self.link.currentState() == .connected, !self.liveWorkout.isLive else { return }
+                _ = try? await self.link.syncActivity(fullHistory: false)
+                _ = try? WorkoutStore(self.syncStore, address: self.settings.watchAddress ?? "").backfillConnectedGps(track)
+            }
+        }
         p2p = P2pController(
             settings: P2pSettings(defaults: p2pDefaults), link: link, addSyncExtension: { [link] in link?.addSyncExtension($0) }, wearSettings: settings,
             syncStore: syncStore, events: fanOut

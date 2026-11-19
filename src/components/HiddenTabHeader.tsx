@@ -11,7 +11,7 @@ import { HIT, spacing, useTheme } from '@/theme';
  * item: a chevron in a square box with no side margin, so the system's round glass background is a circle like the pushed
  * screens' back button instead of a stretched capsule.
  */
-export function HeaderBackButton() {
+export function HeaderBackButton({ onBack }: { onBack?: () => void } = {}) {
   const router = useRouter();
   const { t } = useTranslation('common');
   const { colors } = useTheme();
@@ -20,7 +20,7 @@ export function HeaderBackButton() {
       accessibilityRole="button"
       accessibilityLabel={t('actions.back')}
       hitSlop={8}
-      onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+      onPress={() => (onBack ? onBack() : router.canGoBack() ? router.back() : router.replace('/'))}
       style={Platform.OS === 'ios' ? styles.backIos : styles.back}>
       <Ionicons name={Platform.OS === 'ios' ? 'chevron-back' : 'arrow-back'} size={24} color={colors.foreground} />
     </Pressable>
@@ -31,14 +31,14 @@ export function HeaderBackButton() {
  * Header for a screen pushed from Today. These routes are hidden tabs, and a tab header has no back
  * button of its own, so this draws one (back, or Today when there is no history). `right` is an optional action at the far end.
  */
-export function HiddenTabHeader({ title, right }: { title: string; right?: ReactNode }) {
+export function HiddenTabHeader({ title, right, onBack }: { title: string; right?: ReactNode; onBack?: () => void }) {
   const { colors, fonts } = useTheme();
   return (
     <Tabs.Screen
       options={{
         headerShown: true,
         title,
-        headerLeft: () => <HeaderBackButton />,
+        headerLeft: () => <HeaderBackButton onBack={onBack} />,
         headerRight: right === undefined ? undefined : () => <View style={styles.right}>{right}</View>,
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.foreground,
