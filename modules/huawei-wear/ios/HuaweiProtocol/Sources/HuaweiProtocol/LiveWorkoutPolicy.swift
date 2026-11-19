@@ -170,4 +170,13 @@ public enum LiveWorkoutPolicy {
     public static func watchFedEnds(preparing: Bool, idleAnswers: Int, msSinceFrame: Int64) -> Bool {
         idleAnswers >= idleAnswersToEnd && msSinceFrame > (preparing ? giveUpMs : framesStaleMs)
     }
+
+    /// The reports from a watch-fed session stopped, for `msSinceFrame`.
+    /// If frames are silent for > 60s, end the session automatically.
+    /// If frames are silent for > 25s, suspect end and prompt the user.
+    public static func watchSilenceVerdict(msSinceFrame: Int64) -> Verdict {
+        if msSinceFrame > 60_000 { return .end }
+        if msSinceFrame > 25_000 { return .suspect }
+        return .keep
+    }
 }

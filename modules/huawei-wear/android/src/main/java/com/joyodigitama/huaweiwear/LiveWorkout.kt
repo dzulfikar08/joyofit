@@ -472,33 +472,47 @@ internal class LiveWorkout(
     }
     log("Live workout: the watch asked for the phone's GPS; following its heart rate (timer waits for the watch to start the workout)")
     liveHeartRate.setWorkoutActive(true)
-    watchdog?.cancel()
+    startWatchdog()
+    publish(force = true)
+    return askStatus
+  }
+
+  private fun startWatchdog() {
+    if (watchdog?.isActive == true) return
     watchdog = scope.launch {
       while (isActive) {
         delay(15_000L)
         var verdict = LiveWorkoutPolicy.Verdict.KEEP
+        var isGpsSource = false
         synchronized(lock) {
           val s = session
-          if (s != null && s.source == Source.GPS && s.status != Status.ENDED) {
+          if (s != null && s.status != Status.ENDED) {
             val now = System.currentTimeMillis()
-            verdict = LiveWorkoutPolicy.silenceVerdict(s.status == Status.PREPARING, now - s.lastGpsAtMs, now - lastStatusAtMs)
+            isGpsSource = s.source == Source.GPS
+            verdict = when (s.source) {
+              Source.GPS -> LiveWorkoutPolicy.silenceVerdict(s.status == Status.PREPARING, now - s.lastGpsAtMs, now - lastStatusAtMs)
+              Source.WATCH -> LiveWorkoutPolicy.watchSilenceVerdict(now - s.updatedAtMs)
+              else -> LiveWorkoutPolicy.Verdict.KEEP
+            }
             if (verdict == LiveWorkoutPolicy.Verdict.SUSPECT) {
               if (s.endSuspected) verdict = LiveWorkoutPolicy.Verdict.KEEP else s.endSuspected = true
             }
           }
         }
         when (verdict) {
-          LiveWorkoutPolicy.Verdict.END -> end("the watch stopped asking for GPS and does not answer the status poll")
+          LiveWorkoutPolicy.Verdict.END -> {
+            val reason = if (isGpsSource) "the watch stopped asking for GPS and does not answer the status poll"
+            else "the watch stopped sending data and does not answer the status poll"
+            end(reason)
+          }
           LiveWorkoutPolicy.Verdict.SUSPECT -> {
-            log("Live workout: the watch stopped asking for GPS and does not answer the status poll; asking the user")
+            log("Live workout: the watch went quiet; asking the user")
             publish(force = true)
           }
           LiveWorkoutPolicy.Verdict.KEEP -> Unit
         }
       }
     }
-    publish(force = true)
-    return askStatus
   }
 
   /** A `17/11` realtime report ([WorkoutReport]); operator type 1 running, 2 paused, 3 resumed, 4 stopped. */
@@ -632,6 +646,7 @@ internal class LiveWorkout(
       if (status == Status.PAUSED) s.clock.pause(now)
       s.metrics = s.metrics.copy(durationSec = 0)
     }
+    startWatchdog()
     return s
   }
 

@@ -45,31 +45,42 @@ export function fromNativeTrail(nativeTrail?: readonly (readonly [number, number
   return out;
 }
 
+interface TrailState {
+  trail: readonly TrailPoint[];
+  nativeCount: number;
+  lastLat?: number;
+  lastLon?: number;
+}
+
 /** The path a recording's position has taken since the workout started, for the line on the map. */
 export function useTrail(
   position: TrailPoint | null,
   nativeTrail?: readonly (readonly [number, number])[] | null,
 ): readonly TrailPoint[] {
-  const [trail, setTrail] = useState<readonly TrailPoint[]>(() => fromNativeTrail(nativeTrail));
+  const [state, setState] = useState<TrailState>(() => ({
+    trail: fromNativeTrail(nativeTrail),
+    nativeCount: nativeTrail?.length ?? 0,
+    lastLat: position?.lat,
+    lastLon: position?.lon,
+  }));
+
   const nativeCount = nativeTrail?.length ?? 0;
-  const [lastNativeCount, setLastNativeCount] = useState(() => nativeTrail?.length ?? 0);
-  if (nativeCount < lastNativeCount) {
-    setLastNativeCount(nativeCount);
-    setTrail(fromNativeTrail(nativeTrail));
-  } else if (nativeCount > lastNativeCount) {
-    setLastNativeCount(nativeCount);
-    const recovered = fromNativeTrail(nativeTrail);
-    if (recovered.length > 0) {
-      setTrail(recovered);
-    }
-  }
   const lat = position?.lat;
   const lon = position?.lon;
-  // Append when the position changes, during render, rather than from an effect.
-  const [seen, setSeen] = useState<{ lat?: number; lon?: number }>({});
-  if (seen.lat !== lat || seen.lon !== lon) {
-    setSeen({ lat, lon });
+
+  const nativeChanged = nativeCount !== state.nativeCount;
+  const posChanged = lat !== state.lastLat || lon !== state.lastLon;
+
+  if (nativeChanged || posChanged) {
+    let nextTrail = state.trail;
+    if (nativeChanged) {
+      const recovered = fromNativeTrail(nativeTrail);
+      if (recovered.length > 0 || nativeCount < state.nativeCount) {
+        nextTrail = recovered;
+      }
+    }
     if (
+      posChanged &&
       lat !== undefined &&
       lon !== undefined &&
       Number.isFinite(lat) &&
@@ -79,8 +90,15 @@ export function useTrail(
       lon >= -180 &&
       lon <= 180
     ) {
-      setTrail((old) => appendTrail(old, { lat, lon }));
+      nextTrail = appendTrail(nextTrail, { lat, lon });
     }
+    setState({
+      trail: nextTrail,
+      nativeCount,
+      lastLat: lat,
+      lastLon: lon,
+    });
   }
-  return trail;
+
+  return state.trail;
 }

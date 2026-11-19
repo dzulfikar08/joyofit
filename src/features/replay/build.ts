@@ -196,10 +196,13 @@ export function createSceneBuilder(ctx: BuildContext): SceneBuilder {
   const lineColor = chart.lineKind === 'hr' ? theme.hr : chart.lineKind === 'speed' ? theme.speed : theme.accent;
   const slicePts = (pts: readonly (readonly [number, number])[], p: number): readonly (readonly [number, number])[] => {
     if (pts.length === 0) return [];
-    if (p >= 1) return pts;
+    if (pts.length === 1 || p >= 1) return pts;
     const f = p * (pts.length - 1);
-    const i = Math.min(pts.length - 2, Math.floor(f));
-    const interY = pts[i]![1] + (pts[i + 1]![1] - pts[i]![1]) * (f - i);
+    const i = Math.max(0, Math.min(pts.length - 2, Math.floor(f)));
+    const p0 = pts[i];
+    const p1 = pts[i + 1];
+    if (!p0 || !p1) return pts;
+    const interY = p0[1] + (p1[1] - p0[1]) * (f - i);
     const interX = CHART.x + CHART.w * p;
     return [...pts.slice(0, i + 1), [interX, interY] as const];
   };
@@ -217,10 +220,14 @@ export function createSceneBuilder(ctx: BuildContext): SceneBuilder {
   };
   const cursorY = (p: number): number => {
     const pts = linePts ?? altPts;
-    if (!pts) return chartBottom;
+    if (!pts || pts.length === 0) return chartBottom;
+    if (pts.length === 1) return pts[0]![1];
     const f = p * (pts.length - 1);
-    const i = Math.min(pts.length - 2, Math.floor(f));
-    return pts[i]![1] + (pts[i + 1]![1] - pts[i]![1]) * (f - i);
+    const i = Math.max(0, Math.min(pts.length - 2, Math.floor(f)));
+    const p0 = pts[i];
+    const p1 = pts[i + 1];
+    if (!p0 || !p1) return chartBottom;
+    return p0[1] + (p1[1] - p0[1]) * (f - i);
   };
 
   const tileCache = new Map<string, MatrixGroup>();

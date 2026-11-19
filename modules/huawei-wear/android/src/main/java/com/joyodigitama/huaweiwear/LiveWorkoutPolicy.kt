@@ -197,6 +197,17 @@ internal object LiveWorkoutPolicy {
     idleAnswers >= IDLE_ANSWERS_TO_END && msSinceFrame > (if (preparing) GIVE_UP_MS else FRAMES_STALE_MS)
 
   /**
+   * The reports from a watch-fed session stopped, for [msSinceFrame].
+   * If frames are silent for > 60s, end the session automatically.
+   * If frames are silent for > 25s, suspect end and prompt the user.
+   */
+  fun watchSilenceVerdict(msSinceFrame: Long): Verdict = when {
+    msSinceFrame > 60_000L -> Verdict.END
+    msSinceFrame > 25_000L -> Verdict.SUSPECT
+    else -> Verdict.KEEP
+  }
+
+  /**
    * Whether a live session of [source] ends by itself once the watch is gone (link lost: no status answers, no frames, no GPS
    * requests). Only the GPS-request session has a watchdog for that ([silenceVerdict]: asks the user after [GPS_SILENCE_MS], ends
    * after [GIVE_UP_MS]); the others end on the watch's word or Finish. Decides whether the phone's GPS survives a lost link.

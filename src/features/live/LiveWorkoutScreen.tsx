@@ -84,7 +84,7 @@ export function LiveWorkoutScreen() {
   const title = kind !== null && kind !== 'other' ? t(`live.sport.${kind}`) : live.sportName ? sportLabel(live.sportName) : t('live.title');
   // Only a workout whose sport nobody knows can be a strength one; a GPS sport never is.
   const offerStrength = active && live.sportType === null && kind === null && !session.gpsSport;
-  const endPrompt = live.status !== 'ended' && live.source !== 'watch' && suspected && !kept;
+  const endPrompt = live.status !== 'ended' && suspected && !kept;
 
   return (
     <Screen>
@@ -115,16 +115,15 @@ export function LiveWorkoutScreen() {
         />
       ) : live.source === 'manual' ? (
         <Button label={t('live.finish')} icon="stop" onPress={() => HuaweiWear.finishLiveWorkout()} />
-      ) : live.source !== 'watch' ? (
-        // The watch takes no stop from the phone (every 17/01 is refused with 123002 on the Fit 4 Pro, docs/live-run.md): the workout
-        // ends on the watch, and the phone can only stop following it.
+      ) : (
+        // The workout ends on the watch, but the user can always stop following on the phone.
         <>
           <AppText variant="caption" muted>
             {t('live.finishOnWatch')}
           </AppText>
           <Button label={t('live.stopFollowing')} onPress={() => HuaweiWear.finishLiveWorkout()} />
         </>
-      ) : null}
+      )}
     </Screen>
   );
 }

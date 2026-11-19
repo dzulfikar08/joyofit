@@ -510,28 +510,40 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
         log("Live workout: the watch asked for the phone's GPS; following its heart rate (timer waits for the watch to start the workout)")
         setHeartRateActive(true)
         lock.locked {
-            watchdog?.cancel()
-            watchdog = Task { [weak self] in
-                while !Task.isCancelled {
-                    guard let every = self?.watchdogEveryMs else { return }
-                    try? await Task.sleep(nanoseconds: UInt64(every) * 1_000_000)
-                    if Task.isCancelled { return }
-                    guard let self else { return }
-                    self.watchdogTick()
-                }
-            }
+            startWatchdogLocked()
         }
         publish(force: true)
         return askStatus
     }
 
-    /// The GPS-request session's watchdog (`LiveWorkoutPolicy.silenceVerdict`): the watch stops asking once its own GPS has a fix, so silence alone
-    /// says nothing while the status poll answers; then the poll decides. Without answers, silence asks the user first and ends the session later.
+    private func startWatchdogLocked() {
+        if watchdog != nil { return }
+        watchdog = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let every = self?.watchdogEveryMs else { return }
+                try? await Task.sleep(nanoseconds: UInt64(every) * 1_000_000)
+                if Task.isCancelled { return }
+                guard let self else { return }
+                self.watchdogTick()
+            }
+        }
+    }
+
+    /// The watchdog (`LiveWorkoutPolicy.silenceVerdict` and `watchSilenceVerdict`): checks for silence on GPS-request and watch-fed sessions.
     private func watchdogTick() {
+        var isGps = false
         let verdict: LiveWorkoutPolicy.Verdict = lock.locked {
-            guard var s = session, s.source == .gps, s.status != .ended else { return .keep }
+            guard var s = session, s.status != .ended else { return .keep }
             let now = nowMs()
-            let silence = LiveWorkoutPolicy.silenceVerdict(preparing: s.status == .preparing, msSinceGps: now - s.lastGpsAtMs, msSinceStatus: now - lastStatusAtMs)
+            isGps = s.source == .gps
+            let silence: LiveWorkoutPolicy.Verdict
+            if s.source == .gps {
+                silence = LiveWorkoutPolicy.silenceVerdict(preparing: s.status == .preparing, msSinceGps: now - s.lastGpsAtMs, msSinceStatus: now - lastStatusAtMs)
+            } else if s.source == .watch {
+                silence = LiveWorkoutPolicy.watchSilenceVerdict(msSinceFrame: now - s.updatedAtMs)
+            } else {
+                return .keep
+            }
             if silence != .suspect { return silence }
             if s.endSuspected { return .keep }
             s.endSuspected = true
@@ -539,9 +551,12 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
             return .suspect
         }
         switch verdict {
-        case .end: end("the watch stopped asking for GPS and does not answer the status poll")
+        case .end:
+            let reason = isGps ? "the watch stopped asking for GPS and does not answer the status poll"
+                               : "the watch stopped sending data and does not answer the status poll"
+            end(reason)
         case .suspect:
-            log("Live workout: the watch stopped asking for GPS and does not answer the status poll; asking the user")
+            log("Live workout: the watch went quiet; asking the user")
             publish(force: true)
         case .keep: break
         }
@@ -652,6 +667,7 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
             if status == .paused { s.clock.pause(now) }
             s.metrics.durationSec = 0
         }
+        startWatchdogLocked()
         return s
     }
 

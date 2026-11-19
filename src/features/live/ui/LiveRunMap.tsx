@@ -58,9 +58,14 @@ export function LiveRunMap({ position, trail, fix }: LiveRunMapProps) {
 
   const variant = scheme === 'dark' ? 'night' : 'day';
   // The last place stays on the map while the GPS looks again.
-  const [shown, setShown] = useState(position);
-  if (position && position !== shown) setShown(position);
-  const activePosition = shown ?? (trail.length > 0 ? { lat: trail[trail.length - 1].lat, lon: trail[trail.length - 1].lon, headingDeg: null } : null);
+  const [lastFix, setLastFix] = useState(position);
+  if (position && (lastFix?.lat !== position.lat || lastFix?.lon !== position.lon || lastFix?.headingDeg !== position.headingDeg)) {
+    setLastFix(position);
+  }
+  const activePosition =
+    position ??
+    lastFix ??
+    (trail.length > 0 ? { lat: trail[trail.length - 1].lat, lon: trail[trail.length - 1].lon, headingDeg: null } : null);
   const { style } = useBikeMapStyle({ variant, position: activePosition });
   const ground = ridePalette(variant === 'night' ? 'dark' : 'light').background;
   const guide = overlay.selected?.line ?? null;

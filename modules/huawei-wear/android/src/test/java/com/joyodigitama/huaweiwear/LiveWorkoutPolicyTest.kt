@@ -99,6 +99,13 @@ class LiveWorkoutPolicyTest {
   }
 
   @Test
+  fun watchSilenceVerdictPromptsThenEnds() {
+    assertEquals(Verdict.KEEP, LiveWorkoutPolicy.watchSilenceVerdict(msSinceFrame = 10_000L))
+    assertEquals(Verdict.SUSPECT, LiveWorkoutPolicy.watchSilenceVerdict(msSinceFrame = 26_000L))
+    assertEquals(Verdict.END, LiveWorkoutPolicy.watchSilenceVerdict(msSinceFrame = 61_000L))
+  }
+
+  @Test
   fun aPreparingSessionWithNothingToWaitForIsDropped() {
     val stale = LiveWorkoutPolicy.STATUS_STALE_MS + 1
     assertEquals(Verdict.END, LiveWorkoutPolicy.silenceVerdict(preparing = true, msSinceGps = 61_000L, msSinceStatus = stale))
