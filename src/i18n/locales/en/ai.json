@@ -465,7 +465,6 @@
     "notAllowed": "Not allowed: nothing is sent",
     "withdrawOwn": "Withdraw and delete key",
     "manage": "Manage",
-    "hostedDetails": "What is sent and who gets it",
     "hubSubtitle": "Who receives your data, allow or withdraw"
   }
 }
