@@ -465,6 +465,13 @@ internal class WearRuntime private constructor(context: Context) {
     settings.huaweiAccount = account
   }
 
+  /** Stores the switch; true when it changed. Takes effect on the next connect (the caller reconnects). */
+  fun setGadgetbridgeCapabilities(enabled: Boolean): Boolean {
+    if (settings.gadgetbridgeCapabilities == enabled) return false
+    settings.gadgetbridgeCapabilities = enabled
+    return true
+  }
+
   fun morningSummaryEnabled(): Boolean = settings.morningSummaryEnabled
 
   /** Turning it on lets the next sync post today's summary if it has not been posted yet. */

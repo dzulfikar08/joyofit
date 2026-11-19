@@ -23,6 +23,43 @@ Research of 2026-10-21. Read-only: no code was changed, nothing was sent to Huaw
 Evidence labels used below: **VERIFIED** (seen on our Fit 4 Pro), **DOCUMENTED** (Huawei says so in a page linked here), **REPORTED**
 (users or Gadgetbridge contributors say so; not checked by us), **INFERENCE** (ours).
 
+## 0c. Update 2026-11-19: Gadgetbridge's full log; the capability list JoyoFit sends at connect
+
+**Sources.** Jeremy's Discord report of 2026-11-17 (#fit-bug-reports, JoyoFit 1.1 (1505837), same Fit 3 and firmware, same face as v2.7.1,
+"Compatibility install" on) and his full Gadgetbridge 2026.11.0 log of 2026-11-07 (`071126_Jeremy_gadgetbridge.log`). REPORTED: his
+logs, read by us.
+
+**JoyoFit, 2026-11-17 (compatibility install).** Upload `350001061_1.0.0`, no `27/03` announce, so no `checkright` request. All 115
+chunks delivered, `28/07` status 1. Then nothing: no `27/05` within 60 s, and the face list has only the 3 factory faces.
+
+**Gadgetbridge, 2026-11-07: the install really worked.** `28/07` `01=01 02=01`. The watch's `27/05` reportType 2 arrives in the same
+millisecond as GB's result ack, so the watch decides as soon as the file is complete. GB then confirms and activates (`27/03`); the watch
+answers `7F=00000000`, then reports type 1. The list before that install already showed an earlier GB install of the same face as active.
+
+**The upload is identical.** Same packet classes and frame lengths (28/02 `0x56`, 28/03 `0x4F`, 28/04 ack `0x36`, 28/07 ack `0x33`), same
+SHA-256 `061057AE…12AB` for 855 749 bytes, same consult parameters (unit 935, maxApply 7480, appWait 30, noEncrypt 1), same `28/07`.
+
+**The connect differs in one place that matters: ReverseCapabilities (01/3F).** Compared GB `master` `7257742` (2026-11-18,
+`HuaweiSupportProvider.initializeDeviceConfigure`) with `HuaweiInitializer`:
+
+- JoyoFit sends what GB sends at connect, except DualChannel (the Fit 3 does not set ExpandCapability 56, and GB's upload went over the
+  main channel anyway) and SendCountryCode (off by default in GB).
+- ReverseCapabilities: GB sends `FD F7 33 FA 29 37`. JoyoFit has sent `FD F7 73 FA 29 BF FF 0F` since 2026-10-15, Huawei Health's own
+  list. Huawei Health 17 from AppGallery (`ReverseCapabilityConfigUtil`, class `mpj` in `classes2.dex`) builds exactly that list on a
+  non-Huawei phone with a HUAWEI ID signed in: GB's bits plus 22, 43 and 47..59. Huawei Health applies a change to the list by
+  disconnecting and reconnecting the watch (`mpj.h()`), so the watch reads it only at connect.
+
+**[INFERENCE]** Told it is talking to Huawei Health, the watch expects Health's signed flow: with the announce it asks Health's cloud for
+the licence (`checkright`, 2026-11-06, then `100014`); without it, it drops the file silently (2026-11-17). Told it is a plain client
+(GB), it installs the file. The phone side does not name the bits, so which bit does it is not known. The watch was also factory reset
+between 2026-11-07 (15 faces, about 10 from Huawei's store) and 2026-11-17 (3 factory faces); if the reset is what matters, this change
+will not help.
+
+**Shipped (branch `fix/watchface-compat-caps`).** With "Compatibility install" on (signature-enforcing watches only), JoyoFit connects
+with GB's list (`DeviceConfig.ReverseCapabilities.GADGETBRIDGE`, Swift `gadgetbridgeCapabilities`; native setting
+`gadgetbridge_capabilities`, JS `setCompatInstall`). Turning the switch on or off reconnects the watch. While it is on, the watch no longer
+asks for config 900100007 (`FeatureConfig.kt`), which JoyoFit only ever answered with "no update". **UNVERIFIED on a watch.**
+
 ## 0b. Update 2026-11-06: the Fit 3 enforces signatures too, and asks the phone for a licence check
 
 **Source.** A JoyoFit support report from Jeremy (Threads DM, 2026-11-06): HUAWEI WATCH FIT 3 (`SLO-B09`, product `Solo-B09S`), software

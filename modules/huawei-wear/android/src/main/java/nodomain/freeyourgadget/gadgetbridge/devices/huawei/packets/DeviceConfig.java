@@ -2167,8 +2167,19 @@ public class DeviceConfig {
     public static class ReverseCapabilities {
         public static final int id = 0x3f;
 
+        // JoyoFit: Huawei Health 17.0.8.300's own bitmap for this watch (sign-capture.log, ReverseCapabilityConfigUtil):
+        // GB's bits plus 22, 43 and 47..59. It makes the watch ask for config 900100007 (FeatureConfig.kt answers it).
+        public static final byte[] HUAWEI_HEALTH = {(byte) 0xFD, (byte) 0xF7, 0x73, (byte) 0xFA, 0x29, (byte) 0xBF, (byte) 0xFF, 0x0F};
+        // JoyoFit: Gadgetbridge's bitmap, sent when the user turned on "Compatibility install". GB installs unsigned faces on a Fit 3
+        // that refuses them from JoyoFit with Huawei Health's bitmap (docs/watchfaces-signing.md, section 0c).
+        public static final byte[] GADGETBRIDGE = {(byte) 0xFD, (byte) 0xF7, 0x33, (byte) 0xFA, 0x29, 0x37};
+
         public static class Request extends HuaweiPacket {
             public Request(ParamsProvider paramsProvider) {
+                this(paramsProvider, false);
+            }
+
+            public Request(ParamsProvider paramsProvider, boolean gadgetbridge) {
                 super(paramsProvider);
 
                 this.serviceId = DeviceConfig.id;
@@ -2176,10 +2187,7 @@ public class DeviceConfig {
 
                 // Bits like ext capabilities
                 //byte[] capabilities = {(byte) 0xFD, (byte) 0xF7, (byte)0x73, (byte)0x7A};
-                // JoyoFit: Huawei Health 17.0.8.300's own bitmap for this watch (sign-capture.log, ReverseCapabilityConfigUtil):
-                // GB's bits plus 22, 43 and 47..59. It makes the watch ask for config 900100007 (FeatureConfig.kt answers it).
-                // GB sent {FD, F7, 33, FA, 29, 37}.
-                byte[] capabilities = {(byte) 0xFD, (byte) 0xF7, 0x73, (byte) 0xFA, 0x29, (byte) 0xBF, (byte) 0xFF, 0x0F};
+                byte[] capabilities = gadgetbridge ? GADGETBRIDGE : HUAWEI_HEALTH;
                 this.tlv = new HuaweiTLV()
                         .put(0x01, capabilities);
 

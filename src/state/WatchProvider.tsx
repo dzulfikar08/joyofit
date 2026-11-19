@@ -64,6 +64,8 @@ export interface WatchContextValue {
   forget: (address: string) => Promise<void>;
   /** Disconnects the watch in use, if any, and connects [address]: the one link moves to another watch. */
   switchTo: (address: string) => Promise<void>;
+  /** Closes the link to the connected watch and opens it again, so settings the watch only reads at connect take effect. */
+  reconnect: () => Promise<void>;
   /** Disconnects, forgets the watch's keys and takes it out of the list. Its stored data stays. */
   removeWatch: (address: string) => Promise<void>;
   /** Every watch this phone has used (the `device` table), primary first. */
@@ -289,6 +291,17 @@ export function WatchProvider({ children }: { children: ReactNode }) {
     [linkState, activeAddress, connect],
   );
 
+  const reconnect = useCallback(async () => {
+    if (linkState !== 'connected' || activeAddress === null) return;
+    try {
+      await HuaweiWear.disconnect();
+    } catch (e) {
+      setError(errorMessage(e));
+      return;
+    }
+    await connect(activeAddress);
+  }, [linkState, activeAddress, connect]);
+
   const refreshBattery = useCallback(async () => {
     try {
       setBattery(await HuaweiWear.refreshBattery());
@@ -362,6 +375,7 @@ export function WatchProvider({ children }: { children: ReactNode }) {
       disconnect,
       forget,
       switchTo,
+      reconnect,
       removeWatch,
       watches,
       watchActions,
@@ -388,6 +402,7 @@ export function WatchProvider({ children }: { children: ReactNode }) {
       disconnect,
       forget,
       switchTo,
+      reconnect,
       removeWatch,
       watches,
       watchActions,
