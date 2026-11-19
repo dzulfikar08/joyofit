@@ -683,7 +683,7 @@ final class WorkoutStoreTests: XCTestCase {
 
         // Then real GPS watch arrives: since band's points are phone GPS, watch's built-in GPS wins!
         XCTAssertTrue(try watchSink.save(watchGpsRecord))
-        let winningDevice = try rows(store, "SELECT device FROM workouts WHERE start >= ? AND start <= ?", [.int(startSec - 10), [.int(startSec + 10)]]) { $0.text(0) }.first
+        let winningDevice = try rows(store, "SELECT device FROM workouts WHERE start >= ? AND start <= ?", [.int(startSec - 10), .int(startSec + 10)]) { $0.text(0) }.first
         XCTAssertEqual(winningDevice, gpsWatchAddress)
     }
 }
