@@ -105,8 +105,8 @@ final class WorkoutStoreTests: XCTestCase {
         )
     }
 
-    private func rows<T>(_ store: SyncStore, _ sql: String, _ map: @escaping (SQLiteStatement) -> T) throws -> [T] {
-        try store.read { try $0.query(sql, [], map) }
+    private func rows<T>(_ store: SyncStore, _ sql: String, _ bindings: [SQLiteBinding] = [], _ map: @escaping (SQLiteStatement) -> T) throws -> [T] {
+        try store.read { try $0.query(sql, bindings, map) }
     }
 
     // MARK: WorkoutStore
@@ -569,7 +569,6 @@ final class WorkoutStoreTests: XCTestCase {
     }
 
     func testMergedRoutesOnlyIncludeFixesInsideWindowWithoutClamping() throws {
-        let store = SyncStore(url: temporaryDatabaseURL())
         let gpsStore = ConnectedGpsStore()
         let startSec: Int64 = 1_700_030_000
         let endSec: Int64 = 1_700_030_600
