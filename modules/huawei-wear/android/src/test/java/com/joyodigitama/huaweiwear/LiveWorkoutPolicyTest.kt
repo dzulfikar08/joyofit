@@ -100,9 +100,32 @@ class LiveWorkoutPolicyTest {
 
   @Test
   fun watchSilenceVerdictPromptsThenEnds() {
-    assertEquals(Verdict.KEEP, LiveWorkoutPolicy.watchSilenceVerdict(msSinceFrame = 10_000L))
-    assertEquals(Verdict.SUSPECT, LiveWorkoutPolicy.watchSilenceVerdict(msSinceFrame = 26_000L))
-    assertEquals(Verdict.END, LiveWorkoutPolicy.watchSilenceVerdict(msSinceFrame = 61_000L))
+    val freshStatus = 10_000L
+    val staleStatus = LiveWorkoutPolicy.STATUS_STALE_MS + 1000L
+    // Frames silent for 90 s with poll RUNNING (answering recently) -> KEEP
+    assertEquals(
+      Verdict.KEEP,
+      LiveWorkoutPolicy.watchSilenceVerdict(msSinceFrame = 90_000L, msSinceStatus = freshStatus, statusAnswered = true, isPaused = false)
+    )
+    // Frames silent for 26 s with stale/unanswered poll -> SUSPECT
+    assertEquals(
+      Verdict.SUSPECT,
+      LiveWorkoutPolicy.watchSilenceVerdict(msSinceFrame = 26_000L, msSinceStatus = staleStatus, statusAnswered = true, isPaused = false)
+    )
+    // Frames silent for 301 s with poll silent -> END
+    assertEquals(
+      Verdict.END,
+      LiveWorkoutPolicy.watchSilenceVerdict(msSinceFrame = 301_000L, msSinceStatus = staleStatus, statusAnswered = true, isPaused = false)
+    )
+    // PAUSED -> never END even after 400 s
+    assertEquals(
+      Verdict.SUSPECT,
+      LiveWorkoutPolicy.watchSilenceVerdict(msSinceFrame = 400_000L, msSinceStatus = staleStatus, statusAnswered = true, isPaused = true)
+    )
+    assertEquals(
+      Verdict.KEEP,
+      LiveWorkoutPolicy.watchSilenceVerdict(msSinceFrame = 10_000L, msSinceStatus = staleStatus, statusAnswered = false, isPaused = false)
+    )
   }
 
   @Test

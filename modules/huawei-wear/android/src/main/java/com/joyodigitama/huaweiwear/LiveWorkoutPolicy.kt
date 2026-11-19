@@ -198,13 +198,24 @@ internal object LiveWorkoutPolicy {
 
   /**
    * The reports from a watch-fed session stopped, for [msSinceFrame].
-   * If frames are silent for > 60s, end the session automatically.
-   * If frames are silent for > 25s, suspect end and prompt the user.
+   * While the status poll answers ([msSinceStatus] <= [STATUS_STALE_MS]), keep the session.
+   * While paused ([isPaused]), never end the session automatically (at most suspect).
+   * Otherwise, if frames are silent for > [GIVE_UP_MS] (300 s), end the session.
+   * If frames are silent for > 25 s, suspect end and prompt the user.
    */
-  fun watchSilenceVerdict(msSinceFrame: Long): Verdict = when {
-    msSinceFrame > 60_000L -> Verdict.END
-    msSinceFrame > 25_000L -> Verdict.SUSPECT
-    else -> Verdict.KEEP
+  fun watchSilenceVerdict(
+    msSinceFrame: Long,
+    msSinceStatus: Long,
+    statusAnswered: Boolean,
+    isPaused: Boolean = false,
+  ): Verdict {
+    if (statusAnswered && msSinceStatus <= STATUS_STALE_MS) return Verdict.KEEP
+    if (isPaused) return if (msSinceFrame > 25_000L) Verdict.SUSPECT else Verdict.KEEP
+    return when {
+      msSinceFrame > GIVE_UP_MS -> Verdict.END
+      msSinceFrame > 25_000L -> Verdict.SUSPECT
+      else -> Verdict.KEEP
+    }
   }
 
   /**

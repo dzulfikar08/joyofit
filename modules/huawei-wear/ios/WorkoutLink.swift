@@ -46,6 +46,8 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
     private var pollWakePending = false
     /// The watch has answered the poll with a workout state at least once on this link.
     private var statusAnswered = false
+    private var statusUnsupported = false
+    private var logged1703Notice = false
     private var lastStatusLog: String?
     private var reportsLogged = 0
     private var fixesLogged = 0
@@ -123,14 +125,24 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
     // Request `81 00`; the answer's 81 holds 02 trainMonitorState, 03 operatorType, 04 sportType, 06 workoutType (`WatchPhase`).
 
     private func startStatusPoll(_ session: HuaweiSession, caps: DeviceCaps, initialDelayMs: Int? = nil, resetAnswered: Bool = true) {
-        // The Fit 4 Pro does not list 17/03; it is probed anyway and the poll stops on the first failure.
-        if !caps.supports(Int(WorkoutLinkWire.workoutService), Int(WorkoutLinkWire.status)) { log("Workout link: the watch does not list 17/03; probing it") }
+        let (unsupported, shouldProbe): (Bool, Bool) = lock.locked {
+            if resetAnswered {
+                statusAnswered = false
+                statusUnsupported = false
+                logged1703Notice = false
+            }
+            if statusUnsupported { return (true, false) }
+            let probe = !caps.supports(Int(WorkoutLinkWire.workoutService), Int(WorkoutLinkWire.status)) && !logged1703Notice
+            if probe { logged1703Notice = true }
+            return (false, probe)
+        }
+        if unsupported { return }
+        if shouldProbe { log("Workout link: the watch does not list 17/03; probing it") }
         let (previous, generation): (Task<Void, Never>?, Int) = lock.locked {
             let previous = statusPoll
             statusPoll = nil
             pollGeneration += 1
             pollActive = true
-            if resetAnswered { statusAnswered = false }
             return (previous, pollGeneration)
         }
         previous?.cancel()
@@ -146,6 +158,7 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
                 // workout would lose its end signal.
                 let answered = await self.pollStatus(handle.session)
                 if !answered, !self.lock.locked({ self.statusAnswered }) {
+                    self.lock.locked { self.statusUnsupported = true }
                     self.log("Workout link: no workout status from the watch; indoor workouts need Start on the phone")
                     break
                 }
@@ -204,15 +217,17 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
 
     /// Asks the status now, outside the poll's rhythm (a GPS request opened a session that waits for GO, the watch closed its workout).
     private func pollSoon() {
-        let (active, waiter): (Bool, CheckedContinuation<Void, Never>?) = lock.locked {
-            guard pollActive else { return (false, nil) }
+        let (unsupported, active, waiter): (Bool, Bool, CheckedContinuation<Void, Never>?) = lock.locked {
+            if statusUnsupported { return (true, false, nil) }
+            guard pollActive else { return (false, false, nil) }
             guard let w = pollWaiter else {
                 pollWakePending = true
-                return (true, nil)
+                return (false, true, nil)
             }
             pollWaiter = nil
-            return (true, w.continuation)
+            return (false, true, w.continuation)
         }
+        if unsupported { return }
         if active {
             waiter?.resume()
             return

@@ -70,6 +70,7 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
         mutating func setStatus(_ status: Status, nowMs now: Int64) {
             if self.status == status { return }
             if status == .running { phoneTrack.startStretch(nowMs: now) }
+            if status == .paused { phoneTrack.pause() }
             if source != .watch {
                 switch status {
                 case .running:
@@ -413,7 +414,12 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
             }
             if phase != .idle {
                 if let workoutType, s.sportType == nil { s.sportType = workoutType }
-                if s.source != .watch {
+                if s.source == .watch {
+                    if s.endSuspected {
+                        s.endSuspected = false
+                        changed = true
+                    }
+                } else {
                     if running { s.confirmed = true }
                     if let want = LiveWorkoutPolicy.statusTarget(s.status, phase), s.status != want {
                         if phase == .open {
@@ -540,7 +546,12 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
             if s.source == .gps {
                 silence = LiveWorkoutPolicy.silenceVerdict(preparing: s.status == .preparing, msSinceGps: now - s.lastGpsAtMs, msSinceStatus: now - lastStatusAtMs)
             } else if s.source == .watch {
-                silence = LiveWorkoutPolicy.watchSilenceVerdict(msSinceFrame: now - s.updatedAtMs)
+                silence = LiveWorkoutPolicy.watchSilenceVerdict(
+                    msSinceFrame: now - s.updatedAtMs,
+                    msSinceStatus: now - lastStatusAtMs,
+                    statusAnswered: lastStatusAtMs != 0,
+                    isPaused: s.status == .paused
+                )
             } else {
                 return .keep
             }
@@ -552,8 +563,12 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
         }
         switch verdict {
         case .end:
-            let reason = isGps ? "the watch stopped asking for GPS and does not answer the status poll"
-                               : "the watch stopped sending data and does not answer the status poll"
+            let reason: String
+            if isGps {
+                reason = lastStatusAtMs != 0 ? "the watch stopped asking for GPS and the status poll is silent" : "the watch stopped asking for GPS"
+            } else {
+                reason = lastStatusAtMs != 0 ? "the watch stopped sending data and the status poll is silent" : "the watch stopped sending data"
+            }
             end(reason)
         case .suspect:
             log("Live workout: the watch went quiet; asking the user")
@@ -601,9 +616,10 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
         if mirrorBlocked() { return }
         let outcome: (live: Bool, started: Bool) = lock.locked {
             guard var s = session, s.status != .ended else { return (false, false) }
-            let shouldRecord = s.gpsRequested || s.source == .gps || s.status == .running
+            let keepForMap = s.gpsRequested || s.source == .gps || s.status == .running
+            let counts = s.status == .running
             let silentWatch = lastStatusAtMs == 0 && !reportsSeen && s.source != .watch
-            let moving = s.phoneTrack.onFix(fix, running: shouldRecord, motionStarts: s.status == .preparing && silentWatch)
+            let moving = s.phoneTrack.onFix(fix, running: counts, keep: keepForMap, motionStarts: s.status == .preparing && silentWatch)
             let hasMovement = (fix.speed.map { $0 >= 0.4 } ?? false) && (fix.accuracy.map { $0 <= TrackAccumulator.maxAccuracyM } ?? true)
             let shouldStart = s.status == .preparing && (moving || (silentWatch && s.gpsRequested && hasMovement))
             if shouldStart { s.setStatus(.running, nowMs: nowMs()) }
@@ -750,12 +766,12 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
                 s.endReported = true
                 session = s
             }
-            let activeOutdoor = s.status != .ended && !WorkoutSportTypes.isIndoor(s.sportType)
-            let track = toConnectedGpsSession(s)
+            let needsGps = s.status != .ended && (s.gpsRequested || s.source == .gps || WorkoutSportTypes.isOutdoor(s.sportType))
             let nowWall = nowMs()
-            let shouldPersist = justEnded || (track != nil && nowWall - lastPersistedTrackMs >= 30_000)
-            if shouldPersist && track != nil { lastPersistedTrackMs = nowWall }
-            return (toJS(s), s.status, justEnded, activeOutdoor, track, shouldPersist)
+            let shouldPersist = justEnded || (nowWall - lastPersistedTrackMs >= 30_000)
+            let track = shouldPersist ? toConnectedGpsSession(s) : nil
+            if track != nil { lastPersistedTrackMs = nowWall }
+            return (toJS(s), s.status, justEnded, needsGps, track, shouldPersist && track != nil)
         }) else { return }
         if needsGps { onNeedsGps() }
         if let connectedTrack { ConnectedGpsStore.shared.upsert(connectedTrack, persist: shouldPersist) }

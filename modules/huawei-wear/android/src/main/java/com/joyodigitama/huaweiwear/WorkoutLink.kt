@@ -129,12 +129,22 @@ internal class WorkoutLink(
   /** The watch has answered the poll with a workout state at least once on this link. */
   @Volatile
   private var statusAnswered = false
+  private var statusUnsupported = false
+  private var logged1703Notice = false
 
   private fun startStatusPoll(session: HuaweiSession, initialDelayMs: Long = STATUS_FIRST_MS, resetAnswered: Boolean = true) {
     statusPoll?.cancel()
-    if (resetAnswered) statusAnswered = false
+    if (resetAnswered) {
+      statusAnswered = false
+      statusUnsupported = false
+      logged1703Notice = false
+    }
+    if (statusUnsupported) return
     // The Fit 4 Pro does not list 17/03; it is probed anyway and the poll stops on the first failure.
-    if (!DeviceCaps.supports(WORKOUT_SERVICE, STATUS)) log("Workout link: the watch does not list 17/03; probing it")
+    if (!DeviceCaps.supports(WORKOUT_SERVICE, STATUS) && !logged1703Notice) {
+      logged1703Notice = true
+      log("Workout link: the watch does not list 17/03; probing it")
+    }
     statusPoll = scope.launch {
       if (initialDelayMs > 0) kotlinx.coroutines.delay(initialDelayMs)
       while (true) {
@@ -143,6 +153,7 @@ internal class WorkoutLink(
         // Once the watch has answered, a failed poll is a busy or briefly lost link, not a missing command: keep polling,
         // or a running workout would lose its end signal.
         if (!pollStatus(handle.session) && !statusAnswered) {
+          statusUnsupported = true
           log("Workout link: no workout status from the watch; indoor workouts need Start on the phone")
           return@launch
         }
@@ -155,6 +166,7 @@ internal class WorkoutLink(
 
   /** Asks the status now, outside the poll's rhythm (a GPS request opened a session that waits for GO, the watch closed its workout). */
   private fun pollSoon() {
+    if (statusUnsupported) return
     if (statusPoll?.isActive == true) {
       pollWake.trySend(Unit)
       return

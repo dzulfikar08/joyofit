@@ -47,6 +47,9 @@ internal data class ConnectedGpsSession(
 internal class ConnectedGpsStore(private val storageFile: File? = null) {
   private val lock = Any()
   private val sessions = ArrayList<ConnectedGpsSession>()
+  private val writer = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
+    Thread(r, "ConnectedGpsStore-IO").apply { isDaemon = true }
+  }
 
   init {
     loadFromDisk()
@@ -135,34 +138,37 @@ internal class ConnectedGpsStore(private val storageFile: File? = null) {
 
   private fun saveToDiskLocked() {
     val file = storageFile ?: return
-    runCatching {
-      val arr = JSONArray()
-      for (s in sessions) {
-        val pts = JSONArray()
-        for (p in s.points) {
-          val po = JSONObject().put("t", p.timeMs).put("lat", p.lat).put("lon", p.lon)
-          if (p.altitudeM != null && p.altitudeM.isFinite()) po.put("alt", p.altitudeM)
-          if (p.accuracyM != null && p.accuracyM.isFinite()) po.put("acc", p.accuracyM.toDouble())
-          if (p.speedMps != null && p.speedMps.isFinite()) po.put("spd", p.speedMps.toDouble())
-          pts.put(po)
+    val snapshot = ArrayList(sessions)
+    writer.execute {
+      runCatching {
+        val arr = JSONArray()
+        for (s in snapshot) {
+          val pts = JSONArray()
+          for (p in s.points) {
+            val po = JSONObject().put("t", p.timeMs).put("lat", p.lat).put("lon", p.lon)
+            if (p.altitudeM != null && p.altitudeM.isFinite()) po.put("alt", p.altitudeM)
+            if (p.accuracyM != null && p.accuracyM.isFinite()) po.put("acc", p.accuracyM.toDouble())
+            if (p.speedMps != null && p.speedMps.isFinite()) po.put("spd", p.speedMps.toDouble())
+            pts.put(po)
+          }
+          val obj = JSONObject()
+            .put("id", s.id)
+            .put("startSec", s.startSec)
+            .put("endSec", s.endSec)
+            .put("distanceM", s.distanceM)
+            .put("riseM", s.riseM)
+            .put("points", pts)
+          if (s.sportType != null) obj.put("sportType", s.sportType)
+          arr.put(obj)
         }
-        val obj = JSONObject()
-          .put("id", s.id)
-          .put("startSec", s.startSec)
-          .put("endSec", s.endSec)
-          .put("distanceM", s.distanceM)
-          .put("riseM", s.riseM)
-          .put("points", pts)
-        if (s.sportType != null) obj.put("sportType", s.sportType)
-        arr.put(obj)
-      }
-      val parent = file.parentFile
-      parent?.mkdirs()
-      val tmp = File(parent ?: file.absoluteFile.parentFile, "${file.name}.tmp")
-      tmp.writeText(arr.toString())
-      if (!tmp.renameTo(file)) {
-        file.writeText(arr.toString())
-        tmp.delete()
+        val parent = file.parentFile
+        parent?.mkdirs()
+        val tmp = File(parent ?: file.absoluteFile.parentFile, "${file.name}.tmp")
+        tmp.writeText(arr.toString())
+        if (!tmp.renameTo(file)) {
+          file.writeText(arr.toString())
+          tmp.delete()
+        }
       }
     }
   }
@@ -184,12 +190,15 @@ internal object ConnectedGpsMerger {
     val nominalEnd = if (record.end > record.start) record.end else if (record.duration > 0) record.start + record.duration else 0L
     val session = store.match(record.start, nominalEnd, record.sportType) ?: return record
     val effectiveEnd = if (nominalEnd > record.start) nominalEnd else session.effectiveEndSec
-    val fixes = session.fixesInWindow(record.start, effectiveEnd)
-    if (fixes.size < 2) return record
+    val fixes = session.fixesInWindow(record.start, effectiveEnd, slackSec = 0L)
+    val windowStart = record.start
+    val windowEnd = max(record.start, effectiveEnd)
+    val validFixes = fixes.filter { (it.timeMs / 1000L) in windowStart..windowEnd }
+    if (validFixes.size < 2) return record
 
-    val gpsPoints = fixes.map { fix ->
+    val gpsPoints = validFixes.map { fix ->
       WorkoutPoint(
-        ts = (fix.timeMs / 1000L).coerceIn(record.start, max(record.start, effectiveEnd)),
+        ts = fix.timeMs / 1000L,
         lat = fix.lat,
         lon = fix.lon,
         alt = fix.altitudeM,
@@ -198,9 +207,9 @@ internal object ConnectedGpsMerger {
       )
     }
     val mergedPoints = (record.points + gpsPoints).sortedBy { it.ts }
-    val routeDistM = routeDistanceM(fixes).takeIf { it > 0.0 } ?: session.distanceM
+    val routeDistM = if (session.distanceM > 0.0) session.distanceM else routeDistanceM(validFixes)
     val newDistance = if (record.distance > 0) record.distance else routeDistM.roundToInt()
-    val updatedSummary = enrichSummaryJson(record.summaryJson, fixes, gpsPoints.size, newDistance, record.duration, session.riseM)
+    val updatedSummary = enrichSummaryJson(record.summaryJson, validFixes, gpsPoints.size, newDistance, record.duration, session.riseM)
 
     return WorkoutRecord(
       number = record.number,
@@ -250,14 +259,16 @@ internal object ConnectedGpsMerger {
       val endSec = if (rawEndSec > startSec) rawEndSec else if (durationSec > 0) startSec + durationSec else session.effectiveEndSec
       if (WorkoutSportTypes.isIndoor(sportType)) continue
       if (sportType != null && session.sportType != null && sportType != session.sportType) continue
-      val fixes = session.fixesInWindow(startSec, endSec)
-      if (fixes.size < 2) continue
-      val routeDistM = routeDistanceM(fixes).takeIf { it > 0.0 } ?: session.distanceM
+      val fixes = session.fixesInWindow(startSec, endSec, slackSec = 0L)
+      val windowMax = max(startSec, endSec)
+      val validFixes = fixes.filter { (it.timeMs / 1000L) in startSec..windowMax }
+      if (validFixes.size < 2) continue
+      val routeDistM = if (session.distanceM > 0.0) session.distanceM else routeDistanceM(validFixes)
       val newDistance = if (distanceM > 0) distanceM else routeDistM.roundToInt()
-      val newSummary = enrichSummaryJson(summaryJson, fixes, fixes.size, newDistance, durationSec, session.riseM)
-      val gpsPoints = fixes.map { fix ->
+      val newSummary = enrichSummaryJson(summaryJson, validFixes, validFixes.size, newDistance, durationSec, session.riseM)
+      val gpsPoints = validFixes.map { fix ->
         WorkoutPoint(
-          ts = (fix.timeMs / 1000L).coerceIn(startSec, max(startSec, endSec)),
+          ts = fix.timeMs / 1000L,
           lat = fix.lat,
           lon = fix.lon,
           alt = fix.altitudeM,
@@ -267,7 +278,7 @@ internal object ConnectedGpsMerger {
       }
       db.transaction {
         val newEnd = if (rawEndSec > startSec) rawEndSec else endSec
-        db.exec("UPDATE workouts SET distance = ?, end = ?, summary_json = ? WHERE id = ?", newDistance, newEnd, newSummary, workoutId)
+        db.exec("UPDATE workouts SET distance = ?, end = ?, summary_json = ?, phone_gps = 1 WHERE id = ?", newDistance, newEnd, newSummary, workoutId)
         db.insertPoints(workoutId, gpsPoints)
       }
       updated++

@@ -64,11 +64,12 @@ internal class WorkoutWriter(
    * only noted in `workout_shadow`).
    *
    * When [rawRecord] has no GPS points of its own (for example a Huawei Band without built-in GNSS), attaches a matching
-   * phone Connected GPS trajectory from [gpsStore] before duplicate resolution and persistence.
+   * phone Connected GPS trajectory from [gpsStore] after duplicate resolution and before persistence.
    */
   fun save(rawRecord: WorkoutRecord): Boolean = db.transaction {
+    if (!resolveDuplicates(rawRecord)) return@transaction false
     val record = ConnectedGpsMerger.merge(rawRecord, gpsStore)
-    if (!resolveDuplicates(record)) return@transaction false
+    val hasPhoneGps = record.points.size > rawRecord.points.size || record.summaryJson.contains("\"gpsSource\":\"phone\"")
     val wasComplete = db.query(WatchSql.SELECT_WORKOUT_COMPLETE, record.start).firstOrNull()?.let { (it[0] as Long) == 1L }
     db.exec(
       WatchSql.UPSERT_WORKOUT,
@@ -86,6 +87,7 @@ internal class WorkoutWriter(
       record.summaryJson,
       if (record.complete) 1 else 0,
       address,
+      if (hasPhoneGps) 1 else 0,
     )
     val id = db.query(WatchSql.SELECT_WORKOUT_ID, record.start).first()[0] as Long
     db.exec(WatchSql.DELETE_WORKOUT_POINTS, id)

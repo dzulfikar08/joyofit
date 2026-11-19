@@ -101,7 +101,7 @@ internal object WatchSql {
    */
   const val SELECT_WORKOUT_CANDIDATES =
     """SELECT w.id, w.start, w.end, w.device,
-         EXISTS (SELECT 1 FROM workout_points p WHERE p.workout_id = w.id AND p.lat IS NOT NULL AND p.lon IS NOT NULL)
+         (EXISTS (SELECT 1 FROM workout_points p WHERE p.workout_id = w.id AND p.lat IS NOT NULL AND p.lon IS NOT NULL) AND w.phone_gps = 0)
        FROM workouts w
        WHERE w.device IS NOT NULL AND w.device <> ? AND w.imported = 0 AND w.start < ? AND w.end > ?
        ORDER BY w.id"""
@@ -115,11 +115,11 @@ internal object WatchSql {
   /** (device, start, end, kept_start) */
   const val UPSERT_WORKOUT_SHADOW = "INSERT OR REPLACE INTO workout_shadow (device, start, end, kept_start) VALUES (?, ?, ?, ?)"
 
-  /** (workout_number, start, end, sport_type, sport_name, duration, distance, calories, avg_hr, max_hr, steps, summary_json, complete, device) */
+  /** (workout_number, start, end, sport_type, sport_name, duration, distance, calories, avg_hr, max_hr, steps, summary_json, complete, device, phone_gps) */
   const val UPSERT_WORKOUT =
     """INSERT INTO workouts
-         (workout_number, start, end, sport_type, sport_name, duration, distance, calories, avg_hr, max_hr, steps, summary_json, complete, device)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         (workout_number, start, end, sport_type, sport_name, duration, distance, calories, avg_hr, max_hr, steps, summary_json, complete, device, phone_gps)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(start) DO UPDATE SET
          workout_number = excluded.workout_number,
          end = excluded.end,
@@ -134,6 +134,7 @@ internal object WatchSql {
          summary_json = excluded.summary_json,
          complete = excluded.complete,
          device = excluded.device,
+         phone_gps = excluded.phone_gps,
          imported = 0"""
 
   /** (start) -> id */

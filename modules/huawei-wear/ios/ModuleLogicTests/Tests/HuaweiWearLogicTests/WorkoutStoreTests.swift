@@ -567,4 +567,123 @@ final class WorkoutStoreTests: XCTestCase {
         let updatedEnd = try rows(store, "SELECT end FROM workouts WHERE start = 1700020000") { $0.int64(0) }.first
         XCTAssertEqual(updatedEnd, 1_700_020_600)
     }
+
+    func testMergedRoutesOnlyIncludeFixesInsideWindowWithoutClamping() throws {
+        let store = SyncStore(url: temporaryDatabaseURL())
+        let gpsStore = ConnectedGpsStore()
+        let startSec: Int64 = 1_700_030_000
+        let endSec: Int64 = 1_700_030_600
+        // Fixes at start - 150s, start + 10s, start + 20s, end + 150s
+        let fixes = [
+            WorkoutLinkWire.Fix(timeMs: (startSec - 150) * 1000, latitude: -6.1000, longitude: 106.7000, altitude: 10.0, accuracy: 5.0, speed: 3.0, bearing: nil),
+            WorkoutLinkWire.Fix(timeMs: (startSec + 10) * 1000, latitude: -6.1005, longitude: 106.7005, altitude: 10.0, accuracy: 5.0, speed: 3.0, bearing: nil),
+            WorkoutLinkWire.Fix(timeMs: (startSec + 20) * 1000, latitude: -6.1010, longitude: 106.7010, altitude: 10.0, accuracy: 5.0, speed: 3.0, bearing: nil),
+            WorkoutLinkWire.Fix(timeMs: (endSec + 150) * 1000, latitude: -6.1020, longitude: 106.7020, altitude: 10.0, accuracy: 5.0, speed: 3.0, bearing: nil),
+        ]
+        let session = ConnectedGpsSession(
+            id: "slack-window-test",
+            startSec: startSec - 150,
+            endSec: endSec + 150,
+            sportType: 1,
+            distanceM: 500.0,
+            riseM: 0.0,
+            points: fixes
+        )
+        gpsStore.upsert(session)
+
+        let bandRun = WorkoutRecord(
+            number: 31,
+            start: startSec,
+            end: endSec,
+            sportType: 1,
+            sportName: "Running",
+            duration: 600,
+            distance: 0,
+            calories: 80,
+            steps: 900,
+            avgHr: 140,
+            maxHr: 160,
+            summaryJson: "{}",
+            points: [],
+            complete: true
+        )
+        let merged = ConnectedGpsMerger.merge(bandRun, store: gpsStore)
+        // Should only include the two points inside [startSec, endSec]
+        XCTAssertEqual(merged.points.count, 2)
+        XCTAssertEqual(merged.points[0].ts, startSec + 10)
+        XCTAssertEqual(merged.points[1].ts, startSec + 20)
+        // No two points share a clamped timestamp
+        let timestamps = merged.points.map { $0.ts }
+        XCTAssertEqual(Set(timestamps).count, timestamps.count)
+    }
+
+    func testRealWatchGpsWinsOverBandWithPhoneGpsWhicheverOrderArrives() throws {
+        let store = SyncStore(url: temporaryDatabaseURL())
+        let gpsStore = ConnectedGpsStore()
+        let primaryBandAddress = "AA:BB:CC:DD:EE:01"
+        let gpsWatchAddress = "FF:EE:DD:CC:BB:02"
+
+        try store.read { db in
+            try db.run("INSERT INTO device (address, name, is_primary) VALUES (?, 'Primary Band', 1)", [.text(primaryBandAddress)])
+            try db.run("INSERT INTO device (address, name, is_primary) VALUES (?, 'GPS Watch', 0)", [.text(gpsWatchAddress)])
+        }
+
+        let startSec: Int64 = 1_700_050_000
+        let endSec: Int64 = 1_700_050_600
+        let phoneFixes = [
+            WorkoutLinkWire.Fix(timeMs: (startSec + 10) * 1000, latitude: -6.2000, longitude: 106.8000, altitude: 10.0, accuracy: 5.0, speed: 3.0, bearing: nil),
+            WorkoutLinkWire.Fix(timeMs: (startSec + 30) * 1000, latitude: -6.2005, longitude: 106.8005, altitude: 10.0, accuracy: 5.0, speed: 3.0, bearing: nil),
+        ]
+        gpsStore.upsert(ConnectedGpsSession(id: "band-run", startSec: startSec, endSec: endSec, sportType: 1, distanceM: 200.0, riseM: 0.0, points: phoneFixes))
+
+        let bandSink = WorkoutStore(store, address: primaryBandAddress, gpsStore: gpsStore)
+        let watchSink = WorkoutStore(store, address: gpsWatchAddress, gpsStore: gpsStore)
+
+        let bandRecord = WorkoutRecord(
+            number: 41,
+            start: startSec,
+            end: endSec,
+            sportType: 1,
+            sportName: "Running",
+            duration: 600,
+            distance: 0,
+            calories: 75,
+            steps: 850,
+            avgHr: 135,
+            maxHr: 155,
+            summaryJson: "{}",
+            points: [],
+            complete: true
+        )
+
+        let watchGpsRecord = WorkoutRecord(
+            number: 42,
+            start: startSec + 5,
+            end: endSec - 5,
+            sportType: 1,
+            sportName: "Running",
+            duration: 590,
+            distance: 1200,
+            calories: 80,
+            steps: 860,
+            avgHr: 138,
+            maxHr: 158,
+            summaryJson: "{}",
+            points: [
+                WorkoutPoint(ts: startSec + 10, lat: -6.2000, lon: 106.8000, alt: 10.0, hr: 135),
+                WorkoutPoint(ts: startSec + 30, lat: -6.2005, lon: 106.8005, alt: 10.0, hr: 140),
+            ],
+            complete: true
+        )
+
+        // Band arrives first, gets merged with phone track and phone_gps = 1
+        XCTAssertTrue(try bandSink.save(bandRecord))
+        let phoneGpsFlag = try rows(store, "SELECT phone_gps FROM workouts WHERE device = ?", [.text(primaryBandAddress)]) { $0.int(0) }.first
+        XCTAssertEqual(phoneGpsFlag, 1)
+
+        // Then real GPS watch arrives: since band's points are phone GPS, watch's built-in GPS wins!
+        XCTAssertTrue(try watchSink.save(watchGpsRecord))
+        let winningDevice = try rows(store, "SELECT device FROM workouts WHERE start >= ? AND start <= ?", [.int(startSec - 10), [.int(startSec + 10)]]) { $0.text(0) }.first
+        XCTAssertEqual(winningDevice, gpsWatchAddress)
+    }
 }

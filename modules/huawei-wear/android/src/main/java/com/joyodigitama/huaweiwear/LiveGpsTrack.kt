@@ -78,14 +78,21 @@ internal class TrackAccumulator {
     window.clear()
   }
 
-  /** Takes a fix of the running workout; false when it was dropped. */
-  fun add(fix: TrackFix): Boolean {
+  /** Takes a fix of the running workout; false when it was dropped. [running] controls whether distance/climb/speed count; [keep] controls whether it is kept in points. */
+  fun add(fix: TrackFix, running: Boolean = true, keep: Boolean = true): Boolean {
     if (!fix.lat.isFinite() || !fix.lon.isFinite() || fix.lat !in -90.0..90.0 || fix.lon !in -180.0..180.0) return false
     if (fix.accuracyM != null && fix.accuracyM > MAX_ACCURACY_M) return false
+    if (!running) {
+      gap()
+      if (keep) {
+        recordPoint(fix)
+      }
+      return true
+    }
     val prev = last
     if (prev == null) {
       last = fix
-      recordPoint(fix)
+      if (keep) recordPoint(fix)
       window.addLast(fix.timeMs to distanceM)
       takeAltitude(fix)
       return true
@@ -103,7 +110,7 @@ internal class TrackAccumulator {
     }
     distanceM += step
     last = fix
-    recordPoint(fix)
+    if (keep) recordPoint(fix)
     window.addLast(fix.timeMs to distanceM)
     trim(fix.timeMs)
     return true
@@ -226,17 +233,15 @@ internal class SessionTrack {
   private val motion = MotionStart()
 
   /**
-   * Takes a fix. [running]: the session runs, so the fix counts. [motionStarts]: the session prepares for a watch that gives no sign
+   * Takes a fix. [running]: the session runs, so the fix counts. [keep]: kept for the map. [motionStarts]: the session prepares for a watch that gives no sign
    * of its start, so movement is the start. Returns true when this fix completes that movement ([MotionStart]): the caller starts the
    * session, which calls [startStretch].
    */
-  fun onFix(fix: TrackFix, running: Boolean, motionStarts: Boolean): Boolean {
+  fun onFix(fix: TrackFix, running: Boolean, keep: Boolean = true, motionStarts: Boolean): Boolean {
     if (fix.lat.isFinite() && fix.lon.isFinite() && fix.lat in -90.0..90.0 && fix.lon in -180.0..180.0) {
       location = fix
     }
-    if (running) {
-      track.add(fix)
-    }
+    track.add(fix, running = running, keep = keep)
     return motionStarts && motion.onFix(fix.speedMps, fix.accuracyM)
   }
 
@@ -249,6 +254,11 @@ internal class SessionTrack {
     track.gap()
     val newest = location ?: return
     if (abs(nowMs - newest.timeMs) <= ANCHOR_MAX_AGE_MS) track.add(newest)
+  }
+
+  /** The workout was paused: marks a gap so subsequent running fixes do not bridge distance across the pause. */
+  fun pause() {
+    track.gap()
   }
 
   companion object {
@@ -270,6 +280,7 @@ internal class SessionTrack {
 internal class PhoneGpsSession(private val start: () -> Boolean, private val stop: () -> Unit) {
   private val lock = Any()
   private var tracking = false
+  private var lastFailedStartMs = 0L
 
   /** The fixes also go to the watch. */
   @Volatile
@@ -283,7 +294,10 @@ internal class PhoneGpsSession(private val start: () -> Boolean, private val sto
   fun watchAsks() {
     synchronized(lock) {
       feeding = true
-      if (!tracking) tracking = start()
+      if (!tracking) {
+        tracking = start()
+        if (!tracking) lastFailedStartMs = System.currentTimeMillis()
+      }
     }
   }
 
@@ -292,9 +306,13 @@ internal class PhoneGpsSession(private val start: () -> Boolean, private val sto
    * whose workout was discovered via `17/03`, `17/11`, or `37/02`, or started from the phone). Does not turn on the `18/03` feed unless
    * the watch explicitly asked via [watchAsks].
    */
-  fun sessionNeedsGps() {
+  fun sessionNeedsGps(now: Long = System.currentTimeMillis()) {
     synchronized(lock) {
-      if (!tracking) tracking = start()
+      if (!tracking) {
+        if (now - lastFailedStartMs < RETRY_BACKOFF_MS) return
+        tracking = start()
+        if (!tracking) lastFailedStartMs = now
+      }
     }
   }
 
@@ -322,8 +340,13 @@ internal class PhoneGpsSession(private val start: () -> Boolean, private val sto
   }
 
   private fun stopTracking() {
+    lastFailedStartMs = 0L
     if (!tracking) return
     tracking = false
     stop()
+  }
+
+  companion object {
+    const val RETRY_BACKOFF_MS = 60_000L
   }
 }

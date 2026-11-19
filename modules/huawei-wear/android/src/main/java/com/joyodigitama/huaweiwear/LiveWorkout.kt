@@ -379,7 +379,12 @@ internal class LiveWorkout(
         }
         phase != WatchPhase.IDLE && s != null -> {
           if (workoutType != null && s.sportType == null) s.sportType = workoutType
-          if (s.source != Source.WATCH) {
+          if (s.source == Source.WATCH) {
+            if (s.endSuspected) {
+              s.endSuspected = false
+              changed = true
+            }
+          } else {
             if (running) s.confirmed = true
             val want = LiveWorkoutPolicy.statusTarget(s.status, phase)
             if (want != null && s.status != want) {
@@ -491,7 +496,12 @@ internal class LiveWorkout(
             isGpsSource = s.source == Source.GPS
             verdict = when (s.source) {
               Source.GPS -> LiveWorkoutPolicy.silenceVerdict(s.status == Status.PREPARING, now - s.lastGpsAtMs, now - lastStatusAtMs)
-              Source.WATCH -> LiveWorkoutPolicy.watchSilenceVerdict(now - s.updatedAtMs)
+              Source.WATCH -> LiveWorkoutPolicy.watchSilenceVerdict(
+                msSinceFrame = now - s.updatedAtMs,
+                msSinceStatus = now - lastStatusAtMs,
+                statusAnswered = lastStatusAtMs != 0L,
+                isPaused = s.status == Status.PAUSED,
+              )
               else -> LiveWorkoutPolicy.Verdict.KEEP
             }
             if (verdict == LiveWorkoutPolicy.Verdict.SUSPECT) {
@@ -501,8 +511,11 @@ internal class LiveWorkout(
         }
         when (verdict) {
           LiveWorkoutPolicy.Verdict.END -> {
-            val reason = if (isGpsSource) "the watch stopped asking for GPS and does not answer the status poll"
-            else "the watch stopped sending data and does not answer the status poll"
+            val reason = when {
+              isGpsSource -> if (lastStatusAtMs != 0L) "the watch stopped asking for GPS and the status poll is silent" else "the watch stopped asking for GPS"
+              lastStatusAtMs != 0L -> "the watch stopped sending data and the status poll is silent"
+              else -> "the watch stopped sending data"
+            }
             end(reason)
           }
           LiveWorkoutPolicy.Verdict.SUSPECT -> {
@@ -553,9 +566,10 @@ internal class LiveWorkout(
     var started = false
     synchronized(lock) {
       val s = session?.takeIf { it.status != Status.ENDED } ?: return
-      val shouldRecord = s.gpsRequested || s.source == Source.GPS || s.status == Status.RUNNING
+      val keepForMap = s.gpsRequested || s.source == Source.GPS || s.status == Status.RUNNING
+      val counts = s.status == Status.RUNNING
       val silentWatch = lastStatusAtMs == 0L && !reportsSeen && s.source != Source.WATCH
-      val moving = s.phoneTrack.onFix(fix, running = shouldRecord, motionStarts = s.status == Status.PREPARING && silentWatch)
+      val moving = s.phoneTrack.onFix(fix, running = counts, keep = keepForMap, motionStarts = s.status == Status.PREPARING && silentWatch)
       val hasMovement = (fix.speedMps != null && fix.speedMps >= 0.4f && (fix.accuracyM == null || fix.accuracyM <= TrackAccumulator.MAX_ACCURACY_M))
       val shouldStart = s.status == Status.PREPARING && (moving || (silentWatch && s.gpsRequested && hasMovement))
       if (shouldStart) {
@@ -614,6 +628,7 @@ internal class LiveWorkout(
     if (s.status == status) return
     // The stretch before a pause (or the pre-start walk) and the one after it are not joined into one step of the phone's track.
     if (status == Status.RUNNING) s.phoneTrack.startStretch(now)
+    if (status == Status.PAUSED) s.phoneTrack.pause()
     if (s.source != Source.WATCH) {
       when (status) {
         Status.RUNNING -> {
@@ -728,11 +743,11 @@ internal class LiveWorkout(
       Triple(toJs(s), s, justEnded)
     }
     val (needsGps, connectedTrack, persistTrack) = synchronized(lock) {
-      val activeOutdoor = s.status != Status.ENDED && !WorkoutSportTypes.isIndoor(s.sportType)
-      val track = toConnectedGpsSession(s)
-      val shouldPersist = justEnded || (track != null && nowWall - lastPersistedTrackMs >= 30_000L)
-      if (shouldPersist && track != null) lastPersistedTrackMs = nowWall
-      Triple(activeOutdoor, track, shouldPersist)
+      val needsGps = s.status != Status.ENDED && (s.gpsRequested || s.source == Source.GPS || WorkoutSportTypes.isOutdoor(s.sportType))
+      val shouldPersist = justEnded || (nowWall - lastPersistedTrackMs >= 30_000L)
+      val track = if (shouldPersist) toConnectedGpsSession(s) else null
+      if (track != null) lastPersistedTrackMs = nowWall
+      Triple(needsGps, track, track != null)
     }
     if (needsGps) onNeedsGps()
     if (connectedTrack != null) ConnectedGpsStore.shared.upsert(connectedTrack, persist = persistTrack)

@@ -21,6 +21,24 @@ class LiveGpsTrackTest {
   }
 
   @Test
+  fun preparingAndPausedFixesDoNotAddDistance() {
+    val track = TrackAccumulator()
+    // PREPARING: 10 fixes (e.g. 50 m) with running = false, keep = true -> 0 m distance, points kept
+    for (s in 0..10) track.add(fix(s, s * 5.0), running = false, keep = true)
+    assertEquals(0.0, track.distanceM, 0.001)
+    assertTrue(track.points.isNotEmpty())
+
+    // RUNNING 1 km: 200 fixes at 5 m/s -> ~1000 m
+    for (s in 11..211) track.add(fix(s, 50.0 + (s - 10) * 5.0), running = true, keep = true)
+    assertEquals(1000.0, track.distanceM, 2.0)
+
+    // PAUSED 400 m: 80 fixes at 5 m/s with running = false, keep = true -> distance unchanged
+    val beforePause = track.distanceM
+    for (s in 212..292) track.add(fix(s, 1055.0 + (s - 211) * 5.0), running = false, keep = true)
+    assertEquals(beforePause, track.distanceM, 0.001)
+  }
+
+  @Test
   fun jitterOnTheSpotAddsNothing() {
     val track = TrackAccumulator()
     for (s in 0..30) track.add(fix(s, if (s % 2 == 0) 0.0 else 1.5))

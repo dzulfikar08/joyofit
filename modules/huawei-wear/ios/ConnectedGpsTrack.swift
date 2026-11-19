@@ -75,6 +75,7 @@ public final class ConnectedGpsStore: @unchecked Sendable {
     private let lock = NSLock()
     private let storageURL: URL?
     private var sessions: [ConnectedGpsSession] = []
+    private let ioQueue = DispatchQueue(label: "com.joyodigitama.huaweiwear.connectedgps.io", qos: .utility)
 
     public init(storageURL: URL? = nil) {
         self.storageURL = storageURL
@@ -106,34 +107,37 @@ public final class ConnectedGpsStore: @unchecked Sendable {
 
     private func saveToDiskLocked() {
         guard let url = storageURL else { return }
-        do {
-            var arr: [[String: Any]] = []
-            for s in sessions {
-                var ptsArr: [[String: Any]] = []
-                for p in s.points {
-                    var po: [String: Any] = ["t": p.timeMs, "lat": p.latitude, "lon": p.longitude]
-                    if let alt = p.altitude, alt.isFinite { po["alt"] = alt }
-                    if let acc = p.accuracy, acc.isFinite { po["acc"] = acc }
-                    if let spd = p.speed, spd.isFinite { po["spd"] = spd }
-                    ptsArr.append(po)
+        let snapshot = sessions
+        ioQueue.async {
+            do {
+                var arr: [[String: Any]] = []
+                for s in snapshot {
+                    var ptsArr: [[String: Any]] = []
+                    for p in s.points {
+                        var po: [String: Any] = ["t": p.timeMs, "lat": p.latitude, "lon": p.longitude]
+                        if let alt = p.altitude, alt.isFinite { po["alt"] = alt }
+                        if let acc = p.accuracy, acc.isFinite { po["acc"] = acc }
+                        if let spd = p.speed, spd.isFinite { po["spd"] = spd }
+                        ptsArr.append(po)
+                    }
+                    var obj: [String: Any] = [
+                        "id": s.id,
+                        "startSec": s.startSec,
+                        "endSec": s.endSec,
+                        "distanceM": s.distanceM,
+                        "riseM": s.riseM,
+                        "points": ptsArr
+                    ]
+                    if let sport = s.sportType { obj["sportType"] = sport }
+                    arr.append(obj)
                 }
-                var obj: [String: Any] = [
-                    "id": s.id,
-                    "startSec": s.startSec,
-                    "endSec": s.endSec,
-                    "distanceM": s.distanceM,
-                    "riseM": s.riseM,
-                    "points": ptsArr
-                ]
-                if let sport = s.sportType { obj["sportType"] = sport }
-                arr.append(obj)
+                let data = try JSONSerialization.data(withJSONObject: arr, options: [])
+                let dir = url.deletingLastPathComponent()
+                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+                try data.write(to: url, options: .atomic)
+            } catch {
+                // Silently ignore disk write errors
             }
-            let data = try JSONSerialization.data(withJSONObject: arr, options: [])
-            let dir = url.deletingLastPathComponent()
-            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-            try data.write(to: url, options: .atomic)
-        } catch {
-            // Silently ignore disk write errors
         }
     }
 
@@ -225,23 +229,23 @@ public enum ConnectedGpsMerger {
             return record
         }
         let effectiveEnd = nominalEnd > record.start ? nominalEnd : session.effectiveEndSec
-        let fixes = session.fixesInWindow(workoutStartSec: record.start, workoutEndSec: effectiveEnd)
-        guard fixes.count >= 2 else { return record }
+        let fixes = session.fixesInWindow(workoutStartSec: record.start, workoutEndSec: effectiveEnd, slackSec: 0)
+        let windowStart = record.start
+        let windowEnd = max(record.start, effectiveEnd)
+        let validFixes = fixes.filter { ($0.timeMs / 1000) >= windowStart && ($0.timeMs / 1000) <= windowEnd }
+        guard validFixes.count >= 2 else { return record }
 
-        let upper = max(record.start, effectiveEnd)
-        let gpsPoints: [WorkoutPoint] = fixes.map { fix in
-            let ts = min(max(fix.timeMs / 1000, record.start), upper)
-            return WorkoutPoint(ts: ts, lat: fix.latitude, lon: fix.longitude, alt: fix.altitude, hr: nil, speed: fix.speed)
+        let gpsPoints: [WorkoutPoint] = validFixes.map { fix in
+            WorkoutPoint(ts: fix.timeMs / 1000, lat: fix.latitude, lon: fix.longitude, alt: fix.altitude, hr: nil, speed: fix.speed)
         }
         var mergedPoints = record.points + gpsPoints
         mergedPoints.sort { $0.ts < $1.ts }
 
-        let routeDist = routeDistanceM(fixes)
-        let effectiveDist = routeDist > 0 ? routeDist : session.distanceM
-        let newDistance = record.distance > 0 ? record.distance : Int(effectiveDist.rounded())
+        let routeDist = session.distanceM > 0 ? session.distanceM : routeDistanceM(validFixes)
+        let newDistance = record.distance > 0 ? record.distance : Int(routeDist.rounded())
         let updatedSummary = enrichSummaryJson(
             record.summaryJson,
-            fixes: fixes,
+            fixes: validFixes,
             gpsPointsCount: gpsPoints.count,
             distanceM: newDistance,
             durationSec: record.duration,

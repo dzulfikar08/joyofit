@@ -160,4 +160,7 @@ internal object WorkoutSportTypes {
 
   /** True when [type] is a known indoor/stationary sport; false when null, unknown, or outdoor. */
   fun isIndoor(type: Int?): Boolean = type != null && isIndoorKind(kind(type))
+
+  /** True when [type] is a known outdoor sport (running, walking, cycling, hiking, etc.); false when null, unknown, or indoor. */
+  fun isOutdoor(type: Int?): Boolean = type != null && sport(type) != null && !isIndoor(type)
 }

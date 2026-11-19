@@ -165,4 +165,10 @@ public enum WorkoutSportTypes {
         guard let type else { return false }
         return isIndoorKind(kind(type))
     }
+
+    /// True when `type` is a known outdoor sport (running, walking, cycling, hiking, etc.); false when nil, unknown, or indoor.
+    public static func isOutdoor(_ type: Int?) -> Bool {
+        guard let type, sport(type) != nil else { return false }
+        return !isIndoor(type)
+    }
 }

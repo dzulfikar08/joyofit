@@ -172,10 +172,19 @@ public enum LiveWorkoutPolicy {
     }
 
     /// The reports from a watch-fed session stopped, for `msSinceFrame`.
-    /// If frames are silent for > 60s, end the session automatically.
-    /// If frames are silent for > 25s, suspect end and prompt the user.
-    public static func watchSilenceVerdict(msSinceFrame: Int64) -> Verdict {
-        if msSinceFrame > 60_000 { return .end }
+    /// While the status poll answers (`msSinceStatus` <= `statusStaleMs`), keep the session.
+    /// While paused (`isPaused`), never end the session automatically (at most suspect).
+    /// Otherwise, if frames are silent for > `giveUpMs` (300 s), end the session.
+    /// If frames are silent for > `gpsSilenceMs` (25 s), suspect end and prompt the user.
+    public static func watchSilenceVerdict(
+        msSinceFrame: Int64,
+        msSinceStatus: Int64,
+        statusAnswered: Bool,
+        isPaused: Bool = false
+    ) -> Verdict {
+        if statusAnswered && msSinceStatus <= statusStaleMs { return .keep }
+        if isPaused { return msSinceFrame > 25_000 ? .suspect : .keep }
+        if msSinceFrame > giveUpMs { return .end }
         if msSinceFrame > 25_000 { return .suspect }
         return .keep
     }

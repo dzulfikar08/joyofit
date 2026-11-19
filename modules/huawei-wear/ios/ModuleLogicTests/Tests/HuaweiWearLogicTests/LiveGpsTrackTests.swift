@@ -19,6 +19,23 @@ final class LiveGpsTrackTests: XCTestCase {
         XCTAssertEqual(track.distanceM, 80, accuracy: 0.5)
     }
 
+    func testPreparingAndPausedFixesDoNotAddDistance() {
+        var track = TrackAccumulator()
+        // PREPARING: 10 fixes with running = false, keep = true -> 0 m, points kept
+        for s in 0...10 { track.add(fix(s, Double(s) * 5), running: false, keep: true) }
+        XCTAssertEqual(track.distanceM, 0, accuracy: 0.001)
+        XCTAssertFalse(track.points.isEmpty)
+
+        // RUNNING 1 km: 200 fixes at 5 m/s -> ~1000 m
+        for s in 11...211 { track.add(fix(s, 50 + Double(s - 10) * 5), running: true, keep: true) }
+        XCTAssertEqual(track.distanceM, 1000, accuracy: 2.0)
+
+        // PAUSED 400 m: 80 fixes with running = false, keep = true -> distance unchanged
+        let beforePause = track.distanceM
+        for s in 212...292 { track.add(fix(s, 1055 + Double(s - 211) * 5), running: false, keep: true) }
+        XCTAssertEqual(track.distanceM, beforePause, accuracy: 0.001)
+    }
+
     func testJitterOnTheSpotAddsNothing() {
         var track = TrackAccumulator()
         for s in 0...30 { track.add(fix(s, s % 2 == 0 ? 0 : 1.5)) }
