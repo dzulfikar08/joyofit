@@ -51,6 +51,10 @@ jobs:
         with:
           persist-credentials: false
 
+      # Store uploads only from the tag of the app version (scripts/bump-version.sh); fails before anything is built.
+      - name: Version check
+        run: scripts/check-release-version.sh "${{ inputs.upload_testflight && '1' || '0' }}"
+
       - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
