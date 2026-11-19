@@ -1,7 +1,7 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Redirect, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Linking, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { BackHandler, Linking, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { AppText } from '@/components/AppText';
@@ -62,10 +62,31 @@ export function LiveWorkoutScreen() {
   // The metronome belongs to the workout: it stops when the workout is over or gone.
   useStopMetronomeWhen(session === null || session.state === 'ended');
 
+  const handleBack = useCallback(() => {
+    if (live?.status === 'ended') {
+      HuaweiWear.dismissLiveWorkout();
+      router.replace('/workouts');
+      return;
+    }
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/');
+    }
+  }, [live?.status, router]);
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleBack();
+      return true;
+    });
+    return () => sub.remove();
+  }, [handleBack]);
+
   if (!session || !live) {
     return (
       <Screen>
-        <HiddenTabHeader title={t('live.title')} />
+        <HiddenTabHeader title={t('live.title')} onBack={handleBack} />
         <EmptyState
           icon="walk"
           title={t('live.emptyTitle')}
@@ -88,7 +109,7 @@ export function LiveWorkoutScreen() {
 
   return (
     <Screen>
-      <HiddenTabHeader title={title} />
+      <HiddenTabHeader title={title} onBack={handleBack} />
       {offerStrength ? (
         <Button label={t('live.logStrength')} icon="barbell" onPress={() => router.push('/strength/watch-pick', OPEN_IN_STACK)} />
       ) : null}
