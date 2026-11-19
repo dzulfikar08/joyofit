@@ -122,7 +122,7 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
 
     // Request `81 00`; the answer's 81 holds 02 trainMonitorState, 03 operatorType, 04 sportType, 06 workoutType (`WatchPhase`).
 
-    private func startStatusPoll(_ session: HuaweiSession, caps: DeviceCaps, initialDelayMs: Int64? = nil, resetAnswered: Bool = true) {
+    private func startStatusPoll(_ session: HuaweiSession, caps: DeviceCaps, initialDelayMs: Int? = nil, resetAnswered: Bool = true) {
         // The Fit 4 Pro does not list 17/03; it is probed anyway and the poll stops on the first failure.
         if !caps.supports(Int(WorkoutLinkWire.workoutService), Int(WorkoutLinkWire.status)) { log("Workout link: the watch does not list 17/03; probing it") }
         let (previous, generation): (Task<Void, Never>?, Int) = lock.locked {
