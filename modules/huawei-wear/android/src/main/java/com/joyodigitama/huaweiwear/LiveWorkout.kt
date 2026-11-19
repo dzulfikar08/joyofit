@@ -512,8 +512,8 @@ internal class LiveWorkout(
         when (verdict) {
           LiveWorkoutPolicy.Verdict.END -> {
             val reason = when {
-              isGpsSource -> if (lastStatusAtMs != 0L) "the watch stopped asking for GPS and the status poll is silent" else "the watch stopped asking for GPS"
-              lastStatusAtMs != 0L -> "the watch stopped sending data and the status poll is silent"
+              isGpsSource -> "the watch stopped asking for GPS and does not answer the status poll"
+              lastStatusAtMs != 0L -> "the watch stopped sending data and does not answer the status poll"
               else -> "the watch stopped sending data"
             }
             end(reason)

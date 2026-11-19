@@ -565,9 +565,9 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
         case .end:
             let reason: String
             if isGps {
-                reason = lastStatusAtMs != 0 ? "the watch stopped asking for GPS and the status poll is silent" : "the watch stopped asking for GPS"
+                reason = "the watch stopped asking for GPS and does not answer the status poll"
             } else {
-                reason = lastStatusAtMs != 0 ? "the watch stopped sending data and the status poll is silent" : "the watch stopped sending data"
+                reason = lastStatusAtMs != 0 ? "the watch stopped sending data and does not answer the status poll" : "the watch stopped sending data"
             }
             end(reason)
         case .suspect:
