@@ -52,6 +52,10 @@ jobs:
         with:
           persist-credentials: false
 
+      # Store uploads only from the tag of the app version (scripts/bump-version.sh); fails before anything is built.
+      - name: Version check
+        run: scripts/check-release-version.sh "${{ (inputs.play_track || 'none') != 'none' && '1' || '0' }}"
+
       - name: Free disk space
         run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/node_modules/.cache "$AGENT_TOOLSDIRECTORY/CodeQL"
 

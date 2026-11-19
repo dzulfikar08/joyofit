@@ -30,6 +30,33 @@ Parity with tsc 6.0.3 on this tree (2026-10-21, tsrs 0.18.0-ts7.1.0-dev.20260929
 
 Neither tool writes an incremental cache here, so "cold" is the first run and "warm" is a repeat with the OS file cache hot.
 
+## Versions
+
+Since 1.2.0 (2026-11-19) the app version is `X.Y.Z` (semver), and **every store release gets a new one**, not only a new build number.
+
+| Part | Bump when |
+| --- | --- |
+| patch `1.2.0 -> 1.2.1` | fixes only |
+| minor `1.2.1 -> 1.3.0` | new features, new supported watches |
+| major | a change users must relearn, or a break with old data |
+
+One version for both stores: `expo.version` in `app.json` (Play `versionName`, iOS `CFBundleShortVersionString`, the About screen) and `version` in `package.json` hold the same value. Set them only with the script:
+
+```bash
+scripts/bump-version.sh minor --push     # or patch, major, or an exact 1.4.0
+```
+
+It runs on master or a detached worktree at `origin/master` (clean tree), writes both files, commits `Version X.Y.Z`, tags `vX.Y.Z` and, with `--push`, pushes both to master. Then build **from the tag**:
+
+```bash
+gh workflow run release-android.yml -R dzulfikar08/joyofit --ref v1.2.0 -f target=both -f play_track=alpha -f play_status=draft
+gh workflow run release-ios.yml -R dzulfikar08/joyofit --ref v1.2.0 -f upload_testflight=true
+```
+
+Both release workflows start with `scripts/check-release-version.sh`: a Play upload (`play_track` other than `none`) or a TestFlight upload fails unless the run is on `refs/tags/v<app.json version>`, so a second store release of the same version is impossible. Artifact-only builds (`play_track = none`, upload off) run from any ref with a warning. The `release` environment already allows `v*` tags.
+
+A rebuild of the same version (a failed upload, a missing artifact) runs again on the same tag. A fix after the tag is a new patch version. The bump changes the runtimeVersion fingerprint (docs/ota.md), like any native change: OTA updates published afterwards reach only binaries built from it.
+
 ## Build numbers
 
 The workflows call the same scripts as the laptop, so the numbers follow the same scheme and CI and local builds never collide:
@@ -41,9 +68,11 @@ The workflows call the same scripts as the laptop, so the numbers follow the sam
 
 Actions tab -> workflow -> **Run workflow**, or:
 
+Store uploads run from a version tag (see Versions); artifact-only builds from master are fine:
+
 ```bash
 gh workflow run release-android.yml -R dzulfikar08/joyofit -f target=play-aab -f play_track=none   # artifact only
-gh workflow run release-android.yml -R dzulfikar08/joyofit -f target=play-aab -f play_track=alpha -f play_status=draft
+gh workflow run release-android.yml -R dzulfikar08/joyofit --ref v1.2.0 -f target=play-aab -f play_track=alpha -f play_status=draft
 gh workflow run release-ios.yml -R dzulfikar08/joyofit -f upload_testflight=false
 ```
 
