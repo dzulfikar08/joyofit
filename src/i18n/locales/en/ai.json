@@ -19,7 +19,7 @@
     "setup": "Set up your own key",
     "notes": "Coach notes",
     "data": "Data sent",
-    "consent": "Joyo AI data agreement"
+    "consent": "AI and your data"
   },
   "chip": {
     "own": "{{model}}, own key",
@@ -413,10 +413,11 @@
     "sleep": "Ask about this night"
   },
   "hosted": {
-    "title": "Joyo AI sends your data to a server",
-    "intro": "Joyo AI on Joyo Pro answers on a server, not on your phone. Before anything is sent, please read where it goes and agree.",
+    "title": "Allow Joyo AI to send your data to Cloudflare Workers AI?",
+    "screenTitle": "Joyo AI and your data",
+    "intro": "Joyo AI on Joyo Pro answers on a server, not on your phone. Nothing is sent until you tap Allow. Here is what is sent, who receives it and why.",
     "toTitle": "Who gets your data",
-    "to": "JoyoRogo's server (PT Joyo Digitama Solusi) and Cloudflare Workers AI (Cloudflare, Inc.), which runs the AI model, Google's Gemma. Your phone sends it to JoyoRogo's server, which passes it on to Cloudflare Workers AI to get the answer.",
+    "to": "JoyoRogo's server (PT Joyo Digitama Solusi) passes your question to Cloudflare Workers AI (Cloudflare, Inc.), which runs the AI model Gemma 4 26B on Cloudflare's own servers. Gemma is an open model made by Google; Google does not receive your data. No other AI company receives it.",
     "lead": "Every time you send a message, JoyoFit sends:",
     "data": {
       "chat": "Your messages: what you type and the earlier messages of this chat (the last 12), and the date and time of your question.",
@@ -430,10 +431,10 @@
     "notSentTitle": "Never sent",
     "notSent": "Your name, email, GPS location and routes, photos, device IDs, per-minute heart rate, menstrual cycle data and Strava data.",
     "whyTitle": "Why, and how long",
-    "why": "Only to write the answer to your question. JoyoRogo's server does not store your messages or the answers; it keeps only counts such as how many messages you sent today. Cloudflare Workers AI does not keep your content after it answers and does not use it to train AI models.",
-    "choice": "It is your choice. Without your agreement nothing is sent and the chat stays closed. You can withdraw any time in Settings, Joyo AI. Using your own AI key is another way: it does not go through these servers.",
+    "why": "Only to write the answer to your question, and to count your messages for the daily limit. Not for ads, never sold. JoyoRogo's server does not store your messages or the answers; it keeps only counts such as how many messages you sent today. Cloudflare Workers AI does not keep your content after it answers and does not use it to train AI models, and protects it as our privacy policy does.",
+    "choice": "It is your choice. With Not now nothing is sent and the chat stays closed. You can withdraw any time in Settings, AI and your data. Using your own AI key is another way: it does not go through these servers.",
     "privacy": "Read the privacy policy (Joyo AI section)",
-    "agree": "Agree and continue",
+    "agree": "Allow",
     "later": "Not now",
     "needed": "Joyo AI needs your agreement before it can send anything. Open the chat again to review it.",
     "agreedAt": "You agreed on {{date}}.",
@@ -450,5 +451,20 @@
       "off": "Off: nothing is sent and the Joyo Pro chat stays closed. Turn on to read what is sent and agree.",
       "review": "What is sent and who gets it"
     }
+  },
+  "privacy": {
+    "intro": "Every way JoyoFit can send your data to an AI service, who receives it, and your answer. Nothing goes to an AI without your yes, and you can withdraw it here.",
+    "hostedTitle": "Joyo AI on Joyo Pro",
+    "hostedTo": "JoyoRogo's server and Cloudflare Workers AI (Gemma 4 model)",
+    "ownTitle": "Joyo AI with your own key",
+    "ownTo": "{{provider}} ({{host}}), straight from your phone",
+    "ownNone": "No provider has your permission. Set up your own key to add one.",
+    "connectorTitle": "Connect ChatGPT or Claude",
+    "connectorTo": "The AI app you connect (Anthropic for Claude, OpenAI for ChatGPT), read only when you ask there",
+    "allowed": "Allowed on {{date}}",
+    "notAllowed": "Not allowed: nothing is sent",
+    "withdrawOwn": "Withdraw and delete key",
+    "manage": "Manage",
+    "hubSubtitle": "Who receives your data, allow or withdraw"
   }
 }

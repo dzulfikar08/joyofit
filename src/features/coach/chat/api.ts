@@ -1,5 +1,5 @@
 import { RogoError, rogoCall } from '@/cloud/rogo';
-import { guardHosted } from '@/features/ai/hostedChat';
+import { chatRequestBody, guardHosted } from '@/features/ai/hostedChat';
 import { aiSettings } from '@/features/ai/stores';
 import { getLocale } from '@/i18n';
 import type { CoachSnapshot } from './snapshot';
@@ -43,7 +43,7 @@ export function chatFailure(error: unknown): ChatFailure {
 export const coachChatStatus = (): Promise<ChatStatus> => rogoCall<ChatStatus>('coach/status', {});
 
 const sendChat = (messages: readonly ChatTurn[], snapshot: CoachSnapshot): Promise<ChatAnswer> =>
-  rogoCall<ChatAnswer>('coach/chat', { messages: messages.slice(-MAX_TURNS), snapshot, locale: getLocale() });
+  rogoCall<ChatAnswer>('coach/chat', chatRequestBody(messages.slice(-MAX_TURNS), snapshot, getLocale(), aiSettings.get().hostedConsent));
 
 /**
  * The hosted Joyo AI: sends the chat and the snapshot to JoyoRogo's server, which has Cloudflare Workers AI answer. The only function in

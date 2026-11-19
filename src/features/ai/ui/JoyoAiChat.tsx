@@ -28,7 +28,8 @@ import { useWatch } from '@/state/WatchProvider';
 import { radius as radii, spacing, useColors } from '@/theme';
 import { chatLines, type ChatMessage } from '../conversations';
 import { askJoyoAi, warmDigestData } from '../engine';
-import { grantHostedConsent, HostedConsentError, hasHostedConsent } from '../hostedConsent';
+import { chatGate } from '../aiPrivacy';
+import { grantHostedConsent, HostedConsentError } from '../hostedConsent';
 import { hostOf } from '../providers';
 import { useByokAccess } from '../hooks';
 import { finishReply, type SafetyText } from '../safety';
@@ -50,7 +51,7 @@ import {
 import { Composer } from './Composer';
 import { EngineChip } from './EngineChip';
 import { GateCard } from './GateCard';
-import { HostedConsentCard } from './HostedConsentCard';
+import { HostedConsentGate } from './HostedConsentCard';
 import { viewAiError, type AiErrorView } from './errors';
 import { LiveMessage } from './LiveMessage';
 import { HeaderBackButton } from '@/components/HiddenTabHeader';
@@ -212,22 +213,7 @@ export function JoyoAiChat() {
     router.setParams({ seed: undefined, ref: undefined, label: undefined });
   }, [seedKey, seed, open, router, t]);
 
-  const gate: 'checking' | 'rogoSignIn' | 'rogoUpsell' | 'rogoConsent' | 'blocked' | 'ready' =
-    engine === 'rogo'
-      ? coachAccess === 'checking'
-        ? 'checking'
-        : coachAccess === 'signedOut'
-          ? 'rogoSignIn'
-          : coachAccess === 'free'
-            ? 'rogoUpsell'
-            : hasHostedConsent(settings)
-              ? 'ready'
-              : 'rogoConsent'
-      : access === null
-        ? 'checking'
-        : access.ok
-          ? 'ready'
-          : 'blocked';
+  const gate = chatGate({ settings, access, coachAccess });
   const own = engine === 'byok' && access?.ok ? access : null;
   const composerReady = gate === 'ready' && coach !== null;
 
@@ -574,14 +560,6 @@ export function JoyoAiChat() {
           </Card>
         </>
       ) : null}
-      {gate === 'rogoConsent' ? (
-        <Card>
-          <HostedConsentCard
-            onAgree={() => grantHostedConsent(aiSettings, Math.floor(Date.now() / 1000))}
-            onLater={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-          />
-        </Card>
-      ) : null}
       {gate === 'blocked' && access && !access.ok ? <GateCard reason={access.reason} provider={settings.provider} /> : null}
       {gate === 'ready' && !coach ? <Skeleton width="100%" height={220} radius="card" /> : null}
       {listReady && own && !cloud.signedIn ? (
@@ -630,6 +608,22 @@ export function JoyoAiChat() {
       contentContainerStyle={[styles.listContent, { paddingHorizontal: padding.paddingHorizontal, paddingTop: spacing.sm + scroll.room, paddingBottom: spacing.sm }]}
     />
   );
+
+  // No yes for the hosted engine yet: the whole screen is the consent, before any conversation or input field (Apple 5.1.1(i), 5.1.2(i)).
+  if (gate === 'rogoConsent') {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <HostedConsentGate
+          onAllow={() => {
+            setHostedError(null);
+            grantHostedConsent(aiSettings, Math.floor(Date.now() / 1000));
+          }}
+          onNotNow={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        />
+      </>
+    );
+  }
 
   return (
     <View style={styles.root}>
