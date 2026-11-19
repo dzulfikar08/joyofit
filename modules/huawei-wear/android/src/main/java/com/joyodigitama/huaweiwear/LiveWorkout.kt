@@ -165,6 +165,8 @@ internal class LiveWorkout(
   /** The ended session [onEnded] was already called for. */
   private var endReported: Session? = null
   private var lastPersistedTrackMs = 0L
+  /** When the last push carried the whole [SessionTrack] trail; between those, JS draws the new positions itself. */
+  private var lastTrailSentMs = 0L
 
   private val appContext = context.applicationContext
   private val lock = Any()
@@ -665,7 +667,7 @@ internal class LiveWorkout(
     return s
   }
 
-  private fun toJs(s: Session): Map<String, Any?> {
+  private fun toJs(s: Session, includeTrail: Boolean = true): Map<String, Any?> {
     val m = s.metrics
     val located = s.phoneTrack.location
     val track = s.phoneTrack.track
@@ -673,7 +675,7 @@ internal class LiveWorkout(
       Source.WATCH, Source.MANUAL -> true
       else -> s.confirmed
     }
-    return mapOf(
+    val out = mapOf(
       "id" to s.id.toDouble(),
       "status" to s.status.wire,
       "source" to s.source.wire,
@@ -710,8 +712,9 @@ internal class LiveWorkout(
       "gpsDistanceM" to if (located != null) track.distanceM else null,
       "gpsRiseM" to if (located != null) track.riseM else null,
       "gpsPaceSecPerKm" to track.paceSecPerKm,
-      "trail" to track.trailCoordinates(),
     )
+    // The trail is up to 500 points: sent every few seconds, not on every push (JS keeps the last one when it is absent).
+    return if (includeTrail) out + ("trail" to track.trailCoordinates()) else out
   }
 
   private fun toConnectedGpsSession(s: Session): ConnectedGpsSession? {
@@ -740,7 +743,9 @@ internal class LiveWorkout(
       val s = session ?: return
       val justEnded = s.status == Status.ENDED && endReported !== s
       if (justEnded) endReported = s
-      Triple(toJs(s), s, justEnded)
+      val includeTrail = force || s.status == Status.ENDED || nowWall - lastTrailSentMs >= TRAIL_EVERY_MS
+      if (includeTrail) lastTrailSentMs = nowWall
+      Triple(toJs(s, includeTrail), s, justEnded)
     }
     val (needsGps, connectedTrack, persistTrack) = synchronized(lock) {
       val needsGps = s.status != Status.ENDED && (s.gpsRequested || s.source == Source.GPS || WorkoutSportTypes.isOutdoor(s.sportType))
@@ -835,6 +840,8 @@ internal class LiveWorkout(
     const val CHANNEL_ID = "watch_live_workout"
     const val NOTIFICATION_ID = 4103
     const val DEEP_LINK = "joyofit://workout-live"
+    /** How often a push carries the whole trail (forced pushes and the end always do). */
+    const val TRAIL_EVERY_MS = 5_000L
     const val NOTIFY_EVERY_MS = 5_000L
 
     /** Age used for the maximum heart rate when no profile is saved (220 - 35 = 185 bpm). */

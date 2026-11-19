@@ -34,6 +34,8 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
     public static let defaultWeightKg = 70.0
     /// How often the GPS-request session's watchdog looks at the silence (`LiveWorkoutPolicy.silenceVerdict`).
     public static let watchdogEveryMs = 15_000
+    /// How often a push carries the whole trail (forced pushes and the end always do).
+    static let trailEveryMs: Int64 = 5_000
 
     private struct Session {
         let id: Int64
@@ -111,6 +113,8 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
     /// When the watch last said its workout screen opened (`18/08 {01: 1}`): a GPS request after that is no straggler of an ended session.
     private var screenOpenedAtMs: Int64 = 0
     private var lastPersistedTrackMs: Int64 = 0
+    /// When the last push carried the whole trail; between those, JS draws the new positions itself.
+    private var lastTrailSentMs: Int64 = 0
 
     /// Called once each time a session ends, never with `lock` held: the phone's location updates for it stop (`WorkoutLink`,
     /// `PhoneGpsSession.sessionEnded`).
@@ -170,7 +174,7 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
     }
 
     /// The current or last workout for JS (`getLiveWorkout`), nil when none was seen since the app started.
-    public func snapshot() -> [String: Any]? { lock.locked { session.map(toJS) } }
+    public func snapshot() -> [String: Any]? { lock.locked { session.map { toJS($0) } } }
 
     /// True from a workout's start until it ends.
     public var isLive: Bool { lock.locked { session.map { $0.status != .ended } ?? false } }
@@ -687,7 +691,7 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
         return s
     }
 
-    private func toJS(_ s: Session) -> [String: Any] {
+    private func toJS(_ s: Session, includeTrail: Bool = true) -> [String: Any] {
         let m = s.metrics
         let located = s.phoneTrack.location
         let track = s.phoneTrack.track
@@ -697,7 +701,7 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
         case .gps, .status: confirmed = s.confirmed
         }
         func v(_ x: Any?) -> Any { x ?? NSNull() }
-        return [
+        var out: [String: Any] = [
             "id": Double(s.id),
             "status": s.status.rawValue,
             "source": s.source.rawValue,
@@ -733,8 +737,10 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
             "gpsDistanceM": v(located.map { _ in track.distanceM }),
             "gpsRiseM": v(located.map { _ in track.riseM }),
             "gpsPaceSecPerKm": v(track.paceSecPerKm),
-            "trail": track.trailCoordinates(),
         ]
+        // The trail is up to 500 points: sent every few seconds, not on every push (JS keeps the last one when it is absent).
+        if includeTrail { out["trail"] = track.trailCoordinates() }
+        return out
     }
 
     private func toConnectedGpsSession(_ s: Session) -> ConnectedGpsSession? {
@@ -761,17 +767,19 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
         guard let (payload, status, justEnded, needsGps, connectedTrack, shouldPersist) = lock.locked({
             () -> ([String: Any], Status, Bool, Bool, ConnectedGpsSession?, Bool)? in
             guard var s = session else { return nil }
+            let nowWall = nowMs()
             let justEnded = s.status == .ended && !s.endReported
             if justEnded {
                 s.endReported = true
                 session = s
             }
             let needsGps = s.status != .ended && (s.gpsRequested || s.source == .gps || WorkoutSportTypes.isOutdoor(s.sportType))
-            let nowWall = nowMs()
             let shouldPersist = justEnded || (nowWall - lastPersistedTrackMs >= 30_000)
             let track = shouldPersist ? toConnectedGpsSession(s) : nil
             if track != nil { lastPersistedTrackMs = nowWall }
-            return (toJS(s), s.status, justEnded, needsGps, track, shouldPersist && track != nil)
+            let includeTrail = force || s.status == .ended || nowWall - lastTrailSentMs >= Self.trailEveryMs
+            if includeTrail { lastTrailSentMs = nowWall }
+            return (toJS(s, includeTrail: includeTrail), s.status, justEnded, needsGps, track, shouldPersist && track != nil)
         }) else { return }
         if needsGps { onNeedsGps() }
         if let connectedTrack { ConnectedGpsStore.shared.upsert(connectedTrack, persist: shouldPersist) }

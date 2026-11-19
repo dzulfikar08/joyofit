@@ -129,8 +129,13 @@ internal class WorkoutLink(
   /** The watch has answered the poll with a workout state at least once on this link. */
   @Volatile
   private var statusAnswered = false
+  /** The poll gave up on its first probe (no `17/03`, or a busy link at connect); [pollSoon] still asks now and then. */
+  @Volatile
   private var statusUnsupported = false
+  @Volatile
   private var logged1703Notice = false
+  @Volatile
+  private var lastRetryAtMs = 0L
 
   private fun startStatusPoll(session: HuaweiSession, initialDelayMs: Long = STATUS_FIRST_MS, resetAnswered: Boolean = true) {
     statusPoll?.cancel()
@@ -166,13 +171,33 @@ internal class WorkoutLink(
 
   /** Asks the status now, outside the poll's rhythm (a GPS request opened a session that waits for GO, the watch closed its workout). */
   private fun pollSoon() {
-    if (statusUnsupported) return
+    if (statusUnsupported) {
+      retryUnsupported()
+      return
+    }
     if (statusPoll?.isActive == true) {
       pollWake.trySend(Unit)
       return
     }
     val handle = link.handle() ?: return
     startStatusPoll(handle.session, initialDelayMs = 0L, resetAnswered = false)
+  }
+
+  /**
+   * The poll stopped after a failed first probe. That is a watch without `17/03`, or one whose link was busy at connect: ask once
+   * more, at most every [STATUS_RETRY_MS], and bring the poll back when it answers.
+   */
+  private fun retryUnsupported() {
+    val now = System.currentTimeMillis()
+    if (now - lastRetryAtMs < STATUS_RETRY_MS) return
+    lastRetryAtMs = now
+    val handle = link.handle() ?: return
+    scope.launch {
+      if (pollStatus(handle.session)) {
+        statusUnsupported = false
+        startStatusPoll(handle.session, initialDelayMs = 0L, resetAnswered = false)
+      }
+    }
   }
 
   /** False when the watch does not answer with a status (unsupported, or no answer yet). */
@@ -431,6 +456,8 @@ internal class WorkoutLink(
   }
 
   companion object {
+    /** How often [pollSoon] asks a watch whose first status probe failed. */
+    const val STATUS_RETRY_MS = 60_000L
     const val GPS_SERVICE = 0x18
     const val GPS_STATUS = 0x02
     const val GPS_DATA = 0x03

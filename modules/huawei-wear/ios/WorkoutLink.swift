@@ -19,6 +19,8 @@ import HuaweiProtocol
 
 public final class WorkoutLink: LinkObserver, @unchecked Sendable {
     public static let requestMs = 5_000
+    /// How often `pollSoon` asks a watch whose first status probe failed.
+    static let statusRetryMs: Int64 = 60_000
     public static let statusFirstMs = 5_000
 
     private let link: LinkHandleSource
@@ -46,7 +48,9 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
     private var pollWakePending = false
     /// The watch has answered the poll with a workout state at least once on this link.
     private var statusAnswered = false
+    /// The poll gave up on its first probe (no `17/03`, or a busy link at connect); `pollSoon` still asks now and then.
     private var statusUnsupported = false
+    private var lastRetryAtMs: Int64 = 0
     private var logged1703Notice = false
     private var lastStatusLog: String?
     private var reportsLogged = 0
@@ -227,13 +231,33 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
             pollWaiter = nil
             return (false, true, w.continuation)
         }
-        if unsupported { return }
+        if unsupported {
+            retryUnsupported()
+            return
+        }
         if active {
             waiter?.resume()
             return
         }
         guard let handle = link.handle() else { return }
         startStatusPoll(handle.session, caps: handle.caps, initialDelayMs: 0, resetAnswered: false)
+    }
+
+    /// The poll stopped after a failed first probe. That is a watch without `17/03`, or one whose link was busy at connect: ask once more,
+    /// at most every `statusRetryMs`, and bring the poll back when it answers.
+    private func retryUnsupported() {
+        let now = nowMs()
+        let due: Bool = lock.locked {
+            if now - lastRetryAtMs < Self.statusRetryMs { return false }
+            lastRetryAtMs = now
+            return true
+        }
+        guard due, let handle = link.handle() else { return }
+        Task { [weak self] in
+            guard let self, await self.pollStatus(handle.session) else { return }
+            self.lock.locked { self.statusUnsupported = false }
+            self.startStatusPoll(handle.session, caps: handle.caps, initialDelayMs: 0, resetAnswered: false)
+        }
     }
 
     /// False when the watch does not answer with a status (unsupported, or no answer yet).

@@ -64,11 +64,12 @@ export function useTrail(
     lastLon: position?.lon,
   }));
 
-  const nativeCount = nativeTrail?.length ?? 0;
+  // Native sends the trail every few seconds, not on every push: a push without one leaves the trail as it is.
+  const nativeCount = nativeTrail == null ? state.nativeCount : nativeTrail.length;
   const lat = position?.lat;
   const lon = position?.lon;
 
-  const nativeChanged = nativeCount !== state.nativeCount;
+  const nativeChanged = nativeTrail != null && nativeCount !== state.nativeCount;
   const posChanged = lat !== state.lastLat || lon !== state.lastLon;
 
   if (nativeChanged || posChanged) {
