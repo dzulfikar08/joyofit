@@ -5,6 +5,7 @@ import {
   buildUploadForm,
   DESCRIPTION_LINK,
   duplicateOf,
+  stravaAppInactive,
   externalId,
   plainStravaError,
   stravaSport,
@@ -650,5 +651,15 @@ describe('buildFit hrv', () => {
   it('writes no hrv message without intervals', () => {
     const decoded = decodeFit(buildFit(walk, points, { utcOffsetSeconds: 7 * 3600 }).bytes);
     expect((decoded.messages as { hrvMesgs?: unknown[] }).hrvMesgs).toBeUndefined();
+  });
+});
+
+describe('stravaAppInactive', () => {
+  it('spots the switched-off application, not an athlete problem', () => {
+    expect(stravaAppInactive('{"message":"Forbidden","errors":[{"resource":"Application","field":"Status","code":"Inactive"}]}')).toBe(true);
+    expect(stravaAppInactive('{"message":"Authorization Error","errors":[{"resource":"Athlete","field":"access_token","code":"invalid"}]}')).toBe(false);
+    expect(stravaAppInactive('{"message":"Forbidden","errors":[{"resource":"Application","field":"Status","code":"Active"}]}')).toBe(false);
+    expect(stravaAppInactive('<html>Forbidden</html>')).toBe(false);
+    expect(stravaAppInactive('')).toBe(false);
   });
 });

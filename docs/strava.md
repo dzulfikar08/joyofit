@@ -13,6 +13,16 @@ changes any Strava behaviour or wording):
 
 JoyoRogo's Worker enforces it (it owns the tokens); JoyoFit's Worker only passes the result on (section 2a).
 
+> **The owner's Strava account must keep a paid subscription.** Strava made API access subscriber-only: when the
+> subscription of the account that owns application `287873` (dzulfikar.at@gmail.com) lapses, Strava switches the
+> application off and every call with any athlete's token answers `403`
+> `{"resource":"Application","field":"Status","code":"Inactive"}`, for JoyoFit and JoyoRogo alike (2026-11-20: the trial
+> ended because the card on file had expired). Token refresh keeps working, so connections still look fine in the
+> database and the apps. The app shows "Strava sedang menolak semua unggahan dari JoyoFit" (`StravaAppInactiveError`)
+> instead of "belum terhubung". To check: `curl -H "Authorization: Bearer <access token>" https://www.strava.com/api/v3/athlete`
+> with any row of JoyoRogo's `strava_account`. Fix: renew the subscription on strava.com; nobody has to reconnect.
+> This cost stays the owner's: Strava API Policy 5.8 forbids passing it on to users (no paid Strava feature).
+
 How it is built is in the README ("Strava"). This page is the owner's runbook: set up the Strava API application, set the
 Worker secrets, register the webhook, and pass Strava's review.
 
