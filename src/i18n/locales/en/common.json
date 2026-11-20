@@ -108,6 +108,7 @@
   },
   "strava": {
     "stravaNotConnected": "Strava is not connected. Connect it again in More, Strava.",
+    "appInactive": "Strava is refusing every upload from JoyoFit right now (a problem on our side, not your account). No need to reconnect; try again later. Meanwhile you can use Upload to Strava (manual).",
     "refused": "Strava refused the file ({{status}}).",
     "rateLimit": "Strava rate limit reached; will retry later.",
     "answered": "Strava answered {{status}}.",

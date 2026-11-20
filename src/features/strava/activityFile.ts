@@ -838,6 +838,20 @@ export function duplicateOf(message: string | null): number | null {
   return id ? Number(id) : null;
 }
 
+/**
+ * Strava refused the call because the API application itself is switched off (`403`, error
+ * `{"resource":"Application","field":"Status","code":"Inactive"}`), not because of this athlete's connection. It
+ * happens when the owner's Strava subscription lapses (Strava API access is subscriber-only, docs/strava.md).
+ */
+export function stravaAppInactive(body: string): boolean {
+  try {
+    const errors = (JSON.parse(body) as { errors?: { resource?: string; code?: string }[] }).errors;
+    return Array.isArray(errors) && errors.some((e) => e?.resource === 'Application' && e?.code === 'Inactive');
+  } catch {
+    return false;
+  }
+}
+
 /** Strava's error text without the HTML it embeds (links in "duplicate of ..."), for showing to a person. */
 export function plainStravaError(message: string): string {
   return message.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();

@@ -106,6 +106,7 @@
   },
   "strava": {
     "stravaNotConnected": "Strava belum terhubung. Hubungkan lagi di Lainnya, Strava.",
+    "appInactive": "Strava sedang menolak semua unggahan dari JoyoFit (masalah di sisi kami, bukan akunmu). Tidak perlu menghubungkan ulang; coba kirim lagi nanti. Sementara bisa pakai Unggah ke Strava (manual).",
     "refused": "Strava menolak berkasnya ({{status}}).",
     "rateLimit": "Batas permintaan Strava tercapai; akan dicoba lagi nanti.",
     "answered": "Strava menjawab {{status}}.",
