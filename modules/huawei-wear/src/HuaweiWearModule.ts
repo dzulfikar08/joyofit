@@ -231,6 +231,12 @@ declare class HuaweiWearModule extends NativeModule<HuaweiWearModuleEvents> {
   getHuaweiAccount(): string | null;
   setHuaweiAccount(account: string | null): Promise<void>;
   /**
+   * "Compatibility install": connect with Gadgetbridge's capability bitmap (01/3F) instead of Huawei Health's, the way Gadgetbridge
+   * installs unsigned faces on a watch that enforces signatures. Stored; takes effect on the next connect. Resolves true when the value
+   * changed, so the caller knows to reconnect.
+   */
+  setCompatInstall(enabled: boolean): Promise<boolean>;
+  /**
    * The cookies the app's WebView holds for `url` (Android `CookieManager`, iOS default `WKHTTPCookieStore`), HttpOnly ones included,
    * as one `name=value; ...` string ("" when none). Only the Huawei account sign-in screen calls it, to read the numeric `userId`.
    */

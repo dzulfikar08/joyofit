@@ -297,7 +297,8 @@ public final class WearLink: @unchecked Sendable {
                 session: session, caps: connection.caps, log: log, bondedName: bondedName,
                 protocolVersion: authenticator.protocolVersion, profile: settings.profile, healthSensors: settings.healthSensors,
                 deviceType: connection.deviceType, pinnedLanguage: settings.watchLanguage, phoneLanguage: LanguageSender.phoneLanguage(),
-                heartRateZones: settings.heartRateZones, huaweiAccount: settings.huaweiAccount
+                heartRateZones: settings.heartRateZones, huaweiAccount: settings.huaweiAccount,
+                gadgetbridgeCapabilities: settings.gadgetbridgeCapabilities
             ).run()
 
             let finalName = bondedName ?? result.deviceName ?? address

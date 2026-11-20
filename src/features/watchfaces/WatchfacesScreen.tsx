@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Platform, StyleSheet, View } from 'react-native';
 
@@ -28,7 +28,8 @@ import { useWatchfaces } from '@/features/watchfaces/useWatchfaces';
 import { useWebWatchfaces } from '@/features/watchfaces/useWebWatchfaces';
 import type { WebFace } from '@/features/watchfaces/webLibraryModel';
 import { radius, spacing, useColors } from '@/theme';
-import { hasNative, type WatchfaceInfo } from '@/wear';
+import { HuaweiWear, hasNative, type WatchfaceInfo } from '@/wear';
+import { useWatch } from '@/state/WatchProvider';
 import { OPEN_IN_STACK } from '@/components/navigation';
 
 type TabMode = 'installed' | 'library';
@@ -112,6 +113,22 @@ export function WatchfacesScreen() {
   const percent =
     progress && progress.total > 0 ? Math.min(100, Math.round((progress.bytes / progress.total) * 100)) : 0;
 
+  const { reconnect } = useWatch();
+  // The switch also makes the connection use Gadgetbridge's capability list (01/3F), which the watch reads only at connect: when the
+  // stored value changes, reconnect so it takes effect. Older native builds lack the call and keep Huawei Health's list.
+  useEffect(() => {
+    if (list === null || !idle || !hasNative('setCompatInstall')) return;
+    let cancelled = false;
+    void HuaweiWear.setCompatInstall(useGb)
+      .then((changed) => {
+        if (changed && !cancelled) void reconnect();
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [list, idle, useGb, reconnect]);
+
   const web = useWebWatchfaces(tab === 'library');
 
   const { handleImportToMyWatch, importPackage } = useWatchfaceImport({
@@ -153,7 +170,7 @@ export function WatchfacesScreen() {
     if (!face.downloadUrl) return;
     setInstallingUrl(face.downloadUrl);
     const outcome = await installFromUri(face.downloadUrl, undefined, undefined, useGb);
-    if (outcome) {
+    if ('result' in outcome) {
       saveToLibrary({
         id: face.id,
         title: face.title,
@@ -171,7 +188,7 @@ export function WatchfacesScreen() {
         visible: true,
         icon: 'close-circle-outline',
         title: t('watch:faces.installRejected'),
-        message: t('watch:faces.installRejectedHint', { name: face.title }),
+        message: t('watch:faces.installRejectedHint', { name: face.title, reason: outcome.reason }),
         confirmLabel: t('common:actions.ok'),
         confirmVariant: 'primary',
         onConfirm: () => setDialog(null),

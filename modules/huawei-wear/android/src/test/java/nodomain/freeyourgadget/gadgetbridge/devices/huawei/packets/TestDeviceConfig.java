@@ -73,6 +73,23 @@ public class TestDeviceConfig {
     };
 
     @Test
+    public void testReverseCapabilitiesBitmaps() throws NoSuchFieldException, IllegalAccessException {
+        Field tlvField = HuaweiPacket.class.getDeclaredField("tlv");
+        tlvField.setAccessible(true);
+
+        // JoyoFit: the default stays Huawei Health's bitmap; "Compatibility install" sends Gadgetbridge's.
+        DeviceConfig.ReverseCapabilities.Request health = new DeviceConfig.ReverseCapabilities.Request(secretsProvider);
+        Assert.assertEquals(new HuaweiTLV().put(0x01, DeviceConfig.ReverseCapabilities.HUAWEI_HEALTH), tlvField.get(health));
+
+        DeviceConfig.ReverseCapabilities.Request gb = new DeviceConfig.ReverseCapabilities.Request(secretsProvider, true);
+        Assert.assertEquals(
+                new HuaweiTLV().put(0x01, new byte[] {(byte) 0xFD, (byte) 0xF7, 0x33, (byte) 0xFA, 0x29, 0x37}),
+                tlvField.get(gb));
+        Assert.assertEquals(0x01, gb.serviceId);
+        Assert.assertEquals(0x3f, gb.commandId);
+    }
+
+    @Test
     public void testLinkParamsRequest() throws NoSuchFieldException, IllegalAccessException, HuaweiPacket.CryptoException {
         Field tlvField = HuaweiPacket.class.getDeclaredField("tlv");
         tlvField.setAccessible(true);

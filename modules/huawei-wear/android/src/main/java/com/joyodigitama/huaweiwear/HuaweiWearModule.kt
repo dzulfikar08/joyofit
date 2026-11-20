@@ -329,6 +329,10 @@ class HuaweiWearModule : Module() {
       runtime().setHuaweiAccount(account)
     }
 
+    AsyncFunction("setCompatInstall") { enabled: Boolean ->
+      runtime().setGadgetbridgeCapabilities(enabled)
+    }
+
     // The cookies the app's WebView holds for `url`, HttpOnly ones included (page JavaScript cannot see those). Used only by the
     // Huawei account sign-in screen to read the account's numeric `userId`; the string never leaves the phone.
     AsyncFunction("readWebCookies") { url: String ->

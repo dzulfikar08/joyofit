@@ -33,6 +33,7 @@ public final class WearSettings: @unchecked Sendable {
         static let stressEnabled = "stress_enabled"
         static let watchLanguage = "watch_language"
         static let huaweiAccount = "huawei_account_id"
+        static let gadgetbridgeCapabilities = "gadgetbridge_capabilities"
         static let zonesMethod = "hr_zones_method"
         static let zonesMaxHr = "hr_zones_max"
         static let zonesRestingHr = "hr_zones_rest"
@@ -79,6 +80,13 @@ public final class WearSettings: @unchecked Sendable {
             return (value?.isEmpty ?? true) ? nil : value
         }
         set { set(newValue?.trimmingCharacters(in: .whitespacesAndNewlines), forKey: Key.huaweiAccount) }
+    }
+
+    /// "Compatibility install" on the watch-face screen: connect with Gadgetbridge's ReverseCapabilities bitmap instead of Huawei
+    /// Health's, so a watch that enforces face signatures treats JoyoFit as a plain client the way it does Gadgetbridge. Off by default.
+    public var gadgetbridgeCapabilities: Bool {
+        get { defaults.bool(forKey: Key.gadgetbridgeCapabilities) }
+        set { defaults.set(newValue, forKey: Key.gadgetbridgeCapabilities) }
     }
 
     /// Profile and goal as the JS Settings screen stores them; nil until the user saves one.

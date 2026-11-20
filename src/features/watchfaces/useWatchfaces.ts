@@ -17,6 +17,9 @@ export type WatchfaceBusy = 'list' | 'install' | { id: string; action: 'activate
  * The watch's faces: read whenever the screen gains focus with a connected watch, replaced by the
  * list every operation returns. `install` asks for a file, uploads it and reports progress.
  */
+/** What an install from a URI ended with: the result when the watch lists the face, otherwise why it did not. */
+export type InstallOutcome = { result: WatchfaceInstallResult } | { reason: string };
+
 export function useWatchfaces() {
   const { linkState } = useWatch();
   const connected = linkState === 'connected' || linkState === 'syncing';
@@ -56,28 +59,35 @@ export function useWatchfaces() {
     [run],
   );
 
-  /** Installs a watch face from an explicit URI (file://, content://, or http/https URL). */
+  /**
+   * Installs a watch face from an explicit URI (file://, content://, or http/https URL). Resolves to the result when the watch lists
+   * the face, otherwise to the reason (the same text the error banner shows).
+   */
   const installFromUri = useCallback(
     async (
       uri: string,
       signature?: string,
       fileName?: string,
       gadgetbridge?: boolean,
-    ): Promise<WatchfaceInstallResult | null> => {
+    ): Promise<InstallOutcome> => {
       setProgress({ bytes: 0, total: 0 });
-      let outcome: WatchfaceInstallResult | null = null;
+      let outcome: InstallOutcome = { reason: '' };
       await run('install', async () => {
         try {
           const result = await HuaweiWear.installWatchface(uri, signature, fileName, gadgetbridge);
           if (result.list) setList(result.list);
           if (result.listed) {
             setNotice(t('watch:faces.installResult', { name: result.name, message: result.message }));
-            outcome = result;
+            outcome = { result };
           } else {
-            setError(t('watch:faces.installResult', { name: result.name, message: installFailureText(result.message, t('watch:faces.signatureRefused')) }));
+            const reason = installFailureText(result.message, t('watch:faces.signatureRefused'));
+            setError(t('watch:faces.installResult', { name: result.name, message: reason }));
+            outcome = { reason };
           }
         } catch (e) {
-          setError(installFailureText(errorMessage(e), t('watch:faces.signatureRefused')));
+          const reason = installFailureText(errorMessage(e), t('watch:faces.signatureRefused'));
+          setError(reason);
+          outcome = { reason };
         } finally {
           setProgress(null);
         }

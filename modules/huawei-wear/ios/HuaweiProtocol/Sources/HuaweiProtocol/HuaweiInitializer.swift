@@ -48,6 +48,8 @@ public final class HuaweiInitializer {
     /// The user's Huawei account id, sent in 1A/05 so a watch set up under that account is not asked to factory-reset; nil/empty sends
     /// GB's empty default (the behaviour before this setting). Only an account id, no signature.
     private let huaweiAccount: String?
+    /// "Compatibility install" is on: send Gadgetbridge's ReverseCapabilities bitmap instead of Huawei Health's.
+    private let gadgetbridgeCapabilities: Bool
 
     /// Replaced by tests: the phase timeouts, the clock SetTime reads and the zone it reports.
     var timeouts = LinkTimeouts()
@@ -60,7 +62,7 @@ public final class HuaweiInitializer {
         session: HuaweiSession, caps: DeviceCaps, log: @escaping LogSink, bondedName: String?, protocolVersion: Int,
         profile: UserProfileData? = nil, healthSensors: HealthSensorConfig = HealthSensorConfig(), deviceType: HuaweiDeviceType = .ble,
         pinnedLanguage: String? = nil, phoneLanguage: String = LanguageSender.phoneLanguage(),
-        heartRateZones: HeartRateZonesCalc.UserZones? = nil, huaweiAccount: String? = nil
+        heartRateZones: HeartRateZonesCalc.UserZones? = nil, huaweiAccount: String? = nil, gadgetbridgeCapabilities: Bool = false
     ) {
         self.session = session
         self.caps = caps
@@ -74,6 +76,7 @@ public final class HuaweiInitializer {
         self.phoneLanguage = phoneLanguage
         self.heartRateZones = heartRateZones
         self.huaweiAccount = huaweiAccount
+        self.gadgetbridgeCapabilities = gadgetbridgeCapabilities
     }
 
     private func info(_ message: String) {
@@ -210,7 +213,10 @@ public final class HuaweiInitializer {
         }
         if expandCapability(182) {
             try await soft("ReverseCapabilities") {
-                _ = try await session.request(DeviceConfig.ReverseCapabilities.request(), timeoutMs: timeouts.initMs, label: "ReverseCapabilities")
+                _ = try await session.request(
+                    DeviceConfig.ReverseCapabilities.request(gadgetbridge: gadgetbridgeCapabilities), timeoutMs: timeouts.initMs,
+                    label: "ReverseCapabilities")
+                info("ReverseCapabilities: sent \(gadgetbridgeCapabilities ? "Gadgetbridge's bitmap (compatibility install)" : "Huawei Health's bitmap")")
             }
         }
         if expandCapability(109) {
