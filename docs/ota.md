@@ -244,6 +244,20 @@ Android `cb987e8b8ac363beba44e1d31a702071aca28f95` (Release Android run 42046885
   `--runtime-version`: groups `64fb6dd0-4b0d-45ac-83f4-d30e70de95f7` android, `41deb755-c6d3-4e30-a396-916a346c3a44` ios (same
   runtimes). The next OTA from another branch must include `687048b3` too, or the old name comes back.
 
+### Runtimes of the 1.2.1 store builds (tag `v1.2.1`, 2026-11-20)
+
+First builds with an `X.Y.Z` version (docs/ci-release.md "Versions"). Read from the binaries (`assets/fingerprint`,
+`EXUpdates.bundle/fingerprint`):
+
+| Platform | Build | Runtime embedded in the binary |
+| --- | --- | --- |
+| Android | Play AAB 1518051 (internal and alpha, production to follow), sideload APK 1518065 (Release Android run 44676997150) | `04c19ef362b9f3ce54a4ed3cea02d654ad4199d0` |
+| iOS | TestFlight 1.2.1 (202611200450) (Release iOS run 44677000816), internal and Publik (beta review) | `f1a2b1a1a3292275b62546347cb806c473d42c33` |
+
+**Master OTAs target these two** (`--runtime-version`) once 1.2.1 is what people run; the 1.1 runtimes above still need
+their `ota/*` branches until production has moved to 1.2.1. The 1.2.0 builds (`v1.2.0`: AAB 1517289, replaced on alpha by
+1518051 before release; TestFlight 202611191618, internal only) reached almost nobody and get no OTAs.
+
 ## When OTA is not enough
 
 Anything that changes the runtimeVersion, or is on the "not over the air" list above, needs a new binary: build through `scripts/build-release.sh` / `scripts/build-ios-mac.sh` / the `Release *` workflows, and from that commit on updates target the new runtime. Binaries that stay on an older runtime keep getting updates from their own branch, see "Which branch publishes to which runtime" (`ota/1.0` for the pre-sensors builds).

@@ -2,7 +2,7 @@
 app: joyofit
 feature: Peta latihan Huawei Band lewat GPS HP
 shipped: 2026-11-13
-available: code
+available: test-build
 tier: free
 post: todo
 atur:

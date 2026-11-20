@@ -2,7 +2,7 @@
 app: joyofit
 feature: Pasang mode kompatibilitas
 shipped: 2026-11-19
-available: code
+available: test-build
 tier: free
 post: skip (unverified on any watch; touches watch-face signing, which must not be marketed)
 atur:
