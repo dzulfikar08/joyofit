@@ -10,7 +10,7 @@ means nobody has checked it against real data yet.
 |---|---|---|---|---|---|---|
 | A. Direct BLE (Hagrid WSP) | weight, body fat % from the scale, impedance; the rest of the body composition only through an estimate | yes, live | Android, iOS | the scale's 3 keys (CAK, C1, C2), on iOS also its Bluetooth address | **built** (`huawei-hagrid`, PR #33), shipped OTA 2026-10-26, never run against a real scale | test on hardware; small fixes |
 | B. Huawei Privacy Centre export | every field Huawei Health stores (`WEIGHT_BODYFAT_BROAD`: weight, fat %, muscle, water, bone, visceral fat, BMR, protein, body age, BMI, impedance) | no, one file at a time, up to 7 days per request | Android, iOS (web converter) | ask Huawei for the export | **built** (`HuaweiWeightParser`, web import) | none to try; field names for a Scale 3 Pro not confirmed |
-| C. Huawei Health Kit cloud (REST, OAuth) | weight and body fat confirmed by a third party; the other fields not confirmed | yes, after each Huawei Health sync | Android, iOS (server side) | sign in with HUAWEI ID once, link "Health Service Kit" in Huawei Health | **not built**: JoyoFit reads no Huawei cloud data today | Huawei data-permission review, then medium server + app work |
+| C. Huawei Health Kit cloud (REST, OAuth) | weight and body fat confirmed by a third party; the other fields not confirmed | yes, after each Huawei Health sync | Android, iOS (server side) | sign in with HUAWEI ID once, link "Health Service Kit" in Huawei Health | **not built**: JoyoFit reads no Huawei cloud data today | open to us only if weight / body fat are "basic" data (we are an individual developer); then Huawei's review and medium server + app work |
 | D. Apple Health (iOS) | weight only, by old user reports | yes | iOS only | allow Huawei Health to write to Apple Health | not built: JoyoFit's Apple Health import does not read body mass | small, but native (store build) |
 | E. Health Connect (Android) | none | - | - | - | - | Huawei Health does not write to Health Connect |
 
@@ -18,8 +18,9 @@ means nobody has checked it against real data yet.
 
 1. **Now (no code):** path B already gives the user their full body composition history, and path A gives a live weigh-in to anyone
    who has the keys. Neither is confirmed on a Scale 3 Pro: B needs one real export from a scale owner, A needs a real scale.
-2. **Start the Huawei Health Kit data-permission application now (path C).** It is the only way to get a Scale 3 Pro's readings
-   automatically without keys, and Huawei's review is the long pole, not the code. Ask for read access to weight and body fat (plus
+2. **Check whether path C is open to an individual developer, and apply if it is.** JoyoDigitama is not an enterprise developer,
+   and individual developers only get Huawei's "basic" data. Whether weight and body fat count as basic is not confirmed. If they do,
+   path C is the only way to get a Scale 3 Pro's readings automatically without keys, and Huawei's review is the long pole, not the code. Ask for read access to weight and body fat (plus
    the other body composition types the console offers) and historical-data scopes. Build the sync only after approval.
 3. **Next iOS store build: read body mass (and body fat %, if present) in the Apple Health import (path D).** It is cheap, useful
    beyond this scale, and the Huawei Health → Apple Health weight sync is something iPhone users of this scale already have.
@@ -112,8 +113,17 @@ through Huawei Health on the phone.
   [Terra](https://tryterra.co/integrations/huawei): each app needs its own approval).
 - Huawei's application guide for **enterprise** developers asks for a detailed use case per data type and mentions a credit review. Its
   own example is a body-fat-scale app ([Huawei Developer (Enterprise) Application, PDF](https://hihealthbase-drcn.things.hicloud.com/healthkit/fileServer/getFile/protected/ApplicationMaterialsForEnterpriseDevelopersEn/000/001/044/1000000000000001044.20250828122123.90852301985329881315235957538965:20750816122314:100005355:AB2ABBF1FF1990E982D13E3D175554B1B915CC9C77DBC898678B98A8F72E6993.pdf)).
-  **Not confirmed:** whether JoyoDigitama's AppGallery Connect account (JoyoFit is published on AppGallery) is verified as an
-  enterprise, and whether individual developers can apply.
+- **JoyoDigitama is not an enterprise developer** (confirmed by the owner, 2026-11-21), so the enterprise route does not apply. Huawei
+  also requires enterprises to have at least CNY 1 million paid-up capital for basic data and CNY 5 million for advanced data. An
+  **individual** developer can apply, but only for data at the **basic openness level**. The app has to be a mobile app already
+  released on AppGallery (JoyoFit is), and the developer must have no adverse credit record. "Advanced" data "is currently not open
+  to individual developers" ([qualifications](https://developer.huawei.com/consumer/en/doc/atomic-guides-V5/health-application-qualifications-as-V5),
+  [applying](https://developer.huawei.com/consumer/en/doc/atomic-guides-V5/health-apply-as-V5); these are the HarmonyOS atomic-service
+  pages, and the HMS REST pages may differ). **Not confirmed: whether weight and body fat are basic or advanced.** The
+  [Data Openness page](https://developer.huawei.com/consumer/en/doc/atomic-guides-V5/health-data-overview-as-V5) marks the level
+  with an icon that a text fetch cannot read, and listed only daily activity. It has to be checked in the AppGallery Connect form.
+  A Home Assistant integration built on individual accounts says Health Kit's test permission allows up to 100 users
+  ([ha-huawei-health-kit](https://github.com/ucsky/ha-huawei-health-kit); early, not shown working against the live API).
 - The Health Kit service agreement lists body fat percentage, BMI, muscle mass, water percentage and visceral fat level as regular
   (not restricted) health data ([agreement](https://terms-drcn.platform.hicloud.com/agreementservice/developer/getAgreementTemplate?agrType=1086&country=ove&language=en_us&version=2019122501)).
   Whether each one is a readable REST data type is **not confirmed**. Weight is `com.huawei.instantaneous.body_weight` and "can be
@@ -139,7 +149,7 @@ through Huawei Health on the phone.
 **Effort:** application and review: unknown and not in our control (weeks is a guess, not confirmed). Code: medium (about one week:
 OAuth + token storage + sync + mapping + UI + tests). The JS mapping can be tested against recorded API responses without hardware.
 
-**Risks:** approval refused, or limited to enterprise accounts; data types or units that differ from the docs (Intervals.icu's body fat
+**Risks:** weight or body fat classed as advanced data (then closed to us as an individual developer); approval refused; data types or units that differ from the docs (Intervals.icu's body fat
 bug); only weight and fat exposed, not muscle and the rest; webhook availability per region (China vs global accounts not checked);
 the user must keep Huawei Health and its cloud sync, which some JoyoFit users left on purpose.
 
@@ -174,8 +184,9 @@ depends on another paid app. JoyoFit also does not read Health Connect weight to
 1. **This week (no code):** reply on FIT-144: path B already imports Huawei Health's weigh-ins with body composition (web import, iOS
    too), and path A needs the scale's keys. Ask the FIT-144 user for one export or its `unmappedKeys` summary, to confirm the Scale 3 Pro
    fields. Make no "supported" claim, and no `[Konten]` issue (AGENTS.md): nothing is tested on a real scale.
-2. **This week:** check in AppGallery Connect whether the JoyoFit app can apply for Health Kit data permissions (enterprise
-   verification status, form). If yes, apply for read access to weight, body fat and the other body composition types, plus history scopes.
+2. **This week:** open the Health Kit application for the JoyoFit app in AppGallery Connect (individual developer) and read which openness
+   level weight, body fat and the other body types have. If they are basic, apply for read access to them, plus history scopes. If
+   they are advanced, path C is closed to us; drop it and record that on FIT-144.
 3. **Next iOS store build:** path D, Apple Health body mass (and body fat, if present) in the Apple Health import, with tests in
    `AppleHealthImportPlanTests.swift`.
 4. **After Huawei approves:** build path C (server OAuth + sync, app source, dedup, tests on recorded responses). Then test with an account
@@ -194,6 +205,9 @@ depends on another paid app. JoyoFit also does not read Health Connect weight to
 - Health Kit REST FAQ (history scopes): https://xdaforums.com/t/faqs-about-using-health-kit-rest-apis.4529265/
 - Terra, Huawei integration: https://tryterra.co/integrations/huawei
 - Huawei enterprise developer application guide (PDF): linked above
+- Health Service Kit qualifications: https://developer.huawei.com/consumer/en/doc/atomic-guides-V5/health-application-qualifications-as-V5
+- Health Service Kit data openness: https://developer.huawei.com/consumer/en/doc/atomic-guides-V5/health-data-overview-as-V5
+- ha-huawei-health-kit: https://github.com/ucsky/ha-huawei-health-kit
 - Health Kit service agreement: https://terms-drcn.platform.hicloud.com/agreementservice/developer/getAgreementTemplate?agrType=1086&country=ove&language=en_us&version=2019122501
 - Health Kit data types: https://developer.huawei.com/consumer/en/doc/development/HMS-Plugin-Guides-V1/read-sport-health-datatype-0000001073827835-V1
 - Health Kit DataController (Android types): https://forums.developer.huawei.com/forumPortal/en/topic/0201326975480310022
