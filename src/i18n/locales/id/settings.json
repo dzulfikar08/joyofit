@@ -33,7 +33,8 @@
     "hrZones": "Zona HR",
     "coach": "Coach",
     "offlineMapLab": "Peta offline (lab)",
-    "watchMusicLab": "Musik di jam (lab)"
+    "watchMusicLab": "Musik di jam (lab)",
+    "huaweiHealth": "Sinkron HUAWEI ID (lab)"
   },
   "index": {
     "title": "Lainnya",
@@ -97,7 +98,10 @@
     "watchMusicLabSubtitle": "Salin MP3, M4A, AAC, FLAC, WAV, atau Opus milikmu ke jam",
     "offlineMapLabRisk": "Mati secara bawaan. Saat menyala, JoyoFit berbicara dengan aplikasi peta offline di jam (seperti aplikasi pembuat jam mengirim petanya). Layar lab mengunduh file peta yang dibuat JoyoFit dari OpenStreetMap dari server JoyoFit (api.fit.joyorogo.com; permintaannya tidak membawa lokasi, ID, atau akun, server melihat alamat IP-mu) lalu mengirimnya ke jam. Format petanya berasal dari riset publik, bukan dari pembuat jam; jam bisa menolak file atau aplikasi petanya bisa bermasalah. Hapus peta dari layar lab untuk membatalkan. Belum terbukti di jam mana pun: nyalakan hanya untuk menguji.",
     "watchNavLab": "Navigasi di jam (lab)",
-    "watchNavLabRisk": "Mati secara bawaan. Saat menyala, halaman rute punya tombol \"Mulai navigasi di jam\": HP mengikuti GPS-mu di sepanjang rute dan mengirim petunjuk belok ke aplikasi JoyoNavi di jam. Untuk nama jalan dan rute baru saat keluar jalur, titik-titik rute dan posisimu dikirim ke layanan OSRM publik (routing.openstreetmap.de, FOSSGIS), seperti saat menggambar rute. Aplikasi jamnya belum bisa dipasang (akun pengembang Huawei belum siap), jadi ini baru untuk uji coba."
+    "watchNavLabRisk": "Mati secara bawaan. Saat menyala, halaman rute punya tombol \"Mulai navigasi di jam\": HP mengikuti GPS-mu di sepanjang rute dan mengirim petunjuk belok ke aplikasi JoyoNavi di jam. Untuk nama jalan dan rute baru saat keluar jalur, titik-titik rute dan posisimu dikirim ke layanan OSRM publik (routing.openstreetmap.de, FOSSGIS), seperti saat menggambar rute. Aplikasi jamnya belum bisa dipasang (akun pengembang Huawei belum siap), jadi ini baru untuk uji coba.",
+    "huaweiHealthLab": "Sinkron dari akun HUAWEI ID (uji lab)",
+    "huaweiHealthLabSubtitle": "Latihan dan langkah dari akun HUAWEI ID-mu, tanpa berkas ZIP",
+    "huaweiHealthLabRisk": "Mati secara bawaan. Saat menyala, kamu bisa masuk dengan HUAWEI ID, lalu JoyoFit membaca latihan (ringkasan, rute GPS, detak jantung saat latihan) dan langkah dari akun itu. Belum bisa dipakai: Huawei belum menyetujui akses JoyoFit, jadi tombol masuk akan bilang belum siap."
   },
   "log": {
     "filters": {
@@ -1298,5 +1302,33 @@
       "unsupported": "Lab musik mati, atau jam ini tidak menerima lagu."
     },
     "details": "Uji lab: cara mengirim lagu ini belum terbukti di jam mana pun, jadi jam bisa menolak file. Lagu hanya berpindah dari HP ke jam lewat Bluetooth; tidak ada yang diunggah ke server mana pun. JoyoFit tidak mengonversi lagu: file harus sudah MP3, M4A, atau AAC dan formatnya diterima jam. Judul dan artis diambil dari tag file. Setiap pesan dengan jam tercatat di log."
+  },
+  "huaweiHealth": {
+    "intro": "JoyoFit membaca latihan dan langkah dari akun HUAWEI ID-mu, jadi kamu tidak perlu mengunduh berkas ZIP dari Pusat Privasi untuk itu. Tidur, detak jantung sepanjang hari, SpO2, stres, dan berat badan tetap lewat impor ZIP.",
+    "whatTitle": "Apa yang dibaca dan disimpan",
+    "what": "Dibaca: ringkasan latihan (jenis, waktu, jarak, kalori, langkah), detak jantung, kecepatan, kadens, dan ketinggian selama latihan, rute GPS latihan, serta langkah per menit dan per hari, sampai satu tahun ke belakang. HP membacanya langsung dari Huawei dan menyimpannya di HP ini. Server JoyoFit hanya menyimpan izin masuk (terenkripsi), bukan datamu. Data jam yang tersambung ke JoyoFit tetap diutamakan, dan sinkron ulang tidak menggandakan apa pun.",
+    "noCloud": "Versi aplikasi ini belum tersambung ke server JoyoFit.",
+    "serverNotReady": "Belum siap: Huawei belum menyetujui akses JoyoFit. Fitur ini menyala setelah disetujui.",
+    "signInFirst": "Masuk ke akun JoyoRogo dulu: izin HUAWEI ID disimpan pada akun itu.",
+    "signIn": "Masuk",
+    "connect": "Masuk dengan HUAWEI ID",
+    "connectedSince": "Tersambung sejak",
+    "lastSync": "Sinkron terakhir",
+    "never": "Belum pernah",
+    "syncNow": "Sinkron sekarang",
+    "syncing": "Menyinkronkan… {{percent}}%",
+    "cancel": "Batalkan",
+    "result": "{{workouts}} latihan baru, {{filled}} dilengkapi, {{minutes}} menit langkah, {{days}} total harian.",
+    "missingScopes": "Sebagian izin tidak kamu centang, jadi sebagian data dilewati. Putuskan, lalu sambungkan lagi dan centang semua izin.",
+    "expired": "Izin HUAWEI ID sudah tidak berlaku (kata sandi diganti, keluar dari akun, atau izin dicabut). Sambungkan lagi.",
+    "disconnect": "Putuskan",
+    "disconnectHint": "Mencabut izin JoyoFit di akun HUAWEI ID-mu dan menghapus izin yang disimpan server JoyoFit. Latihan dan langkah yang sudah masuk tetap di HP ini sampai kamu menghapusnya.",
+    "failed": {
+      "access_denied": "Kamu membatalkan izin di halaman HUAWEI ID.",
+      "invalid_state": "Waktu masuk habis. Coba lagi.",
+      "exchange_failed": "Huawei menolak permintaan masuk. Coba lagi.",
+      "not_configured": "Belum siap: Huawei belum menyetujui akses JoyoFit.",
+      "other": "Gagal tersambung. Coba lagi."
+    }
   }
 }

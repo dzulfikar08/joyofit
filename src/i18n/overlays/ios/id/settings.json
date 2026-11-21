@@ -1,6 +1,7 @@
 {
   "screens": {
-    "importHuawei": "Impor dari aplikasi jam"
+    "importHuawei": "Impor dari aplikasi jam",
+    "huaweiHealth": "Sinkron akun jam (lab)"
   },
   "index": {
     "rows": {
@@ -18,7 +19,10 @@
     "pgnssLabRisk": "Mati secara bawaan, terpisah dari saklar di atas. Kalau dinyalakan dan jam meminta jenis HW_PGNSS_PRED, JoyoFit mengirim enam berkas prediksi orbit satelit untuk 3 hari ke depan yang dihitung server JoyoFit dari data publik, disusun seperti berkas milik pembuat jam tetapi bukan dari pembuat jam. HP mengambilnya (sekitar 800 KB) dari server JoyoFit tanpa data pribadi apa pun; server melihat alamat IP. Lebih berisiko daripada HW_AGNSS: prediksinya belum terverifikasi, jam menyimpannya berhari-hari tanpa memeriksanya, dan data yang salah pernah membuat GPS jam lain macet. Reset pabrik memulihkan jam. Belum terbukti di jam mana pun: nyalakan hanya untuk uji coba.",
     "details": "Rute lari: belum terverifikasi, format rute berasal dari analisis statis aplikasi resmi jam. Jam bisa saja menolaknya.",
     "detailsDev": "Rute lari: belum terverifikasi, format rute berasal dari analisis statis aplikasi resmi jam. Jam bisa saja menolaknya. Tautan Bluetooth LE: terhubung lewat Bluetooth LE GATT (layanan FE86), bukan tautan bawaan jam. Putuskan lalu hubungkan lagi agar berlaku. Langkahnya masuk ke logcat dengan tag JoyoFitBle.",
-    "watchNavLabRisk": "Mati secara bawaan. Saat menyala, halaman rute punya tombol \"Mulai navigasi di jam\": HP mengikuti GPS-mu di sepanjang rute dan mengirim petunjuk belok ke aplikasi JoyoNavi di jam. Untuk nama jalan dan rute baru saat keluar jalur, titik-titik rute dan posisimu dikirim ke layanan OSRM publik (routing.openstreetmap.de, FOSSGIS), seperti saat menggambar rute. Aplikasi jamnya belum bisa dipasang (akun developer pembuat jam belum siap), jadi ini baru untuk uji coba."
+    "watchNavLabRisk": "Mati secara bawaan. Saat menyala, halaman rute punya tombol \"Mulai navigasi di jam\": HP mengikuti GPS-mu di sepanjang rute dan mengirim petunjuk belok ke aplikasi JoyoNavi di jam. Untuk nama jalan dan rute baru saat keluar jalur, titik-titik rute dan posisimu dikirim ke layanan OSRM publik (routing.openstreetmap.de, FOSSGIS), seperti saat menggambar rute. Aplikasi jamnya belum bisa dipasang (akun developer pembuat jam belum siap), jadi ini baru untuk uji coba.",
+    "huaweiHealthLab": "Sinkron dari akun jam (uji lab)",
+    "huaweiHealthLabSubtitle": "Latihan dan langkah dari akun aplikasi resmi jammu, tanpa berkas ZIP",
+    "huaweiHealthLabRisk": "Mati secara bawaan. Saat menyala, kamu bisa masuk dengan akun aplikasi resmi jammu, lalu JoyoFit membaca latihan (ringkasan, rute GPS, detak jantung saat latihan) dan langkah dari akun itu. Belum bisa dipakai: pembuat jam belum menyetujui akses JoyoFit, jadi tombol masuk akan bilang belum siap."
   },
   "goals": {
     "defaults": "Bawaan jam"
@@ -74,6 +78,20 @@
     },
     "lthr": {
       "estimate": "Perkiraan jam (85 persen cadangan HR)"
+    }
+  },
+  "huaweiHealth": {
+    "intro": "JoyoFit membaca latihan dan langkah dari akun aplikasi resmi jammu, jadi kamu tidak perlu mengunduh berkas ZIP untuk itu. Tidur, detak jantung sepanjang hari, SpO2, stres, dan berat badan tetap lewat impor ZIP.",
+    "what": "Dibaca: ringkasan latihan (jenis, waktu, jarak, kalori, langkah), detak jantung, kecepatan, kadens, dan ketinggian selama latihan, rute GPS latihan, serta langkah per menit dan per hari, sampai satu tahun ke belakang. HP membacanya langsung dari pembuat jam dan menyimpannya di HP ini. Server JoyoFit hanya menyimpan izin masuk (terenkripsi), bukan datamu. Data jam yang tersambung ke JoyoFit tetap diutamakan, dan sinkron ulang tidak menggandakan apa pun.",
+    "serverNotReady": "Belum siap: pembuat jam belum menyetujui akses JoyoFit. Fitur ini menyala setelah disetujui.",
+    "signInFirst": "Masuk ke akun JoyoRogo dulu: izin akun jam disimpan pada akun itu.",
+    "connect": "Masuk ke akun jam",
+    "expired": "Izin akun jam sudah tidak berlaku (kata sandi diganti, keluar dari akun, atau izin dicabut). Sambungkan lagi.",
+    "disconnectHint": "Mencabut izin JoyoFit di akun jammu dan menghapus izin yang disimpan server JoyoFit. Latihan dan langkah yang sudah masuk tetap di HP ini sampai kamu menghapusnya.",
+    "failed": {
+      "access_denied": "Kamu membatalkan izin di halaman masuk akun jam.",
+      "exchange_failed": "Pembuat jam menolak permintaan masuk. Coba lagi.",
+      "not_configured": "Belum siap: pembuat jam belum menyetujui akses JoyoFit."
     }
   }
 }

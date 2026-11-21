@@ -1,6 +1,7 @@
 {
   "screens": {
-    "importHuawei": "Import from your watch's app"
+    "importHuawei": "Import from your watch's app",
+    "huaweiHealth": "Watch account sync (lab)"
   },
   "index": {
     "rows": {
@@ -18,7 +19,10 @@
     "pgnssLabRisk": "Off by default, separate from the switch above. When on and the watch asks for the HW_PGNSS_PRED kind, JoyoFit sends six files of predicted satellite orbits for the next 3 days that JoyoFit's server computes from public data, laid out like the watch maker's own files but not from the watch maker. The phone fetches them (about 800 KB) from JoyoFit's server with no personal data; the server sees the IP address. Riskier than HW_AGNSS: the predictions are unverified, the watch keeps them for days and does not check them, and wrong data has wedged the GPS of other watches. A factory reset recovers the watch. Unproven on any watch: turn it on only to test.",
     "details": "Running courses: unverified, the course format comes from static analysis of the watch's own app. The watch may refuse it.",
     "detailsDev": "Running courses: unverified, the course format comes from static analysis of the watch's own app. The watch may refuse it. Bluetooth LE link: connect over Bluetooth LE GATT (service FE86) instead of the watch's own link. Disconnect and connect again to apply. Steps go to logcat tag JoyoFitBle.",
-    "watchNavLabRisk": "Off by default. When on, a route's page has a \"Start watch navigation\" button: the phone follows your GPS along the route and sends turn instructions to the JoyoNavi app on the watch. For street names and a new route when you leave it, the route's points and your position go to the public OSRM service (routing.openstreetmap.de, FOSSGIS), as when drawing a route. The watch app cannot be installed yet (the watch maker's developer account is not ready), so this is for testing only."
+    "watchNavLabRisk": "Off by default. When on, a route's page has a \"Start watch navigation\" button: the phone follows your GPS along the route and sends turn instructions to the JoyoNavi app on the watch. For street names and a new route when you leave it, the route's points and your position go to the public OSRM service (routing.openstreetmap.de, FOSSGIS), as when drawing a route. The watch app cannot be installed yet (the watch maker's developer account is not ready), so this is for testing only.",
+    "huaweiHealthLab": "Sync from your watch account (lab)",
+    "huaweiHealthLabSubtitle": "Workouts and steps from your watch's own app account, no ZIP file",
+    "huaweiHealthLabRisk": "Off by default. When on, you can sign in with your watch's own app account and JoyoFit reads workouts (summary, GPS route, workout heart rate) and steps from that account. Not usable yet: the watch maker has not approved JoyoFit's access, so signing in will say it is not ready."
   },
   "goals": {
     "defaults": "Watch defaults"
@@ -74,6 +78,20 @@
     },
     "lthr": {
       "estimate": "Watch estimate (85 percent of the reserve)"
+    }
+  },
+  "huaweiHealth": {
+    "intro": "JoyoFit reads workouts and steps from your watch's own app account, so you no longer need the ZIP export for those. Sleep, all-day heart rate, SpO2, stress and weight still come from the ZIP import.",
+    "what": "Read: workout summaries (type, time, distance, calories, steps), heart rate, speed, cadence and altitude during workouts, workout GPS routes, and steps per minute and per day, up to one year back. Your phone reads them straight from the watch maker and keeps them on this phone. JoyoFit's server only keeps the sign-in permission (encrypted), not your data. Data from a watch connected to JoyoFit always wins, and syncing again never duplicates anything.",
+    "serverNotReady": "Not ready: the watch maker has not approved JoyoFit's access yet. This turns on once it is approved.",
+    "signInFirst": "Sign in to your JoyoRogo account first: the watch account permission is kept with that account.",
+    "connect": "Sign in to your watch account",
+    "expired": "The watch account permission is no longer valid (password changed, signed out, or permission withdrawn). Connect again.",
+    "disconnectHint": "Withdraws JoyoFit's permission on your watch account and deletes the permission JoyoFit's server keeps. Workouts and steps already imported stay on this phone until you delete them.",
+    "failed": {
+      "access_denied": "You cancelled on the watch account sign-in page.",
+      "exchange_failed": "The watch maker refused the sign-in. Try again.",
+      "not_configured": "Not ready: the watch maker has not approved JoyoFit's access yet."
     }
   }
 }

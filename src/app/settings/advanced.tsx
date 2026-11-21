@@ -15,6 +15,7 @@ import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { dbHealth, useDbHealth } from '@/db/recovery';
 import { errorMessage } from '@/format';
 import { useTheme } from '@/theme';
+import { getHuaweiHealthLab, setHuaweiHealthLab } from '@/features/huaweihealth/native';
 import { watchNavSession } from '@/features/watchnav/instance';
 import { HuaweiWear, hasNative } from '@/wear';
 
@@ -73,7 +74,7 @@ export default function AdvancedScreen() {
   const theme = useTheme();
   const router = useRouter();
   const presence = useWatchPresence();
-  // Courses and the Bluetooth link are for the watch; with none, only the log and About remain.
+  // Courses, the Bluetooth link and the watch labs are for the watch; with none, the Experimental section keeps only the HUAWEI ID sync lab.
   const withWatch = presence === null || showsWatchUi(presence);
   const [courses, setCourses] = useState(() => HuaweiWear.getCourses());
   const [coursesBusy, setCoursesBusy] = useState(false);
@@ -90,6 +91,8 @@ export default function AdvancedScreen() {
   const [navLabError, setNavLabError] = useState<string | null>(null);
   const [musicLab, setMusicLab] = useState(readWatchMusicLab);
   const [musicLabError, setMusicLabError] = useState<string | null>(null);
+  // JS only (kv-store), so it works on every build, with or without a watch.
+  const [healthLab, setHealthLab] = useState(getHuaweiHealthLab);
 
   useNativeRefresh(
     useCallback(() => {
@@ -174,6 +177,11 @@ export default function AdvancedScreen() {
     }
   };
 
+  const toggleHealthLab = (enabled: boolean) => {
+    setHuaweiHealthLab(enabled);
+    setHealthLab(getHuaweiHealthLab());
+  };
+
   const toggleNavLab = async (enabled: boolean) => {
     setNavLabError(null);
     // Off ends a running session: the watch gets its `end` before the native side unregisters.
@@ -228,62 +236,76 @@ export default function AdvancedScreen() {
         />
       </View>
       {repairHealthy ? <Notice>{t('advanced.repairHealthy')}</Notice> : null}
-      {withWatch ? (
-        <Section title={t('advanced.experimental')} icon="flask" tint="workouts">
-          <SwitchRow
-            label={t('advanced.courses')}
-            value={courses.enabled}
-            disabled={coursesBusy}
-            onValueChange={(enabled) => void toggleCourses(enabled)}
-          />
-          {coursesError ? <Notice tone="danger">{coursesError}</Notice> : null}
-          {agpsLab !== null ? (
-            <>
-              <SwitchRow label={t('advanced.agnssLab')} value={agpsLab} onValueChange={(enabled) => void toggleAgpsLab(enabled)} />
-              <Notice tone={agpsLab ? 'danger' : 'info'}>{t('advanced.agnssLabRisk')}</Notice>
-              {agpsLabError ? <Notice tone="danger">{agpsLabError}</Notice> : null}
-            </>
-          ) : null}
-          {pgnssLab !== null ? (
-            <>
-              <SwitchRow label={t('advanced.pgnssLab')} value={pgnssLab} onValueChange={(enabled) => void togglePgnssLab(enabled)} />
-              <Notice tone={pgnssLab ? 'danger' : 'info'}>{t('advanced.pgnssLabRisk')}</Notice>
-              {pgnssLabError ? <Notice tone="danger">{pgnssLabError}</Notice> : null}
-            </>
-          ) : null}
-          {mapLab !== null ? (
-            <>
-              <SwitchRow label={t('advanced.offlineMapLab')} value={mapLab} onValueChange={(enabled) => void toggleMapLab(enabled)} />
-              <Notice tone={mapLab ? 'danger' : 'info'}>{t('advanced.offlineMapLabRisk')}</Notice>
-              {mapLabError ? <Notice tone="danger">{mapLabError}</Notice> : null}
-            </>
-          ) : null}
-          {musicLab !== null ? (
-            <>
-              <SwitchRow label={t('advanced.watchMusicLab')} value={musicLab} onValueChange={(enabled) => void toggleMusicLab(enabled)} />
-              <Notice tone={musicLab ? 'danger' : 'info'}>{t('advanced.watchMusicLabRisk')}</Notice>
-              {musicLabError ? <Notice tone="danger">{musicLabError}</Notice> : null}
-            </>
-          ) : null}
-          {navLab !== null ? (
-            <>
-              <SwitchRow label={t('advanced.watchNavLab')} value={navLab} onValueChange={(enabled) => void toggleNavLab(enabled)} />
-              <Notice tone={navLab ? 'danger' : 'info'}>{t('advanced.watchNavLabRisk')}</Notice>
-              {navLabError ? <Notice tone="danger">{navLabError}</Notice> : null}
-            </>
-          ) : null}
-          {__DEV__ ? (
+      <Section title={t('advanced.experimental')} icon="flask" tint="workouts">
+        <SwitchRow label={t('advanced.huaweiHealthLab')} value={healthLab} onValueChange={toggleHealthLab} />
+        <Notice tone="info">{t('advanced.huaweiHealthLabRisk')}</Notice>
+        {withWatch ? (
+          <>
             <SwitchRow
-              label={t('advanced.bleLink')}
-              value={forceBle}
-              onValueChange={(enabled) => void toggleForceBle(enabled)}
+              label={t('advanced.courses')}
+              value={courses.enabled}
+              disabled={coursesBusy}
+              onValueChange={(enabled) => void toggleCourses(enabled)}
             />
-          ) : null}
-          {__DEV__ && bleError ? <Notice tone="danger">{bleError}</Notice> : null}
-          <Details>
-            {__DEV__ ? t('advanced.detailsDev') : t('advanced.details')}
-          </Details>
-        </Section>
+            {coursesError ? <Notice tone="danger">{coursesError}</Notice> : null}
+            {agpsLab !== null ? (
+              <>
+                <SwitchRow label={t('advanced.agnssLab')} value={agpsLab} onValueChange={(enabled) => void toggleAgpsLab(enabled)} />
+                <Notice tone={agpsLab ? 'danger' : 'info'}>{t('advanced.agnssLabRisk')}</Notice>
+                {agpsLabError ? <Notice tone="danger">{agpsLabError}</Notice> : null}
+              </>
+            ) : null}
+            {pgnssLab !== null ? (
+              <>
+                <SwitchRow label={t('advanced.pgnssLab')} value={pgnssLab} onValueChange={(enabled) => void togglePgnssLab(enabled)} />
+                <Notice tone={pgnssLab ? 'danger' : 'info'}>{t('advanced.pgnssLabRisk')}</Notice>
+                {pgnssLabError ? <Notice tone="danger">{pgnssLabError}</Notice> : null}
+              </>
+            ) : null}
+            {mapLab !== null ? (
+              <>
+                <SwitchRow label={t('advanced.offlineMapLab')} value={mapLab} onValueChange={(enabled) => void toggleMapLab(enabled)} />
+                <Notice tone={mapLab ? 'danger' : 'info'}>{t('advanced.offlineMapLabRisk')}</Notice>
+                {mapLabError ? <Notice tone="danger">{mapLabError}</Notice> : null}
+              </>
+            ) : null}
+            {musicLab !== null ? (
+              <>
+                <SwitchRow label={t('advanced.watchMusicLab')} value={musicLab} onValueChange={(enabled) => void toggleMusicLab(enabled)} />
+                <Notice tone={musicLab ? 'danger' : 'info'}>{t('advanced.watchMusicLabRisk')}</Notice>
+                {musicLabError ? <Notice tone="danger">{musicLabError}</Notice> : null}
+              </>
+            ) : null}
+            {navLab !== null ? (
+              <>
+                <SwitchRow label={t('advanced.watchNavLab')} value={navLab} onValueChange={(enabled) => void toggleNavLab(enabled)} />
+                <Notice tone={navLab ? 'danger' : 'info'}>{t('advanced.watchNavLabRisk')}</Notice>
+                {navLabError ? <Notice tone="danger">{navLabError}</Notice> : null}
+              </>
+            ) : null}
+            {__DEV__ ? (
+              <SwitchRow
+                label={t('advanced.bleLink')}
+                value={forceBle}
+                onValueChange={(enabled) => void toggleForceBle(enabled)}
+              />
+            ) : null}
+            {__DEV__ && bleError ? <Notice tone="danger">{bleError}</Notice> : null}
+            <Details>
+              {__DEV__ ? t('advanced.detailsDev') : t('advanced.details')}
+            </Details>
+          </>
+        ) : null}
+      </Section>
+      {healthLab ? (
+        <NavRow
+          icon="sync"
+          tint="workouts"
+          title={t('advanced.huaweiHealthLab')}
+          subtitle={t('advanced.huaweiHealthLabSubtitle')}
+          onPress={() => router.push('/settings/huawei-health')}
+          style={groupedRowStyle(theme, 0, 1)}
+        />
       ) : null}
       {withWatch && labRows.length > 0 ? (
         <View>

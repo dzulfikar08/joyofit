@@ -17,6 +17,7 @@ import { MAX_SYNC_BODY_BYTES, PULL_DEFAULT_LIMIT, PULL_MAX_LIMIT, RESTORE_DEFAUL
 import { syncBodySchema } from "./schemas";
 import { sleep } from "./sleep";
 import { ride } from "./ride/routes";
+import { huaweiHealth, huaweiHealthPublic } from "./huaweiHealth";
 import { strava, stravaPublic } from "./strava";
 import { studio } from "./studio";
 import { applySync, pullSync, restoreSleep, restoreSteps } from "./sync";
@@ -123,6 +124,7 @@ v1.route("/account", account);
 v1.route("/data", syncedData);
 v1.route("/imports", imports);
 v1.route("/strava", strava);
+v1.route("/huawei-health", huaweiHealth);
 v1.route("/gear", gear);
 v1.route("/sleep", sleep);
 v1.route("/watchfaces", watchfaces);
@@ -132,6 +134,7 @@ v1.route("/family", family);
 v1.route("/feedback", feedback);
 app.route("/v1", v1);
 app.route("/strava", stravaPublic);
+app.route("/huawei-health", huaweiHealthPublic);
 
 app.notFound((c) => c.json({ error: "not_found" }, 404));
 

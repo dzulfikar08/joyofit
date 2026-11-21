@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import type { AppContext, AppEnv } from "./env";
 import { deleteFamilyData } from "./family/store";
 import { deleteLiveStatements } from "./live";
+import { dropHuaweiHealthConnection } from "./huaweiHealth";
 import { dropStravaConnection } from "./strava";
 
 /** Every table with a `user_id` column. `user_state` goes last so a half-finished deletion can still be repeated. */
@@ -28,9 +29,10 @@ export async function deleteSyncedData(env: AppEnv, userId: string): Promise<voi
   await env.DB.batch([...deleteLiveStatements(env.DB, userId), ...USER_TABLES.map((table) => env.DB.prepare(`DELETE FROM ${table} WHERE user_id = ?1`).bind(userId))]);
 }
 
-/** Everything JoyoFit holds for one JoyoRogo user: synced rows, imported files, the Strava connection, family links (both roles). Repeatable. */
+/** Everything JoyoFit holds for one JoyoRogo user: synced rows, imported files, the Strava and HUAWEI ID (Health Kit) connections, family links (both roles). Repeatable. */
 export async function deleteUserData(env: AppEnv, userId: string): Promise<void> {
   await dropStravaConnection(env, userId);
+  await dropHuaweiHealthConnection(env, userId);
   await deleteFamilyData(env, userId);
   await deleteSyncedData(env, userId);
 }

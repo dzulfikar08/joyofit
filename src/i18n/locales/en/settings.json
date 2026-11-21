@@ -33,7 +33,8 @@
     "hrZones": "HR zones",
     "coach": "Coach",
     "offlineMapLab": "Offline maps (lab)",
-    "watchMusicLab": "Music on the watch (lab)"
+    "watchMusicLab": "Music on the watch (lab)",
+    "huaweiHealth": "HUAWEI ID sync (lab)"
   },
   "index": {
     "title": "More",
@@ -97,7 +98,10 @@
     "watchMusicLabSubtitle": "Copy your own MP3, M4A, AAC, FLAC, WAV or Opus files to the watch",
     "offlineMapLabRisk": "Off by default. When on, JoyoFit talks to the watch's offline-map app (the way the watch maker's app sends its maps). The lab screen downloads map files that JoyoFit builds from OpenStreetMap from JoyoFit's server (api.fit.joyorogo.com; the request carries no location, ID or account, the server sees your IP address) and sends them to the watch. The map format comes from public research, not from the watch maker; the watch may refuse a file or its map app may misbehave. Delete the map from the lab screen to undo. Unproven on any watch: turn it on only to test.",
     "watchNavLab": "Watch navigation (lab)",
-    "watchNavLabRisk": "Off by default. When on, a route's page has a \"Start watch navigation\" button: the phone follows your GPS along the route and sends turn instructions to the JoyoNavi app on the watch. For street names and a new route when you leave it, the route's points and your position go to the public OSRM service (routing.openstreetmap.de, FOSSGIS), as when drawing a route. The watch app cannot be installed yet (the Huawei developer account is not ready), so this is for testing only."
+    "watchNavLabRisk": "Off by default. When on, a route's page has a \"Start watch navigation\" button: the phone follows your GPS along the route and sends turn instructions to the JoyoNavi app on the watch. For street names and a new route when you leave it, the route's points and your position go to the public OSRM service (routing.openstreetmap.de, FOSSGIS), as when drawing a route. The watch app cannot be installed yet (the Huawei developer account is not ready), so this is for testing only.",
+    "huaweiHealthLab": "Sync from your HUAWEI ID account (lab)",
+    "huaweiHealthLabSubtitle": "Workouts and steps from your HUAWEI ID account, no ZIP file",
+    "huaweiHealthLabRisk": "Off by default. When on, you can sign in with HUAWEI ID and JoyoFit reads workouts (summary, GPS route, workout heart rate) and steps from that account. Not usable yet: Huawei has not approved JoyoFit's access, so signing in will say it is not ready."
   },
   "log": {
     "filters": {
@@ -1326,5 +1330,33 @@
       "unsupported": "The music lab is off, or this watch does not take songs."
     },
     "details": "Lab test: this way of sending songs is unproven on any watch, so the watch may refuse a file. Songs go only from the phone to the watch over Bluetooth; nothing is uploaded to any server. JoyoFit does not convert songs: a file must already be MP3, M4A or AAC in a format the watch takes. Title and artist come from the file's tags. Every message with the watch is in the log."
+  },
+  "huaweiHealth": {
+    "intro": "JoyoFit reads workouts and steps from your HUAWEI ID account, so you no longer need the Privacy Centre ZIP for those. Sleep, all-day heart rate, SpO2, stress and weight still come from the ZIP import.",
+    "whatTitle": "What is read and stored",
+    "what": "Read: workout summaries (type, time, distance, calories, steps), heart rate, speed, cadence and altitude during workouts, workout GPS routes, and steps per minute and per day, up to one year back. Your phone reads them straight from Huawei and keeps them on this phone. JoyoFit's server only keeps the sign-in permission (encrypted), not your data. Data from a watch connected to JoyoFit always wins, and syncing again never duplicates anything.",
+    "noCloud": "This build of the app is not connected to JoyoFit's server.",
+    "serverNotReady": "Not ready: Huawei has not approved JoyoFit's access yet. This turns on once it is approved.",
+    "signInFirst": "Sign in to your JoyoRogo account first: the HUAWEI ID permission is kept with that account.",
+    "signIn": "Sign in",
+    "connect": "Sign in with HUAWEI ID",
+    "connectedSince": "Connected since",
+    "lastSync": "Last sync",
+    "never": "Never",
+    "syncNow": "Sync now",
+    "syncing": "Syncing… {{percent}}%",
+    "cancel": "Cancel",
+    "result": "{{workouts}} new workouts, {{filled}} filled in, {{minutes}} minutes of steps, {{days}} daily totals.",
+    "missingScopes": "Some permissions were left unticked, so some data was skipped. Disconnect, then connect again and tick every permission.",
+    "expired": "The HUAWEI ID permission is no longer valid (password changed, signed out, or permission withdrawn). Connect again.",
+    "disconnect": "Disconnect",
+    "disconnectHint": "Withdraws JoyoFit's permission on your HUAWEI ID account and deletes the permission JoyoFit's server keeps. Workouts and steps already imported stay on this phone until you delete them.",
+    "failed": {
+      "access_denied": "You cancelled on the HUAWEI ID page.",
+      "invalid_state": "The sign-in took too long. Try again.",
+      "exchange_failed": "Huawei refused the sign-in. Try again.",
+      "not_configured": "Not ready: Huawei has not approved JoyoFit's access yet.",
+      "other": "Could not connect. Try again."
+    }
   }
 }

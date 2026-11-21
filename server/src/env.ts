@@ -9,6 +9,10 @@ export type AppEnv = Env & {
   STRAVA_CLIENT_SECRET?: string;
   /** The `verify_token` chosen when creating the Strava webhook subscription; checked on the validation GET. */
   STRAVA_WEBHOOK_VERIFY_TOKEN?: string;
+  /** HUAWEI ID client secret of the JoyoFit app (Health Kit lab, src/huaweiHealth.ts). Unset = Health Kit is not configured and its routes answer 503. */
+  HUAWEI_HEALTH_CLIENT_SECRET?: string;
+  /** Any long random string; the AES-GCM key for Health Kit refresh tokens at rest is derived from it. Changing it drops every stored grant. */
+  HUAWEI_HEALTH_TOKEN_KEY?: string;
   /** Bearer token for `GET /v1/waitlist` (the owner's list). Unset = the list answers 503. */
   WAITLIST_ADMIN_TOKEN?: string;
   /** `X-Maps-Publish-Key` for `/internal/maps/*` (src/mapsPublish.ts; the offline-maps workflow). Unset = those routes answer 503. */

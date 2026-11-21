@@ -46,6 +46,12 @@ export const aturApi = {
   handler: null as ((url: URL, method: string) => Response | Promise<Response>) | null,
 };
 
+/** Huawei's OAuth server and Health Kit as the Worker reaches them (`oauth-login.cloud.huawei.com`, `health-api.cloud.huawei.*`): what they saw, how they answer (per test). */
+export const huaweiApi = {
+  calls: [] as { url: string; method: string; headers: Headers; body: string | null }[],
+  handler: null as ((url: URL, method: string, body: string | null) => Response | Promise<Response>) | null,
+};
+
 /** Expo Push messages the Worker sent, and how Expo answers (per message `ok`, or a details error such as DeviceNotRegistered). */
 export const expo = {
   sent: [] as { to: string; title: string; body: string; data: Record<string, string> }[],
@@ -118,6 +124,8 @@ beforeEach(() => {
   grantApi.handler = null;
   aturApi.calls = [];
   aturApi.handler = null;
+  huaweiApi.calls = [];
+  huaweiApi.handler = null;
   expo.sent = [];
   expo.failWith = null;
   outbox.length = 0;
@@ -134,6 +142,13 @@ beforeEach(() => {
       aturApi.calls.push({ url: String(input), method, headers: new Headers(init?.headers), body: init?.body ? String(init.body) : null });
       if (!aturApi.handler) throw new Error(`unexpected Atur call: ${String(input)}`);
       return aturApi.handler(new URL(String(input)), method);
+    }
+    if (/^https:\/\/(oauth-login\.cloud\.huawei\.com|health-api\.cloud\.huawei\.[a-z.]+)\//.test(String(input))) {
+      const method = init?.method ?? "GET";
+      const body = init?.body ? String(init.body) : null;
+      huaweiApi.calls.push({ url: String(input), method, headers: new Headers(init?.headers), body });
+      if (!huaweiApi.handler) throw new Error(`unexpected Huawei call: ${String(input)}`);
+      return huaweiApi.handler(new URL(String(input)), method, body);
     }
     if (String(input).endsWith("/internal/joyofit/family/users")) {
       const body = JSON.parse(String(init?.body ?? "{}")) as { userIds: string[] };
