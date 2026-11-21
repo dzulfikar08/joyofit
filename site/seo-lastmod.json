@@ -1,19 +1,19 @@
 {
   "/": {
-    "hash": "cb8b3961333a9122",
-    "lastmod": "2026-11-07"
+    "hash": "3dbf1fed2ad8dd9b",
+    "lastmod": "2026-11-21"
   },
   "/panduan": {
-    "hash": "2755b41414b54907",
-    "lastmod": "2026-11-07"
+    "hash": "b917c2157b4503e9",
+    "lastmod": "2026-11-21"
   },
   "/strava": {
     "hash": "d690f2dbbaddaf8a",
     "lastmod": "2026-11-07"
   },
   "/iphone": {
-    "hash": "9d9f15a5fb1fb5ae",
-    "lastmod": "2026-11-07"
+    "hash": "cf50351df246938a",
+    "lastmod": "2026-11-21"
   },
   "/jam": {
     "hash": "411fb633b6f8c9e6",
@@ -32,40 +32,40 @@
     "lastmod": "2026-11-07"
   },
   "/privasi": {
-    "hash": "e50b87bdb354b3c3",
-    "lastmod": "2026-11-18"
+    "hash": "2d033e20a59a1f77",
+    "lastmod": "2026-11-21"
   },
   "/keluarga": {
     "hash": "06b6950978f129eb",
     "lastmod": "2026-11-07"
   },
   "/blog": {
-    "hash": "1e5ea39d40194521",
-    "lastmod": "2026-11-07"
+    "hash": "179ad4d6b8037125",
+    "lastmod": "2026-11-21"
   },
   "/blog/joyofit-web": {
-    "hash": "3c9a9ba6ac7d43d1",
-    "lastmod": "2026-11-07"
+    "hash": "ecaff672517768ec",
+    "lastmod": "2026-11-21"
   },
   "/blog/joyofit-ride": {
-    "hash": "d80c71ae07b58cce",
-    "lastmod": "2026-11-07"
+    "hash": "683a764ebbc00855",
+    "lastmod": "2026-11-21"
   },
   "/blog/coach": {
-    "hash": "e50798c3d0264924",
-    "lastmod": "2026-11-07"
+    "hash": "09184ed6b14d10f0",
+    "lastmod": "2026-11-21"
   },
   "/blog/social-joyofit": {
     "hash": "49c0d4fbc16cbec0",
     "lastmod": "2026-11-07"
   },
   "/blog/bagikan-latihan-ke-joyorogo": {
-    "hash": "de4a0a2742f35239",
-    "lastmod": "2026-11-07"
+    "hash": "a4be9d6eea04a7ed",
+    "lastmod": "2026-11-21"
   },
   "/blog/panduan-awal": {
-    "hash": "8fdd65b3768ccf06",
-    "lastmod": "2026-11-07"
+    "hash": "0d6568a89553aa91",
+    "lastmod": "2026-11-21"
   },
   "/blog/strava-file-fit": {
     "hash": "2d3290da094ca640",
@@ -80,8 +80,8 @@
     "lastmod": "2026-11-07"
   },
   "/blog/pembaruan-di-aplikasi": {
-    "hash": "d98e9730426ded73",
-    "lastmod": "2026-11-07"
+    "hash": "de2bc0c27363f855",
+    "lastmod": "2026-11-21"
   },
   "/404": {
     "hash": "c63c1d2113a861d8",

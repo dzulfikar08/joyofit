@@ -1,4 +1,4 @@
-import { IOS_TESTFLIGHT_LIVE, STRAVA_PATH, TIMBANGAN_PATH } from "./lib.ts";
+import { STRAVA_PATH, TIMBANGAN_PATH } from "./lib.ts";
 
 /** A tracking goal for the link at the end of an answer. */
 export type FaqLink = { href: string; label: string; goal?: { name: string; location: string } };
@@ -23,10 +23,7 @@ export const FAQ: readonly FaqItem[] = [
   {
     q: "Jam apa saja yang didukung?",
     a:
-      "Yang sudah diuji: Huawei Watch Fit 4 Pro, Band 8, Band 11 Pro, dan Watch Fit 2. Jam dan band Huawei dan Honor lain di daftar Gadgetbridge (Bluetooth Classic maupun Bluetooth LE) masih eksperimen: jalurnya ada, tapi belum pernah dicoba dengan JoyoFit. Honor Watch 5, 5 Pro, dan 6 belum bisa. Di Android, pemindai di aplikasi sekarang juga menemukan band yang tidak muncul di pengaturan Bluetooth (Band 8, 9, 10, dan Fit), dan memberi pesan yang jelas kalau jam sedang dipegang HP lain. Daftar lengkapnya ada di halaman Jam yang didukung, dan kamu bisa membantu jam-mu masuk daftar uji di halaman Dukung jam. Aplikasinya untuk Android 10 ke atas, dan untuk iPhone dengan iOS 16.4 ke atas." +
-      (IOS_TESTFLIGHT_LIVE
-        ? " Versi iPhone ada sebagai beta publik lewat TestFlight; versi App Store belum rilis. Baru diuji dengan Huawei Watch Fit 4 Pro."
-        : ""),
+      "Yang sudah diuji: Huawei Watch Fit 4 Pro, Band 8, Band 11 Pro, dan Watch Fit 2. Jam dan band Huawei dan Honor lain di daftar Gadgetbridge (Bluetooth Classic maupun Bluetooth LE) masih eksperimen: jalurnya ada, tapi belum pernah dicoba dengan JoyoFit. Honor Watch 5, 5 Pro, dan 6 belum bisa. Di Android, pemindai di aplikasi sekarang juga menemukan band yang tidak muncul di pengaturan Bluetooth (Band 8, 9, 10, dan Fit), dan memberi pesan yang jelas kalau jam sedang dipegang HP lain. Daftar lengkapnya ada di halaman Jam yang didukung, dan kamu bisa membantu jam-mu masuk daftar uji di halaman Dukung jam. Aplikasinya untuk Android 10 ke atas, dan untuk iPhone dengan iOS 16.4 ke atas. Versi iPhone ada di App Store; di iPhone baru diuji dengan Huawei Watch Fit 4 Pro.",
   },
   {
     q: "Timbangan Bluetooth apa yang bisa dipakai?",
@@ -48,7 +45,7 @@ export const FAQ: readonly FaqItem[] = [
   },
   {
     q: "Bisa dipakai di iPhone?",
-    a: "Bisa, sebagai beta publik lewat TestFlight. Versi App Store belum rilis, jadi belum ada di App Store. Baru diuji dengan Watch Fit 4 Pro, dan beberapa fitur iPhone masih baru diuji di komputer.",
+    a: "Bisa. JoyoFit ada di App Store, gratis, untuk iOS 16.4 ke atas. Di iPhone baru diuji dengan Watch Fit 4 Pro, dan beberapa fitur iPhone masih baru diuji di komputer.",
     link: { href: "/iphone", label: "Lihat cara pasang di iPhone", goal: { name: "iphone_waitlist_click", location: "faq" } },
   },
   {
