@@ -206,7 +206,7 @@
     "includeRoute": "Show map",
     "includeRouteHint": "The line is simplified and the first and last 200 m are cut, same as on stickers. Switched off, the route is not sent at all.",
     "includeComparison": "Comparison with earlier workouts",
-    "note": "Everyone you share with sees the summary. The full analysis (map, charts, splits, zones, best efforts and more) is visible to JoyoRogo Pro members and to you.",
+    "note": "Everyone you share with sees the summary. The full analysis (map, charts, splits, zones, best efforts and more) is visible to Joyo Pro members and to you.",
     "post": "Post"
   },
   "moderation": {

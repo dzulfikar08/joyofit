@@ -917,10 +917,13 @@ public enum DeviceConfig {
 
         /// JoyoFit: Huawei Health 17.0.8.300's own bitmap for this watch (GB's bits plus 22, 43 and 47..59; GB sent `FD F7 33 FA 29 37`).
         public static let capabilities: Bytes = [0xFD, 0xF7, 0x73, 0xFA, 0x29, 0xBF, 0xFF, 0x0F]
+        /// Gadgetbridge's bitmap, sent when the user turned on "Compatibility install": GB installs unsigned faces on a Fit 3 that
+        /// refuses them from JoyoFit with Huawei Health's bitmap (docs/watchfaces-signing.md, section 0c).
+        public static let gadgetbridgeCapabilities: Bytes = [0xFD, 0xF7, 0x33, 0xFA, 0x29, 0x37]
 
-        public static func request() -> HuaweiPacket {
+        public static func request(gadgetbridge: Bool = false) -> HuaweiPacket {
             var tlv = HuaweiTLV()
-            tlv.put(0x01, bytes: capabilities)
+            tlv.put(0x01, bytes: gadgetbridge ? gadgetbridgeCapabilities : capabilities)
             return HuaweiPacket(serviceId: DeviceConfig.id, commandId: id, tlv: tlv)
         }
 

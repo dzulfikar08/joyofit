@@ -316,6 +316,13 @@ public final class HuaweiWearModule: Module {
             runtime.settings.huaweiAccount = account
         }
 
+        // "Compatibility install": Gadgetbridge's ReverseCapabilities at the next connect. True when the stored value changed.
+        AsyncFunction("setCompatInstall") { (enabled: Bool) async -> Bool in
+            if runtime.settings.gadgetbridgeCapabilities == enabled { return false }
+            runtime.settings.gadgetbridgeCapabilities = enabled
+            return true
+        }
+
         // The cookies the app's WebView store holds for `url`'s host and its parent domains, HttpOnly ones included, as one
         // `name=value; ...` string. Used only by the account sign-in screen to read the numeric `userId`; it never leaves the phone.
         AsyncFunction("readWebCookies") { (url: String) async -> String in

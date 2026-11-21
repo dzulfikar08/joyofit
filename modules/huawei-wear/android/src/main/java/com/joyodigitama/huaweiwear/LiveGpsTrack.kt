@@ -34,6 +34,12 @@ internal class TrackAccumulator {
   var riseM = 0.0
     private set
 
+  private val keptPoints = ArrayList<TrackFix>()
+
+  /** Accepted trajectory fixes in chronological order (bounded to [MAX_TRACK_POINTS]). */
+  val points: List<TrackFix>
+    get() = keptPoints.toList()
+
   private var last: TrackFix? = null
   private var smoothedAlt: Double? = null
   private var referenceAlt: Double? = null
@@ -59,6 +65,7 @@ internal class TrackAccumulator {
   fun reset() {
     distanceM = 0.0
     riseM = 0.0
+    keptPoints.clear()
     last = null
     smoothedAlt = null
     referenceAlt = null
@@ -71,12 +78,21 @@ internal class TrackAccumulator {
     window.clear()
   }
 
-  /** Takes a fix of the running workout; false when it was dropped. */
-  fun add(fix: TrackFix): Boolean {
+  /** Takes a fix of the running workout; false when it was dropped. [running] controls whether distance/climb/speed count; [keep] controls whether it is kept in points. */
+  fun add(fix: TrackFix, running: Boolean = true, keep: Boolean = true): Boolean {
+    if (!fix.lat.isFinite() || !fix.lon.isFinite() || fix.lat !in -90.0..90.0 || fix.lon !in -180.0..180.0) return false
     if (fix.accuracyM != null && fix.accuracyM > MAX_ACCURACY_M) return false
+    if (!running) {
+      gap()
+      if (keep) {
+        recordPoint(fix)
+      }
+      return true
+    }
     val prev = last
     if (prev == null) {
       last = fix
+      if (keep) recordPoint(fix)
       window.addLast(fix.timeMs to distanceM)
       takeAltitude(fix)
       return true
@@ -94,9 +110,35 @@ internal class TrackAccumulator {
     }
     distanceM += step
     last = fix
+    if (keep) recordPoint(fix)
     window.addLast(fix.timeMs to distanceM)
     trim(fix.timeMs)
     return true
+  }
+
+  /** GeoJSON `[lon, lat]` coordinates for the live map trail, downsampled to at most [maxPoints]. */
+  fun trailCoordinates(maxPoints: Int = 500): List<List<Double>> {
+    val n = keptPoints.size
+    if (n == 0 || maxPoints <= 0) return emptyList()
+    if (n <= maxPoints) return keptPoints.map { listOf(it.lon, it.lat) }
+    if (maxPoints == 1) return listOf(listOf(keptPoints.last().lon, keptPoints.last().lat))
+    return (0 until maxPoints).map { i ->
+      val idx = ((i.toLong() * (n - 1)) / (maxPoints - 1)).toInt()
+      val p = keptPoints[idx]
+      listOf(p.lon, p.lat)
+    }
+  }
+
+  private fun recordPoint(fix: TrackFix) {
+    val prevKept = keptPoints.lastOrNull()
+    if (prevKept != null && fix.timeMs <= prevKept.timeMs) return
+    if (keptPoints.size >= MAX_TRACK_POINTS) {
+      val compacted = ArrayList<TrackFix>((keptPoints.size + 1) / 2)
+      for (i in keptPoints.indices step 2) compacted.add(keptPoints[i])
+      keptPoints.clear()
+      keptPoints.addAll(compacted)
+    }
+    keptPoints.add(fix)
   }
 
   private fun trim(nowMs: Long) {
@@ -104,7 +146,7 @@ internal class TrackAccumulator {
   }
 
   private fun takeAltitude(fix: TrackFix) {
-    val alt = fix.altitudeM ?: return
+    val alt = fix.altitudeM?.takeIf { it.isFinite() } ?: return
     val smooth = smoothedAlt?.let { it + ALT_ALPHA * (alt - it) } ?: alt
     smoothedAlt = smooth
     val ref = referenceAlt
@@ -129,6 +171,7 @@ internal class TrackAccumulator {
 
     /** Below this (about 1:00:00 per km) the person is standing and no pace is shown. */
     const val MIN_PACE_SPEED_MPS = 0.28
+    const val MAX_TRACK_POINTS = 10_800
 
     private const val EARTH_RADIUS_M = 6_371_008.8
 
@@ -190,16 +233,15 @@ internal class SessionTrack {
   private val motion = MotionStart()
 
   /**
-   * Takes a fix. [running]: the session runs, so the fix counts. [motionStarts]: the session prepares for a watch that gives no sign
+   * Takes a fix. [running]: the session runs, so the fix counts. [keep]: kept for the map. [motionStarts]: the session prepares for a watch that gives no sign
    * of its start, so movement is the start. Returns true when this fix completes that movement ([MotionStart]): the caller starts the
    * session, which calls [startStretch].
    */
-  fun onFix(fix: TrackFix, running: Boolean, motionStarts: Boolean): Boolean {
-    location = fix
-    if (running) {
-      track.add(fix)
-      return false
+  fun onFix(fix: TrackFix, running: Boolean, keep: Boolean = true, motionStarts: Boolean): Boolean {
+    if (fix.lat.isFinite() && fix.lon.isFinite() && fix.lat in -90.0..90.0 && fix.lon in -180.0..180.0) {
+      location = fix
     }
+    track.add(fix, running = running, keep = keep)
     return motionStarts && motion.onFix(fix.speedMps, fix.accuracyM)
   }
 
@@ -212,6 +254,11 @@ internal class SessionTrack {
     track.gap()
     val newest = location ?: return
     if (abs(nowMs - newest.timeMs) <= ANCHOR_MAX_AGE_MS) track.add(newest)
+  }
+
+  /** The workout was paused: marks a gap so subsequent running fixes do not bridge distance across the pause. */
+  fun pause() {
+    track.gap()
   }
 
   companion object {
@@ -233,6 +280,7 @@ internal class SessionTrack {
 internal class PhoneGpsSession(private val start: () -> Boolean, private val stop: () -> Unit) {
   private val lock = Any()
   private var tracking = false
+  private var lastFailedStartMs = 0L
 
   /** The fixes also go to the watch. */
   @Volatile
@@ -246,7 +294,25 @@ internal class PhoneGpsSession(private val start: () -> Boolean, private val sto
   fun watchAsks() {
     synchronized(lock) {
       feeding = true
-      if (!tracking) tracking = start()
+      if (!tracking) {
+        tracking = start()
+        if (!tracking) lastFailedStartMs = System.currentTimeMillis()
+      }
+    }
+  }
+
+  /**
+   * Starts phone GPS tracking for an active outdoor live workout even when the wearable has not sent `18/02` (for example a Huawei Band
+   * whose workout was discovered via `17/03`, `17/11`, or `37/02`, or started from the phone). Does not turn on the `18/03` feed unless
+   * the watch explicitly asked via [watchAsks].
+   */
+  fun sessionNeedsGps(now: Long = System.currentTimeMillis()) {
+    synchronized(lock) {
+      if (!tracking) {
+        if (now - lastFailedStartMs < RETRY_BACKOFF_MS) return
+        tracking = start()
+        if (!tracking) lastFailedStartMs = now
+      }
     }
   }
 
@@ -274,8 +340,13 @@ internal class PhoneGpsSession(private val start: () -> Boolean, private val sto
   }
 
   private fun stopTracking() {
+    lastFailedStartMs = 0L
     if (!tracking) return
     tracking = false
     stop()
+  }
+
+  companion object {
+    const val RETRY_BACKOFF_MS = 60_000L
   }
 }

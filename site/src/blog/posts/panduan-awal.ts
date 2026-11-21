@@ -23,7 +23,7 @@ export const panduanAwal: Post = {
         "Notifications, Apple Health atau Health Connect, dan Weather: izin opsional, yang paling berguna lebih dulu.",
         "Background (hanya Android): jaga jam tetap tersambung di latar belakang.",
         "JoyoRogo: masuk dengan akun JoyoRogo untuk cloud, Strava, dan Social.",
-        "JoyoRogo Pro: informasi saja, tidak pernah menghalangi langkah berikutnya.",
+        "Joyo Pro: informasi saja, tidak pernah menghalangi langkah berikutnya.",
         "JoyoRogo Cloud: cadangan semua workout beserta analisisnya (split, zona, best effort, training effect, VO2max, waktu pemulihan), bisa dilihat di joyorogo.com/jam dan dipulihkan di HP baru. Untuk akun Pro, bisa dilewati.",
         "Done: tips terakhir.",
       ],

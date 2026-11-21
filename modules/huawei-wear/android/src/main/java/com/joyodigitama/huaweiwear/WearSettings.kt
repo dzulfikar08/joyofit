@@ -73,6 +73,14 @@ internal class WearSettings(context: Context) {
       if (clean.isNullOrEmpty()) remove(KEY_HUAWEI_ACCOUNT) else putString(KEY_HUAWEI_ACCOUNT, clean)
     }.apply()
 
+  /**
+   * "Compatibility install" on the watch-face screen: connect with Gadgetbridge's ReverseCapabilities bitmap instead of Huawei Health's,
+   * so a watch that enforces face signatures treats JoyoFit as a plain client the way it does Gadgetbridge. Off by default.
+   */
+  var gadgetbridgeCapabilities: Boolean
+    get() = prefs.getBoolean(KEY_GB_CAPABILITIES, false)
+    set(value) = prefs.edit().putBoolean(KEY_GB_CAPABILITIES, value).apply()
+
   var notificationsEnabled: Boolean
     get() = prefs.getBoolean(KEY_NOTIFICATIONS, false)
     set(value) = prefs.edit().putBoolean(KEY_NOTIFICATIONS, value).apply()
@@ -227,6 +235,7 @@ internal class WearSettings(context: Context) {
     private const val KEY_FORCE_BLE = "force_ble"
     private const val KEY_INTERVAL = "sync_interval_min"
     private const val KEY_HUAWEI_ACCOUNT = "huawei_account_id"
+    private const val KEY_GB_CAPABILITIES = "gadgetbridge_capabilities"
     private const val KEY_NOTIFICATIONS = "notifications_enabled"
     private const val KEY_MORNING_SUMMARY = "morning_summary_enabled"
     private const val KEY_MORNING_SUMMARY_DAY = "morning_summary_day"

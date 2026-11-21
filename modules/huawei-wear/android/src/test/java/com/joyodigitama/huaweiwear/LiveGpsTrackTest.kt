@@ -21,6 +21,24 @@ class LiveGpsTrackTest {
   }
 
   @Test
+  fun preparingAndPausedFixesDoNotAddDistance() {
+    val track = TrackAccumulator()
+    // PREPARING: 10 fixes (e.g. 50 m) with running = false, keep = true -> 0 m distance, points kept
+    for (s in 0..10) track.add(fix(s, s * 5.0), running = false, keep = true)
+    assertEquals(0.0, track.distanceM, 0.001)
+    assertTrue(track.points.isNotEmpty())
+
+    // RUNNING 1 km: 200 fixes at 5 m/s -> ~1000 m
+    for (s in 11..211) track.add(fix(s, 50.0 + (s - 10) * 5.0), running = true, keep = true)
+    assertEquals(1000.0, track.distanceM, 2.0)
+
+    // PAUSED 400 m: 80 fixes at 5 m/s with running = false, keep = true -> distance unchanged
+    val beforePause = track.distanceM
+    for (s in 212..292) track.add(fix(s, 1055.0 + (s - 211) * 5.0), running = false, keep = true)
+    assertEquals(beforePause, track.distanceM, 0.001)
+  }
+
+  @Test
   fun jitterOnTheSpotAddsNothing() {
     val track = TrackAccumulator()
     for (s in 0..30) track.add(fix(s, if (s % 2 == 0) 0.0 else 1.5))
@@ -285,5 +303,28 @@ class LiveGpsTrackTest {
     gps.session.watchAsks()
     assertEquals(2, gps.starts)
     assertTrue(gps.session.isTracking)
+  }
+
+  @Test
+  fun trackAccumulatorRetainsTrajectoryPointsAndSessionNeedsGpsStartsTrackingWithoutFeeding() {
+    val acc = TrackAccumulator()
+    assertTrue(acc.add(TrackFix(1_000L, -6.2000, 106.8000, 10.0, 5f, 3f, null)))
+    // Jitter (< 3 m) does not duplicate trajectory point
+    assertTrue(acc.add(TrackFix(2_000L, -6.200001, 106.800001, 10.0, 5f, 3f, null)))
+    assertEquals(1, acc.points.size)
+    // Real step (>= 3 m) records second trajectory point
+    assertTrue(acc.add(TrackFix(5_000L, -6.2001, 106.8001, 14.0, 5f, 3f, null)))
+    assertEquals(2, acc.points.size)
+    assertEquals(listOf(listOf(106.8000, -6.2000), listOf(106.8001, -6.2001)), acc.trailCoordinates())
+    // Invalid coordinates are rejected
+    assertFalse(acc.add(TrackFix(6_000L, Double.NaN, 106.8, null, 5f, 3f, null)))
+    assertFalse(acc.add(TrackFix(7_000L, 95.0, 106.8, null, 5f, 3f, null)))
+    assertEquals(2, acc.points.size)
+
+    val gps = FakeLocation()
+    gps.session.sessionNeedsGps()
+    assertTrue(gps.session.isTracking)
+    assertFalse(gps.session.feeding)
+    assertEquals(1, gps.starts)
   }
 }

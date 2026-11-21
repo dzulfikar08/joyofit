@@ -356,7 +356,7 @@
    "frame": "5a0004000a0507d80c"
   },
   {
-   "result": {"error": "MissingTagException"},
+   "result": {"error": "ArrayIndexOutOfBoundsException"},
    "encryptMethod": 0,
    "service": 10,
    "deviceSupportType": 1,
@@ -381,7 +381,12 @@
    "frame": "5a0009000a050341014242002189"
   },
   {
-   "result": {"error": "MissingTagException"},
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 0,
+    "data": "00",
+    "decodeError": "notTLV"
+   },
    "encryptMethod": 0,
    "service": 10,
    "deviceSupportType": 1,
@@ -391,7 +396,12 @@
    "frame": "5a0005000a0500009a42"
   },
   {
-   "result": {"error": "MissingTagException"},
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 1,
+    "data": "000000",
+    "decodeError": "notTLV"
+   },
    "encryptMethod": 0,
    "service": 10,
    "deviceSupportType": 1,
@@ -401,7 +411,12 @@
    "frame": "5a0007000a050100000066b4"
   },
   {
-   "result": {"error": "MissingTagException"},
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 65,
+    "data": "0142",
+    "decodeError": "notTLV"
+   },
    "encryptMethod": 0,
    "service": 10,
    "deviceSupportType": 1,
@@ -411,7 +426,12 @@
    "frame": "5a0006000a05410142c95b"
   },
   {
-   "result": {"error": "MissingTagException"},
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 126,
+    "data": "0142",
+    "decodeError": "notTLV"
+   },
    "encryptMethod": 0,
    "service": 10,
    "deviceSupportType": 1,
@@ -631,7 +651,12 @@
    "frame": "5a00e4000a057c01017d103dcaceb2da8aebd1f58f15610000000c7e81506622e232ff2e67c12c9d45db9553c2f04dc17e9770563def96b2c58d484e6af3ac93ce8c08287a86da0ca07cb36dcac1c126ec85d98da1d17024679bae1216f011b50d98abc9742fc757d633b439d3e66b6b771d3b464548bd69bf802ee78f696ddedd99518273b057b106b59115d6f036af590baa4c496c205fd640e98662c8a63957c9ac1a5ae62109275120967702ec33b5de1400530ce84cffdb053a4570a6207eec05c3a886369a182af616cb8d3d6a968570aeccc3fcf56e7db2d4d5807c31cf1b646db1b3fae9ac"
   },
   {
-   "result": {"error": "MissingTagException"},
+   "result": {
+    "decodeErrorIsPacketCryptoException": false,
+    "number": 124,
+    "data": "01017d107d80f003596476a7085ce4ef0d788c21",
+    "decodeError": "notTLV"
+   },
    "encryptMethod": 0,
    "service": 10,
    "deviceSupportType": 1,

@@ -80,28 +80,35 @@ Open source (AGPL-3.0): https://github.com/dzulfikar08/joyofit
 ## App Review notes
 
 ```
-JoyoFit is an independent, open-source app that syncs a compatible smartwatch with the iPhone over Bluetooth (compatible models: https://fit.joyorogo.com/jam). It is not made, endorsed or sponsored by any watch maker.
+JoyoFit is an independent, open-source app that syncs a compatible smartwatch with the iPhone over Bluetooth (models: https://fit.joyorogo.com/jam). It is not made, endorsed or sponsored by any watch maker.
 
-DEMO VIDEO (physical iPhone, build 1.1 202610281818): https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-202610281818.mp4 . 0:00: the In-App Purchase screen (both plans, Restore, terms, Terms of Use, Privacy Policy) and Pro active after a Sandbox purchase. From 1:39, BACKGROUND AUDIO: a run with the metronome on Sound, then the Home Screen (1:54) and Spotify (2:12) while the click goes on.
+DEMO VIDEO (physical iPhone): https://maps.fit.joyorogo.com/review/joyofit-ios-demo-1.1-202610281818.mp4 . 0:00 the In-App Purchase screen; from 1:39 BACKGROUND AUDIO: a run with the metronome on Sound, then the Home Screen (1:54) and Spotify (2:12) while the click goes on.
 
-NO DEMO ACCOUNT NEEDED. Watch sync and every screen in the video work without an account. Signing in with a JoyoRogo account only adds cloud backup, Strava upload and the Pro features (Coach, Joyo AI, family sharing beyond the free tier, AI connectors).
+SIGN-IN AND DEMO ACCOUNT: no demo account is needed or possible. The optional JoyoRogo account is created with Sign in with Apple (no username or password exists). Watch sync works without an account.
 
-IN-APP PURCHASE: JoyoRogo Pro is sold in JoyoFit as auto-renewable subscriptions (com.joyodigitama.joyofit.pro.monthly and .yearly, group "JoyoRogo Pro"). Path: sign in on Today's Coach card (Sign in with Apple), then Upgrade to Pro on that card. The Pro screen shows both plans with Apple's prices, Restore, the renewal terms, Terms of Use and Privacy Policy. Pro belongs to the JoyoRogo account, so it is also honoured when bought in our JoyoRogo app (id6823222101, same developer), on Google Play or on joyorogo.com; JoyoFit never links to a purchase outside the App Store. A Sandbox purchase ends in the normal "Pro is on" state.
+IN-APP PURCHASE: JoyoRogo Pro, auto-renewable (com.joyodigitama.joyofit.pro.monthly and .yearly). Path: Today, Coach card, Sign in with Apple, then Upgrade to Pro. A Sandbox purchase ends in the normal "Pro is on" state. Pro is also honoured when bought in our JoyoRogo app (id6823222101); JoyoFit never links to a purchase outside the App Store.
 
-JOYO AI (JoyoRogo Pro, hosted engine): before anything is sent, a consent screen replaces the chat input. Path: Coach, row Joyo AI. It lists the data sent, names the recipients (JoyoRogo's server, PT Joyo Digitama Solusi, and Cloudflare Workers AI, Cloudflare, Inc., which runs the model), what is never sent, why and how long, links to the privacy policy (https://fit.joyorogo.com/privasi#joyo-ai-hosted-en) and asks Agree and continue or Not now; without Agree nothing is sent. Withdraw: engine chip at the top of the chat, Settings, Joyo AI, "Allow JoyoRogo's AI to receive my data". The optional own-key engine has its own consent screen.
+THIRD-PARTY AI AND CONSENT (5.1.1(i), 5.1.2(i)). Nothing is sent to any AI service before the user taps Allow on a screen that says what is sent and who receives it.
+TO SEE THE CONSENT SCREEN:
+1. Today: Sign in with Apple, Upgrade to Pro, buy a plan in the Sandbox.
+2. Today: tap the sparkle button at the top right ("Ask Joyo AI"). Or: open the Coach card on Today, row "Joyo AI".
+3. The whole screen is the consent "Allow Joyo AI to send your data to Cloudflare Workers AI?", before any chat or text field. It lists the data sent (messages; age, sex, height, weight, goal; recovery, sleep, workouts, training plan; food totals), what is never sent, the recipients (JoyoRogo's server, PT Joyo Digitama Solusi, and Cloudflare Workers AI, Cloudflare, Inc., running the open model Gemma 4 26B; Google receives nothing), purpose and retention, and the privacy policy. "Not now" leaves and sends nothing; "Allow" opens the chat.
+4. Review or withdraw any time: More tab (settings), section Coach & AI, "AI and your data". It lists every AI recipient with its date and a Withdraw button.
+Other AI paths, each with its own consent naming the recipient: own API key (More, Joyo AI, Set up your own key: the chosen provider, e.g. OpenAI, is named and a consent box must be ticked) and Connect ChatGPT or Claude (Pro; the address stays hidden until "Agree and show address").
+Privacy policy: https://fit.joyorogo.com/privasi#ai-data-en
 
-WITHOUT A WATCH you can still see the setup guide, the Today, Workouts and Watch screens (empty states), the watch scan and every Settings screen.
+WITHOUT A WATCH you can see the setup guide, the Today, Workouts and Watch screens (empty), the watch scan and every screen under More.
 
-PERMISSIONS and why:
-- Bluetooth: connect to the user's own watch (prompt when the user taps Connect) and, optionally, heart rate straps, cycling sensors, running pods and a Bluetooth scale the user pairs.
-- Location (when in use): optional; weather on the watch (rounded to about 1 km before it goes to Open-Meteo), the position for a watch workout, and the route of a phone workout.
-- Motion & Fitness: steps and cadence of a run or walk the user records on the phone.
-- Apple Health: writes the watch's steps, distance, energy, heart rate, SpO2, sleep and workouts when the user switches the export on; reads history once, only when the user taps Import from Apple Health. Nothing read leaves the phone.
-- Camera and Photos: only when the user takes or picks a photo, or taps Save on a shared image. Every explanation before a permission has one Continue or Next button that leads to the system request.
-- Background modes: bluetooth-central (reconnect and sync the watch; keep a paired strap during a phone workout), location (only while a phone workout with GPS runs), audio (the cadence metronome of a phone workout: set to Sound, the click goes on with the screen locked or another app in front, mixed with the user's music; never records audio; see the video. Path: Workouts, Record workout, Run, Continue, Start, Metronome on, Sound).
-- Encryption: the watch link uses AES and HMAC; ITSAppUsesNonExemptEncryption is false.
+PERMISSIONS:
+- Bluetooth: the user's own watch, and optional straps, sensors and scale.
+- Location (when in use): optional; watch weather (rounded to about 1 km, sent to Open-Meteo), workout position and phone workout routes.
+- Motion & Fitness: steps and cadence of a phone workout.
+- Apple Health: writes watch data when the user turns export on; reads history once when the user taps Import. Nothing read leaves the phone.
+- Camera and Photos: only when the user takes, picks or saves a photo. Each explanation before a permission has one Continue or Next button that leads to the system request.
+- Background modes: bluetooth-central (watch sync), location (only during a phone workout with GPS), audio (the cadence metronome: on Sound the click goes on with the screen locked or another app in front; never records; see the video. Path: Workouts, Record workout, Run, Continue, Start, Metronome on, Sound).
+- Encryption: AES and HMAC on the watch link; ITSAppUsesNonExemptEncryption is false.
 
-FAMILY SHARING (optional, off until used): a few daily numbers (steps, resting heart rate, sleep, optional SpO2, battery) shared with a person the user invites, one consent switch per category; stopping deletes the history. Not a medical tool.
+FAMILY SHARING (optional): a few daily numbers shared with a person the user invites, one consent switch per category; stopping deletes the history. Not a medical tool.
 
 ```
 
@@ -417,3 +424,37 @@ Dzulfikar Ats Tsauri
 1. Deploy the site (`cd site && bun run deploy`) so the privacy-policy section and its anchors exist; open https://fit.joyorogo.com/privasi#joyo-ai-hosted-en to check.
 2. Ship the JS (OTA, `docs/ota.md`) to TestFlight 1.1 (202610281818), or a new build if the review needs one; it contains no native change. The iOS "Take photo" camera prompt (`stickers/photo.ts`) is not tried on a device [INFERENCE]: check it once.
 3. Replace the App Review notes in App Store Connect with the block at the top of this file; send the reply above with the resubmission.
+
+## Review 2026-11-17: 5.1.1(i), 5.1.2(i) again on 1.1 (202611031140), second fix 2026-11-18
+
+Build 202611031140 (Release iOS run 41628968710, master `6d257947`) already had the hosted consent card; Apple rejected it again
+with the same text. PR #101 (2026-11-17) added the connector consent and stopped the watch-meal macro estimate. This change makes the
+hosted consent impossible to miss and puts every AI consent in one place, the way JoyoArto answered the identical rejection:
+
+- **Full-screen consent before the chat.** `chatGate` (`src/features/ai/aiPrivacy.ts`) returns `rogoConsent` for Pro on the hosted
+  engine without a current yes; `JoyoAiChat` then renders `HostedConsentGate` instead of the whole chat (no history, no input field):
+  the question "Allow Joyo AI to send your data to Cloudflare Workers AI?", the recipients (JoyoRogo's server, PT Joyo Digitama Solusi;
+  Cloudflare Workers AI, Cloudflare, Inc., running Gemma 4 26B, an open model made by Google, which receives nothing), the data list,
+  what is never sent, purpose and retention, the privacy link, and **Allow** / **Not now** pinned at the bottom.
+- **Settings, Coach & AI, AI and your data** (`/settings/ai-consent`): the hosted engine, every own-key provider with a yes and the
+  ChatGPT or Claude connector, each with its date and a withdraw.
+- **Privacy policy:** new sections `#ai-data` / `#ai-data-en` (every AI path, what is sent, how it is collected, every use, recipients,
+  equal protection by Cloudflare as processor, never sent, where to withdraw); the hosted sections name the model and Allow.
+- **Wire:** `coach/chat` now also carries `aiConsent: { version, at }`. JoyoRogo ignores it today; enforcing it is a joyorogo change.
+- Tests: `src/features/ai/aiPrivacy.test.ts`.
+
+How a reviewer reaches the consent (Pro is needed for the hosted engine; a Sandbox purchase gives it):
+
+1. Today: sign in (Sign in with Apple), Upgrade to Pro, buy a plan in the Sandbox.
+2. Today, the sparkle button at the top right ("Ask Joyo AI"), or Coach, row Joyo AI. The full-screen consent opens before any chat.
+   Not now goes back and nothing is sent; Allow opens the chat.
+3. Review or withdraw: Settings, Coach & AI, **AI and your data**.
+
+Without Pro the same sparkle button opens "Set up your own key", where the provider-specific consent (named provider, data list,
+18+ box) must be ticked before anything is sent.
+
+Owner checklist: deploy the site (`cd site && bun run deploy`) before resubmitting so `#ai-data-en` exists; ship the JS in a new
+build (no native change). The App Review notes block above was rewritten to fit Apple's 4,000 characters (about 3,770) with the exact
+steps to the consent. There is no demo account: JoyoFit signs in only with Sign in with Apple (Google on Android), so there is no
+username and password to give; the reviewer signs in with Apple and buys Pro in the Sandbox, as in the 2026-11-03 review. Leave
+"Sign-in required" unticked in App Review Information.

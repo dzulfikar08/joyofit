@@ -61,6 +61,7 @@ internal class WorkoutLink(
 
   init {
     live.onEnded = { phoneGps.sessionEnded() }
+    live.onNeedsGps = { phoneGps.sessionNeedsGps() }
   }
 
   private fun log(message: String) = events.log(LogDirection.INFO, null, null, null, message)
@@ -128,20 +129,36 @@ internal class WorkoutLink(
   /** The watch has answered the poll with a workout state at least once on this link. */
   @Volatile
   private var statusAnswered = false
+  /** The poll gave up on its first probe (no `17/03`, or a busy link at connect); [pollSoon] still asks now and then. */
+  @Volatile
+  private var statusUnsupported = false
+  @Volatile
+  private var logged1703Notice = false
+  @Volatile
+  private var lastRetryAtMs = 0L
 
-  private fun startStatusPoll(session: HuaweiSession) {
+  private fun startStatusPoll(session: HuaweiSession, initialDelayMs: Long = STATUS_FIRST_MS, resetAnswered: Boolean = true) {
     statusPoll?.cancel()
-    statusAnswered = false
+    if (resetAnswered) {
+      statusAnswered = false
+      statusUnsupported = false
+      logged1703Notice = false
+    }
+    if (statusUnsupported) return
     // The Fit 4 Pro does not list 17/03; it is probed anyway and the poll stops on the first failure.
-    if (!DeviceCaps.supports(WORKOUT_SERVICE, STATUS)) log("Workout link: the watch does not list 17/03; probing it")
+    if (!DeviceCaps.supports(WORKOUT_SERVICE, STATUS) && !logged1703Notice) {
+      logged1703Notice = true
+      log("Workout link: the watch does not list 17/03; probing it")
+    }
     statusPoll = scope.launch {
-      kotlinx.coroutines.delay(STATUS_FIRST_MS)
+      if (initialDelayMs > 0) kotlinx.coroutines.delay(initialDelayMs)
       while (true) {
         val handle = link.handle() ?: return@launch
         if (handle.session !== session) return@launch
         // Once the watch has answered, a failed poll is a busy or briefly lost link, not a missing command: keep polling,
         // or a running workout would lose its end signal.
         if (!pollStatus(handle.session) && !statusAnswered) {
+          statusUnsupported = true
           log("Workout link: no workout status from the watch; indoor workouts need Start on the phone")
           return@launch
         }
@@ -154,12 +171,33 @@ internal class WorkoutLink(
 
   /** Asks the status now, outside the poll's rhythm (a GPS request opened a session that waits for GO, the watch closed its workout). */
   private fun pollSoon() {
+    if (statusUnsupported) {
+      retryUnsupported()
+      return
+    }
     if (statusPoll?.isActive == true) {
       pollWake.trySend(Unit)
       return
     }
     val handle = link.handle() ?: return
-    scope.launch { pollStatus(handle.session) }
+    startStatusPoll(handle.session, initialDelayMs = 0L, resetAnswered = false)
+  }
+
+  /**
+   * The poll stopped after a failed first probe. That is a watch without `17/03`, or one whose link was busy at connect: ask once
+   * more, at most every [STATUS_RETRY_MS], and bring the poll back when it answers.
+   */
+  private fun retryUnsupported() {
+    val now = System.currentTimeMillis()
+    if (now - lastRetryAtMs < STATUS_RETRY_MS) return
+    lastRetryAtMs = now
+    val handle = link.handle() ?: return
+    scope.launch {
+      if (pollStatus(handle.session)) {
+        statusUnsupported = false
+        startStatusPoll(handle.session, initialDelayMs = 0L, resetAnswered = false)
+      }
+    }
   }
 
   /** False when the watch does not answer with a status (unsupported, or no answer yet). */
@@ -180,7 +218,6 @@ internal class WorkoutLink(
       log("Workout link: workout status $text")
     }
     if (tlv == null || !tlv.contains(0x81)) {
-      // A watch that already answered with a workout state and now sends none has no workout to report.
       if (!statusAnswered) return false
       live.watchStatus(WatchPhase.IDLE, workoutType = null)
       return true
@@ -292,6 +329,9 @@ internal class WorkoutLink(
     if (!hasFineLocation()) {
       log("Workout link: the watch asks for the phone's GPS, but JoyoFit has no precise location permission")
       return false
+    }
+    if (WatchService.isActive) {
+      runCatching { WatchService.start(appContext) }
     }
     val manager = appContext.getSystemService(LocationManager::class.java) ?: return false
     val fused = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && LocationManager.FUSED_PROVIDER in manager.allProviders
@@ -416,6 +456,8 @@ internal class WorkoutLink(
   }
 
   companion object {
+    /** How often [pollSoon] asks a watch whose first status probe failed. */
+    const val STATUS_RETRY_MS = 60_000L
     const val GPS_SERVICE = 0x18
     const val GPS_STATUS = 0x02
     const val GPS_DATA = 0x03

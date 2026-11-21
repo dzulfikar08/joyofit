@@ -34,6 +34,8 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
     public static let defaultWeightKg = 70.0
     /// How often the GPS-request session's watchdog looks at the silence (`LiveWorkoutPolicy.silenceVerdict`).
     public static let watchdogEveryMs = 15_000
+    /// How often a push carries the whole trail (forced pushes and the end always do).
+    static let trailEveryMs: Int64 = 5_000
 
     private struct Session {
         let id: Int64
@@ -70,6 +72,7 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
         mutating func setStatus(_ status: Status, nowMs now: Int64) {
             if self.status == status { return }
             if status == .running { phoneTrack.startStretch(nowMs: now) }
+            if status == .paused { phoneTrack.pause() }
             if source != .watch {
                 switch status {
                 case .running:
@@ -109,6 +112,9 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
     private var screenClosedAtMs: Int64 = 0
     /// When the watch last said its workout screen opened (`18/08 {01: 1}`): a GPS request after that is no straggler of an ended session.
     private var screenOpenedAtMs: Int64 = 0
+    private var lastPersistedTrackMs: Int64 = 0
+    /// When the last push carried the whole trail; between those, JS draws the new positions itself.
+    private var lastTrailSentMs: Int64 = 0
 
     /// Called once each time a session ends, never with `lock` held: the phone's location updates for it stop (`WorkoutLink`,
     /// `PhoneGpsSession.sessionEnded`).
@@ -117,6 +123,20 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
         set { lock.locked { _onEnded = newValue } }
     }
     private var _onEnded: @Sendable () -> Void = {}
+
+    /// Called when an active outdoor live session needs phone GPS tracking started (`PhoneGpsSession.sessionNeedsGps`).
+    public var onNeedsGps: @Sendable () -> Void {
+        get { lock.locked { _onNeedsGps } }
+        set { lock.locked { _onNeedsGps = newValue } }
+    }
+    private var _onNeedsGps: @Sendable () -> Void = {}
+
+    /// Called when a session with a phone Connected GPS route ends so stored workouts can be backfilled or synced.
+    public var onTrackCompleted: @Sendable (ConnectedGpsSession) -> Void {
+        get { lock.locked { _onTrackCompleted } }
+        set { lock.locked { _onTrackCompleted = newValue } }
+    }
+    private var _onTrackCompleted: @Sendable (ConnectedGpsSession) -> Void = { _ in }
 
     /// True while a workout the phone started on the watch (`WatchWorkoutControl`) is owned by a screen of its own (the strength logger): the
     /// watch's workout is then not mirrored as a live workout, which would open a second screen for the same session. A mirror that is already
@@ -154,7 +174,7 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
     }
 
     /// The current or last workout for JS (`getLiveWorkout`), nil when none was seen since the app started.
-    public func snapshot() -> [String: Any]? { lock.locked { session.map(toJS) } }
+    public func snapshot() -> [String: Any]? { lock.locked { session.map { toJS($0) } } }
 
     /// True from a workout's start until it ends.
     public var isLive: Bool { lock.locked { session.map { $0.status != .ended } ?? false } }
@@ -398,7 +418,12 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
             }
             if phase != .idle {
                 if let workoutType, s.sportType == nil { s.sportType = workoutType }
-                if s.source != .watch {
+                if s.source == .watch {
+                    if s.endSuspected {
+                        s.endSuspected = false
+                        changed = true
+                    }
+                } else {
                     if running { s.confirmed = true }
                     if let want = LiveWorkoutPolicy.statusTarget(s.status, phase), s.status != want {
                         if phase == .open {
@@ -495,28 +520,45 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
         log("Live workout: the watch asked for the phone's GPS; following its heart rate (timer waits for the watch to start the workout)")
         setHeartRateActive(true)
         lock.locked {
-            watchdog?.cancel()
-            watchdog = Task { [weak self] in
-                while !Task.isCancelled {
-                    guard let every = self?.watchdogEveryMs else { return }
-                    try? await Task.sleep(nanoseconds: UInt64(every) * 1_000_000)
-                    if Task.isCancelled { return }
-                    guard let self else { return }
-                    self.watchdogTick()
-                }
-            }
+            startWatchdogLocked()
         }
         publish(force: true)
         return askStatus
     }
 
-    /// The GPS-request session's watchdog (`LiveWorkoutPolicy.silenceVerdict`): the watch stops asking once its own GPS has a fix, so silence alone
-    /// says nothing while the status poll answers; then the poll decides. Without answers, silence asks the user first and ends the session later.
+    private func startWatchdogLocked() {
+        if watchdog != nil { return }
+        watchdog = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let every = self?.watchdogEveryMs else { return }
+                try? await Task.sleep(nanoseconds: UInt64(every) * 1_000_000)
+                if Task.isCancelled { return }
+                guard let self else { return }
+                self.watchdogTick()
+            }
+        }
+    }
+
+    /// The watchdog (`LiveWorkoutPolicy.silenceVerdict` and `watchSilenceVerdict`): checks for silence on GPS-request and watch-fed sessions.
     private func watchdogTick() {
+        var isGps = false
         let verdict: LiveWorkoutPolicy.Verdict = lock.locked {
-            guard var s = session, s.source == .gps, s.status != .ended else { return .keep }
+            guard var s = session, s.status != .ended else { return .keep }
             let now = nowMs()
-            let silence = LiveWorkoutPolicy.silenceVerdict(preparing: s.status == .preparing, msSinceGps: now - s.lastGpsAtMs, msSinceStatus: now - lastStatusAtMs)
+            isGps = s.source == .gps
+            let silence: LiveWorkoutPolicy.Verdict
+            if s.source == .gps {
+                silence = LiveWorkoutPolicy.silenceVerdict(preparing: s.status == .preparing, msSinceGps: now - s.lastGpsAtMs, msSinceStatus: now - lastStatusAtMs)
+            } else if s.source == .watch {
+                silence = LiveWorkoutPolicy.watchSilenceVerdict(
+                    msSinceFrame: now - s.updatedAtMs,
+                    msSinceStatus: now - lastStatusAtMs,
+                    statusAnswered: lastStatusAtMs != 0,
+                    isPaused: s.status == .paused
+                )
+            } else {
+                return .keep
+            }
             if silence != .suspect { return silence }
             if s.endSuspected { return .keep }
             s.endSuspected = true
@@ -524,9 +566,16 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
             return .suspect
         }
         switch verdict {
-        case .end: end("the watch stopped asking for GPS and does not answer the status poll")
+        case .end:
+            let reason: String
+            if isGps {
+                reason = "the watch stopped asking for GPS and does not answer the status poll"
+            } else {
+                reason = lastStatusAtMs != 0 ? "the watch stopped sending data and does not answer the status poll" : "the watch stopped sending data"
+            }
+            end(reason)
         case .suspect:
-            log("Live workout: the watch stopped asking for GPS and does not answer the status poll; asking the user")
+            log("Live workout: the watch went quiet; asking the user")
             publish(force: true)
         case .keep: break
         }
@@ -571,11 +620,15 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
         if mirrorBlocked() { return }
         let outcome: (live: Bool, started: Bool) = lock.locked {
             guard var s = session, s.status != .ended else { return (false, false) }
+            let keepForMap = s.gpsRequested || s.source == .gps || s.status == .running
+            let counts = s.status == .running
             let silentWatch = lastStatusAtMs == 0 && !reportsSeen && s.source != .watch
-            let moving = s.phoneTrack.onFix(fix, running: s.status == .running, motionStarts: s.status == .preparing && silentWatch)
-            if moving { s.setStatus(.running, nowMs: nowMs()) }
+            let moving = s.phoneTrack.onFix(fix, running: counts, keep: keepForMap, motionStarts: s.status == .preparing && silentWatch)
+            let hasMovement = (fix.speed.map { $0 >= 0.4 } ?? false) && (fix.accuracy.map { $0 <= TrackAccumulator.maxAccuracyM } ?? true)
+            let shouldStart = s.status == .preparing && (moving || (silentWatch && s.gpsRequested && hasMovement))
+            if shouldStart { s.setStatus(.running, nowMs: nowMs()) }
             session = s
-            return (true, moving)
+            return (true, shouldStart)
         }
         if !outcome.live { return }
         if outcome.started { log("Live workout: the watch gives no sign of a start; the person is moving, timer running") }
@@ -634,10 +687,11 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
             if status == .paused { s.clock.pause(now) }
             s.metrics.durationSec = 0
         }
+        startWatchdogLocked()
         return s
     }
 
-    private func toJS(_ s: Session) -> [String: Any] {
+    private func toJS(_ s: Session, includeTrail: Bool = true) -> [String: Any] {
         let m = s.metrics
         let located = s.phoneTrack.location
         let track = s.phoneTrack.track
@@ -647,7 +701,7 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
         case .gps, .status: confirmed = s.confirmed
         }
         func v(_ x: Any?) -> Any { x ?? NSNull() }
-        return [
+        var out: [String: Any] = [
             "id": Double(s.id),
             "status": s.status.rawValue,
             "source": s.source.rawValue,
@@ -684,20 +738,56 @@ public final class LiveWorkout: DataSyncFeature, @unchecked Sendable {
             "gpsRiseM": v(located.map { _ in track.riseM }),
             "gpsPaceSecPerKm": v(track.paceSecPerKm),
         ]
+        // The trail is up to 500 points: sent every few seconds, not on every push (JS keeps the last one when it is absent).
+        if includeTrail { out["trail"] = track.trailCoordinates() }
+        return out
+    }
+
+    private func toConnectedGpsSession(_ s: Session) -> ConnectedGpsSession? {
+        let pts = s.phoneTrack.track.points
+        if pts.count < 2 || WorkoutSportTypes.isIndoor(s.sportType) { return nil }
+        let firstSec = pts[0].timeMs / 1000
+        let lastSec = pts[pts.count - 1].timeMs / 1000
+        let endSec = max((s.endedAtMs ?? s.updatedAtMs) / 1000, lastSec)
+        let durSec = Int64(max(0, s.metrics.durationSec ?? 0))
+        let startFromDur = durSec > 0 ? endSec - durSec : firstSec
+        let startSec = max(1, min(firstSec, min(startFromDur, s.id / 1000)))
+        return ConnectedGpsSession(
+            id: String(s.id),
+            startSec: startSec,
+            endSec: max(startSec, endSec),
+            sportType: s.sportType,
+            distanceM: s.phoneTrack.track.distanceM,
+            riseM: s.phoneTrack.track.riseM,
+            points: pts
+        )
     }
 
     private func publish(force: Bool) {
-        guard let (payload, status, justEnded) = lock.locked({ () -> ([String: Any], Status, Bool)? in
+        guard let (payload, status, justEnded, needsGps, connectedTrack, shouldPersist) = lock.locked({
+            () -> ([String: Any], Status, Bool, Bool, ConnectedGpsSession?, Bool)? in
             guard var s = session else { return nil }
+            let nowWall = nowMs()
             let justEnded = s.status == .ended && !s.endReported
             if justEnded {
                 s.endReported = true
                 session = s
             }
-            return (toJS(s), s.status, justEnded)
+            let needsGps = s.status != .ended && (s.gpsRequested || s.source == .gps || WorkoutSportTypes.isOutdoor(s.sportType))
+            let shouldPersist = justEnded || (nowWall - lastPersistedTrackMs >= 30_000)
+            let track = shouldPersist ? toConnectedGpsSession(s) : nil
+            if track != nil { lastPersistedTrackMs = nowWall }
+            let includeTrail = force || s.status == .ended || nowWall - lastTrailSentMs >= Self.trailEveryMs
+            if includeTrail { lastTrailSentMs = nowWall }
+            return (toJS(s, includeTrail: includeTrail), s.status, justEnded, needsGps, track, shouldPersist && track != nil)
         }) else { return }
+        if needsGps { onNeedsGps() }
+        if let connectedTrack { ConnectedGpsStore.shared.upsert(connectedTrack, persist: shouldPersist) }
         events.liveWorkout(payload)
-        if justEnded { onEnded() }
+        if justEnded {
+            onEnded()
+            if let connectedTrack { onTrackCompleted(connectedTrack) }
+        }
         // The heart-rate sensor is released once, however many pushes the ended workout still gets.
         if status == .ended {
             let first: Bool = lock.locked {

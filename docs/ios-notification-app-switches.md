@@ -165,6 +165,10 @@ On iOS the Fit 4 Pro talks BLE GATT, service `FE86`, write char `FE01` (write wi
 | 6 | "All on" (CN UI) or turn a second app off, then screenshot the screen | whether HH sends the changed entry only or the whole list |
 | 7 | Stop the trace | |
 
+**Reading it without Wireshark.** `bun scripts/hh-notif-capture.ts hh-notif.pklg` (or the `.pcap`) rebuilds the Huawei frames from the
+ATT writes and notifications and prints each 0x02 frame with its time, direction, `7E` length and the GCM plaintext length; `--all` lists every
+service, for the case where no 02/0B shows up. Note the clock time of each toggle so it can be matched to the printed seconds.
+
 **What to look for.** Wireshark filter on the export: `btatt.value[0:1] == 5a && (btatt.value[4:2] == 02:0b || btatt.value[5:2] == 02:0b)` (unsliced: service at byte 4; sliced first fragment: byte 5). Then for each frame read the `7E` length and compute `plaintext = len - 16` (GCM):
 
 | One-app 02/0B plaintext | Meaning |
@@ -236,6 +240,21 @@ encoding. Details and the safety rules are in `docs/ios.md` (Per-app notificatio
   style questions for Messages (and, for A and B, any catalogue app); it does **not** answer "Other" (the row sends the guess `other`).
 - Still open until a TestFlight run: bit 161 on the Fit 4 Pro (logged), whether the watch replies to 02/0B at all (the answer code is logged), and
   every encoding question above. The result line goes to the support report.
+
+## 7c. First results from testers (support reports, 2026-11-12/13)
+
+Three "Uji filter" runs from JoyoFit 1.1 (202611051423) on iOS 27, all ending `none` (no candidate hid the message):
+
+| Report | Watch, firmware | App tested | Tried | Watch's answer to each 02/0B |
+|---|---|---|---|---|
+| JRG-490 | Band 11 Pro, 6.0.0.130(SP3C00M03) | `net.whatsapp.WhatsApp` | A=shown, B=shown | 100000 (OK) |
+| JRG-491 | Watch Fit 4, 6.1.0.117(SP20C00M05) | `net.whatsapp.WhatsApp` | A=shown, B=shown | 100000 (OK) |
+| JRG-492 | Watch Fit 4, 6.1.0.117(SP20C00M05) | `com.burbn.instagram` | A=shown, B=shown | 100000 (OK) |
+
+What this settles: bit 161 is set on both models (`gate161=yes`), and the watch accepts 02/0B and answers OK. On these two models, sending the bundle id
+does not filter, with either polarity. C1/C2 were not tried because WhatsApp and Instagram have no known Huawei catalogue number. Next: a run with
+Messages (the one app with a number, `appid` 1) to test C1/C2. Without that, the HH iOS capture in section 4 is the remaining way to learn the id
+string. 02/0B is still not listed in SupportedCommands on either model (02: 01 04 06 08), only gated by bit 161.
 
 ## 8. Confidence summary
 

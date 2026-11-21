@@ -173,7 +173,10 @@
       "inferred": "Jam meminta GPS, jadi ini sepertinya latihan di luar ruangan. Yang mana?"
     },
     "map": {
-      "waiting": "Menunggu posisi GPS ponsel"
+      "waiting": "Menunggu posisi GPS ponsel",
+      "needsLocation": "Izin lokasi diperlukan untuk merekam rute GPS jam.",
+      "allowLocation": "Izinkan lokasi",
+      "openSettings": "Buka pengaturan"
     },
     "steps": {
       "ask": "Kadensi, langkah, dan panjang langkah diambil dari penghitung langkah ponselmu (jam tidak mengirimnya). Untuk menampilkannya di sini, JoyoFit meminta akses ke penghitung langkah.",

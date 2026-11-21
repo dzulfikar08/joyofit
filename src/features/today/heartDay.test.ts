@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 
 import { openMemoryDb } from '@/cloud/syncTestKit';
 
-import { bridgeShortGaps, bucketCount, bucketOf, buildHeartDay, heartDaySeries, HEART_BUCKET_SEC } from './heartDay';
+import { bridgeShortGaps, bucketCount, bucketOf, buildHeartDay, heartDaySeries, HEART_BUCKET_SEC, restingNotShared } from './heartDay';
 import { listHeartBuckets, loadHeartDay } from './heartDayQuery';
 import { hrZonesForMax } from '@/features/hrzones/zones';
 
@@ -126,5 +126,29 @@ describe('listHeartBuckets', () => {
     expect(data.resting).toBe(52);
     expect(data.day.stats).toEqual({ min: 130, max: 130, avg: 130, readings: 10 });
     expect(data.zoneSeconds.reduce((a, b) => a + b, 0)).toBeGreaterThan(0);
+    expect(data.restingRecently).toBe(true);
+  });
+
+  it('looks back two weeks for a resting rate, not further', async () => {
+    const { raw, db } = openMemoryDb();
+    insert(raw, DAY + 60, 70);
+    expect((await loadHeartDay(db, DAY, END, hrZonesForMax(190).bounds)).restingRecently).toBe(false);
+    insert(raw, DAY - 13 * 86400, 60);
+    raw.query('UPDATE step_samples SET resting_heart_rate = 55 WHERE timestamp = ?').run(DAY - 13 * 86400);
+    expect((await loadHeartDay(db, DAY, END, hrZonesForMax(190).bounds)).restingRecently).toBe(true);
+    // 15 days before the day's end is outside the window.
+    raw.query('UPDATE step_samples SET timestamp = ? WHERE timestamp = ?').run(END - 15 * 86400, DAY - 13 * 86400);
+    expect((await loadHeartDay(db, DAY, END, hrZonesForMax(190).bounds)).restingRecently).toBe(false);
+  });
+});
+
+describe('restingNotShared', () => {
+  it('explains a missing resting rate only for a watch that has not sent one lately (HONOR Watch ES, JRG-487)', () => {
+    expect(restingNotShared(true, null, false)).toBe(true);
+    // A watch that sent one in the last two weeks just has none yet today.
+    expect(restingNotShared(true, null, true)).toBe(false);
+    expect(restingNotShared(true, 61, false)).toBe(false);
+    // No readings at all: the empty-day notice says enough.
+    expect(restingNotShared(false, null, false)).toBe(false);
   });
 });

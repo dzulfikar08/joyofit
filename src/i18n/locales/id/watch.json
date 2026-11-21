@@ -66,7 +66,9 @@
       "busy": "Tidak bisa terhubung ke jam. Kalau jam masih terhubung ke HP atau aplikasi lain (Huawei Health, atau JoyoFit di HP lain), putuskan dulu di sana. Biarkan jam tetap menyala dan dekat dengan HP ini, lalu ketuk Coba lagi.",
       "noWatchIos": "Jam tidak ditemukan. Kalau jam masih terhubung ke HP lain, putuskan dulu di sana. Pastikan jam menyala dan dekat dengan HP ini, lalu ketuk Segarkan.",
       "noWatchScan": "Tidak ada jam di sekitar. Kalau jam masih terhubung ke HP atau aplikasi lain (Huawei Health, atau JoyoFit di HP lain), putuskan dulu di sana. Pastikan jam menyala dan dekat dengan HP ini, lalu cari lagi.",
-      "notPaired": "Android tidak punya pairing Bluetooth dengan jam ini (terhapus, atau jam menolak dipasangkan lagi). Buka pengaturan Bluetooth Android dan pasangkan jamnya, lalu ketuk Coba lagi. Kalau jam tidak muncul di sana, lepas HP ini sekali di pengaturan Bluetooth jam. JoyoFit tidak menghapus apa pun."
+      "notPaired": "Android tidak punya pairing Bluetooth dengan jam ini (terhapus, atau jam menolak dipasangkan lagi). Buka pengaturan Bluetooth Android dan pasangkan jamnya, lalu ketuk Coba lagi. Kalau jam tidak muncul di sana, lepas HP ini sekali di pengaturan Bluetooth jam. JoyoFit tidak menghapus apa pun.",
+      "bondRemovedIos": "Jam sudah tidak punya pairing Bluetooth dengan iPhone ini (jam direset, atau dipasangkan ke HP lain), tapi iPhone masih menyimpan pairing lama, jadi iPhone menolak jam. Buka Pengaturan > Bluetooth, ketuk ikon (i) di samping jam, pilih Lupakan Perangkat Ini, lalu ketuk Coba lagi dan terima permintaan pairing.",
+      "noHuaweiService": "Perangkat ini tidak menyediakan koneksi Huawei yang dipakai JoyoFit. Kemungkinan besar ini band atau jam yang memakai protokol produsen lain (beberapa model HONOR CHOICE begitu), dan JoyoFit tidak bisa terhubung ke sana. Kalau ini jam Huawei atau HONOR yang sebelumnya bisa, mulai ulang jamnya lalu ketuk Coba lagi."
     },
     "silent": {
       "short": "Jam tersambung lewat Bluetooth tapi tidak menjawab. Langkah perbaikannya ada di Lainnya, Jam.",
@@ -290,8 +292,8 @@
     "storageBreakdown": "{{custom}} kustom · {{factory}} bawaan",
     "storageTelemetryFootnote": "Kapasitas penyimpanan dilaporkan langsung oleh perangkat jam.",
     "storageEstimateFootnote": "Model Band tidak menyiarkan sisa penyimpanan lewat BLE. Metrik diperkirakan dari batas flash.",
-    "installRejected": "Pemasangan Ditolak",
-    "installRejectedHint": "Jam menolak \"{{name}}\". Memori jam mungkin penuh, atau file tidak sesuai dengan ukuran layar.",
+    "installRejected": "Tidak terpasang",
+    "installRejectedHint": "Jam tidak memasang \"{{name}}\". {{reason}}",
     "deleteFromStorage": "Hapus dari Penyimpanan",
     "deleteFromStorageOnWatch": "Hapus \"{{title}}\" dari penyimpanan ponsel?\n\nTampilan ini sedang terpasang di jam dan akan tetap ada di jam sampai dihapus dari jam.",
     "deleteFromStorageOnly": "Hapus permanen \"{{title}}\" dari penyimpanan ponsel? Untuk memasangnya lagi di masa depan, kamu perlu mengimpornya kembali.",
@@ -333,7 +335,7 @@
     "noSavedHintIos": "Di iPhone tampilan jam dikirim ke jam langsung dari file dan tidak disimpan di sini. Pakai Pasang dari file di atas untuk memasangnya.",
     "installFromFileHint": "Pasang file .hwt langsung ke jam. Di iPhone file dikirim dari pemilih file dan tidak disimpan di perpustakaan ini.",
     "gbModeLabel": "Pasang mode kompatibilitas",
-    "gbModeHint": "Untuk jam yang menolak tampilan tanpa tanda tangan. Memasang dengan cara seperti Gadgetbridge. Biarkan nonaktif kecuali tampilan terhapus tepat setelah dipasang.",
+    "gbModeHint": "Untuk jam yang menolak tampilan tanpa tanda tangan. Memasang dengan cara seperti Gadgetbridge. Biarkan nonaktif kecuali tampilan terhapus tepat setelah dipasang. Mengaktifkan atau menonaktifkannya menyambungkan ulang jam.",
     "installed": "Terpasang",
     "installedOnWatch": "Terpasang di Jam",
     "wrongSize": "Ukuran salah",

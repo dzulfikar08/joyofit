@@ -3,8 +3,8 @@
 //  - Phone GPS (GB `AsynchronousResponse.handleGpsRequest`, `SendGpsDataRequest`): answer `18/02 {7F: 100000}`, read the watch's wanted fields
 //    once (`18/01`), then stream every phone fix good enough for a track (`TrackAccumulator.maxAccuracyM`) as `18/03 81{82{...}}` until `{01: 0}`.
 //    The location updates themselves run until the live session ends (`PhoneGpsSession`): the watch withdraws its request once its own GPS has
-//    a fix, and the phone's track (`LiveWorkout.onLocation`) is the only distance and pace there is. On iOS the stream is CoreLocation with
-//    when-in-use authorization and no background location, so fixes flow while the app is in the foreground.
+//    a fix, and the phone's track (`LiveWorkout.onLocation`) is the only distance and pace there is. On iOS the stream uses CoreLocation with
+//    the declared `location` background mode, so fixes flow even when the app is backgrounded or the screen is locked.
 //  - Live numbers (as Huawei Health does): open the realtime report with `17/12 {01: 1}`; the watch pushes `17/11`, decoded into `LiveWorkout`.
 //  - The `17/03` status poll (`WatchPhase`): the only signal an indoor workout gives, and the one that tells GO from the GO screen. Every 2 s while
 //    a session waits for GO, 5 s while one is followed, 30 s otherwise (`LiveWorkout.pollEveryMs`); a GPS request, its withdrawal or the watch's
@@ -19,6 +19,8 @@ import HuaweiProtocol
 
 public final class WorkoutLink: LinkObserver, @unchecked Sendable {
     public static let requestMs = 5_000
+    /// How often `pollSoon` asks a watch whose first status probe failed.
+    static let statusRetryMs: Int64 = 60_000
     public static let statusFirstMs = 5_000
 
     private let link: LinkHandleSource
@@ -46,6 +48,10 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
     private var pollWakePending = false
     /// The watch has answered the poll with a workout state at least once on this link.
     private var statusAnswered = false
+    /// The poll gave up on its first probe (no `17/03`, or a busy link at connect); `pollSoon` still asks now and then.
+    private var statusUnsupported = false
+    private var lastRetryAtMs: Int64 = 0
+    private var logged1703Notice = false
     private var lastStatusLog: String?
     private var reportsLogged = 0
     private var fixesLogged = 0
@@ -65,6 +71,7 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
         self.nowMs = nowMs
         phoneGps = PhoneGpsSession(start: { [weak self] in self?.startLocation() ?? false }, stop: { [weak self] in self?.stopLocation() })
         live.onEnded = { [weak self] in self?.phoneGps.sessionEnded() }
+        live.onNeedsGps = { [weak self] in self?.phoneGps.sessionNeedsGps() }
     }
 
     private func log(_ message: String) { events.info(message) }
@@ -121,28 +128,41 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
 
     // Request `81 00`; the answer's 81 holds 02 trainMonitorState, 03 operatorType, 04 sportType, 06 workoutType (`WatchPhase`).
 
-    private func startStatusPoll(_ session: HuaweiSession, caps: DeviceCaps) {
-        // The Fit 4 Pro does not list 17/03; it is probed anyway and the poll stops on the first failure.
-        if !caps.supports(Int(WorkoutLinkWire.workoutService), Int(WorkoutLinkWire.status)) { log("Workout link: the watch does not list 17/03; probing it") }
+    private func startStatusPoll(_ session: HuaweiSession, caps: DeviceCaps, initialDelayMs: Int? = nil, resetAnswered: Bool = true) {
+        let (unsupported, shouldProbe): (Bool, Bool) = lock.locked {
+            if resetAnswered {
+                statusAnswered = false
+                statusUnsupported = false
+                logged1703Notice = false
+            }
+            if statusUnsupported { return (true, false) }
+            let probe = !caps.supports(Int(WorkoutLinkWire.workoutService), Int(WorkoutLinkWire.status)) && !logged1703Notice
+            if probe { logged1703Notice = true }
+            return (false, probe)
+        }
+        if unsupported { return }
+        if shouldProbe { log("Workout link: the watch does not list 17/03; probing it") }
         let (previous, generation): (Task<Void, Never>?, Int) = lock.locked {
             let previous = statusPoll
             statusPoll = nil
             pollGeneration += 1
             pollActive = true
-            statusAnswered = false
             return (previous, pollGeneration)
         }
         previous?.cancel()
         releasePollWaiter()
         let poll = Task { [weak self] in
-            guard let first = self?.statusFirstMs else { return }
-            try? await Task.sleep(nanoseconds: UInt64(first) * 1_000_000)
+            let first = initialDelayMs ?? self?.statusFirstMs ?? 0
+            if first > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(first) * 1_000_000)
+            }
             while !Task.isCancelled {
                 guard let self, let handle = self.link.handle(), handle.session === session else { break }
                 // Once the watch has answered, a failed poll is a busy or briefly lost link, not a missing command: keep polling, or a running
                 // workout would lose its end signal.
                 let answered = await self.pollStatus(handle.session)
                 if !answered, !self.lock.locked({ self.statusAnswered }) {
+                    self.lock.locked { self.statusUnsupported = true }
                     self.log("Workout link: no workout status from the watch; indoor workouts need Start on the phone")
                     break
                 }
@@ -201,21 +221,43 @@ public final class WorkoutLink: LinkObserver, @unchecked Sendable {
 
     /// Asks the status now, outside the poll's rhythm (a GPS request opened a session that waits for GO, the watch closed its workout).
     private func pollSoon() {
-        let (active, waiter): (Bool, CheckedContinuation<Void, Never>?) = lock.locked {
-            guard pollActive else { return (false, nil) }
+        let (unsupported, active, waiter): (Bool, Bool, CheckedContinuation<Void, Never>?) = lock.locked {
+            if statusUnsupported { return (true, false, nil) }
+            guard pollActive else { return (false, false, nil) }
             guard let w = pollWaiter else {
                 pollWakePending = true
-                return (true, nil)
+                return (false, true, nil)
             }
             pollWaiter = nil
-            return (true, w.continuation)
+            return (false, true, w.continuation)
+        }
+        if unsupported {
+            retryUnsupported()
+            return
         }
         if active {
             waiter?.resume()
             return
         }
         guard let handle = link.handle() else { return }
-        Task { _ = await self.pollStatus(handle.session) }
+        startStatusPoll(handle.session, caps: handle.caps, initialDelayMs: 0, resetAnswered: false)
+    }
+
+    /// The poll stopped after a failed first probe. That is a watch without `17/03`, or one whose link was busy at connect: ask once more,
+    /// at most every `statusRetryMs`, and bring the poll back when it answers.
+    private func retryUnsupported() {
+        let now = nowMs()
+        let due: Bool = lock.locked {
+            if now - lastRetryAtMs < Self.statusRetryMs { return false }
+            lastRetryAtMs = now
+            return true
+        }
+        guard due, let handle = link.handle() else { return }
+        Task { [weak self] in
+            guard let self, await self.pollStatus(handle.session) else { return }
+            self.lock.locked { self.statusUnsupported = false }
+            self.startStatusPoll(handle.session, caps: handle.caps, initialDelayMs: 0, resetAnswered: false)
+        }
     }
 
     /// False when the watch does not answer with a status (unsupported, or no answer yet).

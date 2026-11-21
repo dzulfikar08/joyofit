@@ -363,6 +363,12 @@ internal class NightHrvSync(
     for (r in file.records.sortedBy { it.startSec }.takeLast(LOGGED_RECORDS)) log("Night HRV: record $r")
     diag.result = "records read"
 
+    val stressRows = withContext(Dispatchers.IO) { RriStressStore.save(AndroidWatchDb(store.db()), address, file.records) }
+    log(
+      if (stressRows == null) "Night HRV: stress scores not stored as emotion, the watch reports its own"
+      else "Night HRV: $stressRows stress scores stored as emotion (the watch reports none of its own)",
+    )
+
     val segments = withContext(Dispatchers.IO) { store.read { db -> SleepStore.load(db, from - SleepReport.SESSION_GAP_SEC) } }
     val nights = NightHrv.nights(segments)
     log("Night HRV: ${segments.size} sleep segments in ${nights.size} sessions since ${from - SleepReport.SESSION_GAP_SEC}")
@@ -411,6 +417,30 @@ internal class NightHrvSync(
   private companion object {
     const val LOGGED_RECORDS = 40
   }
+}
+
+/**
+ * The watch's own stress score of each `rrisqi_data.bin` record (1 to 100, what the watch shows as stress) as `health_metrics`
+ * `emotion` rows, the type the Stress screen reads. Only for a watch that reports no `emotion` rows of its own: the Band 11 Pro
+ * leaves the P2P Emotion dictionary empty but holds its automatic stress measurements in this file (JRG-486). A watch whose
+ * dictionary does report them (Watch Fit 4 Pro) is not touched, and when a watch starts reporting its own,
+ * [HealthMetricsStore.persist] removes these rows first, so no measurement is counted twice.
+ */
+internal object RriStressStore {
+  const val TYPE = "emotion"
+
+  /** Rows written, or null when skipped because the watch has `emotion` rows of its own. */
+  fun save(db: WatchDb, address: String, records: List<RriRecord>): Int? {
+    val own = db.query(WatchSql.COUNT_OWN_EMOTION, address).firstOrNull()?.get(0) as Long? ?: 0L
+    if (own > 0) return null
+    val rows = records.filter { it.score in 1..100 && it.endSec >= it.startSec }
+    db.transaction {
+      for (r in rows) db.exec(WatchSql.UPSERT_HEALTH_METRIC, TYPE, r.startSec, r.endSec, r.score.toDouble(), json(r), address)
+    }
+    return rows.size
+  }
+
+  fun json(r: RriRecord): String = """{"source":"rrisqi","score":${r.score},"level":${r.level}}"""
 }
 
 /** `hrv_readings` rows of source `night`, per watch. */

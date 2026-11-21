@@ -60,8 +60,20 @@ internal object WatchSql {
        ON CONFLICT(type, ts) DO UPDATE SET
          last_ts = excluded.last_ts, value = excluded.value, values_json = excluded.values_json, device = excluded.device"""
 
-  /** (type, device): the newest stored `last_ts` of one watch, so each watch fetches from where it stopped itself. */
-  const val SELECT_HEALTH_METRIC_CURSOR = "SELECT MAX(last_ts) FROM health_metrics WHERE type = ? AND device = ?"
+  /**
+   * (type, device): the newest stored `last_ts` of one watch, so each watch fetches from where it stopped itself. Stress
+   * scores taken from the stress file ([RriStressStore]) are not the dictionary's own rows and do not move it.
+   */
+  const val SELECT_HEALTH_METRIC_CURSOR =
+    "SELECT MAX(last_ts) FROM health_metrics WHERE type = ? AND device = ? AND values_json NOT LIKE '%\"source\":\"rrisqi\"%'"
+
+  /** (device): `emotion` rows the watch reported itself (the P2P dictionary or an import), not taken from the stress file. */
+  const val COUNT_OWN_EMOTION =
+    "SELECT COUNT(*) FROM health_metrics WHERE type = 'emotion' AND device = ? AND values_json NOT LIKE '%\"source\":\"rrisqi\"%'"
+
+  /** (device): the `emotion` rows taken from the stress file, dropped once the watch reports its own. */
+  const val DELETE_RRI_EMOTION =
+    "DELETE FROM health_metrics WHERE type = 'emotion' AND device = ? AND values_json LIKE '%\"source\":\"rrisqi\"%'"
 
   /** (device): the end of this watch's newest stored night. */
   const val SELECT_NIGHT_HRV_CURSOR = "SELECT MAX(end) FROM hrv_readings WHERE source = 'night' AND device = ?"
@@ -101,7 +113,7 @@ internal object WatchSql {
    */
   const val SELECT_WORKOUT_CANDIDATES =
     """SELECT w.id, w.start, w.end, w.device,
-         EXISTS (SELECT 1 FROM workout_points p WHERE p.workout_id = w.id AND p.lat IS NOT NULL AND p.lon IS NOT NULL)
+         (EXISTS (SELECT 1 FROM workout_points p WHERE p.workout_id = w.id AND p.lat IS NOT NULL AND p.lon IS NOT NULL) AND w.phone_gps = 0)
        FROM workouts w
        WHERE w.device IS NOT NULL AND w.device <> ? AND w.imported = 0 AND w.start < ? AND w.end > ?
        ORDER BY w.id"""
@@ -115,11 +127,11 @@ internal object WatchSql {
   /** (device, start, end, kept_start) */
   const val UPSERT_WORKOUT_SHADOW = "INSERT OR REPLACE INTO workout_shadow (device, start, end, kept_start) VALUES (?, ?, ?, ?)"
 
-  /** (workout_number, start, end, sport_type, sport_name, duration, distance, calories, avg_hr, max_hr, steps, summary_json, complete, device) */
+  /** (workout_number, start, end, sport_type, sport_name, duration, distance, calories, avg_hr, max_hr, steps, summary_json, complete, device, phone_gps) */
   const val UPSERT_WORKOUT =
     """INSERT INTO workouts
-         (workout_number, start, end, sport_type, sport_name, duration, distance, calories, avg_hr, max_hr, steps, summary_json, complete, device)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         (workout_number, start, end, sport_type, sport_name, duration, distance, calories, avg_hr, max_hr, steps, summary_json, complete, device, phone_gps)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(start) DO UPDATE SET
          workout_number = excluded.workout_number,
          end = excluded.end,
@@ -134,6 +146,7 @@ internal object WatchSql {
          summary_json = excluded.summary_json,
          complete = excluded.complete,
          device = excluded.device,
+         phone_gps = excluded.phone_gps,
          imported = 0"""
 
   /** (start) -> id */

@@ -19,19 +19,19 @@
     "setup": "Atur kunci sendiri",
     "notes": "Catatan coach",
     "data": "Data yang dikirim",
-    "consent": "Persetujuan data Joyo AI"
+    "consent": "AI dan datamu"
   },
   "chip": {
     "own": "{{model}}, kunci sendiri",
-    "rogo": "JoyoRogo Pro",
-    "rogoUsed": "JoyoRogo Pro, {{used}}/{{cap}}",
+    "rogo": "Joyo Pro",
+    "rogoUsed": "Joyo Pro, {{used}}/{{cap}}",
     "ownOff": "Kunci sendiri belum siap",
     "open": "Buka pengaturan Joyo AI. Sekarang: {{engine}}"
   },
   "chat": {
     "usageToday": "Hari ini: {{tokens}} token, {{calls}} dari {{ceiling}} panggilan",
     "ownTitle": "Atau pakai kunci sendiri",
-    "ownBody": "Gratis dari JoyoFit, tanpa JoyoRogo Pro. Kamu memasang kunci dari penyedia AI pilihanmu (OpenRouter, OpenAI, Anthropic, Gemini) dan hanya membayar pemakaian ke mereka.",
+    "ownBody": "Gratis dari JoyoFit, tanpa Joyo Pro. Kamu memasang kunci dari penyedia AI pilihanmu (OpenRouter, OpenAI, Anthropic, Gemini) dan hanya membayar pemakaian ke mereka.",
     "ownCta": "Atur kunci sendiri",
     "signIn": "Masuk",
     "noFood": "Kamu belum masuk ke JoyoRogo, jadi makan dan berat badan tidak tersambung. Jawaban tidak memakai data makan.",
@@ -185,7 +185,7 @@
     },
     "minor": {
       "title": "Belum tersedia di bawah 18 tahun",
-      "body": "Chat dengan kunci sendiri hanya untuk usia 18 tahun ke atas, karena data tubuhmu dikirim ke penyedia luar. Mesin JoyoRogo tetap tersedia lewat JoyoRogo Pro."
+      "body": "Chat dengan kunci sendiri hanya untuk usia 18 tahun ke atas, karena data tubuhmu dikirim ke penyedia luar. Mesin JoyoRogo tetap tersedia lewat Joyo Pro."
     }
   },
   "notes": {
@@ -294,11 +294,11 @@
   "prefs": {
     "engine": {
       "title": "Mesin",
-      "rogo": "JoyoRogo Pro",
+      "rogo": "Joyo Pro",
       "rogoUsed": "{{used}} dari {{cap}} pesan hari ini",
       "rogoPro": "Dijawab oleh AI JoyoRogo, dengan batas pesan harian",
       "rogoSignedOut": "Perlu masuk ke JoyoRogo dan berlangganan Pro",
-      "rogoFree": "Perlu JoyoRogo Pro",
+      "rogoFree": "Perlu Joyo Pro",
       "rogoChecking": "Memeriksa akunmu...",
       "own": "Kunci sendiri",
       "ownNone": "Belum diatur",
@@ -399,7 +399,7 @@
     "own": "Kunci sendiri: {{provider}}, {{model}}",
     "ownCheck": "Kunci sendiri, {{provider}}, perlu dicek",
     "minor": "Tidak tersedia di bawah 18 tahun",
-    "pro": "JoyoRogo Pro",
+    "pro": "Joyo Pro",
     "none": "Belum diatur"
   },
   "ask": {
@@ -408,10 +408,11 @@
     "sleep": "Tanya soal tidur ini"
   },
   "hosted": {
-    "title": "Joyo AI mengirim datamu ke server",
-    "intro": "Joyo AI di JoyoRogo Pro menjawab di server, bukan di ponselmu. Sebelum ada yang dikirim, baca dulu ke mana datanya pergi, lalu setujui.",
+    "title": "Izinkan Joyo AI mengirim datamu ke Cloudflare Workers AI?",
+    "screenTitle": "Joyo AI dan datamu",
+    "intro": "Joyo AI di Joyo Pro menjawab di server, bukan di ponselmu. Tidak ada yang dikirim sebelum kamu mengetuk Izinkan. Ini yang dikirim, siapa penerimanya, dan untuk apa.",
     "toTitle": "Siapa yang menerima datamu",
-    "to": "Server JoyoRogo (PT Joyo Digitama Solusi) dan Cloudflare Workers AI (Cloudflare, Inc.), yang menjalankan model AI. Ponselmu mengirimnya ke server JoyoRogo, lalu server meneruskannya ke Cloudflare Workers AI untuk mendapat jawaban.",
+    "to": "Server JoyoRogo (PT Joyo Digitama Solusi) meneruskan pertanyaanmu ke Cloudflare Workers AI (Cloudflare, Inc.), yang menjalankan model AI Gemma 4 26B di server Cloudflare sendiri. Gemma adalah model terbuka buatan Google; Google tidak menerima datamu. Tidak ada perusahaan AI lain yang menerimanya.",
     "lead": "Setiap kamu mengirim pesan, JoyoFit mengirim:",
     "data": {
       "chat": "Pesanmu: yang kamu ketik dan pesan sebelumnya di chat ini (12 terakhir), serta tanggal dan jam pertanyaanmu.",
@@ -425,10 +426,10 @@
     "notSentTitle": "Tidak pernah dikirim",
     "notSent": "Namamu, email, lokasi GPS dan rute, foto, ID perangkat, detak jantung per menit, data siklus haid, dan data Strava.",
     "whyTitle": "Untuk apa, dan berapa lama",
-    "why": "Hanya untuk menulis jawaban atas pertanyaanmu. Server JoyoRogo tidak menyimpan pesan dan jawabannya; ia hanya mencatat hitungan, misalnya berapa pesan yang kamu kirim hari ini. Cloudflare Workers AI tidak menyimpan kontenmu setelah menjawab dan tidak memakainya untuk melatih model AI.",
-    "choice": "Ini pilihanmu. Tanpa persetujuanmu tidak ada yang dikirim dan chat tetap tertutup. Kamu bisa mencabutnya kapan saja di Pengaturan, Joyo AI. Memakai kunci AI sendiri adalah cara lain: datanya tidak lewat server-server ini.",
+    "why": "Hanya untuk menulis jawaban atas pertanyaanmu, dan untuk menghitung pesanmu untuk batas harian. Bukan untuk iklan, tidak pernah dijual. Server JoyoRogo tidak menyimpan pesan dan jawabannya; ia hanya mencatat hitungan, misalnya berapa pesan yang kamu kirim hari ini. Cloudflare Workers AI tidak menyimpan kontenmu setelah menjawab, tidak memakainya untuk melatih model AI, dan melindunginya setara dengan kebijakan privasi kami.",
+    "choice": "Ini pilihanmu. Dengan Nanti saja tidak ada yang dikirim dan chat tetap tertutup. Kamu bisa mencabutnya kapan saja di Pengaturan, AI dan datamu. Memakai kunci AI sendiri adalah cara lain: datanya tidak lewat server-server ini.",
     "privacy": "Baca kebijakan privasi (bagian Joyo AI)",
-    "agree": "Setuju dan lanjut",
+    "agree": "Izinkan",
     "later": "Nanti saja",
     "needed": "Joyo AI butuh persetujuanmu sebelum bisa mengirim apa pun. Buka chat lagi untuk membacanya.",
     "agreedAt": "Kamu setuju pada {{date}}.",
@@ -442,8 +443,23 @@
       "title": "Data yang dikirim ke AI JoyoRogo",
       "label": "Izinkan AI JoyoRogo menerima data-ku",
       "on": "Aktif: pesanmu dan data yang tercantum di persetujuan dikirim ke server JoyoRogo dan Cloudflare Workers AI saat kamu bertanya.",
-      "off": "Mati: tidak ada yang dikirim dan chat JoyoRogo Pro tetap tertutup. Nyalakan untuk membaca apa yang dikirim dan menyetujuinya.",
+      "off": "Mati: tidak ada yang dikirim dan chat Joyo Pro tetap tertutup. Nyalakan untuk membaca apa yang dikirim dan menyetujuinya.",
       "review": "Apa yang dikirim dan siapa penerimanya"
     }
+  },
+  "privacy": {
+    "intro": "Semua cara JoyoFit bisa mengirim datamu ke layanan AI, siapa penerimanya, dan jawabanmu. Tidak ada yang dikirim ke AI tanpa izinmu, dan kamu bisa mencabutnya di sini.",
+    "hostedTitle": "Joyo AI di Joyo Pro",
+    "hostedTo": "Server JoyoRogo dan Cloudflare Workers AI (model Gemma 4)",
+    "ownTitle": "Joyo AI dengan kunci sendiri",
+    "ownTo": "{{provider}} ({{host}}), langsung dari ponselmu",
+    "ownNone": "Belum ada penyedia yang kamu izinkan. Atur kunci sendiri untuk menambahkannya.",
+    "connectorTitle": "Sambungkan ChatGPT atau Claude",
+    "connectorTo": "Aplikasi AI yang kamu sambungkan (Anthropic untuk Claude, OpenAI untuk ChatGPT), hanya membaca saat kamu bertanya di sana",
+    "allowed": "Diizinkan pada {{date}}",
+    "notAllowed": "Tidak diizinkan: tidak ada yang dikirim",
+    "withdrawOwn": "Cabut dan hapus kunci",
+    "manage": "Kelola",
+    "hubSubtitle": "Siapa yang menerima datamu, izinkan atau cabut"
   }
 }

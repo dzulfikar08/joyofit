@@ -106,5 +106,8 @@
     "CREATE TRIGGER hrv_readings_claim_before BEFORE INSERT ON hrv_readings WHEN NEW.device IS NOT NULL AND NEW.source = 'night' AND NEW.device IS NOT (SELECT address FROM device WHERE is_primary = 1) AND EXISTS (SELECT 1 FROM hrv_readings o WHERE o.device IS NOT NULL AND o.device <> NEW.device AND o.source = NEW.source AND o.start >= NEW.start - 172800 AND o.start < NEW.end AND o.end > NEW.start) BEGIN SELECT RAISE(IGNORE); END",
     "CREATE TRIGGER hrv_readings_claim_after AFTER INSERT ON hrv_readings WHEN NEW.device IS NOT NULL AND NEW.source = 'night' AND NEW.device IS (SELECT address FROM device WHERE is_primary = 1) BEGIN DELETE FROM hrv_readings WHERE device IS NOT NULL AND device <> NEW.device AND source = NEW.source AND start >= NEW.start - 172800 AND start < NEW.end AND end > NEW.start; END",
     "CREATE TRIGGER health_metrics_device_guard BEFORE UPDATE ON health_metrics WHEN OLD.device IS NOT NULL AND NEW.device IS NOT NULL AND OLD.device <> NEW.device AND NEW.device IS NOT (SELECT address FROM device WHERE is_primary = 1) BEGIN SELECT RAISE(IGNORE); END"
+  ],
+  [
+    "ALTER TABLE workouts ADD COLUMN phone_gps INTEGER NOT NULL DEFAULT 0"
   ]
 ]

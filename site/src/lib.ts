@@ -17,7 +17,18 @@ export const RIDE_WEB_URL = `${WEB_URL}/ride`;
 export const CLOUDAGNI_URL = "https://cloudagni.my.id";
 export const JOYOROGO_URL = "https://joyorogo.com";
 export const TRAKTEER_URL = "https://trakteer.id/dzulfikar_ats_tsauri";
-export const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.joyodigitama.joyofit";
+/**
+ * JoyoFit on Google Play, with the place on this site in the install referrer (joyorogo docs/utm.md: Play drops UTM on
+ * the listing URL, so it travels URL-encoded in `referrer`). Play Console's acquisition report then shows which button
+ * brought the install: `utm_campaign=evergreen-site-hero`, `-cara`, `-panduan`, ...
+ */
+export function playStoreUrl(place?: string): string {
+  const slug = place ? place.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) : "";
+  const referrer = `utm_source=joyofit&utm_medium=referral&utm_campaign=${slug ? `evergreen-site-${slug}` : "evergreen-site"}`;
+  return `https://play.google.com/store/apps/details?id=com.joyodigitama.joyofit&referrer=${encodeURIComponent(referrer)}`;
+}
+
+export const PLAY_STORE_URL = playStoreUrl();
 export const CONTACT_EMAIL = "dzulfikar.at@gmail.com";
 /** JoyoDigitama Discord (permanent invite): bug report and feedback forums for JoyoFit, JoyoRogo and JoyoArto, plus release announcements. */
 export const DISCORD_URL = "https://discord.gg/vtud8UYekp";

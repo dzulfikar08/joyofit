@@ -43,6 +43,8 @@ yarn-error.*
 # release signing (never commit)
 /keystore/
 /modules/*/android/build/
+/modules/*/ios/.build/
+.build/
 
 # Keystore backup lives outside the repo (~/.config/joyofit/keystore.tar.gpg)
 /secrets/

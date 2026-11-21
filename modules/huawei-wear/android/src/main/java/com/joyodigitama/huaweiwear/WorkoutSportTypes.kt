@@ -142,4 +142,25 @@ internal object WorkoutSportTypes {
 
   /** GB `ActivityKind.isDiving` family used for depth readings: free diving and scuba. */
   fun isDiving(kind: String): Boolean = kind == "FREE_DIVING" || kind == "SCUBA_DIVING"
+
+  private val INDOOR_KINDS = setOf(
+    "INDOOR_RUNNING", "POOL_SWIM", "INDOOR_CYCLING", "INDOOR_WALKING", "JUMP_ROPING",
+    "APNEA_TRAINING", "APNEA_TEST", "PINGPONG", "BADMINTON", "ELLIPTICAL_TRAINER",
+    "ROWING_MACHINE", "STEPPER", "YOGA", "PILATES", "AEROBICS", "STRENGTH_TRAINING",
+    "SPINNING", "AIR_WALKER", "HIIT", "CROSSFIT", "FUNCTIONAL_TRAINING", "PHYSICAL_TRAINING",
+    "TAEKWONDO", "BOXING", "FREE_SPARRING", "KARATE", "FENCING", "BELLY_DANCE",
+    "JAZZ_DANCE", "LATIN_DANCE", "BALLET", "CORE_TRAINING", "BODY_COMBAT", "KENDO",
+    "HORIZONTAL_BAR", "PARALLEL_BARS", "STREET_DANCE", "MARTIAL_ARTS", "PLAZA_DANCING",
+    "TAI_CHI", "DANCE", "HULA_HOOP", "DARTS", "ARCHERY", "SWING", "STAIRS",
+    "BILLIARD_POOL", "BOWLING", "SQUASH", "CURLING", "BUNGEE_JUMPING", "ESPORTS",
+  )
+
+  /** Indoor, pool, or stationary activities where a phone GPS route should not be attached. */
+  fun isIndoorKind(kind: String): Boolean = kind in INDOOR_KINDS
+
+  /** True when [type] is a known indoor/stationary sport; false when null, unknown, or outdoor. */
+  fun isIndoor(type: Int?): Boolean = type != null && isIndoorKind(kind(type))
+
+  /** True when [type] is a known outdoor sport (running, walking, cycling, hiking, etc.); false when null, unknown, or indoor. */
+  fun isOutdoor(type: Int?): Boolean = type != null && sport(type) != null && !isIndoor(type)
 }

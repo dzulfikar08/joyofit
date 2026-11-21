@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { applyLocale } from '@/i18n';
 
 import { BillingError } from './billingCore';
-import { pickPlanOffer, PLAY_PACKAGE_NAME, playManageUrl, postPurchaseToken, type PlayOfferLike } from './playBillingCore';
+import { isoDurationDays, pickPlanOffer, PLAY_PACKAGE_NAME, playManageUrl, postPurchaseToken, type PlayOfferLike } from './playBillingCore';
 
 describe('postPurchaseToken', () => {
   const answer = (status: number, body: unknown = {}) =>
@@ -87,7 +87,13 @@ describe('postPurchaseToken', () => {
 });
 
 describe('pickPlanOffer', () => {
-  const phase = (formattedPrice: string, micros: string) => ({ formattedPrice, priceAmountMicros: micros, priceCurrencyCode: 'IDR' });
+  const phase = (formattedPrice: string, micros: string, billingPeriod = 'P1Y', billingCycleCount = 0) => ({
+    formattedPrice,
+    priceAmountMicros: micros,
+    priceCurrencyCode: 'IDR',
+    billingPeriod,
+    billingCycleCount,
+  });
   const offer = (basePlan: string, token: string, phases: ReturnType<typeof phase>[]): PlayOfferLike => ({
     basePlanIdAndroid: basePlan,
     offerTokenAndroid: token,
@@ -97,8 +103,8 @@ describe('pickPlanOffer', () => {
 
   test('takes the plain base plan of the plan, with Play\'s own price text and the amount for the saving', () => {
     const offers = [offer('monthly', 'tok-m', [phase('Rp29.000', '29000000000')]), offer('yearly', 'tok-y', [phase('Rp199.000', '199000000000')])];
-    expect(pickPlanOffer(offers, 'monthly')).toEqual({ displayPrice: 'Rp29.000', price: '29000', offerToken: 'tok-m' });
-    expect(pickPlanOffer(offers, 'yearly')).toEqual({ displayPrice: 'Rp199.000', price: '199000', offerToken: 'tok-y' });
+    expect(pickPlanOffer(offers, 'monthly')).toEqual({ displayPrice: 'Rp29.000', price: '29000', offerToken: 'tok-m', trialDays: null });
+    expect(pickPlanOffer(offers, 'yearly')).toEqual({ displayPrice: 'Rp199.000', price: '199000', offerToken: 'tok-y', trialDays: null });
   });
 
   test('a promotional offer (extra pricing phase) never wins over the base plan, whatever the order', () => {
@@ -108,11 +114,54 @@ describe('pickPlanOffer', () => {
     expect(pickPlanOffer([base, promo], 'monthly')?.offerToken).toBe('tok-base');
   });
 
+  const yearlyBase = offer('yearly', 'tok-base', [phase('Rp199.000', '199000000000')]);
+  const yearlyTrial = (period: string, cycles = 1, token = 'tok-trial') =>
+    offer('yearly', token, [phase('Gratis', '0', period, cycles), phase('Rp199.000', '199000000000')]);
+
+  test('yearly: a free-trial offer Play lists wins, with its length in days and the recurring price, whatever the order', () => {
+    const expected = { displayPrice: 'Rp199.000', price: '199000', offerToken: 'tok-trial', trialDays: 7 };
+    expect(pickPlanOffer([yearlyBase, yearlyTrial('P7D')], 'yearly')).toEqual(expected);
+    expect(pickPlanOffer([yearlyTrial('P7D'), yearlyBase], 'yearly')).toEqual(expected);
+    expect(pickPlanOffer([yearlyBase, yearlyTrial('P1W')], 'yearly')?.trialDays).toBe(7);
+    expect(pickPlanOffer([yearlyBase, yearlyTrial('P2W')], 'yearly')?.trialDays).toBe(14);
+    expect(pickPlanOffer([yearlyBase, yearlyTrial('P1D', 3)], 'yearly')?.trialDays).toBe(3);
+  });
+
+  test('yearly without a listed free trial (not created, or this account is not eligible) is the base plan, as before', () => {
+    expect(pickPlanOffer([yearlyBase], 'yearly')).toEqual({ displayPrice: 'Rp199.000', price: '199000', offerToken: 'tok-base', trialDays: null });
+  });
+
+  test('only a plain free first phase counts as a trial: no paid intro price, no month-long trial, no other base plan', () => {
+    const paidIntro = offer('yearly', 'tok-intro', [phase('Rp99.000', '99000000000', 'P1Y', 1), phase('Rp199.000', '199000000000')]);
+    const freeThenIntro = offer('yearly', 'tok-3', [phase('Gratis', '0', 'P7D', 1), phase('Rp99.000', '99000000000', 'P1Y', 1), phase('Rp199.000', '199000000000')]);
+    const otherBase = offer('monthly', 'tok-m-trial', [phase('Gratis', '0', 'P7D', 1), phase('Rp29.000', '29000000000', 'P1M')]);
+    for (const extra of [paidIntro, freeThenIntro, otherBase, yearlyTrial('P1M'), yearlyTrial('P1Y'), yearlyTrial('')]) {
+      expect(pickPlanOffer([yearlyBase, extra], 'yearly')?.offerToken).toBe('tok-base');
+    }
+  });
+
+  test('monthly never takes a trial offer; a plan can be asked for with or without one', () => {
+    const monthlyTrial = offer('monthly', 'tok-m-trial', [phase('Gratis', '0', 'P7D', 1), phase('Rp29.000', '29000000000', 'P1M')]);
+    const monthlyBase = offer('monthly', 'tok-m', [phase('Rp29.000', '29000000000', 'P1M')]);
+    expect(pickPlanOffer([monthlyTrial, monthlyBase], 'monthly')?.offerToken).toBe('tok-m');
+    expect(pickPlanOffer([yearlyTrial('P7D'), yearlyBase], 'yearly', false)?.offerToken).toBe('tok-base');
+  });
+
   test('another plan\'s base plan, a missing token or an unreadable price is no offer', () => {
     expect(pickPlanOffer([offer('yearly', 'tok-y', [phase('Rp199.000', '199000000000')])], 'monthly')).toBeNull();
     expect(pickPlanOffer([{ basePlanIdAndroid: 'monthly', pricingPhasesAndroid: { pricingPhaseList: [phase('Rp29.000', '29000000000')] } }], 'monthly')).toBeNull();
     expect(pickPlanOffer([offer('monthly', 'tok', [phase('Rp29.000', 'x')])], 'monthly')).toBeNull();
     expect(pickPlanOffer([], 'monthly')).toBeNull();
+  });
+});
+
+describe('isoDurationDays', () => {
+  test('counts days and weeks; months, years and nonsense are not days', () => {
+    expect(isoDurationDays('P7D')).toBe(7);
+    expect(isoDurationDays('P1W')).toBe(7);
+    expect(isoDurationDays('P1W3D')).toBe(10);
+    expect(isoDurationDays('P3D')).toBe(3);
+    for (const other of ['P1M', 'P1Y', 'P0D', 'P', '', '7D', 'PT7H', null, undefined]) expect(isoDurationDays(other)).toBeNull();
   });
 });
 

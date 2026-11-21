@@ -59,7 +59,7 @@ describe('cloudLineText', () => {
     );
     expect(cloudLineText({ cloudBytes: 38_000, stale: true, estimateBytes: 41_000, locked: true })).toBe('Cloud: in cloud (38 KB)');
     expect(cloudLineText({ cloudBytes: null, stale: false, estimateBytes: 41_000, locked: true })).toBe(
-      'Cloud: stays on this phone (JoyoRogo Pro syncs it)',
+      'Cloud: stays on this phone (Joyo Pro syncs it)',
     );
   });
 

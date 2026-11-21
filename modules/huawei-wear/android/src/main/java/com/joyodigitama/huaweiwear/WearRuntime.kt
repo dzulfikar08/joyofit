@@ -225,6 +225,17 @@ internal class WearRuntime private constructor(context: Context) {
   val cameraRemote = CameraRemoteController(link, events, scope)
 
   init {
+    ConnectedGpsStore.shared = ConnectedGpsStore(java.io.File(appContext.filesDir, "connected_gps_tracks.json"))
+    liveWorkout.onTrackCompleted = { track ->
+      scope.launch(Dispatchers.IO) {
+        runCatching { WorkoutStore(syncStore, settings.watchAddress ?: "").backfillConnectedGps(track) }
+        kotlinx.coroutines.delay(3_000L)
+        if (link.currentState() == LinkState.CONNECTED.wire && !liveWorkout.isLive) {
+          runCatching { link.syncActivity(false) }
+          runCatching { WorkoutStore(syncStore, settings.watchAddress ?: "").backfillConnectedGps(track) }
+        }
+      }
+    }
     DataSyncFeatures.install(this)
     repairSleepRules()
   }
@@ -463,6 +474,13 @@ internal class WearRuntime private constructor(context: Context) {
   /** Takes effect on the next connect; a live link keeps the account it was opened with. Blank clears it (sends GB's empty default). */
   fun setHuaweiAccount(account: String?) {
     settings.huaweiAccount = account
+  }
+
+  /** Stores the switch; true when it changed. Takes effect on the next connect (the caller reconnects). */
+  fun setGadgetbridgeCapabilities(enabled: Boolean): Boolean {
+    if (settings.gadgetbridgeCapabilities == enabled) return false
+    settings.gadgetbridgeCapabilities = enabled
+    return true
   }
 
   fun morningSummaryEnabled(): Boolean = settings.morningSummaryEnabled

@@ -57,7 +57,7 @@ export function showsClock(live: LiveWorkout): boolean {
  * screen asks instead of dropping the session silently. `kept`: the user chose to keep going while this lasts.
  */
 export function endPromptVisible(live: LiveWorkout, kept: boolean): boolean {
-  return live.status !== 'ended' && live.source !== 'watch' && live.endSuspected === true && !kept;
+  return live.status !== 'ended' && live.endSuspected === true && !kept;
 }
 
 /** True while the watch is still recording (the live screen and the Today banner show it). */

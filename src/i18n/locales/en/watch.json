@@ -66,7 +66,9 @@
       "busy": "Could not connect to the watch. If it is still connected to another phone or app (Huawei Health, or JoyoFit on another phone), disconnect it there first. Keep the watch awake and close to this phone, then tap Retry.",
       "noWatchIos": "Watch not found. If it is still connected to another phone, disconnect it there first. Make sure the watch is on and close to this phone, then tap Refresh.",
       "noWatchScan": "No watch found nearby. If it is still connected to another phone or app (Huawei Health, or JoyoFit on another phone), disconnect it there first. Make sure the watch is on and close to this phone, then scan again.",
-      "notPaired": "Android has no Bluetooth pairing with this watch (it was removed, or the watch refused to pair again). Open Android's Bluetooth settings and pair the watch, then tap Try again. If the watch does not show up there, remove this phone once in the watch's own Bluetooth settings. JoyoFit deletes nothing."
+      "notPaired": "Android has no Bluetooth pairing with this watch (it was removed, or the watch refused to pair again). Open Android's Bluetooth settings and pair the watch, then tap Try again. If the watch does not show up there, remove this phone once in the watch's own Bluetooth settings. JoyoFit deletes nothing.",
+      "bondRemovedIos": "The watch no longer has a Bluetooth pairing with this iPhone (it was reset, or paired with another phone), but the iPhone still keeps the old one, so it refuses the watch. Open Settings > Bluetooth, tap the (i) icon next to the watch, choose Forget This Device, then tap Retry and accept the pairing request.",
+      "noHuaweiService": "This device does not offer the Huawei connection that JoyoFit uses. It is most likely a band or watch that uses another maker's protocol (some HONOR CHOICE models do), and JoyoFit cannot connect to it. If it is a Huawei or HONOR watch that worked before, restart it and tap Retry."
     },
     "silent": {
       "short": "The watch connected over Bluetooth but does not answer. What to try is under More, Watch.",
@@ -291,8 +293,8 @@
     "storageBreakdown": "{{custom}} custom · {{factory}} preinstalled",
     "storageTelemetryFootnote": "Storage capacity reported directly by watch hardware.",
     "storageEstimateFootnote": "Band models do not broadcast free storage over BLE. Metrics are estimated from known flash limits.",
-    "installRejected": "Install Rejected",
-    "installRejectedHint": "The watch rejected \"{{name}}\". The watch memory may be full, or the file is incompatible with your screen size.",
+    "installRejected": "Not installed",
+    "installRejectedHint": "The watch did not install \"{{name}}\". {{reason}}",
     "deleteFromStorage": "Delete from Storage",
     "deleteFromStorageOnWatch": "Delete \"{{title}}\" from your phone storage?\n\nIt is currently installed on your watch and will stay on the watch until uninstalled.",
     "deleteFromStorageOnly": "Permanently delete \"{{title}}\" from your phone storage? To reinstall it in the future, you will need to re-import it.",
@@ -334,7 +336,7 @@
     "noSavedHintIos": "Faces are sent to the watch straight from a file on iPhone and are not kept here. Use Install from file above to put one on your watch.",
     "installFromFileHint": "Install a .hwt file straight onto your watch. On iPhone the file is sent from the picker and is not saved in this library.",
     "gbModeLabel": "Compatibility install",
-    "gbModeHint": "For watches that reject unsigned faces. Installs the way Gadgetbridge does. Keep off unless faces are being deleted right after install.",
+    "gbModeHint": "For watches that reject unsigned faces. Installs the way Gadgetbridge does. Keep off unless faces are being deleted right after install. Turning it on or off reconnects the watch.",
     "installed": "Installed",
     "installedOnWatch": "Installed on Watch",
     "wrongSize": "Wrong size",

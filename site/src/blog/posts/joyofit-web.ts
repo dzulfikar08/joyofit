@@ -4,7 +4,7 @@ export const joyofitWeb: Post = {
   slug: "joyofit-web",
   title: "JoyoFit Web: analisis latihan di browser",
   description:
-    "JoyoFit Web membuka datamu di app.fit.joyorogo.com untuk pemegang JoyoRogo Pro: ringkasan, daftar dan detail latihan dengan peta, tidur dan pemulihan, unggah file, dan koneksi AI. Ditambah Studio untuk merancang tampilan jam, gratis.",
+    "JoyoFit Web membuka datamu di app.fit.joyorogo.com untuk pemegang Joyo Pro: ringkasan, daftar dan detail latihan dengan peta, tidur dan pemulihan, unggah file, dan koneksi AI. Ditambah Studio untuk merancang tampilan jam, gratis.",
   date: "2026-10-19",
   tag: "JoyoFit Web",
   body: [
@@ -15,7 +15,7 @@ export const joyofitWeb: Post = {
     { kind: "h2", text: "Untuk siapa" },
     {
       kind: "p",
-      text: "JoyoFit Web adalah fitur [JoyoRogo Pro](https://joyorogo.com/harga). Kamu masuk dengan akun JoyoRogo yang sama dengan di aplikasi JoyoFit, jadi tidak perlu akun baru. Tanpa Pro, kamu tetap bisa memakai semua yang ada di aplikasi di HP, serta Studio dan Ride di bawah ini yang gratis.",
+      text: "JoyoFit Web adalah fitur [Joyo Pro](https://joyorogo.com/harga). Kamu masuk dengan akun JoyoRogo yang sama dengan di aplikasi JoyoFit, jadi tidak perlu akun baru. Tanpa Pro, kamu tetap bisa memakai semua yang ada di aplikasi di HP, serta Studio dan Ride di bawah ini yang gratis.",
     },
     { kind: "h2", text: "Isinya" },
     {
@@ -37,7 +37,7 @@ export const joyofitWeb: Post = {
     {
       kind: "ol",
       items: [
-        "Pastikan kamu punya JoyoRogo Pro dan sudah masuk dengan akun JoyoRogo di aplikasi JoyoFit.",
+        "Pastikan kamu punya Joyo Pro dan sudah masuk dengan akun JoyoRogo di aplikasi JoyoFit.",
         "Buka [app.fit.joyorogo.com](https://app.fit.joyorogo.com) di browser laptop atau HP.",
         "Masuk dengan akun JoyoRogo yang sama. Latihan yang sudah tersimpan di akunmu langsung bisa dibuka.",
       ],
@@ -59,6 +59,6 @@ export const joyofitWeb: Post = {
   more: [
     { href: "/#web", label: "JoyoFit Web di beranda" },
     { href: "/blog/joyofit-ride", label: "JoyoFit Ride" },
-    { href: "https://joyorogo.com/harga", label: "Harga JoyoRogo Pro" },
+    { href: "https://joyorogo.com/harga", label: "Harga Joyo Pro" },
   ],
 };

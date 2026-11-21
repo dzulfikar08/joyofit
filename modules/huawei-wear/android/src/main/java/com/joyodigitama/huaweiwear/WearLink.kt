@@ -517,6 +517,7 @@ internal class WearLink(
         deviceType = connection.deviceType,
         heartRateZones = settings.heartRateZones,
         huaweiAccount = settings.huaweiAccount,
+        gadgetbridgeCapabilities = settings.gadgetbridgeCapabilities,
       ).run()
 
       val name = bondedName(connection.device) ?: init.deviceName ?: address

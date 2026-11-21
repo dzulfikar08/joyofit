@@ -9,6 +9,7 @@ import { isIos } from '@/components/IosUnavailable';
 import { Section } from '@/components/Screen';
 import { Notice } from '@/components/States';
 import { SwitchRow } from '@/components/SwitchRow';
+import { locationGranted } from '@/features/sensors/permissions';
 import { Pair, PairGrid } from '@/features/settings/PairGrid';
 import { useNativeRefresh } from '@/features/settings/useNativeRefresh';
 import { errorMessage } from '@/format';
@@ -35,8 +36,26 @@ export function PhoneSection() {
 /** What iOS does not allow, said once per feature instead of three switches that cannot work. */
 function PhoneSectionIos() {
   const { t } = useTranslation('settings');
+  const [gps, setGps] = useState<boolean | null>(null);
+  const checkGps = useCallback(() => {
+    void locationGranted().then(setGps);
+  }, []);
+  useEffect(checkGps, [checkGps]);
+  useNativeRefresh(checkGps);
+
   return (
     <Section title={t('phone.title')} icon="call">
+      <PairGrid>
+        <Pair label={t('phone.gps')} value={gps === null ? null : gps ? t('phone.granted') : t('phone.notGranted')} />
+      </PairGrid>
+      {gps === false ? (
+        <Button
+          label={t('phone.appSettings')}
+          variant="secondary"
+          icon="settings-outline"
+          onPress={() => void Linking.openSettings()}
+        />
+      ) : null}
       <Notice icon="locate">{t('phone.iosFind')}</Notice>
       <Notice icon="call">{t('phone.iosCalls')}</Notice>
       <Details>{t('phone.iosDetails')}</Details>

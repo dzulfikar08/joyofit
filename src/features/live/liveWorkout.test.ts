@@ -104,10 +104,13 @@ describe('endPromptVisible', () => {
     expect(endPromptVisible(live({ endSuspected: false }), false)).toBe(false);
   });
 
-  test('stays quiet after "keep going", for a finished workout, and for a watch-fed one', () => {
+  test('stays quiet after "keep going" or for a finished workout', () => {
     expect(endPromptVisible(live({ endSuspected: true }), true)).toBe(false);
     expect(endPromptVisible(live({ endSuspected: true, status: 'ended' }), false)).toBe(false);
-    expect(endPromptVisible(live({ endSuspected: true, source: 'watch' }), false)).toBe(false);
+  });
+
+  test('asks for a watch-fed session when end is suspected', () => {
+    expect(endPromptVisible(live({ endSuspected: true, source: 'watch' }), false)).toBe(true);
   });
 });
 

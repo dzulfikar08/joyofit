@@ -1,5 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import * as Linking from 'expo-linking';
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -12,6 +13,10 @@ import { Details } from '@/components/Details';
 import { Divider, Screen, Section } from '@/components/Screen';
 import { EmptyState, Notice, Skeleton } from '@/components/States';
 import { useToast } from '@/components/Toast';
+import { useAiSettings } from '@/features/ai/hooks';
+import { aiSettings } from '@/features/ai/stores';
+import { connectorView, grantConnectorConsent, hasConnectorConsent, withdrawConnectorConsent } from '@/features/koneksi/consent';
+import { ConnectorConsentCard, ConnectorConsentDetails, connectorPrivacyUrl } from '@/features/koneksi/ConnectorConsentCard';
 import { activityRange, isMcpTool, readableScopeKeys } from '@/features/koneksi/scopes';
 import { UpgradeCard } from '@/features/pro/UpgradeCard';
 import { SignInGate } from '@/features/social/SignInGate';
@@ -22,7 +27,6 @@ import { useCloud } from '@/state/CloudProvider';
 import { spacing, useColors } from '@/theme';
 
 const GUIDE_URL = 'https://joyorogo.com/panduan/ai';
-const PRIVACY_URL = 'https://fit.joyorogo.com/privasi#koneksi-ai';
 const ACTIVITY_LIMIT = 20;
 /** How long the copy button shows its check. */
 const COPIED_MS = 1800;
@@ -40,7 +44,11 @@ const load = async (): Promise<Overview> => {
   return { info, connections, activity, nowSec: Math.floor(Date.now() / 1000) };
 };
 
-/** The AI apps (Claude, ChatGPT, any MCP app) connected to the JoyoRogo account: connector address, who can read what, disconnecting, and what they read lately. */
+/**
+ * The AI apps (Claude, ChatGPT, any MCP app) connected to the JoyoRogo account: connector address, who can read what, disconnecting, and
+ * what they read lately. The address shows only with Pro and after the person agreed to the consent card (who receives the data and
+ * what can be read; Apple 5.1.1(i), 5.1.2(i)); withdrawing hides it again and disconnects every connected app.
+ */
 export function KoneksiScreen() {
   const { t } = useTranslation(['koneksi', 'common']);
   const colors = useColors();
@@ -48,6 +56,11 @@ export function KoneksiScreen() {
   const describe = useCallback(() => t('koneksi:list.error'), [t]);
   const { data, error, refreshing, refresh, setData } = useRogoQuery(load, cloud.signedIn, describe);
   const { toast, show } = useToast();
+  const router = useRouter();
+  const settings = useAiSettings();
+  const consented = hasConnectorConsent(settings);
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [confirmWithdraw, setConfirmWithdraw] = useState(false);
 
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -82,7 +95,37 @@ export function KoneksiScreen() {
     }
   };
 
+  /** Hides the address at once, then cuts off every app connected so far with the same call as Disconnect. */
+  const withdraw = async () => {
+    setConfirmWithdraw(false);
+    withdrawConnectorConsent(aiSettings);
+    const connections = data?.connections ?? [];
+    if (connections.length === 0) {
+      show(t('koneksi:consent.withdrawn'));
+      return;
+    }
+    setWithdrawing(true);
+    const results = await Promise.allSettled(connections.map((c) => rogo.mcp.revoke(c.clientId)));
+    setWithdrawing(false);
+    show(results.every((r) => r.status === 'fulfilled') ? t('koneksi:consent.withdrawnAll') : t('koneksi:consent.withdrawnPartial'));
+    void refresh();
+  };
+
+  const leave = () => (router.canGoBack() ? router.back() : router.replace('/settings'));
+  const view = data ? connectorView(data.info.unlocked, settings) : null;
   const nowSec = data?.nowSec ?? 0;
+
+  const withdrawBlock = consented ? (
+    <>
+      <AppText variant="caption" muted>
+        {t('koneksi:consent.agreedAt', { date: fmtDate(settings.connectorConsent?.at ?? 0, 'medium') })}
+      </AppText>
+      <Details title={t('koneksi:consent.review')}>
+        <ConnectorConsentDetails />
+      </Details>
+      <Button label={t('koneksi:consent.withdraw')} variant="destructive" loading={withdrawing} onPress={() => setConfirmWithdraw(true)} />
+    </>
+  ) : null;
 
   return (
     <View style={styles.root}>
@@ -107,25 +150,46 @@ export function KoneksiScreen() {
                 </Notice>
               ) : null}
 
-              {!data.info.unlocked ? <UpgradeCard moment="koneksi" dismissible /> : null}
+              {view === 'upgrade' ? <UpgradeCard moment="koneksi" dismissible /> : null}
+              {view === 'upgrade' && withdrawBlock ? (
+                <Section title={t('koneksi:consent.title')} icon="shield-checkmark" tint="link">
+                  {withdrawBlock}
+                </Section>
+              ) : null}
 
-              <Section title={t('koneksi:connector.title')} icon="link" tint="link">
-                <AppText variant="caption" muted>
-                  {t('koneksi:connector.hint')}
-                </AppText>
-                <View style={[styles.address, { backgroundColor: colors.muted }]}>
-                  <AppText variant="mono" selectable>
-                    {data.info.url}
+              {view === 'consent' ? (
+                <Section title={t('koneksi:connector.title')} icon="link" tint="link">
+                  <ConnectorConsentCard
+                    onAgree={() => {
+                      grantConnectorConsent(aiSettings, Math.floor(Date.now() / 1000));
+                      show(t('koneksi:consent.agreed'));
+                    }}
+                    onLater={leave}
+                  />
+                </Section>
+              ) : null}
+
+              {view === 'address' ? (
+                <Section title={t('koneksi:connector.title')} icon="link" tint="link">
+                  <AppText variant="caption" muted>
+                    {t('koneksi:connector.hint')}
                   </AppText>
-                </View>
-                <Button
-                  label={copied ? t('koneksi:connector.copied') : t('koneksi:connector.copy')}
-                  icon="copy-outline"
-                  done={copied}
-                  onPress={() => void copyAddress()}
-                />
-                <Button label={t('koneksi:connector.guide')} variant="ghost" icon="book-outline" onPress={() => void Linking.openURL(GUIDE_URL)} />
-              </Section>
+                  <View style={[styles.address, { backgroundColor: colors.muted }]}>
+                    <AppText variant="mono" selectable>
+                      {data.info.url}
+                    </AppText>
+                  </View>
+                  <Button
+                    label={copied ? t('koneksi:connector.copied') : t('koneksi:connector.copy')}
+                    icon="copy-outline"
+                    done={copied}
+                    onPress={() => void copyAddress()}
+                  />
+                  <Button label={t('koneksi:connector.guide')} variant="ghost" icon="book-outline" onPress={() => void Linking.openURL(GUIDE_URL)} />
+                  <Divider />
+                  {withdrawBlock}
+                </Section>
+              ) : null}
 
               <Section title={t('koneksi:list.title')} icon="sparkles" tint="link">
                 {revokeError ? <Notice tone="danger">{revokeError}</Notice> : null}
@@ -162,7 +226,7 @@ export function KoneksiScreen() {
                 <Details>{t('koneksi:activity.hint')}</Details>
               </Section>
 
-              <Button label={t('koneksi:privacy')} variant="ghost" icon="shield-checkmark-outline" onPress={() => void Linking.openURL(PRIVACY_URL)} />
+              <Button label={t('koneksi:privacy')} variant="ghost" icon="shield-checkmark-outline" onPress={() => void Linking.openURL(connectorPrivacyUrl())} />
               <Details>{t('koneksi:disclaimer')}</Details>
             </>
           ) : null}
@@ -177,6 +241,16 @@ export function KoneksiScreen() {
         cancelLabel={t('koneksi:revoke.cancel')}
         onConfirm={() => confirming && void revoke(confirming)}
         onCancel={() => setConfirming(null)}
+      />
+      <ConfirmDialog
+        visible={confirmWithdraw}
+        destructive
+        title={t('koneksi:consent.withdrawTitle')}
+        message={t('koneksi:consent.withdrawBody')}
+        confirmLabel={t('koneksi:consent.withdrawConfirm')}
+        cancelLabel={t('koneksi:revoke.cancel')}
+        onConfirm={() => void withdraw()}
+        onCancel={() => setConfirmWithdraw(false)}
       />
     </View>
   );

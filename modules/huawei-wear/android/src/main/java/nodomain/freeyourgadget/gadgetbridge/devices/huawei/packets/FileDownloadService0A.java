@@ -269,12 +269,14 @@ public class FileDownloadService0A {
         @Override
         public void parseTlv() throws ParseException {
             int offset;
-            // Try to decrypt TLV, and otherwise assume the data is not encrypted
+            // Try to decrypt TLV, and otherwise assume the data is not encrypted.
+            // JoyoFit: raw data that happens to parse as TLV but has no cipher element (MissingTagException) is raw data too; GB let it
+            // fail the whole file (HONOR Watch ES rrisqi_data.bin, "Missing tag: 7e", JRG-487/488).
             try {
                 HuaweiTLV tlv = new HuaweiTLV().parse(this.payload, 2 ,this.payload.length - 2);
                 this.payload = tlv.decryptRaw(paramsProvider);
                 offset = 0;
-            } catch (ArrayIndexOutOfBoundsException | HuaweiCrypto.CryptoException e) {
+            } catch (ArrayIndexOutOfBoundsException | HuaweiCrypto.CryptoException | MissingTagException e) {
                 this.e = e;
                 offset = 2;
             }

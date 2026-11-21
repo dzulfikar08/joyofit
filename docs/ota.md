@@ -227,6 +227,36 @@ Android `cb987e8b8ac363beba44e1d31a702071aca28f95` (Release Android run 42046885
   sensor, only on the Play alpha) and the #87 `bun.lock` refresh, none in an installed production build. Published locally
   with `bun install --frozen-lockfile` on that branch: groups `4d5f823e-889f-4e56-a9ae-fb30480cdc90` android,
   `407a694a-f0ff-441d-badb-7c4d2cd1fe82` ios (same runtimes, `--runtime-version`).
+- 2026-11-17 from branch `ota/strava-pauses` + the cherry-picked #102 fix (`28d6d0b1`: pauses also where the GPS fixes stand
+  still, FIT-156), published locally with `--runtime-version`: groups `86b39ef8-9db3-475d-a8ae-453024f285e5` android,
+  `332d5b6b-8d80-48db-b4a0-84a5258eb872` ios (same runtimes).
+- 2026-11-17 from branch `ota/watch-reports` = `ota/strava-pauses` (`28d6d0b1`) + the JS-only parts of #104, cherry-picked:
+  `e2b17f9f` (Watch tab: a device without the Huawei service gets its own hint, JRG-485; the iOS "forget the watch" lines of
+  the same file were left out, they need the Swift change), `f8eba496` (its iOS wording) and `9736c99d` (heart rate day: why
+  resting rate is empty, JRG-487/488). Published locally with `bun install --frozen-lockfile` and `--runtime-version`: groups
+  `19997c2d-3a24-45e9-b996-a9e34d742306` android, `fb4a3f88-923e-44ec-8053-467652f6f9f1` ios (same runtimes). The native
+  parts of #104 (iOS stale pairing in `BleTransport.swift`, 0A file blocks in Java and Swift, Band 11 Pro stress in Kotlin) wait
+  for the next store build.
+- 2026-11-17 from branch `ota/joyo-pro-copy` = `ota/watch-reports` (`5f5de12e`) + the copy commit of #105 (`687048b3`: JoyoRogo
+  Pro is Joyo Pro in the app strings, onboarding Pro step), cherry-picked. The conflict in `pro.json` kept the base's `koneksi`
+  lines (the consent wording of #101 needs its screens) with only the name changed. The trial commit (`1d7b5158`) is not in it:
+  payments and the iOS module go with the store build. Published locally with `bun install --frozen-lockfile` and
+  `--runtime-version`: groups `64fb6dd0-4b0d-45ac-83f4-d30e70de95f7` android, `41deb755-c6d3-4e30-a396-916a346c3a44` ios (same
+  runtimes). The next OTA from another branch must include `687048b3` too, or the old name comes back.
+
+### Runtimes of the 1.2.1 store builds (tag `v1.2.1`, 2026-11-20)
+
+First builds with an `X.Y.Z` version (docs/ci-release.md "Versions"). Read from the binaries (`assets/fingerprint`,
+`EXUpdates.bundle/fingerprint`):
+
+| Platform | Build | Runtime embedded in the binary |
+| --- | --- | --- |
+| Android | Play AAB 1518051 (internal and alpha, production to follow), sideload APK 1518065 (Release Android run 44676997150) | `04c19ef362b9f3ce54a4ed3cea02d654ad4199d0` |
+| iOS | TestFlight 1.2.1 (202611200450) (Release iOS run 44677000816), internal and Publik (beta review) | `f1a2b1a1a3292275b62546347cb806c473d42c33` |
+
+**Master OTAs target these two** (`--runtime-version`) once 1.2.1 is what people run; the 1.1 runtimes above still need
+their `ota/*` branches until production has moved to 1.2.1. The 1.2.0 builds (`v1.2.0`: AAB 1517289, replaced on alpha by
+1518051 before release; TestFlight 202611191618, internal only) reached almost nobody and get no OTAs.
 
 ## When OTA is not enough
 

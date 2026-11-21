@@ -35,11 +35,11 @@ export const FAQ: readonly FaqItem[] = [
   },
   {
     q: "Bisa dipakai tanpa jam?",
-    a: "Bisa. Pencatat latihan beban, rutinitas, perpustakaan gerakan, riwayat, dan upload ke Strava jalan dari HP saja, dan panduan awal punya jalur tanpa jam. Kalori latihan beban diperkirakan dari jumlah set dengan metode MET. Coach (JoyoRogo Pro) memakai jawabanmu atas badan terasa bagaimana hari ini sebagai pengganti data kesiapan dari jam.",
+    a: "Bisa. Pencatat latihan beban, rutinitas, perpustakaan gerakan, riwayat, dan upload ke Strava jalan dari HP saja, dan panduan awal punya jalur tanpa jam. Kalori latihan beban diperkirakan dari jumlah set dengan metode MET. Coach (Joyo Pro) memakai jawabanmu atas badan terasa bagaimana hari ini sebagai pengganti data kesiapan dari jam.",
   },
   {
-    q: "Apa yang gratis dan apa yang JoyoRogo Pro?",
-    a: "Sinkron jam, skor, analisis latihan, pencatat latihan beban, perlengkapan, dan membagikan latihan ke Social gratis. Strava juga gratis selama slot masih ada, dan unggah manual selalu bisa. JoyoRogo Pro dipakai untuk Coach (saran harian, rencana lari dan beban, Tanya coach) dan salinan cloud untuk olahraga, riwayat beban, perlengkapan, dan rencana Coach. Pelanggan Pro juga dapat dukungan prioritas: laporan dan permintaan fitur mereka didahulukan.",
+    q: "Apa yang gratis dan apa yang Joyo Pro?",
+    a: "Sinkron jam, skor, analisis latihan, pencatat latihan beban, perlengkapan, dan membagikan latihan ke Social gratis. Strava juga gratis selama slot masih ada, dan unggah manual selalu bisa. Joyo Pro dipakai untuk Coach (saran harian, rencana lari dan beban, Tanya coach) dan salinan cloud untuk olahraga, riwayat beban, perlengkapan, dan rencana Coach. Pelanggan Pro juga dapat dukungan prioritas: laporan dan permintaan fitur mereka didahulukan.",
   },
   {
     q: "Kapan dukungan lebih dari satu jam dan sensor Bluetooth rilis?",
@@ -65,7 +65,7 @@ export const FAQ: readonly FaqItem[] = [
   },
   {
     q: "Apa yang diunggah ke cloud?",
-    a: "Sampel langkah, segmen tidur, dan data perangkat untuk akun yang masuk. Untuk akun JoyoRogo Pro, setiap olahraga juga diunggah sebagai satu berkas terkompresi berisi ringkasan, rute GPS, detak jantung, ketinggian, kecepatan, kadensi, panjang langkah, daya, dan analisisnya; akun Gratis tidak mengunggah olahraga. Setelah masuk di HP baru, olahraga dipulihkan dari cloud dan juga tampil di joyorogo.com. Unggahan bisa dibatasi hanya lewat Wi-Fi. Profil, alarm, dan pengaturan tidak disinkronkan.",
+    a: "Sampel langkah, segmen tidur, dan data perangkat untuk akun yang masuk. Untuk akun Joyo Pro, setiap olahraga juga diunggah sebagai satu berkas terkompresi berisi ringkasan, rute GPS, detak jantung, ketinggian, kecepatan, kadensi, panjang langkah, daya, dan analisisnya; akun Gratis tidak mengunggah olahraga. Setelah masuk di HP baru, olahraga dipulihkan dari cloud dan juga tampil di joyorogo.com. Unggahan bisa dibatasi hanya lewat Wi-Fi. Profil, alarm, dan pengaturan tidak disinkronkan.",
   },
   {
     q: "Bisa dipakai tanpa cloud sama sekali?",
@@ -78,7 +78,7 @@ export const FAQ: readonly FaqItem[] = [
   },
   {
     q: "Apa itu tab Social?",
-    a: "Tab Social menampilkan feed JoyoRogo di dalam JoyoFit: latihan dan makanan dari orang yang kamu ikuti dan dari grupmu. Kamu bisa gabung grup dengan kode undangan, membuka profil, memberi kudos, dan berkomentar. Latihan dari jam dibagikan dengan Share to JoyoRogo di layar latihannya. Perlu masuk dengan akun JoyoRogo. Grafik detak jantung dan rute di postingan orang lain butuh JoyoRogo Pro; melihat dan membagikan milikmu sendiri gratis.",
+    a: "Tab Social menampilkan feed JoyoRogo di dalam JoyoFit: latihan dan makanan dari orang yang kamu ikuti dan dari grupmu. Kamu bisa gabung grup dengan kode undangan, membuka profil, memberi kudos, dan berkomentar. Latihan dari jam dibagikan dengan Share to JoyoRogo di layar latihannya. Perlu masuk dengan akun JoyoRogo. Grafik detak jantung dan rute di postingan orang lain butuh Joyo Pro; melihat dan membagikan milikmu sendiri gratis.",
     link: { href: "/blog/social-joyofit", label: "Baca soal tab Social" },
   },
   {

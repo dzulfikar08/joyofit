@@ -25,12 +25,23 @@ public class AppleIapModule: Module {
     AsyncFunction("getProduct") { (productId: String) -> [String: String]? in
       let products = try await Product.products(for: [productId])
       guard let product = products.first else { return nil }
-      return [
+      var info: [String: String] = [
         "id": product.id,
         "displayName": product.displayName,
         "displayPrice": product.displayPrice,
         "price": "\(product.price)",
       ]
+      // The introductory offer StoreKit applies by itself at purchase, and whether this Apple ID
+      // still qualifies for it (once per subscription group), so the paywall can disclose a trial.
+      if let subscription = product.subscription, let offer = subscription.introductoryOffer {
+        info["introPaymentMode"] = Self.paymentMode(offer.paymentMode)
+        info["introPeriodUnit"] = Self.periodUnit(offer.period.unit)
+        info["introPeriodValue"] = String(offer.period.value)
+        info["introPeriodCount"] = String(offer.periodCount)
+        let eligible = await Product.SubscriptionInfo.isEligibleForIntroOffer(for: subscription.subscriptionGroupID)
+        info["introEligible"] = eligible ? "true" : "false"
+      }
+      return info
     }
 
     // appAccountToken ties the transaction (and every renewal) to the JoyoRogo
@@ -112,6 +123,25 @@ public class AppleIapModule: Module {
         ])
       }
       return items
+    }
+  }
+
+  private static func paymentMode(_ mode: Product.SubscriptionOffer.PaymentMode) -> String {
+    switch mode {
+    case .freeTrial: return "freeTrial"
+    case .payAsYouGo: return "payAsYouGo"
+    case .payUpFront: return "payUpFront"
+    default: return "unknown"
+    }
+  }
+
+  private static func periodUnit(_ unit: Product.SubscriptionPeriod.Unit) -> String {
+    switch unit {
+    case .day: return "day"
+    case .week: return "week"
+    case .month: return "month"
+    case .year: return "year"
+    @unknown default: return "unknown"
     }
   }
 }

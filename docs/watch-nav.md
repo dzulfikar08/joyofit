@@ -9,7 +9,7 @@ Turn-by-turn on the Huawei Watch Fit 4 Pro (HarmonyOS lite wearable, fw 6.1.0.11
 has both fingerprints since 2026-11-06 (JRG-440: phone = Play app-signing SHA-256, watch = JoyoNavi debug certificate). On 2026-11-06 the
 debug build ran on the owner's Fit 4 Pro (fw 6.1.0) and its `hello` reached JoyoFit, but the Play build 1.1 still sent the placeholder
 fingerprints and the watch answered every phone → watch message with `0xce` (JoyoFit shows "JoyoNavi connected: No"); the real values reach
-phones with the OTA of this change. Clean-room: the design is ours (prior art read for ideas only: tjisse/watchnav, Mobiteka Navigation); no Huawei code,
+phones with the OTA of this change. On 2026-11-13 the owner confirmed it working both ways on the Fit 4 Pro with their phone. Clean-room: the design is ours (prior art read for ideas only: tjisse/watchnav, Mobiteka Navigation); no Huawei code,
 no Petal/Huawei map endpoints.
 
 ## Flow

@@ -1,5 +1,5 @@
-// `LiveGpsSource` over CoreLocation: best-accuracy fixes while a workout runs. When-in-use authorization only, no background location mode: the
-// stream runs while the app is in the foreground (iOS stops delivering when the app is suspended), which is what the app declares.
+// `LiveGpsSource` over CoreLocation: best-accuracy fixes while a workout runs. With the `location` background mode declared,
+// fixes keep flowing when the app is backgrounded or the screen is locked, matching the Run recorder.
 #if canImport(CoreLocation)
 import CoreLocation
 import Foundation
@@ -71,18 +71,36 @@ public final class CoreLocationStream: NSObject, LiveGpsSource, CLLocationManage
         for waiter in pending { waiter.resume(returning: status) }
     }
 
+    /// Whether the app declared the `location` background mode; setting allowsBackgroundLocationUpdates without it raises an exception.
+    private static var declaresBackgroundLocation: Bool {
+        let modes = Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String]
+        return modes?.contains("location") ?? false
+    }
+
     public func start(_ onFix: @escaping @Sendable (WorkoutLinkWire.Fix) -> Void) -> Bool {
         guard authorization == .granted else { return false }
         lock.locked { handler = onFix }
         let manager = manager()
-        DispatchQueue.main.async { manager.startUpdatingLocation() }
+        DispatchQueue.main.async {
+            if CoreLocationStream.declaresBackgroundLocation {
+                manager.allowsBackgroundLocationUpdates = true
+                manager.showsBackgroundLocationIndicator = true
+            }
+            manager.startUpdatingLocation()
+        }
         return true
     }
 
     public func stop() {
         lock.locked { handler = nil }
         guard let manager = lock.locked({ _manager }) else { return }
-        DispatchQueue.main.async { manager.stopUpdatingLocation() }
+        DispatchQueue.main.async {
+            manager.stopUpdatingLocation()
+            if CoreLocationStream.declaresBackgroundLocation {
+                manager.showsBackgroundLocationIndicator = false
+                manager.allowsBackgroundLocationUpdates = false
+            }
+        }
     }
 
     public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {

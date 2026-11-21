@@ -54,6 +54,8 @@ internal class HuaweiInitializer(
    * GB's empty default (the behaviour before this setting). Only an account id, no signature.
    */
   private val huaweiAccount: String? = null,
+  /** "Compatibility install" is on: send Gadgetbridge's ReverseCapabilities bitmap instead of Huawei Health's (see DeviceConfig). */
+  private val gadgetbridgeCapabilities: Boolean = false,
 ) {
   private val params get() = session.params
 
@@ -193,7 +195,14 @@ internal class HuaweiInitializer(
     }
     if (expandCapability(182)) {
       soft("ReverseCapabilities") {
-        session.request(DeviceConfig.ReverseCapabilities.Request(params), Timeouts.INIT_MS, "ReverseCapabilities")
+        session.request(DeviceConfig.ReverseCapabilities.Request(params, gadgetbridgeCapabilities), Timeouts.INIT_MS, "ReverseCapabilities")
+        events.log(
+          LogDirection.INFO,
+          null,
+          null,
+          null,
+          "ReverseCapabilities: sent ${if (gadgetbridgeCapabilities) "Gadgetbridge's bitmap (compatibility install)" else "Huawei Health's bitmap"}",
+        )
       }
     }
     if (expandCapability(109)) {

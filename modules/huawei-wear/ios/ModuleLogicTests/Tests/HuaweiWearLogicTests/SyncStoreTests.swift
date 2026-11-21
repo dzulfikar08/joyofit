@@ -40,7 +40,7 @@ final class SyncStoreTests: XCTestCase {
         let (store, url) = store()
         let user = try store.read { db in try db.userVersion }
         XCTAssertEqual(user, try SyncStore.sharedMigrations().count)
-        XCTAssertEqual(user, 14)
+        XCTAssertEqual(user, 15)
         let tables: [String] = try store.read { db in
             try db.query("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name") { $0.text(0)! }
         }
@@ -63,6 +63,9 @@ final class SyncStoreTests: XCTestCase {
         // Migration 13: what the JS app recorded per workout it uploaded to or restored from JoyoRogo.
         let cloudWorkout: [String] = try store.read { db in try db.query("PRAGMA table_info(cloud_workout)") { $0.text(1)! } }
         XCTAssertEqual(cloudWorkout, ["start", "rev", "engine_rev", "version", "hash", "bytes", "uploaded_at"])
+        // Migration 15: whether workout route was merged from phone connected GPS.
+        let workoutCols: [String] = try store.read { db in try db.query("PRAGMA table_info(workouts)") { $0.text(1)! } }
+        XCTAssertTrue(workoutCols.contains("phone_gps"), "workouts has no phone_gps column")
         XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
         // WAL, as JS sets it.
         let mode: String = try store.read { db in try db.query("PRAGMA journal_mode") { $0.text(0)! }.first! }

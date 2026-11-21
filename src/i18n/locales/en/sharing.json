@@ -173,7 +173,10 @@
       "inferred": "The watch asked for GPS, so this looks like an outdoor workout. Which one is it?"
     },
     "map": {
-      "waiting": "Waiting for the phone’s GPS position"
+      "waiting": "Waiting for the phone’s GPS position",
+      "needsLocation": "Location permission is required to record the watch's GPS route.",
+      "allowLocation": "Allow location",
+      "openSettings": "Open settings"
     },
     "steps": {
       "ask": "Cadence, steps and stride come from your phone’s step counter (the watch sends none). To show them here, JoyoFit asks for access to it.",

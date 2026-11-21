@@ -355,6 +355,7 @@
     "avg": "Average",
     "max": "Highest",
     "resting": "Resting",
+    "restingNotShared": "Your watch has not sent a resting heart rate in the last two weeks. Some watches work it out but keep it on the watch, so JoyoFit cannot show it.",
     "hint": "Touch and drag the chart to see the time and bpm",
     "readoutAvg": "average",
     "readoutMax": "highest",

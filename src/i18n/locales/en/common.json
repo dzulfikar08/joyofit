@@ -93,7 +93,7 @@
     "sessionRejectedShort": "The JoyoRogo session was rejected. Sign in again.",
     "serverAnswered": "Cloud server answered {{status}}.",
     "serverAnsweredCode": "Cloud server answered {{status}} ({{code}}).",
-    "cloudLocked": "Cloud backup is part of JoyoRogo Pro.",
+    "cloudLocked": "Cloud backup is part of Joyo Pro.",
     "rogoAnswered": "JoyoRogo answered {{status}}.",
     "rogoSlow": "JoyoRogo is slow to respond. Try again.",
     "rogoUnreachable": "Could not reach JoyoRogo. Check your connection and try again.",
@@ -118,7 +118,7 @@
     "slotsFull": "Strava slots full. See More, Strava."
   },
   "cloudLine": {
-    "stays": "Cloud: stays on this phone (JoyoRogo Pro syncs it)",
+    "stays": "Cloud: stays on this phone (Joyo Pro syncs it)",
     "notUploaded": "Cloud: not uploaded yet (about {{size}})",
     "inCloud": "Cloud: in cloud ({{size}})",
     "inCloudStale": "Cloud: in cloud ({{size}}), update waiting (about {{estimate}})"

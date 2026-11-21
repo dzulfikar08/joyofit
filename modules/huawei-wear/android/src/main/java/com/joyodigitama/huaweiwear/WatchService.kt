@@ -29,8 +29,21 @@ class WatchService : Service() {
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     val runtime = WearRuntime.get(this)
     createChannel()
+    val notification = buildNotification(runtime.status.value, runtime.settings)
+    val hasFineOrCoarse =
+      checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
+        checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
     try {
-      startForeground(NOTIFICATION_ID, buildNotification(runtime.status.value, runtime.settings), ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+      val fgType = if (hasFineOrCoarse) {
+        ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+      } else {
+        ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+      }
+      try {
+        startForeground(NOTIFICATION_ID, notification, fgType)
+      } catch (_: SecurityException) {
+        startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+      }
     } catch (e: SecurityException) {
       // Android 14: no BLUETOOTH_CONNECT (or the foreground-service permission) yet.
       runtime.sink.log(LogDirection.ERROR, null, null, null, "Background service not started: ${e.message}")

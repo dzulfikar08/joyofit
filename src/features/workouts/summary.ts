@@ -39,6 +39,8 @@ export interface WorkoutSummary {
   /** `ok`, `empty`, `failed` or `none`: what happened to the GPS file. */
   gps?: string;
   gpsPoints?: number;
+  /** `phone` when the route was recorded via Connected GPS on the phone (for example a Huawei Band without built-in GNSS). */
+  gpsSource?: 'watch' | 'phone';
   missingData?: boolean;
   avgSpeed?: number;
   maxSpeed?: number;
