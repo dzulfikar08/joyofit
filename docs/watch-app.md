@@ -230,13 +230,18 @@ information and message notification), which covers JoyoNavi. Done in the consol
 | 6 | Debug certificate **JoyoNavi debug**, valid to 2027-11-06: `joyonavi-debug.cer` in the same folder (a chain: Huawei root, Huawei CA, then ours). |
 | 7 | Debug profile **JoyoNavi debug** (certificate JoyoNavi debug, the one watch), valid to 2027-11-06: `joyonavi-debug.p7b` in `~/.config/joyofit/joyonavi-signing/`. |
 | 8 | HUAWEI ID applied for product **JoyoFit** (Mobile app, AGC app ID 119686663), package `com.joyodigitama.joyofit`, SHA-256 `57:02:AD:C9:…:43:C0:4A` (Play app-signing key, also read from the Play-installed APK) and `E4:A5:12:CA:…:C8:A9:D2` (upload/sideload key). Status: Submitted. |
-| 9 | Wear Engine applied: Android app JoyoFit, Harmony lightweight smart wearable, own watch app = yes, permission basic device information only. The two Huawei templates as filled are in `docs/huawei-wear-engine/`. Status: submitted, result by email/SMS/console message. |
+| 9 | Wear Engine applied: Android app JoyoFit, Harmony lightweight smart wearable, own watch app = yes, permission basic device information only. The two Huawei templates as filled are in `docs/huawei-wear-engine/`. **Approved** (Huawei Developers email, 2026-11-13). This is JoyoFit's P2P access to JoyoNavi only: it does not give JoyoFit any Huawei Health data (that would be Health Kit, a separate application). |
 | 10 | Placeholders replaced: phone fingerprint `5702ADC96D179243217B41840B026B809AB85F9A590E32BEE22752805F43C04A`, watch fingerprint from the debug certificate (`src/features/watchnav/config.ts`). |
 
 | 11 (install) | Signed debug HAP installed on the Fit 4 Pro (HarmonyOS 6.1.0) with DevEco Assistant, every watch reply code 0 (2026-11-06). The first eight builds failed with "40. Invalid configuration file format"; see "Watch install errors" below. |
 
-Still open: 11 (P2P test with JoyoFit), 12 (release access email, release certificate and profile; the watch
-fingerprint changes with the release certificate).
+| 12 (part) | 2026-11-13: release certificate **JoyoNavi release** (valid to 2029-11-13, from the same `joyonavi.csr`, so the same public key: the watch fingerprint `com.joyodigitama.navi_BBMPwlw6…uwPw=` does **not** change) and release profile **JoyoNavi release**; files `joyonavi-release.cer` / `.p7b` in `~/.config/joyofit/joyonavi-signing/` and as `JOYONAVI_RELEASE_*` secrets in the `watch` environment. Release HAP from CI run 43364016047 (`joyonavi-release-552fc7d.hap`). |
+
+| 11 (P2P) | 2026-11-13: tested by the owner on the Fit 4 Pro with their phone: JoyoFit ↔ JoyoNavi messages work both ways ("JoyoNavi connected: Yes", turns shown on the watch). |
+
+Still open: 12 (HarmonyOS release access requested by email to agconnect@huawei.com on 2026-11-13 from dzulfikar.at@gmail.com,
+the address Huawei Developers mails; waiting for the reply; then the JoyoNavi
+listing and upload of the release HAP).
 
 Original order, for reference. Never send us the `.p12`, its passwords or the `.csr`.
 
