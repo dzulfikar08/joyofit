@@ -17,7 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { CONTACT_EMAIL, DISCORD_URL, IOS_TESTFLIGHT_URL, IPHONE_PATH, PRIVASI_PATH, STRAVA_PATH, WAITLIST_API, cn, goal } from "./lib";
+import { APP_STORE_URL, CONTACT_EMAIL, DISCORD_URL, IOS_TESTFLIGHT_URL, IPHONE_PATH, PRIVASI_PATH, STRAVA_PATH, WAITLIST_API, cn, goal } from "./lib";
 import { ButtonLink } from "./ui";
 
 type Kind = "strava" | "iphone";
@@ -389,24 +389,32 @@ export function IphonePage() {
                 <Smartphone className="size-6" aria-hidden />
               </span>
               <h1 className="text-3xl font-extrabold tracking-tight text-balance md:text-4xl">
-                JoyoFit untuk iPhone: beta publik TestFlight
+                JoyoFit untuk iPhone, di App Store
               </h1>
             </div>
             <p className="mt-4 text-[0.9375rem] leading-relaxed text-muted-foreground">
-              Aplikasi iPhone-nya sudah bisa dicoba siapa saja lewat beta publik TestFlight, gratis. Versi App Store
-              belum rilis, jadi belum ada di App Store.
+              JoyoFit untuk iPhone sudah ada di App Store, gratis, untuk iOS 16.4 ke atas. Versi iPhone masih baru,
+              jadi baca batasannya di bawah dulu.
             </p>
             <div className="mt-5">
-              <ButtonLink
+              <ButtonLink href={APP_STORE_URL} target="_blank" rel="noopener" {...goal("app_store_click", "iphone_page")}>
+                <Smartphone aria-hidden />
+                Pasang dari App Store
+              </ButtonLink>
+            </div>
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+              Mau mencoba build berikutnya sebelum masuk App Store? Ikut{" "}
+              <a
                 href={IOS_TESTFLIGHT_URL}
                 target="_blank"
                 rel="noopener"
+                className="font-semibold text-foreground underline underline-offset-4"
                 {...goal("ios_testflight_click", "iphone_page")}
               >
-                <Smartphone aria-hidden />
-                Buka TestFlight
-              </ButtonLink>
-            </div>
+                beta publik TestFlight
+              </a>
+              .
+            </p>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
               <a
                 href={DISCORD_URL}
@@ -454,16 +462,16 @@ export function IphonePage() {
                 <Steps
                   items={[
                     {
-                      title: "Pasang TestFlight",
-                      body: "Pasang TestFlight dari App Store bila belum ada di iPhone-mu.",
+                      title: "Pasang dari App Store",
+                      body: "Buka JoyoFit di App Store di iPhone-mu, lalu ketuk Dapatkan.",
                     },
                     {
-                      title: "Buka link beta publik",
-                      body: "Buka link TestFlight JoyoFit di iPhone dan ketuk Terima.",
+                      title: "Lepas jam dari aplikasi lamanya",
+                      body: "Unbind jam di aplikasi bawaannya (di jam Huawei lewat Huawei Health), karena jam hanya bisa terikat ke satu HP.",
                     },
                     {
-                      title: "Pasang JoyoFit",
-                      body: "Ketuk Pasang di TestFlight, lalu pasangkan jam-mu di tab Watch.",
+                      title: "Pasangkan jam",
+                      body: "Buka JoyoFit dan pasangkan jam-mu di tab Watch.",
                     },
                   ]}
                 />

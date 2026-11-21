@@ -57,8 +57,7 @@ import {
   KELUARGA_PATH,
   NON_AFFILIATION,
   NON_AFFILIATION_EN,
-  IOS_TESTFLIGHT_LIVE,
-  IOS_TESTFLIGHT_URL,
+  APP_STORE_URL,
   PANDUAN_PATH,
   PRIVASI_PATH,
   RIDE_PATH,
@@ -437,12 +436,19 @@ function Hero() {
             </a>
             . Gratis, Android 10 ke atas.
           </p>
-          {IOS_TESTFLIGHT_LIVE && (
-            <p className={cn(platform === "ios" && "-order-1")}>
-              <span className="font-bold text-foreground">iPhone:</span> beta publik TestFlight; versi App Store belum
-              rilis. iOS 16.4 ke atas.
-            </p>
-          )}
+          <p className={cn(platform === "ios" && "-order-1")}>
+            <span className="font-bold text-foreground">iPhone:</span> tersedia di{" "}
+            <a
+              href={APP_STORE_URL}
+              target="_blank"
+              rel="noopener"
+              className="font-semibold text-foreground underline underline-offset-4"
+              {...goal("app_store_click", "hero")}
+            >
+              App Store
+            </a>
+            . Gratis, iOS 16.4 ke atas.
+          </p>
         </div>
         <p className="hero-rise mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground [--i:3]">
           Gratis dan open source. Empat model jam sudah diuji, jam lain eksperimen:{" "}
@@ -1668,9 +1674,9 @@ const ANDROID_STEPS = [
 ] as const;
 
 const IOS_STEPS = [
-  "Pasang TestFlight dari App Store, kalau belum ada di iPhone-mu.",
-  "Buka link TestFlight JoyoFit di iPhone dan ketuk Terima.",
-  "Ketuk Pasang di TestFlight untuk memasang JoyoFit.",
+  "Buka JoyoFit di App Store, lalu ketuk Dapatkan.",
+  "Buka aplikasinya dan pasangkan jam di tab Watch.",
+  "Data jam tetap tersimpan di HP; masuk dengan akun JoyoRogo hanya perlu kalau kamu mau cloud.",
   UNBIND_STEP,
 ] as const;
 
@@ -1708,7 +1714,7 @@ function Install() {
 
   useEffect(() => {
     const fromHash = () => {
-      if (location.hash === "#iphone-beta") setPicked("ios");
+      if (location.hash === "#iphone" || location.hash === "#iphone-beta") setPicked("ios");
       else if (location.hash === "#tester") setPicked("android");
     };
     fromHash();
@@ -1731,7 +1737,7 @@ function Install() {
             role="tab"
             id={`install-tab-${id}`}
             aria-selected={tab === id}
-            aria-controls={id === "android" ? "tester" : "iphone-beta"}
+            aria-controls={id === "android" ? "tester" : "iphone"}
             onClick={() => setPicked(id)}
             className={cn(
               "inline-flex min-h-11 items-center rounded-full px-5 text-sm font-bold transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none",
@@ -1774,31 +1780,25 @@ function Install() {
         </div>
       </div>
 
-      {IOS_TESTFLIGHT_LIVE && (
-        <div
-          id="iphone-beta"
+      <div
+          id="iphone"
           role="tabpanel"
           aria-labelledby="install-tab-ios"
-          data-section="iphone-beta"
+          data-section="iphone"
           hidden={tab !== "ios"}
           className="mt-6 scroll-mt-20"
         >
           <div className="grid gap-8 md:grid-cols-[1fr_1.1fr] md:items-start">
             <div>
-              <h3 className="text-2xl font-extrabold tracking-tight text-tidur-ink md:text-3xl">JoyoFit di iPhone (beta publik)</h3>
+              <h3 className="text-2xl font-extrabold tracking-tight text-tidur-ink md:text-3xl">JoyoFit di iPhone</h3>
               <p className="mt-3 max-w-md text-[0.9375rem] leading-relaxed text-tidur-ink/85">
-                Versi iPhone sudah bisa dicoba lewat TestFlight; versi App Store belum rilis.
-                Gratis, butuh iOS 16.4 ke atas, dan masukanmu membantu kami merapikannya.
+                JoyoFit sudah tersedia di App Store. Gratis dan butuh iOS 16.4 ke atas. Versi iPhone masih baru, jadi
+                masukanmu membantu kami merapikannya.
               </p>
               <div className="mt-6">
-                <ButtonLink
-                  href={IOS_TESTFLIGHT_URL}
-                  target="_blank"
-                  rel="noopener"
-                  {...goal("ios_testflight_click", "cara")}
-                >
+                <ButtonLink href={APP_STORE_URL} target="_blank" rel="noopener" {...goal("app_store_click", "cara")}>
                   <AppleMark />
-                  Buka TestFlight
+                  Pasang dari App Store
                 </ButtonLink>
                 <p className="mt-3 text-sm">
                   <a
@@ -1826,7 +1826,6 @@ function Install() {
             </div>
           </div>
         </div>
-      )}
     </div>
   );
 }
@@ -1866,19 +1865,17 @@ function PlatformButtons({ location, className, buttonClassName }: { location: s
         <AndroidMark />
         JoyoFit untuk Android
       </ButtonLink>
-      {IOS_TESTFLIGHT_LIVE && (
-        <ButtonLink
-          size="lg"
-          className={cn(platform === "android" && "order-last", buttonClassName)}
-          href={IOS_TESTFLIGHT_URL}
-          target="_blank"
-          rel="noopener"
-          {...goal("ios_testflight_click", location)}
-        >
-          <AppleMark />
-          JoyoFit untuk iPhone
-        </ButtonLink>
-      )}
+      <ButtonLink
+        size="lg"
+        className={cn(platform === "android" && "order-last", buttonClassName)}
+        href={APP_STORE_URL}
+        target="_blank"
+        rel="noopener"
+        {...goal("app_store_click", location)}
+      >
+        <AppleMark />
+        JoyoFit untuk iPhone
+      </ButtonLink>
     </div>
   );
 }

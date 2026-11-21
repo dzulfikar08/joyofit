@@ -13,7 +13,7 @@
 - [Timbangan](https://fit.joyorogo.com/timbangan): timbangan badan Bluetooth yang dibaca JoyoFit lewat protokol openScale, per merek, dengan data yang didapat; baru satu jenis (Tuya beacon, HAN RIVER HRTZC01, berat saja) yang diuji di timbangan asli.
 - [Dukung jam](https://fit.joyorogo.com/dukung-jam): membantu jam baru masuk daftar uji.
 - [Strava](https://fit.joyorogo.com/strava): kirim olahraga dari jam ke Strava; slot penuh, ada daftar tunggu.
-- [iPhone](https://fit.joyorogo.com/iphone): beta publik TestFlight; versi App Store belum rilis.
+- [iPhone](https://fit.joyorogo.com/iphone): tersedia gratis di App Store (https://apps.apple.com/app/id6823324343), iOS 16.4 ke atas.
 - [Pasang cloud sendiri](https://fit.joyorogo.com/self-host): server cloud JoyoFit di CloudAgni.
 - [Privasi](https://fit.joyorogo.com/privasi): data yang disimpan dan cara menghapusnya.
 

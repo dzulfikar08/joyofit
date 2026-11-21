@@ -24,7 +24,7 @@ export const pembaruan: Post = {
     },
     {
       kind: "note",
-      text: "Hanya untuk pemasangan dari Google Play. Di iPhone, TestFlight sudah memberi tahu sendiri. Build sendiri dari kode sumber tidak punya pemberitahuan ini.",
+      text: "Hanya untuk pemasangan dari Google Play. Di iPhone, App Store sudah memberi tahu sendiri. Build sendiri dari kode sumber tidak punya pemberitahuan ini.",
     },
     { kind: "h2", text: "Animasi kecil" },
     {

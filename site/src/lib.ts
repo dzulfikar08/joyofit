@@ -50,10 +50,11 @@ export function goal(name: string, location: string) {
 }
 
 /**
- * The JoyoFit iPhone public TestFlight beta is live. While false, the site
- * shows no iPhone beta section and no iPhone sentence in the FAQ.
+ * JoyoFit on the App Store (live since 2026-11-19). The storefront-less URL lets Apple open the visitor's own store.
+ * App Store campaign links need a provider token, so the button's place is only in the RevKlik goal.
  */
-export const IOS_TESTFLIGHT_LIVE = true;
+export const APP_STORE_URL = "https://apps.apple.com/app/id6823324343";
+/** Public TestFlight beta: early builds before they reach the App Store. */
 export const IOS_TESTFLIGHT_URL = "https://testflight.apple.com/join/GXzrQ8GJ";
 
 export const STRAVA_PATH = "/strava";

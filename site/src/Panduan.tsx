@@ -3,8 +3,7 @@ import { ArrowLeft, Check, ChevronDown } from "lucide-react";
 import {
   DISCORD_URL,
   GITHUB_URL,
-  IOS_TESTFLIGHT_LIVE,
-  IOS_TESTFLIGHT_URL,
+  APP_STORE_URL,
   NON_AFFILIATION,
   NON_AFFILIATION_EN,
   STRAVA_PATH,
@@ -309,14 +308,14 @@ function Install({ lang }: { lang: Lang }) {
       <p>
         {id ? (
           <>
-            JoyoFit dipasang lewat Google Play di Android dan lewat TestFlight di iPhone (versi App Store belum rilis); tidak ada unduhan APK di situs ini. Kalau mau membangun
+            JoyoFit dipasang lewat Google Play di Android dan lewat App Store di iPhone; tidak ada unduhan APK di situs ini. Kalau mau membangun
             sendiri, kode dan caranya ada di <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>{" "}
-            (bagian Build di README). Build sendiri punya dua fitur yang tidak ada di versi Play Store dan TestFlight: nama penelepon dari log
+            (bagian Build di README). Build sendiri punya dua fitur yang tidak ada di versi toko (Play Store dan App Store): nama penelepon dari log
             panggilan dan SMS SOS.
           </>
         ) : (
           <>
-            JoyoFit installs through Google Play on Android and through TestFlight on iPhone (the App Store version is not out yet); this site has no APK download. To build it yourself, the code and
+            JoyoFit installs through Google Play on Android and through the App Store on iPhone; this site has no APK download. To build it yourself, the code and
             instructions are on <a className={link} href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>{" "}
             (Build section of the README). A self-build has two features the store versions lack: caller names from the call
             log and SOS texts.
@@ -334,28 +333,24 @@ function Install({ lang }: { lang: Lang }) {
         </p>
       </div>
 
-      {IOS_TESTFLIGHT_LIVE && (
-        <>
-          <Sub>{id ? "C. iPhone (beta)" : "C. iPhone (beta)"}</Sub>
-          <p>
-            {id ? (
-              <>
-                Versi iPhone masih beta di TestFlight. Pasang TestFlight dari App Store, buka{" "}
-                <a className={link} href={IOS_TESTFLIGHT_URL} target="_blank" rel="noopener" {...goal("ios_testflight_click", "panduan")}>undangan TestFlight</a>,
-                ketuk <B>Accept</B>, lalu <B>Install</B>. Panduan ini ditulis untuk Android; di iPhone langkahnya mirip, dan
-                tab Watch menampilkan petunjuknya sendiri.
-              </>
-            ) : (
-              <>
-                The iPhone version is in beta on TestFlight. Install TestFlight from the App Store, open the{" "}
-                <a className={link} href={IOS_TESTFLIGHT_URL} target="_blank" rel="noopener" {...goal("ios_testflight_click", "panduan")}>TestFlight invitation</a>,
-                tap <B>Accept</B>, then <B>Install</B>. This guide is written for Android; on iPhone the steps are similar and
-                the Watch tab shows its own instructions.
-              </>
-            )}
-          </p>
-        </>
-      )}
+      <Sub>C. iPhone</Sub>
+      <p>
+        {id ? (
+          <>
+            Buka{" "}
+            <a className={link} href={APP_STORE_URL} target="_blank" rel="noopener" {...goal("app_store_click", "panduan")}>JoyoFit di App Store</a>{" "}
+            dan ketuk <B>Dapatkan</B>. Butuh iOS 16.4 ke atas. Panduan ini ditulis untuk Android; di iPhone langkahnya mirip, dan
+            tab Watch menampilkan petunjuknya sendiri.
+          </>
+        ) : (
+          <>
+            Open{" "}
+            <a className={link} href={APP_STORE_URL} target="_blank" rel="noopener" {...goal("app_store_click", "panduan")}>JoyoFit on the App Store</a>{" "}
+            and tap <B>Get</B>. It needs iOS 16.4 or later. This guide is written for Android; on iPhone the steps are similar and
+            the Watch tab shows its own instructions.
+          </>
+        )}
+      </p>
     </>
   );
 }
