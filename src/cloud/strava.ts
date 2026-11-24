@@ -15,7 +15,7 @@ import { getWorkout } from '@/db/queries';
 import { gearSport, stravaGearFits } from '@/features/gear/model';
 import { gearOfWorkout, getStravaGearSent, reconcileDefaults, setStravaGearSent } from '@/features/gear/store';
 import { isEbike } from '@/features/cycling/settings';
-import { buildUploadForm, duplicateOf, plainStravaError } from '@/features/strava/activityFile';
+import { buildUploadForm, duplicateOf, plainStravaError, stravaAppInactive } from '@/features/strava/activityFile';
 import { buildWorkoutFit } from '@/features/strava/workoutFit';
 import { errorMessage } from '@/format';
 import { pushLog } from '@/state/logStore';
@@ -64,6 +64,18 @@ export class StravaSlotsFullError extends Error {
 export class StravaNotConnectedError extends Error {
   constructor() {
     super(t('common:strava.stravaNotConnected'));
+  }
+}
+
+/**
+ * Strava switched the shared API application off (the owner's subscription lapsed): the athlete's connection is fine
+ * and reconnecting does not help. A subclass so every caller treats it like a connection problem (nothing is marked
+ * failed, the automatic upload stops and tries again on the next sync), with its own message.
+ */
+export class StravaAppInactiveError extends StravaNotConnectedError {
+  constructor() {
+    super();
+    this.message = t('common:strava.appInactive');
   }
 }
 
@@ -152,6 +164,7 @@ async function stravaFetch<T = UploadStatus>(
     if (response.status === 400 || response.status === 413 || response.status === 422) {
       throw new StravaRefusedError(duplicateOf(text) !== null ? text : t('common:strava.refused', { status: response.status }));
     }
+    if (response.status === 403 && stravaAppInactive(text)) throw new StravaAppInactiveError();
     if (response.status === 401 || response.status === 403) {
       token = null;
       throw new StravaNotConnectedError();
