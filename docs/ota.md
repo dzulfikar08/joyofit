@@ -251,7 +251,7 @@ First builds with an `X.Y.Z` version (docs/ci-release.md "Versions"). Read from 
 
 | Platform | Build | Runtime embedded in the binary |
 | --- | --- | --- |
-| Android | Play AAB 1518051 (internal, alpha, and production as a staged rollout at 20% since 2026-11-20), sideload APK 1518065 (Release Android run 44676997150) | `04c19ef362b9f3ce54a4ed3cea02d654ad4199d0` |
+| Android | Play AAB 1518051 (internal, alpha, and production: 20% staged rollout from 2026-11-20, 100% since 2026-11-24), sideload APK 1518065 (Release Android run 44676997150) | `04c19ef362b9f3ce54a4ed3cea02d654ad4199d0` |
 | iOS | 1.2.1 (202611200450) (Release iOS run 44677000816): App Store (Ready for Sale) and TestFlight internal and Publik | `f1a2b1a1a3292275b62546347cb806c473d42c33` |
 
 **Master OTAs target these two** (`--runtime-version`) once 1.2.1 is what people run; the 1.1 runtimes above still need
@@ -261,9 +261,15 @@ their `ota/*` branches until production has moved to 1.2.1. The 1.2.0 builds (`v
 Checked 2026-11-24: 1.2.1 carries all of #104 (`1439c6cb`: iOS "forget the watch" in `BleTransport.swift`, JRG-494/495/496;
 HONOR Watch ES stress and night HRV file blocks in Java and Swift, JRG-487/488; Band 11 Pro stress in Kotlin, JRG-486) and
 FIT-156 (#102), so the native parts that the 2026-11-17 OTAs (groups `19997c2d...`/`fb4a3f88...`) left out reach users through
-these builds; no new store build was cut for them. The Play production rollout stays at 20% until the owner raises it; the
-other Play production users stay on 1.1 (1492235) and its `ota/*` runtime meanwhile. The App Store's earlier 1.1 build
+these builds; no new store build was cut for them. The Play production rollout went from 20% to 100% on 2026-11-24, so Play
+production users move off 1.1 (1492235) and its `ota/*` runtime as Play updates them. The App Store's earlier 1.1 build
 (202611190213, Release iOS run 44442578064 from master `8e69d57b`) already contained #104 and #102 as well.
+
+**OTA 2026-11-24** (OTA update workflow from master `13818a1c`, runs 45333442343 / 45333456341): #113 (Strava
+says "Strava sedang menolak semua unggahan dari JoyoFit" when Strava switched the API application off, instead of "belum
+terhubung") and #100 (HUAWEI ID Health Kit sync lab, off by default and inert until Huawei approves the Health Kit application).
+Android group `6605ab6f-f55f-4c53-9230-7f36b4ab1812` (runtime `04c19ef3...`), iOS group `48547602-10b0-4835-9b72-5b619640abba`
+(runtime `f1a2b1a1...`). Nothing native changed since `v1.2.1`.
 
 The iOS build from master `7d72b805` (TestFlight 1.1 (202611170256), Release iOS run 44006556473, 2026-11-17) went only to
 the Internal TestFlight group (1 tester, 1 install) and was never sent to Publik or App Review, so it got no OTA.
