@@ -13,6 +13,11 @@ from JoyoFit's own server for a lab test on the owner's watch (owner decision, 2
 (2026-10-25) a **second, separate switch, also off by default**, answers `HW_PGNSS_PRED` with six files in Huawei Health's layout generated from public data
 (`~/re/agps/FORMAT.md`; "Lab path for `HW_PGNSS_PRED`"); equally unverified, and riskier (three days of predicted orbits the watch keeps).
 
+**On by default since 2026-11-24** (owner decision, both switches): the native stores still default to off, so the app turns both
+on once per install at launch (`src/features/device/agpsDefault.ts`, kv key `joyofit.agpsDefaultOn.v1`), shipped over the air to
+the 1.2.1 builds. A person who turns a switch off afterwards keeps it off. Someone who had switched one off before 2026-11-24 gets it
+turned on once. The settings texts now say "on by default" and to turn the switch off if the watch's GPS misbehaves.
+
 Code (Android): `modules/huawei-wear/android/.../Ephemeris.kt` (exchange, status, update now), `EphemerisDownload.kt` (HTTP, cache),
 `AgpsSource.kt` (where the data comes from), `AgpsPolicy.kt` (schedule, validation), `PgnssBundle.kt` (the `HW_PGNSS_PRED` kind and bundle check), `AgpsStore.kt` (persisted state),
 `AgpsModuleApi.kt` (JS API). Code (iOS, `modules/huawei-wear/ios`): `Ephemeris.swift` (`AgpsExchange`, `EphemerisLink`), `AgpsSource.swift` (source,

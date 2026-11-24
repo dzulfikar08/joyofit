@@ -251,14 +251,14 @@ export default function AdvancedScreen() {
             {agpsLab !== null ? (
               <>
                 <SwitchRow label={t('advanced.agnssLab')} value={agpsLab} onValueChange={(enabled) => void toggleAgpsLab(enabled)} />
-                <Notice tone={agpsLab ? 'danger' : 'info'}>{t('advanced.agnssLabRisk')}</Notice>
+                <Notice tone="info">{t('advanced.agnssLabRisk')}</Notice>
                 {agpsLabError ? <Notice tone="danger">{agpsLabError}</Notice> : null}
               </>
             ) : null}
             {pgnssLab !== null ? (
               <>
                 <SwitchRow label={t('advanced.pgnssLab')} value={pgnssLab} onValueChange={(enabled) => void togglePgnssLab(enabled)} />
-                <Notice tone={pgnssLab ? 'danger' : 'info'}>{t('advanced.pgnssLabRisk')}</Notice>
+                <Notice tone="info">{t('advanced.pgnssLabRisk')}</Notice>
                 {pgnssLabError ? <Notice tone="danger">{pgnssLabError}</Notice> : null}
               </>
             ) : null}
