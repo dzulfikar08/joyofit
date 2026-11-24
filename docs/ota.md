@@ -271,6 +271,10 @@ terhubung") and #100 (HUAWEI ID Health Kit sync lab, off by default and inert un
 Android group `6605ab6f-f55f-4c53-9230-7f36b4ab1812` (runtime `04c19ef3...`), iOS group `48547602-10b0-4835-9b72-5b619640abba`
 (runtime `f1a2b1a1...`). Nothing native changed since `v1.2.1`.
 
+**OTA 2026-11-24, second** (master `292c33d7`, runs 45420900614 / 45420926126): #117, both satellite-data (A-GPS) switches on by
+default, turned on once per install at launch. Android group `a33daeb0-a387-4774-8f61-580195d6c5ae`, iOS group
+`2d8565b2-d6b7-4843-9e4d-1e7af01809bd`, same runtimes as above.
+
 The iOS build from master `7d72b805` (TestFlight 1.1 (202611170256), Release iOS run 44006556473, 2026-11-17) went only to
 the Internal TestFlight group (1 tester, 1 install) and was never sent to Publik or App Review, so it got no OTA.
 
