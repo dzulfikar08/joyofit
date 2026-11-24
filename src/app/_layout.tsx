@@ -28,6 +28,7 @@ import { FamilyProvider } from '@/features/family/FamilyProvider';
 import { syncHrZonesAtLaunch } from '@/features/hrzones/settings';
 import { BikeRideProvider } from '@/features/bikecomputer/BikeRideProvider';
 import { lockPortrait } from '@/features/bikecomputer/ui/orientation';
+import { applyAgpsDefaultOnce } from '@/features/device/agpsDefault';
 import { flushSupportReports } from '@/features/device/aturReports';
 import { LiveExtrasFeed } from '@/features/live/liveExtras';
 import { BillingSync } from '@/features/pro/BillingSync';
@@ -164,6 +165,11 @@ function RootNavigator() {
   // app.json allows rotation so the bike computer screen can use landscape; everything else stays portrait.
   useEffect(() => {
     void lockPortrait();
+  }, []);
+
+  // Satellite data for the watch is on by default (once per install; docs/agps.md).
+  useEffect(() => {
+    void applyAgpsDefaultOnce();
   }, []);
 
   // The splash also covers the cold-start update gate (server minimum build, newer OTA bundle; at most ~8 s).
