@@ -251,12 +251,22 @@ First builds with an `X.Y.Z` version (docs/ci-release.md "Versions"). Read from 
 
 | Platform | Build | Runtime embedded in the binary |
 | --- | --- | --- |
-| Android | Play AAB 1518051 (internal and alpha, production to follow), sideload APK 1518065 (Release Android run 44676997150) | `04c19ef362b9f3ce54a4ed3cea02d654ad4199d0` |
-| iOS | TestFlight 1.2.1 (202611200450) (Release iOS run 44677000816), internal and Publik (beta review) | `f1a2b1a1a3292275b62546347cb806c473d42c33` |
+| Android | Play AAB 1518051 (internal, alpha, and production as a staged rollout at 20% since 2026-11-20), sideload APK 1518065 (Release Android run 44676997150) | `04c19ef362b9f3ce54a4ed3cea02d654ad4199d0` |
+| iOS | 1.2.1 (202611200450) (Release iOS run 44677000816): App Store (Ready for Sale) and TestFlight internal and Publik | `f1a2b1a1a3292275b62546347cb806c473d42c33` |
 
 **Master OTAs target these two** (`--runtime-version`) once 1.2.1 is what people run; the 1.1 runtimes above still need
 their `ota/*` branches until production has moved to 1.2.1. The 1.2.0 builds (`v1.2.0`: AAB 1517289, replaced on alpha by
 1518051 before release; TestFlight 202611191618, internal only) reached almost nobody and get no OTAs.
+
+Checked 2026-11-24: 1.2.1 carries all of #104 (`1439c6cb`: iOS "forget the watch" in `BleTransport.swift`, JRG-494/495/496;
+HONOR Watch ES stress and night HRV file blocks in Java and Swift, JRG-487/488; Band 11 Pro stress in Kotlin, JRG-486) and
+FIT-156 (#102), so the native parts that the 2026-11-17 OTAs (groups `19997c2d...`/`fb4a3f88...`) left out reach users through
+these builds; no new store build was cut for them. The Play production rollout stays at 20% until the owner raises it; the
+other Play production users stay on 1.1 (1492235) and its `ota/*` runtime meanwhile. The App Store's earlier 1.1 build
+(202611190213, Release iOS run 44442578064 from master `8e69d57b`) already contained #104 and #102 as well.
+
+The iOS build from master `7d72b805` (TestFlight 1.1 (202611170256), Release iOS run 44006556473, 2026-11-17) went only to
+the Internal TestFlight group (1 tester, 1 install) and was never sent to Publik or App Review, so it got no OTA.
 
 ## When OTA is not enough
 
