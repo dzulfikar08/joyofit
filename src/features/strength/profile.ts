@@ -1,4 +1,5 @@
 import type { EnergyProfile, Sex } from '@/features/record/energy';
+import { watchVo2 } from '@/features/fitness/watchVo2';
 import { DEFAULT_AGE } from '@/features/workouts/substrate';
 import { HuaweiWear } from '@/wear';
 
@@ -20,10 +21,10 @@ export function hasUserWeight(): boolean {
   return savedWeightKg() !== null;
 }
 
-/** The profile the heart rate energy (Keytel) runs on: the saved weight (or the default), age from the birth year, sex. */
+/** The profile the heart rate energy (Keytel) runs on: the saved weight (or the default), age from the birth year, sex, the watch's VO2max. */
 export function userEnergyProfile(): EnergyProfile {
   const profile = HuaweiWear.getUserProfile();
   const age = profile?.birthYear ? new Date().getFullYear() - profile.birthYear : DEFAULT_AGE;
   const sex: Sex = profile?.sex === 'male' || profile?.sex === 'female' ? profile.sex : 'unknown';
-  return { weightKg: userWeightKg(), age: Math.min(100, Math.max(10, age)), sex };
+  return { weightKg: userWeightKg(), age: Math.min(100, Math.max(10, age)), sex, vo2max: watchVo2() };
 }

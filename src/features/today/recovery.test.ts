@@ -4,7 +4,7 @@ import type { HrvReadingRow } from '@/db/queries';
 import { applyLocale } from '@/i18n';
 
 import { nightHrvAvailability, type NightHrvInput } from './nightHrv';
-import { recovery } from './recovery';
+import { bandOf, recovery, recoveryPercent } from './recovery';
 
 const NOW = 1_760_655_600;
 const OLD = 'HRV: belum ada pengukuran. Ukur HRV selama semenit, atau sinkron setelah semalam memakai jam.';
@@ -80,5 +80,29 @@ describe('recovery without a reading', () => {
     } finally {
       await applyLocale('id');
     }
+  });
+});
+
+describe('recoveryPercent (ALGO-01, second iteration)', () => {
+  it('puts the band edges on half a standard deviation: green from z = -0.5, red below z = -1.5', () => {
+    expect(recoveryPercent(-0.5)).toBeCloseTo(67, 9);
+    expect(recoveryPercent(-1.5)).toBeCloseTo(34, 9);
+    expect(bandOf(Math.round(recoveryPercent(-0.49)))).toBe('green');
+    expect(bandOf(Math.round(recoveryPercent(-0.6)))).toBe('yellow');
+    expect(bandOf(Math.round(recoveryPercent(-1.6)))).toBe('red');
+  });
+
+  it('reads a usual day (z = 0) as about 80 %, green', () => {
+    expect(Math.round(recoveryPercent(0))).toBe(80);
+    expect(Math.round(recoveryPercent(1))).toBe(93);
+    expect(Math.round(recoveryPercent(-1))).toBe(51);
+  });
+
+  it('rises with z and stays within 1..99', () => {
+    const zs = [-6, -3, -2, -1, 0, 1, 2, 3, 6];
+    const ps = zs.map(recoveryPercent);
+    for (let i = 1; i < ps.length; i++) expect(ps[i]!).toBeGreaterThan(ps[i - 1]!);
+    expect(Math.min(...ps)).toBeGreaterThanOrEqual(1);
+    expect(Math.max(...ps)).toBeLessThanOrEqual(99);
   });
 });

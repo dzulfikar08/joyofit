@@ -42,5 +42,5 @@ export function setEbike(workoutStart: number, on: boolean): void {
 /** Everything the ride analysis needs to know about the person. */
 export function rideProfile(): RideProfile {
   const energy = userEnergyProfile();
-  return { weightKg: energy.weightKg, age: energy.age, sex: energy.sex, maxHr: userMaxHr(), ftp: getFtp() };
+  return { weightKg: energy.weightKg, age: energy.age, sex: energy.sex, vo2max: energy.vo2max, maxHr: userMaxHr(), ftp: getFtp() };
 }

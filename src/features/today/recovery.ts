@@ -8,10 +8,26 @@ import { t } from '@/i18n';
  * change worth noticing. Night readings (the watch's own per-minute RMSSD from its stress records, averaged over sleep) and 1-minute spot readings
  * differ in level, so a reading is only compared with earlier readings of the same kind.
  *
- * Recovery % = 50 + 25 * z, clamped to 1..99: your usual HRV is 50 %, one standard deviation above is 75 %. Bands follow
- * the familiar green / yellow / red split at 67 and 34. The mapping is JoyoFit's; it is not WHOOP's model.
+ * Recovery % is a logistic curve of z, 99 / (1 + e^(-k (z - z0))), clamped to 1..99, fitted so the familiar green / yellow / red
+ * split at 67 and 34 falls on the same half standard deviation: green from z = -0.5 (within the normal day-to-day spread or above),
+ * red below z = -1.5. Your usual HRV (z = 0) is about 80 %, one standard deviation above about 93 %, one below about 51 %. With HRV
+ * spread normally around the baseline about 69 % of days are green, 24 % yellow and 7 % red (the earlier linear 50 + 25 z put a
+ * normal day at 50 %, yellow, and one day in four in red). The mapping is JoyoFit's; it is not WHOOP's model.
+ * (Jeremy's review ALGO-01, second iteration: docs/reviews/2026-11-jeremy-algorithm-review.md.)
  */
 const BASELINE_DAYS = 30;
+/** z where green starts (67 %) and where red starts (34 %). */
+const GREEN_FROM_Z = -0.5;
+const RED_BELOW_Z = -1.5;
+const logit = (p: number) => Math.log(p / (99 - p));
+/** Slope and midpoint of the curve through (GREEN_FROM_Z, 67) and (RED_BELOW_Z, 34). */
+const CURVE_K = (logit(67) - logit(34)) / (GREEN_FROM_Z - RED_BELOW_Z);
+const CURVE_Z0 = GREEN_FROM_Z - logit(67) / CURVE_K;
+
+/** Recovery % at a z-score against the baseline, 1..99 (not rounded). */
+export function recoveryPercent(z: number): number {
+  return Math.min(99, Math.max(1, 99 / (1 + Math.exp(-CURVE_K * (z - CURVE_Z0)))));
+}
 /** Earlier readings of the same kind needed before today's is compared. */
 export const MIN_BASELINE_READINGS = 4;
 /** A spot reading counts for "today" when taken since this many hours before now. */
@@ -99,7 +115,7 @@ export function recovery(
   // A few near-identical readings give a tiny spread that would make every change look extreme; 0.1 in ln units is
   // about a 10 % change in RMSSD, a typical day-to-day spread.
   const z = (Math.log(today.rmssd) - mean) / Math.max(sd, 0.1);
-  const percent = Math.round(Math.min(99, Math.max(1, 50 + 25 * z)));
+  const percent = Math.round(recoveryPercent(z));
   return {
     recovery: {
       percent,
